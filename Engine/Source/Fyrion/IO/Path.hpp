@@ -28,7 +28,7 @@ namespace Fyrion::Path
         } while (true);
     }
 
-    StringView Extension(const StringView& path)
+    inline StringView Extension(const StringView& path)
     {
         auto it = path.end();
         while (it != path.begin())
@@ -125,4 +125,3 @@ namespace Fyrion::Path
         return path;
     }
 }
-

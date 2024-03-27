@@ -5,9 +5,6 @@ target_include_directories(FyrionEngine PUBLIC Source)
 
 
 
-
-
-
 ##tests
 file(GLOB_RECURSE FYRION_ENGINE_TESTS_SOURCES Test/*.hpp Test/*.cpp Test/*.h Test/*.c)
 add_executable(FyrionEngineTests ${FYRION_ENGINE_TESTS_SOURCES})

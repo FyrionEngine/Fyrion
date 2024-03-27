@@ -1,0 +1,4 @@
+
+
+add_executable(FyrionPlayer Source/Fyrion/EntryPoint.cpp)
+target_link_libraries(FyrionPlayer PUBLIC FyrionEngine)

@@ -36,11 +36,38 @@ inline void* operator new(Fyrion::usize, Fyrion::PlaceHolder, Fyrion::VoidPtr pt
 inline void operator delete(void*, Fyrion::PlaceHolder, Fyrion::VoidPtr) noexcept
 {
 }
-
-
-
 //defines
 
-#define FY_API __declspec(dllexport)
-#define FY_FINLINE
+//--general defines
 #define FY_STRING_BUFFER_SIZE 18
+
+
+//---platform defines
+#if _WIN64
+    #define FY_API __declspec(dllexport)
+    #define FY_PATH_SEPARATOR '\\'
+    #define FY_FINLINE __forceinline
+    #define FY_SHARED_EXT ".dll"
+    #define FY_WIN
+#elif __linux__
+    #define FY_API __attribute__ ((visibility ("default")))
+    #define FY_PATH_SEPARATOR '/'
+    #define FY_SHARED_EXT ".so"
+    #define FY_FINLINE inline
+    #define FY_LINUX
+#elif __APPLE__
+    #define FY_API
+    #define FY_PATH_SEPARATOR '/'
+    #define FY_FINLINE static inline
+    #define FY_SHARED_EXT ".dylib"
+
+    #if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+        #define FY_IOS
+    #elif TARGET_OS_MAC
+        #define FY_MACOS
+    #endif
+#endif
+
+#ifdef __unix__
+    #define FY_UNIX
+#endif

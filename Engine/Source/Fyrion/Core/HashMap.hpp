@@ -59,9 +59,9 @@ namespace Fyrion
 	private:
 		void ReHash();
 
-		usize        m_Size{};
-		Array<Node*> m_Buckets{};
-		Allocator& m_Allocator = MemoryGlobals::GetDefaultAllocator();
+		usize        m_size{};
+		Array<Node*> m_buckets{};
+		Allocator& m_allocator = MemoryGlobals::GetDefaultAllocator();
 	};
 
 	template<typename Key, typename Value>
@@ -71,50 +71,50 @@ namespace Fyrion
 	}
 
 	template<typename Key, typename Value>
-	FY_FINLINE HashMap<Key, Value>::HashMap(const HashMap& other) : m_Size(other.m_Size)
+	FY_FINLINE HashMap<Key, Value>::HashMap(const HashMap& other) : m_size(other.m_size)
 	{
-		if (other.m_Buckets.Empty()) return;
-		m_Buckets.Resize(other.m_Buckets.Size());
+		if (other.m_buckets.Empty()) return;
+		m_buckets.Resize(other.m_buckets.Size());
 
-		for (Node* it = *other.m_Buckets.begin(); it != nullptr; it = it->next)
+		for (Node* it = *other.m_buckets.begin(); it != nullptr; it = it->next)
 		{
-			Node* newNode = new(PlaceHolder(), m_Allocator.MemAlloc( sizeof(Node), alignof(Node))) Node{it->first, it->second};
+			Node* newNode = new(PlaceHolder(), m_allocator.MemAlloc( sizeof(Node), alignof(Node))) Node{it->first, it->second};
 			newNode->next = newNode->prev = nullptr;
-			HashNodeInsert(newNode, Hash<Key>::Value(it->first), m_Buckets.Data(), m_Buckets.Size() - 1);
+			HashNodeInsert(newNode, Hash<Key>::Value(it->first), m_buckets.Data(), m_buckets.Size() - 1);
 		}
 	}
 
 	template<typename Key, typename Value>
 	FY_FINLINE HashMap<Key, Value>::HashMap(HashMap&& other) noexcept
 	{
-		m_Buckets.Swap(other.m_Buckets);
-		other.m_Size = 0;
+		m_buckets.Swap(other.m_buckets);
+		other.m_size = 0;
 	}
 
 	template<typename Key, typename Value>
 	FY_FINLINE void HashMap<Key, Value>::Clear()
 	{
-		if (m_Buckets.Empty()) return;
+		if (m_buckets.Empty()) return;
 
-		Node* it = *m_Buckets.begin();
+		Node* it = *m_buckets.begin();
 		while (it)
 		{
 			Node* next = it->next;
 			it->~HashNode<Key, Value>();
-			m_Allocator.MemFree( it);
+			m_allocator.MemFree( it);
 			it = next;
 		}
 
-		m_Buckets.Clear();
-		m_Buckets.ShrinkToFit();
-		m_Size = 0;
+		m_buckets.Clear();
+		m_buckets.ShrinkToFit();
+		m_size = 0;
 	}
 
 	template<typename Key, typename Value>
 	FY_FINLINE typename HashMap<Key, Value>::Iterator HashMap<Key, Value>::begin()
 	{
 		Iterator it;
-		it.node = !m_Buckets.Empty() ? *m_Buckets.begin() : nullptr;
+		it.node = !m_buckets.Empty() ? *m_buckets.begin() : nullptr;
 		return it;
 	}
 
@@ -130,7 +130,7 @@ namespace Fyrion
 	FY_FINLINE typename HashMap<Key, Value>::ConstIterator HashMap<Key, Value>::begin() const
 	{
 		Iterator it;
-		it.node = !m_Buckets.Empty() ? *m_Buckets.begin() : nullptr;
+		it.node = !m_buckets.Empty() ? *m_buckets.begin() : nullptr;
 		return it;
 	}
 
@@ -145,25 +145,25 @@ namespace Fyrion
 	template<typename Key, typename Value>
 	FY_FINLINE bool HashMap<Key, Value>::Empty() const
 	{
-		return m_Size == 0;
+		return m_size == 0;
 	}
 
 	template<typename Key, typename Value>
 	FY_FINLINE usize HashMap<Key, Value>::Size() const
 	{
-		return m_Size;
+		return m_size;
 	}
 
 	template<typename Key, typename Value>
 	template<typename ParamKey>
 	FY_FINLINE typename HashMap<Key, Value>::Iterator HashMap<Key, Value>::Find(const ParamKey& key)
 	{
-		if (m_Buckets.Empty()) return {};
+		if (m_buckets.Empty()) return {};
 
-		const usize bucket = Hash<Key>::Value(key) & (m_Buckets.Size() - 2);
+		const usize bucket = Hash<Key>::Value(key) & (m_buckets.Size() - 2);
 
 		typedef Node* NodePtr;
-		for (NodePtr it = m_Buckets[bucket], end = m_Buckets[bucket + 1]; it != end; it = it->next)
+		for (NodePtr it = m_buckets[bucket], end = m_buckets[bucket + 1]; it != end; it = it->next)
 		{
 			if (it->first == key)
 			{
@@ -178,12 +178,12 @@ namespace Fyrion
 	template<typename ParamKey>
 	FY_FINLINE typename HashMap<Key, Value>::ConstIterator HashMap<Key, Value>::Find(const ParamKey& key) const
 	{
-		if (m_Buckets.Empty()) return {};
+		if (m_buckets.Empty()) return {};
 
-		const usize bucket = Hash<Key>::Value(key) & (m_Buckets.Size() - 2);
+		const usize bucket = Hash<Key>::Value(key) & (m_buckets.Size() - 2);
 
 		typedef Node* NodePtr;
-		for (NodePtr it = m_Buckets[bucket], end = m_Buckets[bucket + 1]; it != end; it = it->next)
+		for (NodePtr it = m_buckets[bucket], end = m_buckets[bucket + 1]; it != end; it = it->next)
 		{
 			if (it->first == key)
 			{
@@ -205,17 +205,17 @@ namespace Fyrion
 			return result;
 		}
 
-		Node* newNode = new(PlaceHolder(), m_Allocator.MemAlloc( sizeof(Node), alignof(Node))) Node{p.first, p.second};
+		Node* newNode = new(PlaceHolder(), m_allocator.MemAlloc( sizeof(Node), alignof(Node))) Node{p.first, p.second};
 		newNode->next = newNode->prev = nullptr;
 
-		if (m_Buckets.Empty())
+		if (m_buckets.Empty())
 		{
-			m_Buckets.Resize(9);
+			m_buckets.Resize(9);
 		}
 
-		HashNodeInsert(newNode, Hash<Key>::Value(p.first), m_Buckets.Data(), m_Buckets.Size() - 1);
+		HashNodeInsert(newNode, Hash<Key>::Value(p.first), m_buckets.Data(), m_buckets.Size() - 1);
 
-		++m_Size;
+		++m_size;
 
 		ReHash();
 
@@ -241,17 +241,17 @@ namespace Fyrion
 			return result;
 		}
 
-        Node* newNode = new(PlaceHolder(), m_Allocator.MemAlloc(sizeof(Node), alignof(Node))) Node{key, Traits::Forward<Value>(value)};
+        Node* newNode = new(PlaceHolder(), m_allocator.MemAlloc(sizeof(Node), alignof(Node))) Node{key, Traits::Forward<Value>(value)};
 		newNode->next = newNode->prev = nullptr;
 
-		if (m_Buckets.Empty())
+		if (m_buckets.Empty())
 		{
-			m_Buckets.Resize(9);
+			m_buckets.Resize(9);
 		}
 
-		HashNodeInsert(newNode, Hash<Key>::Value(key), m_Buckets.Data(), m_Buckets.Size() - 1);
+		HashNodeInsert(newNode, Hash<Key>::Value(key), m_buckets.Data(), m_buckets.Size() - 1);
 
-		++m_Size;
+		++m_size;
 
 		ReHash();
 
@@ -263,19 +263,19 @@ namespace Fyrion
 	template<typename Key, typename Value>
 	FY_FINLINE void HashMap<Key, Value>::Erase(ConstIterator where)
 	{
-		HashNodeErase(where.node, Hash<Key>::Value(where->first), m_Buckets.Data(), m_Buckets.Size() - 1);
+		HashNodeErase(where.node, Hash<Key>::Value(where->first), m_buckets.Data(), m_buckets.Size() - 1);
 		where->~HashNode();
-		m_Allocator.MemFree( where.node);
-		--m_Size;
+		m_allocator.MemFree( where.node);
+		--m_size;
 	}
 
 	template<typename Key, typename Value>
 	FY_FINLINE void HashMap<Key, Value>::Erase(Iterator where)
 	{
-		HashNodeErase(where.node, Hash<Key>::Value(where->first), m_Buckets.Data(), m_Buckets.Size() - 1);
+		HashNodeErase(where.node, Hash<Key>::Value(where->first), m_buckets.Data(), m_buckets.Size() - 1);
 		where->~HashNode();
-		m_Allocator.MemFree( where.node);
-		--m_Size;
+		m_allocator.MemFree( where.node);
+		--m_size;
 	}
 
 	template<typename Key, typename Value>
@@ -292,19 +292,19 @@ namespace Fyrion
 	template<typename Key, typename Value>
 	FY_FINLINE void HashMap<Key, Value>::ReHash()
 	{
-		if (m_Size + 1 > 4 * m_Buckets.Size())
+		if (m_size + 1 > 4 * m_buckets.Size())
 		{
-			Node* root = *m_Buckets.begin();
-			const usize newNumberBuckets = (m_Buckets.Size() - 1) * 8;
+			Node* root = *m_buckets.begin();
+			const usize newNumberBuckets = (m_buckets.Size() - 1) * 8;
 
-			m_Buckets.Clear();
-			m_Buckets.Resize(newNumberBuckets + 1);
+			m_buckets.Clear();
+			m_buckets.Resize(newNumberBuckets + 1);
 
 			while (root)
 			{
 				Node*  next = root->next;
 				root->next = root->prev = 0;
-				HashNodeInsert(root, Hash<Key>::Value(root->first), m_Buckets.Data(), m_Buckets.Size() - 1);
+				HashNodeInsert(root, Hash<Key>::Value(root->first), m_buckets.Data(), m_buckets.Size() - 1);
 				root = next;
 			}
 		}
@@ -314,10 +314,10 @@ namespace Fyrion
 	template<typename ParamKey>
 	bool HashMap<Key, Value>::Has(const ParamKey& key) const
 	{
-		if (m_Buckets.Empty()) return false;
-		const usize bucket = Hash<Key>::Value(key) & (m_Buckets.Size() - 2);
+		if (m_buckets.Empty()) return false;
+		const usize bucket = Hash<Key>::Value(key) & (m_buckets.Size() - 2);
 		typedef Node* NodePtr;
-		for (NodePtr it = m_Buckets[bucket], end = m_Buckets[bucket + 1]; it != end; it = it->next)
+		for (NodePtr it = m_buckets[bucket], end = m_buckets[bucket + 1]; it != end; it = it->next)
 		{
 			if (it->first == key)
 			{

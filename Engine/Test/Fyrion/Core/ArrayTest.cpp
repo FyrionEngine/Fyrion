@@ -1,5 +1,6 @@
 #include "doctest.h"
 #include "Fyrion/Core/Array.hpp"
+#include "Fyrion/Core/Span.hpp"
 
 using namespace Fyrion;
 
@@ -256,25 +257,25 @@ namespace
 		CHECK(arr1 != arr3);
 	}
 
-//	TEST_CASE("Core::SpanTestBasics")
-//	{
-//		Array<i32> arr1{};
-//		arr1.EmplaceBack(10);
-//		arr1.EmplaceBack(20);
-//
-//		Span<i32> span = arr1;
-//
-//		CHECK(span.Size() == 2);
-//		CHECK(span[0] == 10);
-//		CHECK(span[1] == 20);
-//
-//		i32 sum = 0;
-//		for(const i32& vl: span)
-//		{
-//			sum += vl;
-//		}
-//		CHECK(sum == 30);
-//	}
+	TEST_CASE("Core::SpanTestBasics")
+	{
+		Array<i32> arr1{};
+		arr1.EmplaceBack(10);
+		arr1.EmplaceBack(20);
+
+		Span<i32> span = arr1;
+
+		CHECK(span.Size() == 2);
+		CHECK(span[0] == 10);
+		CHECK(span[1] == 20);
+
+		i32 sum = 0;
+		for(const i32& vl: span)
+		{
+			sum += vl;
+		}
+		CHECK(sum == 30);
+	}
 //
 //	TEST_CASE("Core::ArrayTypeApi")
 //	{

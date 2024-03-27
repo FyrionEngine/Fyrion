@@ -24,6 +24,8 @@ namespace Fyrion
     struct PlaceHolder
     {
     };
+
+    static constexpr usize nPos = -1;
 }
 
 inline void* operator new(Fyrion::usize, Fyrion::PlaceHolder, Fyrion::VoidPtr ptr)
@@ -41,3 +43,4 @@ inline void operator delete(void*, Fyrion::PlaceHolder, Fyrion::VoidPtr) noexcep
 
 #define FY_API __declspec(dllexport)
 #define FY_FINLINE
+#define FY_STRING_BUFFER_SIZE 18

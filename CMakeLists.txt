@@ -4,7 +4,7 @@ project(Fyrion)
 set(CMAKE_CXX_STANDARD 20)
 
 string(TIMESTAMP TODAY "%Y%m%d")
-add_compile_definitions(FY_VERSION_="0.1.${TODAY}-Pre-Alpha")
+add_compile_definitions(FY_VERSION="0.1.${TODAY}-Pre-Alpha")
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)

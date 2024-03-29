@@ -202,5 +202,37 @@ namespace Fyrion
         output[j] = 0;
         return j;
     }
+
+    template<typename Element>
+    usize SearchSubString(BasicStringView<Element> text, BasicStringView<Element> pattern)
+    {
+        int textLength = text.Size();
+        int patternLength = pattern.Size();
+
+        for (int i = 0; i <= textLength - patternLength; ++i)
+        {
+            int j;
+
+            for (j = 0; j < patternLength; ++j)
+            {
+                if (text[i + j] != pattern[j])
+                {
+                    break;
+                }
+            }
+
+            if (j == patternLength)
+            {
+                return i;
+            }
+        }
+        return nPos;
+    }
+
+    template<typename Element>
+    inline bool Contains(BasicStringView<Element> text, BasicStringView<Element> pattern)
+    {
+        return SearchSubString(text, pattern) != nPos;
+    }
 }
 

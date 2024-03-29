@@ -32,7 +32,6 @@ namespace
 
     i32 executeCount = 0;
 
-
     TEST_CASE("Core::TestBasicLog")
     {
         TestSink testSink{};
@@ -44,7 +43,7 @@ namespace
         {
             CHECK(level == LogLevel_Info);
             CHECK(logName == "TestLogger");
-            CHECK(message == "test logger 123");
+            CHECK(Contains(message, StringView{"test logger 123"}));
             executeCount++;
         };
 

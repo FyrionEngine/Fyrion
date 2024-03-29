@@ -26,6 +26,13 @@ namespace Fyrion
     };
 
     static constexpr usize nPos = -1;
+
+    #define FY_HANDLER(StructName) struct StructName {                                  \
+        VoidPtr handler;                                                                \
+     operator bool() const {return handler != nullptr; }                                \
+     bool operator==(const StructName& b) const { return this->handler == b.handler; }  \
+     bool operator!=(const StructName& b) const { return this->handler != b.handler; }  \
+    }
 }
 
 inline void* operator new(Fyrion::usize, Fyrion::PlaceHolder, Fyrion::VoidPtr ptr)

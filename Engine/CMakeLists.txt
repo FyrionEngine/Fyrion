@@ -20,5 +20,6 @@ target_link_libraries(FyrionEngineTests PUBLIC FyrionEngine)
 
 target_include_directories(FyrionEngineTests PUBLIC Thirdparty/doctest)
 target_include_directories(FyrionEngineTests PUBLIC Tests)
+target_compile_definitions(FyrionEngineTests PRIVATE FY_TEST_FILES="${CMAKE_CURRENT_SOURCE_DIR}/Test/Files")
 
 add_test(NAME FyrionEngineTests COMMAND FyrionEngineTests)

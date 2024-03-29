@@ -74,27 +74,22 @@ namespace Fyrion
 			FindClose(m_handler);
 		}
 	}
-}
 
-
-namespace Fyrion::FileSystem
-{
-
-	String CurrentDir()
+	String FileSystem::CurrentDir()
 	{
 		TCHAR path[MAX_PATH];
 		GetCurrentDirectory(MAX_PATH, path);
 		return {path, strlen(path)};
 	}
 
-    String DocumentsDir()
+    String FileSystem::DocumentsDir()
 	{
 		CHAR myDocuments[MAX_PATH];
 		HRESULT result = SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, SHGFP_TYPE_CURRENT, myDocuments);
 		return {myDocuments};
 	}
 
-	FileStatus GetFileStatus(const StringView& path)
+	FileStatus FileSystem::GetFileStatus(const StringView& path)
 	{
 		WIN32_FILE_ATTRIBUTE_DATA fileAttrData = {0};
 		bool exists = GetFileAttributesEx(path.CStr(), GetFileExInfoStandard, &fileAttrData);
@@ -110,7 +105,7 @@ namespace Fyrion::FileSystem
             .fileSize = (u64) size.QuadPart};
 	}
 
-    String AppFolder()
+    String FileSystem::AppFolder()
     {
         PWSTR pathTemp;
         SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, nullptr, &pathTemp);
@@ -121,6 +116,65 @@ namespace Fyrion::FileSystem
         return {buffer, size - 1};
     }
 
+    FileHandler FileSystem::OpenFile(const StringView& path, AccessMode accessMode)
+    {
+        DWORD dwShareMode = 0;
+        DWORD dwDesiredAccess = 0;
+        if (accessMode == AccessMode_ReadOnly)
+        {
+            dwDesiredAccess = GENERIC_READ;
+            dwShareMode = OPEN_EXISTING;
+        }
+
+        if (accessMode == AccessMode_WriteOnly)
+        {
+            dwDesiredAccess = GENERIC_WRITE;
+            dwShareMode = CREATE_ALWAYS;
+        }
+
+        if (accessMode == AccessMode_ReadAndWrite)
+        {
+            dwDesiredAccess = GENERIC_READ | GENERIC_WRITE;
+            dwShareMode = CREATE_NEW;
+        }
+
+        HANDLE hout = CreateFile(path.CStr(), dwDesiredAccess, 0, nullptr, dwShareMode, FILE_ATTRIBUTE_NORMAL, nullptr);
+        if (hout == INVALID_HANDLE_VALUE)
+        {
+            return FileHandler{};
+        }
+        return FileHandler{hout};
+    }
+
+    usize FileSystem::GetFileSize(FileHandler fileHandler)
+    {
+        LARGE_INTEGER size;
+        if (!GetFileSizeEx((HANDLE)fileHandler.handler, &size))
+        {
+            return 0;
+        }
+        return size.QuadPart;
+    }
+
+    u64 FileSystem::WriteFile(FileHandler fileHandler, ConstPtr data, usize size)
+    {
+        DWORD nWritten;
+        ::WriteFile((HANDLE) fileHandler.handler, data, size, &nWritten, nullptr);
+        return nWritten;
+    }
+
+    u64 FileSystem::ReadFile(FileHandler fileHandler, VoidPtr data, usize size)
+    {
+        DWORD nRead;
+        ::ReadFile((HANDLE) fileHandler.handler, data, size, &nRead, nullptr);
+        return nRead;
+    }
+
+
+    void FileSystem::CloseFile(FileHandler fileHandler)
+    {
+        CloseHandle((HANDLE)fileHandler.handler);
+    }
 }
 
 #endif

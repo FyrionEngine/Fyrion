@@ -6,6 +6,20 @@
 
 namespace Fyrion
 {
+
+    enum AccessMode_
+    {
+        AccessMode_None            = 0,
+        AccessMode_ReadOnly        = 1,
+        AccessMode_WriteOnly       = 2,
+        AccessMode_ReadAndWrite    = 3
+    };
+
+    typedef u32 AccessMode;
+
+
+    FY_HANDLER(FileHandler);
+
     struct FileStatus
     {
         bool    exists{};

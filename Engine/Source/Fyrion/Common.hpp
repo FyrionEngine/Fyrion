@@ -145,3 +145,6 @@ inline void operator delete(void*, Fyrion::PlaceHolder, Fyrion::VoidPtr) noexcep
 # define F32_LOW         (-(F32_MAX))
 # define F64_LOW         (-(F64_MAX))
 #endif
+
+//TODO
+#define FY_ASSERT(...)

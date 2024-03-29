@@ -5,6 +5,8 @@
 namespace Fyrion
 {
 
+    void RegistryShutdown();
+
     namespace
     {
         Logger& logger = Logger::GetLogger("Fyrion::Engine");
@@ -18,7 +20,7 @@ namespace Fyrion
 
     void Engine::Destroy()
     {
-
+        RegistryShutdown();
     }
 
     i32 Engine::Run(i32 argc, char** argv)

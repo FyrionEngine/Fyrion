@@ -13,6 +13,11 @@ namespace Fyrion
 {
 
     class TypeBuilder;
+    class FunctionBuilder;
+    class ConstructorBuilder;
+    class FieldBuilder;
+    class AttributeBuilder;
+
     struct FieldInfo;
 
     struct FunctionInfo
@@ -67,9 +72,6 @@ namespace Fyrion
 
     class FY_API AttributeHandler
     {
-    private:
-        HashMap<TypeID, SharedPtr<AttributeInfo>>  m_attributes{};
-        Array<AttributeInfo*>                      m_attributeArray{};
     public:
         ConstPtr                GetAttribute(TypeID attributeId) const;
         bool                    HasAttribute(TypeID attributeId) const;
@@ -86,19 +88,54 @@ namespace Fyrion
         {
             return HasAttribute(GetTypeID<AttType>());
         }
+
+
+        friend class AttributeBuilder;
+    protected:
+        virtual void OnAttributeCreated(TypeID attributeId) {};
+    private:
+        HashMap<TypeID, SharedPtr<AttributeInfo>>  m_attributes{};
+        Array<AttributeInfo*>                      m_attributeArray{};
+    };
+
+    class FY_API ParamHandler
+    {
+    public:
+        ParamHandler(usize index, const FieldInfo& fieldInfo);
+        const FieldInfo&    GetFieldInfo() const;
+        const String&       GetName() const;
+    private:
+        FieldInfo   m_fieldInfo{};
+        String      m_name{};
     };
 
 
     class FY_API ConstructorHandler : public AttributeHandler
     {
     public:
+        typedef void (*PlacementNewFn)(ConstructorHandler* handler, VoidPtr memory, VoidPtr* params);
+        typedef VoidPtr (*NewInstanceFn)(ConstructorHandler* handler, Allocator& allocator, VoidPtr* params);
+
+        ConstructorHandler(FieldInfo* params,usize paramsCount);
+
         VoidPtr     NewInstance(Allocator& allocator, VoidPtr* params);
         void        Construct(VoidPtr memory, VoidPtr* params);
+
+        friend class ConstructorBuilder;
+    private:
+        PlacementNewFn      m_placementNewFn;
+        NewInstanceFn       m_newInstanceFn;
+        Array<ParamHandler> m_params{};
     };
 
     class FY_API FieldHandler : public AttributeHandler
     {
     public:
+        typedef FieldInfo   (*FnGetFieldInfo)(const FieldHandler* fieldHandler);
+        typedef VoidPtr     (*FnGetFieldPointer)(const FieldHandler* fieldHandler, VoidPtr instance);
+        typedef void        (*FnCopyValueTo)(const FieldHandler* fieldHandler, ConstPtr instance, VoidPtr value);
+        typedef void        (*FnSetValue)(const FieldHandler* fieldHandler, VoidPtr instance, ConstPtr value);
+
         explicit FieldHandler(const String& name);
 
         StringView  GetName() const;
@@ -118,39 +155,46 @@ namespace Fyrion
         {
             SetValue(instance, &value);
         }
-    };
 
-    class FY_API ParamHandler
-    {
-    public:
+        friend class FieldBuilder;
+    private:
+        String            m_name;
+        FnGetFieldInfo    m_fnGetFieldInfo;
+        FnGetFieldPointer m_fnGetFieldPointer;
+        FnCopyValueTo     m_fnCopyValueTo;
+        FnSetValue        m_fnSetValue;
     };
-
 
     class FY_API FunctionHandler : public AttributeHandler
     {
+        friend class FunctionBuilder;
     public:
-        typedef void(*FnCall)(const FunctionHandler* handler, VoidPtr instance, VoidPtr ret, VoidPtr* params);
+        typedef void(*FnInvoke)(const FunctionHandler* handler, VoidPtr instance, VoidPtr ret, VoidPtr* params);
     private:
+
         String              m_name{};
         String              m_simpleName{};
         TypeID              m_functionId{U64_MAX};
         TypeID              m_owner{};
         Array<ParamHandler> m_params{};
         FieldInfo           m_return{};
-        FnCall              m_fnCall{};
+        FnInvoke            m_fnInvoke{};
         VoidPtr             m_functionPointer{};
 
         HashMap<TypeID, SharedPtr<AttributeHandler>> m_Attributes;
         Array<AttributeHandler*>                     m_AttributeArray;
     public:
+
         StringView          GetName() const;
         Span<ParamHandler>  GetParams() const;
         FieldInfo           GetReturn() const;
         TypeID              GetOwner() const;
         VoidPtr             GetFunctionPointer() const;
 
-
         void Invoke(VoidPtr instance, VoidPtr ret, VoidPtr* params) const;
+
+    protected:
+        void OnAttributeCreated(TypeID attributeId) override;
     };
 
     class FY_API TypeHandler : public AttributeHandler
@@ -238,6 +282,7 @@ namespace Fyrion
         AttributeHandler& m_attributeHandler;
     public:
         explicit AttributeBuilder(AttributeHandler& attributeHandler);
+        AttributeInfo& NewAttribute(TypeID attributeId);
     };
 
 
@@ -247,6 +292,9 @@ namespace Fyrion
         ConstructorHandler& m_constructorHandler;
     public:
         ConstructorBuilder(ConstructorHandler& constructorHandler);
+
+        void SetPlacementNewFn(ConstructorHandler::PlacementNewFn placementNew);
+        void SetNewInstanceFn(ConstructorHandler::NewInstanceFn newInstance);
     };
 
     class FY_API FieldBuilder
@@ -255,6 +303,11 @@ namespace Fyrion
         FieldHandler& m_fieldHandler;
     public:
         explicit FieldBuilder(FieldHandler& fieldHandler);
+
+        void SetFnGetFieldInfo(FieldHandler::FnGetFieldInfo fnGetFieldInfo);
+        void SetFnGetFieldPointer(FieldHandler::FnGetFieldPointer fnGetFieldPointer);
+        void SetFnCopyValueTo(FieldHandler::FnCopyValueTo fnCopyValueTo);
+        void SetFnSetValue(FieldHandler::FnSetValue fnSetValue);
     };
 
     class FY_API FunctionBuilder
@@ -262,13 +315,17 @@ namespace Fyrion
     private:
         FunctionHandler& m_functionHandler;
     public:
-        explicit FunctionBuilder(FunctionHandler& functionHandler);
+        explicit    FunctionBuilder(FunctionHandler& functionHandler);
+        void        Create(const FunctionHandlerCreation& creation);
+
+        FunctionHandler& GetFunctionHandler() const;
+
+        void SetFnInvoke(FunctionHandler::FnInvoke fnInvoke);
+        void SetFunctionPointer(VoidPtr functionPointer);
     };
 
     class FY_API TypeBuilder
     {
-    private:
-        TypeHandler& m_typeHandler;
     public:
         TypeBuilder(TypeHandler& typeHandler);
 
@@ -280,6 +337,11 @@ namespace Fyrion
         ConstructorBuilder      NewConstructor(TypeID* ids, FieldInfo* params, usize size);
         FieldBuilder            NewField(const StringView& fieldName);
         FunctionBuilder         NewFunction(const FunctionHandlerCreation& creation);
+
+        TypeHandler& GetTypeHandler() const;
+
+    private:
+        TypeHandler& m_typeHandler;
     };
 
     ///-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -287,16 +349,68 @@ namespace Fyrion
     ///-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
+    template<typename Owner, typename Type>
+    class NativeAttributeHandler
+    {
+    public:
+        inline static Type Value{};
+
+        NativeAttributeHandler(AttributeInfo& attributeInfo)
+        {
+            attributeInfo.GetValue = &GetValueImpl;
+            attributeInfo.GetInfo = &GetTypeInfoImpl;
+        }
+
+    private:
+        static ConstPtr GetValueImpl(const AttributeInfo* handler)
+        {
+            return &Value;
+        }
+
+        static TypeInfo GetTypeInfoImpl(const AttributeInfo* handler)
+        {
+            return GetTypeInfo<Type>();
+        }
+    };
+
+    template<typename Owner, typename Type, typename Enable = void>
+    struct NativeAttributeHandlerBuild
+    {
+        template<typename ...Args>
+        static void Build(AttributeHandler& attributeHandler, Args&&... args)
+        {
+            AttributeBuilder builder {attributeHandler};
+            NativeAttributeHandler<Owner, Type>::Value = Type{Traits::Forward<Args>(args)...};
+            NativeAttributeHandler<Owner, Type>{builder.NewAttribute(GetTypeID<Type>())};
+
+        }
+    };
+
+    template<typename Owner, typename Type>
+    struct NativeAttributeHandlerBuild<Owner, Type, Traits::EnableIf<!Traits::IsComplete<Type>>>
+    {
+        template<typename ...Args>
+        static void Build(AttributeHandler& attributeHandler, Args&&... args)
+        {
+        }
+    };
+
     template<typename Owner>
     class NativeAttributeBuilder
     {
     public:
-        template<typename TypeAttr, typename ...AttrArgs>
-        inline Owner& Attribute(AttrArgs&& ... args)
+        explicit NativeAttributeBuilder(AttributeHandler& attributeHandler) : m_attributeHandler(attributeHandler)
         {
-            //NativeAttributeHandlerBuild<decltype(*this), TypeAttr>::Build(m_FieldHandler.NewAttribute(GetTypeID<TypeAttr>()), Traits::Forward<AttrArgs>(args)...);
+        }
+
+        template<typename Type, typename ...Args>
+        inline Owner& Attribute(Args&& ... args)
+        {
+            NativeAttributeHandlerBuild<Owner, Type>::Build(m_attributeHandler, Traits::Forward<Args>(args)...);
             return *static_cast<Owner*>(this);
         }
+    private:
+        AttributeHandler& m_attributeHandler;
     };
 
 
@@ -306,8 +420,8 @@ namespace Fyrion
     public:
         explicit NativeConstructorHandler(ConstructorBuilder constructorBuilder) : m_constructorHandler(constructorBuilder)
         {
-//            constructorHandler.SetNewInstanceFn(&NewInstanceImpl);
-//            constructorHandler.SetPlacementNewFn(PlacementNewImpl);
+            constructorBuilder.SetNewInstanceFn(&NewInstanceImpl);
+            constructorBuilder.SetPlacementNewFn(PlacementNewImpl);
         }
 
     private:
@@ -352,12 +466,33 @@ namespace Fyrion
     template<auto mfp, typename Owner, typename Field>
     class NativeFieldHandler
     {
-    private:
-        FieldBuilder m_fieldBuilder;
     public:
-        explicit NativeFieldHandler(FieldBuilder fieldBuilder) : m_fieldBuilder(fieldBuilder)
+        explicit NativeFieldHandler(FieldBuilder fieldBuilder)
         {
+           fieldBuilder.SetFnGetFieldInfo(&GetFieldImpl);
+           fieldBuilder.SetFnGetFieldPointer(&FnGetFieldPointerImpl);
+           fieldBuilder.SetFnCopyValueTo(&CopyValueToImpl);
+           fieldBuilder.SetFnSetValue(&SetValue);
+        }
 
+        static FieldInfo GetFieldImpl(const FieldHandler* fieldHandler)
+        {
+            return MakeFieldInfo<Owner, Field>();
+        }
+
+        static VoidPtr FnGetFieldPointerImpl(const FieldHandler* fieldHandler, VoidPtr instance)
+        {
+            return &((*static_cast<Owner*>(instance)).*mfp);
+        }
+
+        static void CopyValueToImpl(const FieldHandler* fieldHandler, ConstPtr instance, VoidPtr value)
+        {
+            *static_cast<Field*>(value) = ((*static_cast<const Owner*>(instance)).*mfp);
+        }
+
+        static void SetValue(const FieldHandler* fieldHandler, VoidPtr instance, ConstPtr value)
+        {
+            ((*static_cast<Owner*>(instance)).*mfp) = *static_cast<const Field*>(value);
         }
     };
 
@@ -385,14 +520,33 @@ namespace Fyrion
     //functions
 
     template<auto fp, typename Return, typename ...Args>
-    class NativeFunctionHandler
+    class NativeFunctionHandler : public NativeAttributeBuilder<NativeFunctionHandler<fp, Return, Args...>>
     {
-    private:
-        FunctionBuilder m_functionBuilder;
     public:
-        NativeFunctionHandler(const FunctionBuilder& functionBuilder) : m_functionBuilder(functionBuilder)
+        NativeFunctionHandler(FunctionBuilder& functionBuilder) :
+            NativeAttributeBuilder<NativeFunctionHandler<fp, Return, Args...>>(functionBuilder.GetFunctionHandler())
         {
+            functionBuilder.SetFnInvoke(InvokeImpl);
+            functionBuilder.SetFunctionPointer(reinterpret_cast<VoidPtr>(&FunctionImpl));
+        }
 
+    private:
+        static void InvokeImpl(const FunctionHandler* handler, VoidPtr instance, VoidPtr  ret, VoidPtr* params)
+        {
+            u32 i{sizeof...(Args)};
+            if constexpr (Traits::IsSame<Return, void>)
+            {
+                fp(*static_cast<Traits::RemoveReference<Args>*>(params[--i])...);
+            }
+            else
+            {
+                *static_cast<Traits::RemoveReference<Return>*>(ret) = fp(*static_cast<Traits::RemoveReference<Args>*>(params[--i])...);
+            }
+        }
+
+        static Return FunctionImpl(const FunctionHandler* handler, VoidPtr  instance, Args... args)
+        {
+            return fp(args...);
         }
     };
 
@@ -402,8 +556,29 @@ namespace Fyrion
     private:
         FunctionBuilder m_functionBuilder;
     public:
-        explicit NativeMemberFunctionHandler(const FunctionBuilder& functionBuilder) : m_functionBuilder(functionBuilder)
+        explicit NativeMemberFunctionHandler(FunctionBuilder& functionBuilder) : NativeAttributeBuilder<NativeMemberFunctionHandler<mfp, Return, Owner, Args...>>(functionBuilder.GetFunctionHandler()),
+            m_functionBuilder(functionBuilder)
         {
+            functionBuilder.SetFnInvoke(InvokeImpl);
+            functionBuilder.SetFunctionPointer(reinterpret_cast<VoidPtr>(&FunctionImpl));
+        }
+    private:
+        static void InvokeImpl(const FunctionHandler* handler, VoidPtr instance, VoidPtr ret, VoidPtr * params)
+        {
+            u32 i{sizeof...(Args)};
+            if constexpr (Traits::IsSame<Return,void>)
+            {
+                (static_cast<Owner*>(instance)->*mfp)(*static_cast<Traits::RemoveReference<Args>*>(params[--i])...);
+            }
+            else
+            {
+                *static_cast<Traits::RemoveReference<Return>*>(ret) = (static_cast<Owner*>(instance)->*mfp)(*static_cast<Traits::RemoveReference<Args>*>(params[--i])...);
+            }
+        }
+
+        static Return FunctionImpl(const FunctionHandler* handler, VoidPtr instance, Args... args)
+        {
+            return (static_cast<Owner*>(instance)->*mfp)(args...);
         }
     };
 
@@ -501,20 +676,82 @@ namespace Fyrion
 
     //type
 
+    template<typename Type, typename Enabler = void>
+    struct NativeTypeHandlerFuncs
+    {
+        static void DestroyImpl(const TypeHandler* typeHandler, Allocator& allocator, VoidPtr instance){};
+        static void CopyImpl(const TypeHandler* typeHandler, ConstPtr source, VoidPtr dest) {};
+        static void DestructorImpl(const TypeHandler* typeHandler, VoidPtr instance){};
+        static void MoveImpl(const TypeHandler* typeHandler, VoidPtr origin, VoidPtr destination) {};
+    };
+
+    template<typename Type>
+    struct NativeTypeHandlerFuncs<Type, Traits::VoidType<decltype(sizeof(Type) != 0)>>
+    {
+        static void DestroyImpl(const TypeHandler* typeHandler, Allocator& allocator, VoidPtr instance)
+        {
+            if constexpr (Traits::IsDestructible<Type>)
+            {
+                static_cast<Type*>(instance)->~Type();
+            }
+            allocator.MemFree(instance);
+        }
+
+        static void CopyImpl(const TypeHandler* typeHandler, ConstPtr source, VoidPtr dest)
+        {
+            if constexpr (Traits::IsCopyConstructible<Type>)
+            {
+                new(PlaceHolder(), dest) Type(*static_cast<const Type*>(source));
+            }
+        }
+
+        static void DestructorImpl(const TypeHandler* typeHandler, VoidPtr instance)
+        {
+            if constexpr (Traits::IsDestructible<Type>)
+            {
+                static_cast<Type*>(instance)->~Type();
+            }
+        };
+
+        static void MoveImpl(const TypeHandler* typeHandler, VoidPtr origin, VoidPtr destination)
+        {
+            if constexpr (Traits::IsMoveConstructible<Type>)
+            {
+                new(PlaceHolder(), destination) Type{std::move(*static_cast<Type*>(origin))};
+            }
+            else if constexpr (Traits::IsCopyConstructible<Type>)
+            {
+                new(PlaceHolder(), destination) Type{*static_cast<const Type*>(origin)};
+            }
+            else
+            {
+                FY_ASSERT(false, "type is not move or copy constructible");
+            }
+        }
+    };
+
+
     template<typename Type>
     class NativeTypeHandler : public NativeAttributeBuilder<NativeTypeHandler<Type>>
     {
     private:
-        TypeBuilder m_typeHandlerBuilder;
+        TypeBuilder m_typeBuilder;
     public:
-        explicit NativeTypeHandler(TypeBuilder typeHandlerBuilder) : m_typeHandlerBuilder(typeHandlerBuilder)
+        explicit NativeTypeHandler(TypeBuilder typeBuilder) : NativeAttributeBuilder<NativeTypeHandler<Type>>(typeBuilder.GetTypeHandler()), m_typeBuilder(typeBuilder)
         {
-
+            if constexpr (Traits::IsDirectConstructible<Type>)
+            {
+                this->Constructor();
+            }
+            typeBuilder.SetFnDestroy(&NativeTypeHandlerFuncs<Type>::DestroyImpl);
+            typeBuilder.SetFnCopy(&NativeTypeHandlerFuncs<Type>::CopyImpl);
+            typeBuilder.SetFnDestructor(&NativeTypeHandlerFuncs<Type>::DestructorImpl);
+            typeBuilder.SetFnMove(&NativeTypeHandlerFuncs<Type>::MoveImpl);
         }
 
         inline auto Constructor()
         {
-            return NativeConstructorHandler<Type>(m_typeHandlerBuilder.NewConstructor(nullptr, nullptr, 0));
+            return NativeConstructorHandler<Type>(m_typeBuilder.NewConstructor(nullptr, nullptr, 0));
         }
 
         template<typename ...Args>
@@ -522,14 +759,14 @@ namespace Fyrion
         {
             FieldInfo params[] = {MakeFieldInfo<void, Args>()...};
             TypeID ids[] = {GetTypeID<Args>()...,};
-            return NativeConstructorHandler<Type, Args...>(m_typeHandlerBuilder.NewConstructor(ids, params, sizeof...(Args)));
+            return NativeConstructorHandler<Type, Args...>(m_typeBuilder.NewConstructor(ids, params, sizeof...(Args)));
         }
 
         template<auto mfp>
         inline auto Field(const StringView& name)
         {
             using FieldDecomp = FieldTemplateDecomposer<mfp, decltype(mfp)>;
-            return FieldDecomp::CreateHandler(m_typeHandlerBuilder.NewField(name));
+            return FieldDecomp::CreateHandler(m_typeBuilder.NewField(name));
         }
 
         template<auto mfp>
@@ -537,7 +774,7 @@ namespace Fyrion
         {
             using FuncType = Traits::RemoveConstFunc<decltype(mfp)>;
             using DecompType = MemberFunctionTemplateDecomposer<mfp, FuncType>;
-            return DecompType::CreateHandler(m_typeHandlerBuilder.NewFunction(DecompType::MakeCreation(name)));
+            return DecompType::CreateHandler(m_typeBuilder.NewFunction(DecompType::MakeCreation(name)));
         }
     };
 
@@ -546,6 +783,11 @@ namespace Fyrion
         FY_API TypeBuilder      NewType(const StringView& name, const TypeInfo& typeInfo);
         FY_API TypeHandler*     FindTypeByName(const StringView& name);
         FY_API TypeHandler*     FindTypeById(TypeID typeId);
+
+
+        FY_API FunctionBuilder          NewFunction(const FunctionHandlerCreation& functionHandlerCreation);
+        FY_API FunctionHandler*         FindFunctionByName(const StringView& name);
+        FY_API Span<FunctionHandler*>   FindFunctionsByAttribute(TypeID typeId);
 
         template<typename T>
         inline decltype(auto) Type()
@@ -563,6 +805,20 @@ namespace Fyrion
         TypeHandler* FindType()
         {
             return FindTypeById(GetTypeID<T>());
+        }
+
+        template<typename T>
+        Span<FunctionHandler*> FindFunctionsByAttribute()
+        {
+            return FindFunctionsByAttribute(GetTypeID<T>());
+        }
+
+        template<auto Func>
+        inline decltype(auto) Function(const StringView& name)
+        {
+            using FuncType = Traits::RemoveConstFunc<decltype(Func)>;
+            using DecompType = MemberFunctionTemplateDecomposer<Func, FuncType>;
+            return DecompType::CreateHandler(NewFunction(DecompType::MakeCreation(name)));
         }
     }
 }

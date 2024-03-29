@@ -3,6 +3,7 @@
 #include "Fyrion/Common.hpp"
 #include "Hash.hpp"
 #include "StringConverter.hpp"
+#include "Format.hpp"
 
 namespace Fyrion
 {
@@ -520,3 +521,12 @@ namespace Fyrion
         }
     };
 }
+
+template<>
+struct fmt::formatter<Fyrion::StringView> : fmt::formatter<std::string_view>
+{
+    auto format(const Fyrion::StringView& c, format_context& ctx) const
+    {
+        return formatter<std::string_view>::format(std::string_view(c.CStr(), c.Size()), ctx);
+    }
+};

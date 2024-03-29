@@ -106,7 +106,7 @@ namespace
 
 	void TestTypeRegister()
 	{
-		auto testStruct = Registry::Type<ReflectionTestStruct>();
+		auto testStruct = Registry::Type<ReflectionTestStruct>("Tests::ReflectionTestStruct");
 		testStruct.Field<&ReflectionTestStruct::uint>("uint");
 		testStruct.Field<&ReflectionTestStruct::iint>("iint");
 		testStruct.Field<&ReflectionTestStruct::string>("string");
@@ -115,15 +115,16 @@ namespace
 
 	TEST_CASE("Core::ReflectionBasics")
 	{
-		Registry::Type<IncompleteType>().Attribute<TestAttribute>(20);
+		Registry::Type<IncompleteType>("Tests::IncompleteType").Attribute<TestAttribute>(20);
 
-		auto typeClass = Registry::Type<ReflectionTestClass>();
+		auto typeClass = Registry::Type<ReflectionTestClass>("Tests::ReflectionTestClass");
 		typeClass.Constructor<i32, String>();
 		typeClass.Attribute<TestAttribute>(10);
 		typeClass.Attribute<IncompleteAttr>();
 
 
 		TypeHandler* incompleteType = Registry::FindTypeByName("Tests::IncompleteType");
+        REQUIRE(incompleteType != nullptr);
 		CHECK(incompleteType->GetAttribute<TestAttribute>()->value == 20);
 		CHECK(incompleteType->GetTypeInfo().size == 0);
 
@@ -217,7 +218,7 @@ namespace
 	{
 		Engine::Init();
 		{
-			auto reflectionFunctions = Registry::Type<ReflectionFunctions>();
+			auto reflectionFunctions = Registry::Type<ReflectionFunctions>("Test::ReflectionFunctions");
 			reflectionFunctions.Function<&ReflectionFunctions::VoidFunc>("VoidFunc").Attribute<TestAttribute>(101).Attribute<OtherTestAttribute>("Test");
 			reflectionFunctions.Function<&ReflectionFunctions::ParamsRetFunc>("ParamsRetFunc").Attribute<TestAttribute>(202);
 			reflectionFunctions.Function<&ReflectionFunctions::StaticFunc>("StaticFunc");
@@ -241,6 +242,7 @@ namespace
 
 		typedef void(*FnVoidFunc)(const FunctionHandler* handler, VoidPtr instance);
 		FnVoidFunc func = reinterpret_cast<FnVoidFunc>(voidFunc->GetFunctionPointer());
+        REQUIRE(func);
 		func(voidFunc, &reflectionFunctions);
 		CHECK(reflectionFunctions.calls == 2);
 

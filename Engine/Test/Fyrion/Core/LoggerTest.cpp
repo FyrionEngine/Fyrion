@@ -41,7 +41,7 @@ namespace
 
         testSink.logCallback = [](LogLevel level, const StringView& logName, const StringView& message)
         {
-            CHECK(level == LogLevel_Info);
+            CHECK(level == LogLevel::Info);
             CHECK(logName == "TestLogger");
             CHECK(Contains(message, StringView{"test logger 123"}));
             executeCount++;

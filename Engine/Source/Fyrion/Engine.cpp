@@ -4,7 +4,6 @@
 
 namespace Fyrion
 {
-
     void RegistryShutdown();
 
     namespace
@@ -12,10 +11,8 @@ namespace Fyrion
         Logger& logger = Logger::GetLogger("Fyrion::Engine");
     }
 
-
     void Engine::Init()
     {
-
     }
 
     void Engine::Destroy()

@@ -8,18 +8,16 @@
 
 namespace Fyrion
 {
-    enum LogLevel_
+    enum class LogLevel
     {
-        LogLevel_Trace = 0,
-        LogLevel_Debug = 1,
-        LogLevel_Info = 2,
-        LogLevel_Warn = 3,
-        LogLevel_Error = 4,
-        LogLevel_Critical = 5,
-        LogLevel_Off = 6
+        Trace = 0,
+        Debug = 1,
+        Info = 2,
+        Warn = 3,
+        Error = 4,
+        Critical = 5,
+        Off = 6
     };
-
-    typedef u32 LogLevel;
 
     struct LogSink
     {
@@ -55,37 +53,37 @@ namespace Fyrion
         template<typename ...Args>
         inline void Trace(const fmt::format_string<Args...>& fmt, Args&& ...args)
         {
-            Log(LogLevel_Trace, fmt, Traits::Forward<Args>(args)...);
+            Log(LogLevel::Trace, fmt, Traits::Forward<Args>(args)...);
         }
 
         template<typename ...Args>
         inline void Debug(const fmt::format_string<Args...>& fmt, Args&& ...args)
         {
-            Log(LogLevel_Debug, fmt, Traits::Forward<Args>(args)...);
+            Log(LogLevel::Debug, fmt, Traits::Forward<Args>(args)...);
         }
 
         template<typename ...Args>
         inline void Info(const fmt::format_string<Args...>& fmt, Args&& ...args)
         {
-            Log(LogLevel_Info, fmt, Traits::Forward<Args>(args)...);
+            Log(LogLevel::Info, fmt, Traits::Forward<Args>(args)...);
         }
 
         template<typename ...Args>
         inline void Warn(const fmt::format_string<Args...>& fmt, Args&& ...args)
         {
-            Log(LogLevel_Warn, fmt, Traits::Forward<Args>(args)...);
+            Log(LogLevel::Warn, fmt, Traits::Forward<Args>(args)...);
         }
 
         template<typename ...Args>
         inline void Error(const fmt::format_string<Args...>& fmt, Args&& ...args)
         {
-            Log(LogLevel_Error, fmt, Traits::Forward<Args>(args)...);
+            Log(LogLevel::Error, fmt, Traits::Forward<Args>(args)...);
         }
 
         template<typename ...Args>
         inline void Critical(const fmt::format_string<Args...>& fmt, Args&& ...args)
         {
-            Log(LogLevel_Critical, fmt, Traits::Forward<Args>(args)...);
+            Log(LogLevel::Critical, fmt, Traits::Forward<Args>(args)...);
         }
 
         static Logger&  GetLogger(const StringView& name);

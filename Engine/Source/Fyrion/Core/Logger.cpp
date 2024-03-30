@@ -15,7 +15,7 @@ namespace Fyrion
         {
             HashMap<String, SharedPtr<Logger>>  loggers{};
             Array<LogSink*>                     sinks{};
-            LogLevel                            defaultLevel = LogLevel_Info;
+            LogLevel                            defaultLevel = LogLevel::Info;
         };
 
         LogContext& GetContext()
@@ -87,7 +87,7 @@ namespace Fyrion
         buffer.Append(":");
         Pad3(buffer, milliseconds);
         buffer += "] [";
-        buffer += levelDesc[level];
+        buffer += levelDesc[static_cast<usize>(level)];
         buffer += "] [";
         buffer += StringView(m_name);
         buffer += "] ";

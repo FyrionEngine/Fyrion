@@ -10,6 +10,18 @@ Files extracted from upstream source:
 
 - `doctest.h`
 
+## glfw
+- Upstream: https://github.com/glfw/glfw
+- Version: 3.4 (https://github.com/glfw/glfw/releases/download/3.4/glfw-3.4.zip, 2024)
+- License: zlib
+
+Files extracted from upstream source:
+- `include/*`
+- `src/*`
+- `CMakeLists.txt` (modified)
+- `LICENSE.md`
+
+
 ## fmt
 - Upstream: https://github.com/fmtlib/fmt
 - Version: 10.2.1 (e69e5f977d458f2650bb346dadf2ad30c5320281, 2024)

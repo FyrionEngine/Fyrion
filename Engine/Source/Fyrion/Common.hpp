@@ -21,6 +21,8 @@ namespace Fyrion
     typedef u64                 TypeID;
     typedef decltype(sizeof(0)) usize;
 
+    typedef f32                 Float;
+
     struct PlaceHolder
     {
     };

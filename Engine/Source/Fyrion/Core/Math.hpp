@@ -10,7 +10,44 @@ namespace Fyrion
         u32 height;
     };
 
+    struct Vec4
+    {
+        union
+        {
+            struct
+            {
+                union
+                {
+                    Float x, r, width;
+                };
 
+                union
+                {
+                    Float y, g, height;
+                };
+
+                union
+                {
+                    Float z, b;
+                };
+
+                union
+                {
+                    Float w, a;
+                };
+
+            };
+            Float c[4] = {0};
+        };
+    };
+
+    struct Rect
+    {
+        i32 x;
+        i32 y;
+        u32 width;
+        u32 height;
+    };
 
     namespace Math
     {

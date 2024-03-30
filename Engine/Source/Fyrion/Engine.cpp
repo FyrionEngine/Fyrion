@@ -2,6 +2,8 @@
 #include "Fyrion/Core/Logger.hpp"
 #include "Fyrion/Platform/PlatformTypes.hpp"
 #include "Fyrion/Platform/Platform.hpp"
+#include "Fyrion/Graphics/GraphicsTypes.hpp"
+#include "Fyrion/Graphics/Graphics.hpp"
 #include <iostream>
 
 namespace Fyrion
@@ -9,16 +11,24 @@ namespace Fyrion
     void PlatformInit();
     void PlatformShutdown();
 
+    void            GraphicsInit();
+    void            GraphicsCreateDevice(GPUAdapter adapter);
+    RenderCommands& GraphicsBeginFrame();
+    void            GraphicsEndFrame(Swapchain swapchain);
+    void GraphicsShutdown();
+
     void RegistryShutdown();
 
     namespace
     {
-        Logger& logger = Logger::GetLogger("Fyrion::Engine");
-        bool running = true;
-        Window window{};
-        f64 lastTime{};
-        f64 deltaTime{};
-        u64 frame{0};
+        Logger&     logger = Logger::GetLogger("Fyrion::Engine");
+        bool        running = true;
+        Window      window{};
+        Swapchain   swapchain{};
+        Vec4        clearColor = Vec4{0, 0, 0, 1};
+        f64         lastTime{};
+        f64         deltaTime{};
+        u64         frame{0};
     }
 
     void Engine::Init()
@@ -28,11 +38,13 @@ namespace Fyrion
 
     void Engine::Init(i32 argc, char** argv)
     {
-        PlatformInit();
+
     }
 
     void Engine::CreateContext(const EngineContextCreation& contextCreation)
     {
+        PlatformInit();
+
         WindowFlags windowFlags = WindowFlags::None;
         if (contextCreation.maximize)
         {
@@ -44,7 +56,15 @@ namespace Fyrion
             windowFlags |= WindowFlags::Fullscreen;
         }
 
+        GraphicsInit();
+        GraphicsCreateDevice(GPUAdapter{});
+
         window = Platform::CreateWindow(contextCreation.title, contextCreation.resolution, windowFlags);
+
+        swapchain = Graphics::CreateSwapchain(SwapchainCreation{
+            .window = window,
+            .vsync = true
+        });
     }
 
     void Engine::Run()
@@ -68,8 +88,39 @@ namespace Fyrion
                 }
             }
 
+            Extent extent = Platform::GetWindowExtent(window);
+
+            RenderCommands& cmd = GraphicsBeginFrame();
+            RenderPass renderPass = Graphics::AcquireNextRenderPass(swapchain);
+
+            cmd.BeginRenderPass(BeginRenderPassInfo{
+                .renderPass = renderPass,
+                .clearValues = {&clearColor, 1}
+            });
+
+            ViewportInfo viewportInfo{};
+            viewportInfo.x = 0.;
+            viewportInfo.y = 0.;
+            viewportInfo.width = (f32) extent.width;
+            viewportInfo.height = (f32) extent.height;
+            viewportInfo.maxDepth = 0.;
+            viewportInfo.minDepth = 1.;
+            cmd.SetViewport(viewportInfo);
+            cmd.SetScissor(Rect{.x= 0, .y = 0, .width = extent.width, .height = extent.height});
+
+            //Draw to swapchain.
+
+            cmd.EndRenderPass();
+
+            GraphicsEndFrame(swapchain);
             frame++;
         }
+
+        Graphics::DestroySwapchain(swapchain);
+        Platform::DestroyWindow(window);
+
+        GraphicsShutdown();
+        PlatformShutdown();
     }
 
     void Engine::Shutdown()
@@ -79,7 +130,6 @@ namespace Fyrion
 
     void Engine::Destroy()
     {
-        PlatformShutdown();
         RegistryShutdown();
     }
 }

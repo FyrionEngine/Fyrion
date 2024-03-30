@@ -9,6 +9,19 @@ int main(i32 argc, char** argv)
     StdOutSink stdOutSink{};
     Logger::RegisterSink(stdOutSink);
 
+    Engine::Init(argc, argv);
 
-    return Engine::Run(argc, argv);
+    EngineContextCreation contextCreation{
+        .title = "Fyrion Engine",
+        .resolution = {1920, 1080},
+        .maximize = true,
+        .headless = false,
+    };
+
+    Engine::CreateContext(contextCreation);
+
+    Engine::Run();
+    Engine::Destroy();
+
+    return 0;
 }

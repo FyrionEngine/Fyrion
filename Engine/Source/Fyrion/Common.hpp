@@ -56,12 +56,14 @@ inline void operator delete(void*, Fyrion::PlaceHolder, Fyrion::VoidPtr) noexcep
     #define FY_FINLINE __forceinline
     #define FY_SHARED_EXT ".dll"
     #define FY_WIN
+    #define FY_DESKTOP
 #elif __linux__
     #define FY_API __attribute__ ((visibility ("default")))
     #define FY_PATH_SEPARATOR '/'
     #define FY_SHARED_EXT ".so"
     #define FY_FINLINE inline
     #define FY_LINUX
+    #define FY_DESKTOP  //TODO android?
 #elif __APPLE__
     #define FY_API
     #define FY_PATH_SEPARATOR '/'
@@ -71,6 +73,7 @@ inline void operator delete(void*, Fyrion::PlaceHolder, Fyrion::VoidPtr) noexcep
     #if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
         #define FY_IOS
     #elif TARGET_OS_MAC
+        #define FY_DESKTOP
         #define FY_MACOS
     #endif
 #endif
@@ -145,6 +148,18 @@ inline void operator delete(void*, Fyrion::PlaceHolder, Fyrion::VoidPtr) noexcep
 # define F32_LOW         (-(F32_MAX))
 # define F64_LOW         (-(F64_MAX))
 #endif
+
+#define ENUM_FLAGS(ENUMNAME, ENUMTYPE) \
+inline ENUMNAME& operator |= (ENUMNAME& a, ENUMNAME b)  noexcept { return (ENUMNAME&)(((ENUMTYPE&)a) |= ((ENUMTYPE)b)); } \
+inline ENUMNAME& operator &= (ENUMNAME& a, ENUMNAME b)  noexcept { return (ENUMNAME&)(((ENUMTYPE&)a) &= ((ENUMTYPE)b)); } \
+inline ENUMNAME& operator ^= (ENUMNAME& a, ENUMNAME b)  noexcept { return (ENUMNAME&)(((ENUMTYPE&)a) ^= ((ENUMTYPE)b)); } \
+inline ENUMNAME& operator <<= (ENUMNAME& a, ENUMTYPE b)  noexcept { return (ENUMNAME&)(((ENUMTYPE&)a) <<= ((ENUMTYPE)b)); } \
+inline ENUMNAME& operator >>= (ENUMNAME& a, ENUMTYPE b)  noexcept { return (ENUMNAME&)(((ENUMTYPE&)a) >>= ((ENUMTYPE)b)); } \
+inline ENUMNAME operator | (ENUMNAME a, ENUMNAME b)    noexcept { return ENUMNAME(((ENUMTYPE)a) | ((ENUMTYPE)b));        } \
+inline ENUMNAME operator & (ENUMNAME a, ENUMNAME b)    noexcept { return ENUMNAME(((ENUMTYPE)a) & ((ENUMTYPE)b));        } \
+inline bool   operator && (ENUMNAME a, ENUMNAME b)    noexcept { return ((ENUMTYPE)a & ((ENUMTYPE)b));            } \
+inline ENUMNAME operator ~ (ENUMNAME a)                noexcept { return ENUMNAME(~((ENUMTYPE)a));                        } \
+inline ENUMNAME operator ^ (ENUMNAME a, ENUMNAME b)    noexcept { return ENUMNAME(((ENUMTYPE)a) ^ (ENUMTYPE)b);        }           \
 
 //TODO
 #define FY_ASSERT(...)

@@ -59,3 +59,29 @@ Additional Info:
 - files are converted and heavily modified inside Engine/Source/Fyrion/Core
 - merge included from https://github.com/mendsley/tinystl/pull/11
 
+## vma
+- Upstream: https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
+- Version: git(19b940e864bd3a5afb3c79e3c6788869d01a19eb, 2024)
+- License: MIT
+
+Files extracted from upstream source:
+- `include/*`
+
+## volk
+- Upstream: https://github.com/zeux/volk
+- Version: git(a2ca5374023899c20d100dda86b8556b4188b952, 2024)
+- License: MIT
+ 
+Files extracted from upstream source:
+- `volk.h`
+- `volk.c`
+- `LICENSE.md`
+
+## vulkan
+- Upstream: https://github.com/KhronosGroup/Vulkan-Headers
+- Version: vulkan-sdk-1.3.280.0 (577baa05033cf1d9236b3d078ca4b3269ed87a2b, 2024)
+  License: Apache 2.0
+- 
+  Files extracted from upstream source:
+- `include/*`
+- `LICENSE.txt`

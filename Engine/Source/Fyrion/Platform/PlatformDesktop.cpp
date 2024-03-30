@@ -1,14 +1,21 @@
 #include "Platform.hpp"
+
+#ifdef FY_DESKTOP
+
+#define GLFW_INCLUDE_VULKAN
+#define VK_NO_PROTOTYPES
 #include "GLFW/glfw3.h"
 #include "Fyrion/Core/Logger.hpp"
 
-#ifdef FY_DESKTOP
+#include "Fyrion/Core/Span.hpp"
+#include "Fyrion/Graphics/Device/Vulkan/VulkanPlatform.hpp"
 
 namespace Fyrion
 {
     namespace
     {
         Logger& logger = Logger::GetLogger("Fyrion::Platform");
+        PFN_vkGetInstanceProcAddr vulkanLoader = nullptr;
     }
 
     namespace Platform
@@ -25,6 +32,11 @@ namespace Fyrion
             logger.Error("Error in initialize glfw");
             return;
         }
+
+        glfwInitVulkanLoader([](VkInstance instance, const char* procName)
+        {
+            return vulkanLoader(instance, procName);
+        });
 
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
@@ -122,6 +134,29 @@ namespace Fyrion
     f64 Platform::GetElapsedTime()
     {
         return glfwGetTime();
+    }
+
+    //vulkan
+    void Platform::SetVulkanLoader(PFN_vkGetInstanceProcAddr procAddr)
+    {
+        vulkanLoader = procAddr;
+    }
+
+    Span<const char*> Platform::GetRequiredInstanceExtensions()
+    {
+        u32 count{};
+        const char** extensions = glfwGetRequiredInstanceExtensions(&count);
+        return {extensions, extensions + count};
+    }
+
+    bool Platform::GetPhysicalDevicePresentationSupport(VkInstance instance, VkPhysicalDevice device, u32 queueFamily)
+    {
+        return glfwGetPhysicalDevicePresentationSupport(instance, device, queueFamily) == GLFW_TRUE;
+    }
+
+    VkResult Platform::CreateWindowSurface(Window window, VkInstance instance, VkSurfaceKHR* surface)
+    {
+        return glfwCreateWindowSurface(instance, (GLFWwindow*)window.handler, nullptr, surface);
     }
 
 }

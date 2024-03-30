@@ -23,6 +23,18 @@ namespace Fyrion
 
         virtual ~PtrBase() noexcept
         {
+            RefDecrese();
+        }
+
+        i32 RefCount() const
+        {
+            return *m_references;
+        }
+
+    protected:
+
+        void RefDecrese()
+        {
             if (m_references != nullptr)
             {
                 *this->m_references = *this->m_references - 1;
@@ -36,15 +48,12 @@ namespace Fyrion
             }
         }
 
-        i32 RefCount() const
-        {
-            return *m_references;
-        }
 
-    protected:
         template<class Type2>
         void MoveConstructorFrom(PtrBase<Type2>&& right) noexcept
         {
+            RefDecrese();
+
             this->m_instance   = right.m_instance;
             this->m_references = right.m_references;
 
@@ -55,6 +64,8 @@ namespace Fyrion
         template<class Type2>
         void CopyConstructorFrom(const PtrBase<Type2>& right)
         {
+            RefDecrese();
+
             this->m_instance   = right.m_instance;
             this->m_references = right.m_references;
             if (this->m_references != nullptr)
@@ -66,6 +77,8 @@ namespace Fyrion
         template<class Type2>
         void AliasConstructFrom(const PtrBase<Type2>& right, Type* p_instance)
         {
+            RefDecrese();
+
             this->m_instance   = p_instance;
             this->m_references = right.m_references;
             if (this->m_references != nullptr)
@@ -77,6 +90,8 @@ namespace Fyrion
         template<class Type2, typename Alloc2>
         void AliasConstructFrom(PtrBase<Type2>&& right, Type* p_instance)
         {
+            RefDecrese();
+
             this->m_instance   = p_instance;
             this->m_references = right.m_references;
 

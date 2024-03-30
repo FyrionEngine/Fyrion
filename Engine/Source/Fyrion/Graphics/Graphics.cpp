@@ -19,12 +19,11 @@ namespace Fyrion
     void GraphicsInit()
     {
         renderDevice = CreateVulkanDevice();
-        renderDevice->Init();
     }
 
     void GraphicsShutdown()
     {
-        renderDevice = nullptr;
+        renderDevice = {};
     }
 
     void GraphicsCreateDevice(GPUAdapter adapter)
@@ -34,12 +33,12 @@ namespace Fyrion
 
     RenderCommands& GraphicsBeginFrame()
     {
-        return renderDevice->GraphicsBeginFrame();
+        return renderDevice->BeginFrame();
     }
 
     void GraphicsEndFrame(Swapchain swapchain)
     {
-        renderDevice->GraphicsEndFrame(swapchain);
+        renderDevice->EndFrame(swapchain);
     }
 
     Span<GPUAdapter> Graphics::GetAdapters()

@@ -121,5 +121,13 @@ namespace Fyrion
         virtual void ResourceBarrier(const ResourceBarrierInfo& resourceBarrierInfo) = 0;
     };
 
+    struct DeviceFeatures
+    {
+        bool raytraceSupported{};
+        bool bindlessSupported{};
+        bool multiDrawIndirectSupported{};
+    };
+
+
 
 }

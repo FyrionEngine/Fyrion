@@ -6,6 +6,18 @@ namespace Fyrion
 
     VulkanCommands::VulkanCommands(VulkanDevice& vulkanDevice) : vulkanDevice(vulkanDevice)
     {
+        VkCommandPoolCreateInfo commandPoolInfo = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
+        commandPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+        commandPoolInfo.queueFamilyIndex = vulkanDevice.graphicsFamily;
+        vkCreateCommandPool(vulkanDevice.device, &commandPoolInfo, nullptr, &commandPool);
+
+        VkCommandBufferAllocateInfo tempAllocInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
+        tempAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        tempAllocInfo.commandPool = commandPool;
+        tempAllocInfo.commandBufferCount = 1;
+
+        vkAllocateCommandBuffers(vulkanDevice.device, &tempAllocInfo, &commandBuffer);
+
     }
 
     void VulkanCommands::BeginRenderPass(const BeginRenderPassInfo& beginRenderPassInfo)

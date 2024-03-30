@@ -49,6 +49,7 @@ inline void operator delete(void*, Fyrion::PlaceHolder, Fyrion::VoidPtr) noexcep
 
 //--general defines
 #define FY_STRING_BUFFER_SIZE 18
+#define FY_FRAMES_IN_FLIGHT 2
 
 
 //---platform defines
@@ -163,5 +164,11 @@ inline bool   operator && (ENUMNAME a, ENUMNAME b)    noexcept { return ((ENUMTY
 inline ENUMNAME operator ~ (ENUMNAME a)                noexcept { return ENUMNAME(~((ENUMTYPE)a));                        } \
 inline ENUMNAME operator ^ (ENUMNAME a, ENUMNAME b)    noexcept { return ENUMNAME(((ENUMTYPE)a) ^ (ENUMTYPE)b);        }           \
 
-//TODO
-#define FY_ASSERT(...)
+
+#ifdef NDEBUG
+#  define FY_ASSERT(condition, message) ((void)0)
+#else
+#  include <cassert>
+#  define FY_ASSERT(condition, message) assert(condition && message)
+#  define FY_DEBUG
+#endif

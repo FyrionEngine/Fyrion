@@ -2,6 +2,8 @@
 
 #include "Fyrion/Graphics/GraphicsTypes.hpp"
 
+#include "volk.h"
+
 namespace Fyrion
 {
     class VulkanDevice;
@@ -9,6 +11,9 @@ namespace Fyrion
     struct VulkanCommands : RenderCommands
     {
         VulkanDevice& vulkanDevice;
+        VkCommandPool commandPool{};
+        VkCommandBuffer commandBuffer{};
+
         VulkanCommands(VulkanDevice& vulkanDevice);
 
         void BeginRenderPass(const BeginRenderPassInfo& beginRenderPassInfo) override;

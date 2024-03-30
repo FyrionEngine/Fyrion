@@ -1529,7 +1529,7 @@ typedef struct VmaDefragmentationPassMoveInfo
     1. Create a new buffer/image in the place pointed by VmaDefragmentationMove::dstMemory + VmaDefragmentationMove::dstOffset.
     2. Copy data from the VmaDefragmentationMove::srcAllocation e.g. using `vkCmdCopyBuffer`, `vkCmdCopyImage`.
     3. Make sure these commands finished executing on the GPU.
-    4. Destroy the old buffer/image.
+    4. Shutdown the old buffer/image.
 
     Only then you can finish defragmentation pass by calling vmaEndDefragmentationPass().
     After this call, the allocation will point to the new place in memory.
@@ -1538,7 +1538,7 @@ typedef struct VmaDefragmentationPassMoveInfo
 
     Alternatively, if you decide you want to completely remove the allocation:
 
-    1. Destroy its buffer/image.
+    1. Shutdown its buffer/image.
     2. Set VmaDefragmentationMove::operation to #VMA_DEFRAGMENTATION_MOVE_OPERATION_DESTROY.
 
     Then, after vmaEndDefragmentationPass() the allocation will be freed.
@@ -17488,7 +17488,7 @@ for(;;)
     // Make sure the copy commands finished executing.
     vkWaitForFences(...);
 
-    // Destroy old buffers/images bound with pass.pMoves[i].srcAllocation.
+    // Shutdown old buffers/images bound with pass.pMoves[i].srcAllocation.
     for(uint32_t i = 0; i < pass.moveCount; ++i)
     {
         // ...
@@ -17524,7 +17524,7 @@ In each pass:
    - Inspect the returned list of allocations to be moved.
    - Create new buffers/images and bind them at the returned destination temporary allocations.
    - Copy data from source to destination resources if necessary.
-   - Destroy the source buffers/images, but NOT their allocations.
+   - Shutdown the source buffers/images, but NOT their allocations.
 3. vmaEndDefragmentationPass() function call:
    - Frees the source memory reserved for the allocations that are moved.
    - Modifies source #VmaAllocation objects that are moved to point to the destination reserved memory.

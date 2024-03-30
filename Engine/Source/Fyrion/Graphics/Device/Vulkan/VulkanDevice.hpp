@@ -8,6 +8,7 @@
 #include "volk.h"
 #include "vk_mem_alloc.h"
 #include "Fyrion/Core/FixedArray.hpp"
+#include "VulkanTypes.hpp"
 
 namespace Fyrion
 {
@@ -61,6 +62,10 @@ namespace Fyrion
         RenderCommands&     BeginFrame() override;
         RenderPass          AcquireNextRenderPass(Swapchain swapchain) override;
         void                EndFrame(Swapchain swapchain) override;
+
+
+        bool                CreateSwapchain(VulkanSwapchain* vulkanSwapchain);
+        void                DestroySwapchain(VulkanSwapchain* vulkanSwapchain);
     };
 
 

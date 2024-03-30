@@ -17,23 +17,75 @@ namespace Fyrion
         tempAllocInfo.commandBufferCount = 1;
 
         vkAllocateCommandBuffers(vulkanDevice.device, &tempAllocInfo, &commandBuffer);
+    }
 
+    void VulkanCommands::Begin()
+    {
+        VkCommandBufferBeginInfo beginInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+        vkBeginCommandBuffer(commandBuffer, &beginInfo);
+    }
+
+    void VulkanCommands::End()
+    {
+        vkEndCommandBuffer(commandBuffer);
     }
 
     void VulkanCommands::BeginRenderPass(const BeginRenderPassInfo& beginRenderPassInfo)
     {
+        VulkanRenderPass* vulkanRenderPass = static_cast<VulkanRenderPass*>(beginRenderPassInfo.renderPass.handler);
 
+        VkRenderPassBeginInfo renderPassBeginInfo{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
+        renderPassBeginInfo.renderPass = vulkanRenderPass->renderPass;
+        renderPassBeginInfo.framebuffer = vulkanRenderPass->framebuffer;
+        renderPassBeginInfo.renderArea.offset = {0, 0};
+        renderPassBeginInfo.renderArea.extent = {vulkanRenderPass->extent.width, vulkanRenderPass->extent.height};
+
+        for (int i = 0; i < vulkanRenderPass->clearValues.Size(); ++i)
+        {
+            VkClearValue& clearValue = vulkanRenderPass->clearValues[i];
+            if (beginRenderPassInfo.clearValues.Size() > i)
+            {
+                Vec4 color = beginRenderPassInfo.clearValues[i];
+                clearValue.color = {color.x, color.y, color.z, color.w};
+            }
+            else
+            {
+                clearValue.depthStencil = {.depth = beginRenderPassInfo.depthStencil.depth, .stencil = beginRenderPassInfo.depthStencil.stencil};
+            }
+        }
+
+        renderPassBeginInfo.clearValueCount = vulkanRenderPass->clearValues.Size();
+        renderPassBeginInfo.pClearValues = vulkanRenderPass->clearValues.Data();
+        vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
     }
 
     void VulkanCommands::EndRenderPass()
     {
-
+        vkCmdEndRenderPass(commandBuffer);
     }
 
     void VulkanCommands::SetViewport(const ViewportInfo& viewportInfo)
     {
-
+        VkViewport vkViewport;
+        vkViewport.x = viewportInfo.x;
+        vkViewport.y = viewportInfo.y;
+        vkViewport.width = viewportInfo.width;
+        vkViewport.height = viewportInfo.height;
+        vkViewport.minDepth = viewportInfo.minDepth;
+        vkViewport.maxDepth = viewportInfo.maxDepth;
+        vkCmdSetViewport(commandBuffer, 0, 1, &vkViewport);
     }
+
+    void VulkanCommands::SetScissor(const Rect& rect)
+    {
+        VkRect2D rect2D;
+        rect2D.offset.x = static_cast<i32>(rect.x);
+        rect2D.offset.y = static_cast<i32>(rect.y);
+        rect2D.extent.width = static_cast<u32>(rect.width);
+        rect2D.extent.height = static_cast<u32>(rect.height);
+        vkCmdSetScissor(commandBuffer, 0, 1, &rect2D);
+    }
+
 
     void VulkanCommands::BindVertexBuffer(const GPUBuffer& gpuBuffer)
     {
@@ -81,11 +133,6 @@ namespace Fyrion
     }
 
     void VulkanCommands::TraceRays(PipelineState pipeline, u32 x, u32 y, u32 z)
-    {
-
-    }
-
-    void VulkanCommands::SetScissor(const Rect& rect)
     {
 
     }

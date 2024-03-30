@@ -91,6 +91,8 @@ namespace Fyrion
             Extent extent = Platform::GetWindowExtent(window);
 
             RenderCommands& cmd = GraphicsBeginFrame();
+            cmd.Begin();
+
             RenderPass renderPass = Graphics::AcquireNextRenderPass(swapchain);
 
             cmd.BeginRenderPass(BeginRenderPassInfo{
@@ -111,6 +113,7 @@ namespace Fyrion
             //Draw to swapchain.
 
             cmd.EndRenderPass();
+            cmd.End();
 
             GraphicsEndFrame(swapchain);
             frame++;

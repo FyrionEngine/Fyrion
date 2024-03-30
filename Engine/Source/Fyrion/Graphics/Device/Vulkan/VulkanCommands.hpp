@@ -16,6 +16,8 @@ namespace Fyrion
 
         VulkanCommands(VulkanDevice& vulkanDevice);
 
+        void Begin() override;
+        void End() override;
         void BeginRenderPass(const BeginRenderPassInfo& beginRenderPassInfo) override;
         void EndRenderPass() override;
         void SetViewport(const ViewportInfo& viewportInfo) override;

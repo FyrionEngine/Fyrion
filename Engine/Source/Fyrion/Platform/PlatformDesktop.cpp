@@ -39,6 +39,7 @@ namespace Fyrion
         });
 
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
         Platform::InitStyle();
     }

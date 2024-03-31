@@ -7,15 +7,13 @@
 namespace Fyrion
 {
 
-    enum AccessMode_
+    enum class AccessMode
     {
-        AccessMode_None            = 0,
-        AccessMode_ReadOnly        = 1,
-        AccessMode_WriteOnly       = 2,
-        AccessMode_ReadAndWrite    = 3
+        None            = 0,
+        ReadOnly        = 1,
+        WriteOnly       = 2,
+        ReadAndWrite    = 3
     };
-
-    typedef u32 AccessMode;
 
 
     FY_HANDLER(FileHandler);

@@ -236,4 +236,14 @@ namespace Fyrion
 		return Hash<TValue>::Value(value);
 	}
 
+    [[nodiscard]] constexpr usize operator ""_h (const char* str, usize size) noexcept
+    {
+        usize hash = 0;
+        for (const char* c = str; *c != '\0'; ++c)
+        {
+            hash = *str + (hash << 6) + (hash << 16) - hash;
+        }
+        return hash;
+    }
+
 }

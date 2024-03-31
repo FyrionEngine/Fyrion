@@ -120,19 +120,19 @@ namespace Fyrion
     {
         DWORD dwShareMode = 0;
         DWORD dwDesiredAccess = 0;
-        if (accessMode == AccessMode_ReadOnly)
+        if (accessMode == AccessMode::ReadOnly)
         {
             dwDesiredAccess = GENERIC_READ;
             dwShareMode = OPEN_EXISTING;
         }
 
-        if (accessMode == AccessMode_WriteOnly)
+        if (accessMode == AccessMode::WriteOnly)
         {
             dwDesiredAccess = GENERIC_WRITE;
             dwShareMode = CREATE_ALWAYS;
         }
 
-        if (accessMode == AccessMode_ReadAndWrite)
+        if (accessMode == AccessMode::ReadAndWrite)
         {
             dwDesiredAccess = GENERIC_READ | GENERIC_WRITE;
             dwShareMode = CREATE_NEW;

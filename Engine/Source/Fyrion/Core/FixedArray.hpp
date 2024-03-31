@@ -19,7 +19,7 @@ namespace Fyrion
 
 		constexpr FixedArray(std::initializer_list<T> initializerList)
 		{
-			SK_ASSERT(initializerList.size() <= bufferSize, "initializerList larger than bufferSize");
+			FY_ASSERT(initializerList.size() <= bufferSize, "initializerList larger than bufferSize");
 			auto      dest = begin();
 			for (auto it   = initializerList.begin(); it != initializerList.end(); ++it)
 			{

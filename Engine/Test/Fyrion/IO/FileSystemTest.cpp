@@ -28,7 +28,7 @@ namespace
         String testText = "texttexttext";
 
         {
-            FileHandler fileHandler = FileSystem::OpenFile(path, AccessMode_WriteOnly);
+            FileHandler fileHandler = FileSystem::OpenFile(path, AccessMode::WriteOnly);
             CHECK(fileHandler);
             CHECK(FileSystem::GetFileSize(fileHandler) == 0);
             FileSystem::WriteFile(fileHandler, testText.CStr(), testText.Size());
@@ -36,7 +36,7 @@ namespace
         }
 
         {
-            FileHandler fileHandler = FileSystem::OpenFile(path, AccessMode_ReadOnly);
+            FileHandler fileHandler = FileSystem::OpenFile(path, AccessMode::ReadOnly);
             CHECK(fileHandler);
             usize size = FileSystem::GetFileSize(fileHandler);
             CHECK(size == testText.Size());

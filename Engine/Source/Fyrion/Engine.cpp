@@ -15,9 +15,11 @@ namespace Fyrion
     void            GraphicsCreateDevice(GPUAdapter adapter);
     RenderCommands& GraphicsBeginFrame();
     void            GraphicsEndFrame(Swapchain swapchain);
-    void GraphicsShutdown();
+    void            GraphicsShutdown();
 
     void RegistryShutdown();
+    void EventShutdown();
+
 
     namespace
     {
@@ -134,5 +136,6 @@ namespace Fyrion
     void Engine::Destroy()
     {
         RegistryShutdown();
+        EventShutdown();
     }
 }

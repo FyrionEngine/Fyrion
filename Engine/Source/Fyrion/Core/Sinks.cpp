@@ -3,9 +3,15 @@
 
 namespace Fyrion
 {
+
+    void StdOutSink::SetLevel(LogLevel level)
+    {
+        m_logLevel = level;
+    }
+
     bool StdOutSink::CanLog(LogLevel level)
     {
-        return true;
+        return m_logLevel < level;
     }
 
     void StdOutSink::DoLog(LogLevel level, const StringView& logName, const StringView& message)

@@ -20,6 +20,9 @@ namespace Fyrion
     void RegistryShutdown();
     void EventShutdown();
 
+    void RepositoryInit();
+    void RepositoryShutdown();
+
 
     namespace
     {
@@ -40,7 +43,7 @@ namespace Fyrion
 
     void Engine::Init(i32 argc, char** argv)
     {
-
+        RepositoryInit();
     }
 
     void Engine::CreateContext(const EngineContextCreation& contextCreation)
@@ -135,6 +138,7 @@ namespace Fyrion
 
     void Engine::Destroy()
     {
+        RepositoryShutdown();
         RegistryShutdown();
         EventShutdown();
     }

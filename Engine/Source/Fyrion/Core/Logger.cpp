@@ -139,9 +139,20 @@ namespace Fyrion
         return *it->second;
     }
 
+    void Logger::SetDefaultLevel(LogLevel logLevel)
+    {
+        GetContext().defaultLevel = logLevel;
+    }
+
     void Logger::RegisterSink(LogSink& logSink)
     {
         GetContext().sinks.EmplaceBack(&logSink);
+    }
+
+    void Logger::UnregisterSink(LogSink& logSink)
+    {
+        auto& sinks = GetContext().sinks;
+        sinks.Erase(std::find(sinks.begin(), sinks.end(), &logSink), sinks.end());
     }
 
     void Logger::Reset()
@@ -151,6 +162,7 @@ namespace Fyrion
         logContext.sinks.ShrinkToFit();
         logContext.loggers.Clear();
     }
+
 
 
 }

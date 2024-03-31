@@ -44,6 +44,15 @@ namespace Fyrion
         Span(T* first, usize size) : m_first(first), m_last(first + size)
         {}
 
+//        Span(const std::initializer_list<T>& initializerList) : m_first(initializerList.begin()), m_last(initializerList.end())
+//        {
+//        };
+
+        Span(std::initializer_list<T> initializerList) : m_first((T*) initializerList.begin()), m_last((T*) initializerList.end())
+        {
+
+        };
+
         constexpr const T* Data() const
         {
             return begin();

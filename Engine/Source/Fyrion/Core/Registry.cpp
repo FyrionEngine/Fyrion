@@ -14,7 +14,7 @@ namespace Fyrion
         HashMap<String, SharedPtr<FunctionHandler>>         functionsByName{};
         HashMap<TypeID, Array<TypeHandler*>>                typesByAttribute{};
         HashMap<TypeID, Array<FunctionHandler*>>            functionsByAttribute{};
-        Logger&                                             logger = Logger::GetLogger("Fyrion::Registry", LogLevel::Debug);
+        Logger&                                             logger = Logger::GetLogger("Fyrion::Registry");
     }
 
     ParamHandler::ParamHandler(usize index, const FieldInfo& fieldInfo)

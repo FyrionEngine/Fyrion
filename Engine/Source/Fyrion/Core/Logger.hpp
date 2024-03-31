@@ -21,6 +21,7 @@ namespace Fyrion
 
     struct LogSink
     {
+        virtual void SetLevel(LogLevel level) = 0;
         virtual bool CanLog(LogLevel level) = 0;
         virtual void DoLog(LogLevel level, const StringView& logName, const StringView& message) = 0;
     };
@@ -89,6 +90,8 @@ namespace Fyrion
         static Logger&  GetLogger(const StringView& name);
         static Logger&  GetLogger(const StringView& name, LogLevel logLevel);
         static void     RegisterSink(LogSink& logSink);
+        static void     UnregisterSink(LogSink& logSink);
+        static void     SetDefaultLevel(LogLevel logLevel);
         static void     Reset();
 
     private:

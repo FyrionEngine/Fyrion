@@ -18,6 +18,10 @@ namespace
     {
         FnLogCallback logCallback{};
 
+        void SetLevel(LogLevel level) override
+        {
+
+        }
 
         bool CanLog(LogLevel level) override
         {
@@ -37,7 +41,7 @@ namespace
         TestSink testSink{};
         Logger::RegisterSink(testSink);
 
-        Logger& logger = Logger::GetLogger("TestLogger");
+        Logger& logger = Logger::GetLogger("TestLogger", LogLevel::Info);
 
         testSink.logCallback = [](LogLevel level, const StringView& logName, const StringView& message)
         {
@@ -52,7 +56,7 @@ namespace
         logger.Debug("this should not run");
         CHECK(executeCount == 1);
 
-        Logger::Reset();
+        Logger::UnregisterSink(testSink);
     }
 
 

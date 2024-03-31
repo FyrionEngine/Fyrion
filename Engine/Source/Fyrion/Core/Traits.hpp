@@ -103,6 +103,9 @@ namespace Fyrion::Traits
     template<class T, T Size>
     using MakeIntegerSequence = std::make_integer_sequence<T, Size>;
 
+    template<class T>
+    constexpr bool IsEnum = std::is_enum_v<T>;
+
     template<class T, class = void>
     struct AddReference
     { // add reference (non-referenceable type)

@@ -4,6 +4,7 @@
 #include "Fyrion/Platform/Platform.hpp"
 #include "Fyrion/Graphics/GraphicsTypes.hpp"
 #include "Fyrion/Graphics/Graphics.hpp"
+#include "TypeRegister.hpp"
 #include <iostream>
 
 namespace Fyrion
@@ -44,6 +45,7 @@ namespace Fyrion
     void Engine::Init(i32 argc, char** argv)
     {
         RepositoryInit();
+        TypeRegister();
     }
 
     void Engine::CreateContext(const EngineContextCreation& contextCreation)

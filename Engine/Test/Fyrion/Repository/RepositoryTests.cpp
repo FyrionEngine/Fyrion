@@ -2,9 +2,7 @@
 
 #include "Fyrion/Repository/Repository.hpp"
 #include "Fyrion/Core/String.hpp"
-#include "Fyrion/Core/Logger.hpp"
 #include "Fyrion/Engine.hpp"
-#include "Fyrion/Core/Sinks.hpp"
 
 using namespace Fyrion;
 
@@ -22,9 +20,6 @@ namespace
 
     TEST_CASE("Repository::Basics")
     {
-        StdOutSink sink{};
-        Logger::RegisterSink(sink);
-
         Engine::Init();
 
         ResourceTypeBuilder<TestResource>::Builder()
@@ -35,8 +30,9 @@ namespace
             .Stream<TestResource::Stream>("Stream")
             .Build();
 
-        Engine::Destroy();
-        Logger::Reset();
+        RID testResource = Repository::CreateResource<TestResource>();
+        CHECK(testResource);
 
+        Engine::Destroy();
     }
 }

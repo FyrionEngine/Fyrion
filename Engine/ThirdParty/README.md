@@ -1,5 +1,13 @@
 # Third party libraries
 
+## concurrentqueue
+- Upstream https://github.com/cameron314/concurrentqueue
+- Version v1.0.4 (6dd38b8a1dbaa7863aa907045f32308a56a6ff5d, 2023)
+- License: Simplified BSD License
+
+Files extracted from upstream source:
+- `concurrentqueue.h`
+- `LICENSE.md`
 
 ## doctest
 - Upstream: https://github.com/onqtam/doctest

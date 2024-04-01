@@ -5,6 +5,8 @@ file(GLOB_RECURSE FYRION_ENGINE_SOURCES Source/*.hpp Source/*.cpp Source/*.h Sou
 add_library(FyrionEngine SHARED ${FYRION_ENGINE_SOURCES})
 
 target_include_directories(FyrionEngine PUBLIC Source)
+target_include_directories(FyrionEngine PUBLIC Thirdparty/concurrentqueue)
+
 target_compile_definitions(FyrionEngine PUBLIC FMT_LIB_EXPORT=1)
 
 target_link_libraries(FyrionEngine PRIVATE mimalloc glfw vma volk vulkan-sdk)

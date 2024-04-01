@@ -41,6 +41,11 @@ namespace Fyrion
         };
     };
 
+    inline bool operator==(const Vec4& l, const Vec4& r)
+    {
+        return l.x == r.x && l.y == r.y && l.z == r.z && l.w == r.w;
+    }
+
     struct Rect
     {
         i32 x;

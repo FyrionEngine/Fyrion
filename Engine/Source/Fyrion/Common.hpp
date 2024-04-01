@@ -163,8 +163,8 @@ inline ENUMNAME operator | (ENUMNAME a, ENUMNAME b)    noexcept { return ENUMNAM
 inline ENUMNAME operator & (ENUMNAME a, ENUMNAME b)    noexcept { return ENUMNAME(((ENUMTYPE)a) & ((ENUMTYPE)b));        } \
 inline bool   operator && (ENUMNAME a, ENUMNAME b)    noexcept { return ((ENUMTYPE)a & ((ENUMTYPE)b));            } \
 inline ENUMNAME operator ~ (ENUMNAME a)                noexcept { return ENUMNAME(~((ENUMTYPE)a));                        } \
-inline ENUMNAME operator ^ (ENUMNAME a, ENUMNAME b)    noexcept { return ENUMNAME(((ENUMTYPE)a) ^ (ENUMTYPE)b);        }           \
-
+inline ENUMNAME operator ^ (ENUMNAME a, ENUMNAME b)    noexcept { return ENUMNAME(((ENUMTYPE)a) ^ (ENUMTYPE)b);        }  \
+//inline ENUMNAME operator ENUMTYPE (ENUMNAME a)    noexcept { return static_cast<ENUMTYPE>(a); }
 
 #ifdef NDEBUG
 #  define FY_ASSERT(condition, message) ((void)0)

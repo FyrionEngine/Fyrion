@@ -12,6 +12,8 @@
 #include "Fyrion/Core/HashSet.hpp"
 #include "ResourceObject.hpp"
 
+#include "concurrentqueue.h"
+
 #define PAGE(value)    u32((value)/FY_REPO_PAGE_SIZE)
 #define OFFSET(value)  (u32)((value) & (FY_REPO_PAGE_SIZE - 1))
 
@@ -48,18 +50,34 @@ namespace Fyrion
         TypeHandler* typeHandler;
     };
 
+    struct ResourceData
+    {
+        ResourceStorage* storage{};
+        VoidPtr memory{};
+        Array<VoidPtr> fields{};
+        ResourceData* dataOnWrite{};
+        bool readOnly = true;
+    };
+
     struct ResourceStorage
     {
         RID rid{};
         UUID uuid{};
         ResourceType* resourceType{};
-        std::atomic<ResourceObject*> object{};
+        std::atomic<ResourceData*> data{};
         ResourceStorage* prototype{};
         ResourceStorage* parent{};
         usize parentIndex = U32_MAX;
         bool markedToDestroy{};
         bool active = true;
         std::atomic<u32> version = 1;
+    };
+
+    struct ToDestroyResourceData
+    {
+        ResourceData*   data{};
+        bool            destroySubObjects{};
+        bool            destroyResource{};
     };
 
     struct ResourcePage
@@ -86,6 +104,8 @@ namespace Fyrion
 
         std::mutex           byPathMutex{};
         HashMap<String, RID> byPath{};
+
+        moodycamel::ConcurrentQueue<ToDestroyResourceData> toCollectItems = moodycamel::ConcurrentQueue<ToDestroyResourceData>(100);
 
         ResourceStorage* GetOrAllocate(RID rid)
         {
@@ -125,9 +145,34 @@ namespace Fyrion
             return rid;
         }
 
+        void UpdateVersion(ResourceStorage* resourceStorage)
+        {
+            resourceStorage->version++;
+            if (resourceStorage->parent)
+            {
+                UpdateVersion(resourceStorage->parent);
+            }
+        }
+
+        void DestroyResourceData(ResourceData* resourceData)
+        {
+//        for (int i = 0; i < m_fields.Size(); ++i)
+//        {
+//            if (m_fields[i] != nullptr)
+//            {
+//                m_storage->resourceType->fieldsByIndex[i]->typeHandler->Destructor(m_fields[i]);
+//                m_fields[i] = nullptr;
+//            }
+//        }
+//        allocator.MemFree(m_data);
+
+
+            allocator.DestroyAndFree(resourceData);
+        }
+
         void DestroyResourceStorage(ResourceStorage* resourceStorage)
         {
-            if (resourceStorage->object)
+            if (resourceStorage->data)
             {
 
 //                if (m_storage->resourceType->fieldsByIndex[i]->fieldType == ResourceFieldType::SubObjectSet)
@@ -146,7 +191,7 @@ namespace Fyrion
 //
 //                }
 
-                allocator.DestroyAndFree(resourceStorage->object.load());
+                DestroyResourceData(resourceStorage->data);
             }
         }
     }
@@ -230,22 +275,45 @@ namespace Fyrion
             .rid = rid,
             .uuid = uuid,
             .resourceType = resourceType,
-            .object = {}
+            .data = {}
         };
 
         return rid;
     }
 
-    ResourceObject& Repository::Read(RID rid)
+    ResourceObject Repository::Read(RID rid)
     {
         ResourceStorage* storage = &pages[rid.page]->elements[rid.offset];
-        return *storage->object;
+        return ResourceObject{storage->data};
     }
 
-    ResourceObject& Repository::Write(RID rid)
+    ResourceObject Repository::Write(RID rid)
     {
         ResourceStorage* storage = &pages[rid.page]->elements[rid.offset];
-        return *allocator.Alloc<ResourceObject>(storage);
+        ResourceType* resourceType = storage->resourceType;
+
+        ResourceData* data = allocator.Alloc<ResourceData>(storage);
+        data->memory = allocator.MemAlloc(resourceType->size, 1);
+        data->fields.Resize(resourceType->fieldsByIndex.Size());
+
+        if (storage->data)
+        {
+            ResourceData* copyData = storage->data.load();
+            data->dataOnWrite = copyData;
+
+            for (int i = 0; i < resourceType->fieldsByIndex.Size(); ++i)
+            {
+                if (copyData->fields[i] != nullptr)
+                {
+                    data->fields[i] = static_cast<char*>(data->memory) + resourceType->fieldsByIndex[i]->offset;
+                    if (resourceType->fieldsByIndex[i]->typeHandler)
+                    {
+                        resourceType->fieldsByIndex[i]->typeHandler->Copy(copyData->fields[i], data->fields[i]);
+                    }
+                }
+            }
+        }
+        return ResourceObject{data};
     }
 
     void Repository::DestroyResource(RID rid)
@@ -253,75 +321,316 @@ namespace Fyrion
         //TODO
     }
 
-    void Repository::GargageCollect()
+    void Repository::GarbageCollect()
     {
         //TODO
     }
 
-    ResourceObject::ResourceObject(ResourceStorage* storage) : m_storage(storage)
+    TypeID Repository::GetResourceTypeID(const StringView& typeName)
     {
-        ResourceType* resourceType = m_storage->resourceType;
+        return 0;
+    }
 
-        m_data = allocator.MemAlloc(resourceType->size, 1);
-        m_fields.Resize(resourceType->fieldsByIndex.Size());
+    TypeHandler* Repository::GetResourceTypeHandler(ResourceType* resourceType)
+    {
+        return nullptr;
+    }
 
-        if (storage->object)
-        {
-            ResourceObject* object = storage->object.load();
-            m_dataOnWrite = object;
+    StringView Repository::GetResourceTypeName(ResourceType* resourceType)
+    {
+        return Fyrion::StringView();
+    }
 
-            for (int i = 0; i < resourceType->fieldsByIndex.Size(); ++i)
-            {
-                if (object->m_fields[i] != nullptr)
-                {
-                    m_fields[i] = static_cast<char*>(m_data) + resourceType->fieldsByIndex[i]->offset;
-                    if (resourceType->fieldsByIndex[i]->typeHandler)
-                    {
-                        resourceType->fieldsByIndex[i]->typeHandler->Copy(object->m_fields[i], m_fields[i]);
-                    }
-                }
-            }
-        }
+    bool Repository::IsInstanced(ResourceType* resourceType)
+    {
+        return false;
+    }
+
+    RID Repository::CreateFromPrototype(RID prototype)
+    {
+        return RID();
+    }
+
+    RID Repository::CreateFromPrototype(RID prototype, const UUID& uuid)
+    {
+        return RID();
+    }
+
+    void Repository::SetUUID(const RID& rid, const UUID& uuid)
+    {
+
+    }
+
+    void Repository::SetPath(const RID& rid, const StringView& path)
+    {
+
+    }
+
+    void Repository::RemovePath(const StringView& path)
+    {
+
+    }
+
+    UUID Repository::GetUUID(const RID& rid)
+    {
+        return UUID();
+    }
+
+    RID Repository::GetPrototypeRID(const RID& rid)
+    {
+        return RID();
+    }
+
+    RID Repository::GetByUUID(const UUID& uuid)
+    {
+        return RID();
+    }
+
+    RID Repository::GetByPath(const StringView& path)
+    {
+        return RID();
+    }
+
+    TypeID Repository::GetResourceTypeID(const RID& rid)
+    {
+        return 0;
+    }
+
+    ResourceType* Repository::GetResourceType(const RID& rid)
+    {
+        return nullptr;
+    }
+
+    RID Repository::GetOrCreateByUUID(const UUID& uuid)
+    {
+        return RID();
+    }
+
+    RID Repository::GetOrCreateByUUID(const UUID& uuid, TypeID typeId)
+    {
+        return RID();
+    }
+
+    void Repository::ClearValues(RID rid)
+    {
+
+    }
+
+    RID Repository::CloneResource(RID rid)
+    {
+        return RID();
+    }
+
+    ConstPtr Repository::Read(RID rid, TypeID typeId)
+    {
+        return nullptr;
+    }
+
+    void Repository::InactiveResource(RID rid)
+    {
+
+    }
+
+    bool Repository::IsActive(RID rid)
+    {
+        return false;
+    }
+
+    bool Repository::IsAlive(RID rid)
+    {
+        return false;
+    }
+
+    bool Repository::IsEmpty(RID rid)
+    {
+        return false;
+    }
+
+    u32 Repository::GetVersion(RID rid)
+    {
+        return 0;
+    }
+
+    void Repository::Commit(RID rid, ConstPtr pointer)
+    {
+
+    }
+
+    ///*********************************************************************ResourceObject**************************************************************************************************************
+
+
+    ResourceObject::ResourceObject(ResourceData* data) : m_data(data)
+    {
     }
 
     void ResourceObject::Commit()
     {
+        m_data->readOnly = true;
+        if (m_data->dataOnWrite)
+        {
+            if (m_data->storage->data.compare_exchange_strong(m_data->dataOnWrite, m_data))
+            {
 
-    }
-
-    void ResourceObject::Rollback()
-    {
-        allocator.DestroyAndFree(this);
+            }
+        }
+        else
+        {
+            m_data->storage->data = m_data;
+            //TODO events
+            UpdateVersion(m_data->storage);
+        }
     }
 
     ResourceObject::~ResourceObject()
     {
-        for (int i = 0; i < m_fields.Size(); ++i)
+        if (m_data)
         {
-            if (m_fields[i] != nullptr)
-            {
-                m_storage->resourceType->fieldsByIndex[i]->typeHandler->Destructor(m_fields[i]);
-                m_fields[i] = nullptr;
-            }
+            DestroyResourceData(m_data);
         }
-        allocator.MemFree(m_data);
+
+
     }
 
     void ResourceObject::SetValue(u32 index, ConstPtr pointer)
     {
-        ResourceField* field = m_storage->resourceType->fieldsByIndex[index];
-
-        if (m_fields[index] == nullptr)
-        {
-            m_fields[index] = static_cast<char*>(m_data) + field->offset;
-        }
-        field->typeHandler->Copy(pointer, m_fields[index]);
+//        ResourceField* field = m_storage->resourceType->fieldsByIndex[index];
+//
+//        if (m_fields[index] == nullptr)
+//        {
+//            m_fields[index] = static_cast<char*>(m_data) + field->offset;
+//        }
+//        field->typeHandler->Copy(pointer, m_fields[index]);
     }
 
     ConstPtr ResourceObject::GetValue(u32 index)
     {
-        return m_fields[index];
+//        return m_fields[index];
+        return nullptr;
     }
+
+
+    void ResourceObject::SetSubObject(u32 index, RID subobject)
+    {
+
+    }
+
+    RID ResourceObject::GetSubObject(u32 index)
+    {
+        return RID();
+    }
+
+    void ResourceObject::AddToSubObjectSet(u32 index, RID subObject)
+    {
+
+    }
+
+    void ResourceObject::RemoveFromSubObjectSet(u32 index, RID subObject)
+    {
+
+    }
+
+    void ResourceObject::RemoveFromSubObjectSet(u32 index, const Span<RID>& subObjects)
+    {
+
+    }
+
+    void ResourceObject::AddToSubObjectSet(u32 index, const Span<RID>& subObjects)
+    {
+
+    }
+
+    void ResourceObject::ClearSubObjectSet(u32 index)
+    {
+
+    }
+
+    usize ResourceObject::GetSubObjectSetCount(u32 index)
+    {
+        return 0;
+    }
+
+    void ResourceObject::GetSubObjectSet(u32 index, Span<RID> subObjects)
+    {
+
+    }
+
+    usize ResourceObject::GetRemoveFromPrototypeSubObjectSetCount(u32 index) const
+    {
+        return 0;
+    }
+
+    void ResourceObject::GetRemoveFromPrototypeSubObjectSet(u32 index, Span<RID> remove) const
+    {
+
+    }
+
+    void ResourceObject::RemoveFromPrototypeSubObjectSet(u32 index, const Span<RID>& remove)
+    {
+
+    }
+
+    void ResourceObject::RemoveFromPrototypeSubObjectSet(u32 index, RID remove)
+    {
+
+    }
+
+    void ResourceObject::CancelRemoveFromPrototypeSubObjectSet(u32 index, const Span<RID>& remove)
+    {
+
+    }
+
+    void ResourceObject::CancelRemoveFromPrototypeSubObjectSet(u32 index, RID remove)
+    {
+
+    }
+
+    bool ResourceObject::Has(u32 index) const
+    {
+        return false;
+    }
+
+    bool ResourceObject::Has(const StringView& name) const
+    {
+        return false;
+    }
+
+    Array<RID> ResourceObject::GetSubObjectSetAsArray(u32 index)
+    {
+        return Array<RID>();
+    }
+
+    u32 ResourceObject::GetValueCount() const
+    {
+        return 0;
+    }
+
+    u32 ResourceObject::GetIndex(const StringView& name) const
+    {
+        return 0;
+    }
+
+    StringView ResourceObject::GetName(u32 index) const
+    {
+        return Fyrion::StringView();
+    }
+
+    TypeHandler* ResourceObject::GetFieldType(u32 index) const
+    {
+        return nullptr;
+    }
+
+    ResourceFieldType ResourceObject::GetResourceType(u32 index) const
+    {
+        return ResourceFieldType::SubObject;
+    }
+
+    ResourceObject::operator bool() const
+    {
+        return false;
+    }
+
+
+
 
     void RepositoryInit()
     {

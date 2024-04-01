@@ -5,6 +5,8 @@
 
 namespace Fyrion
 {
+    class TypeHandler;
+
     class ResourceObjectValue {
     public:
         ResourceObjectValue(u32 index, ResourceObject* resourceObject);
@@ -22,16 +24,40 @@ namespace Fyrion
     class FY_API ResourceObject
     {
     public:
-        explicit ResourceObject(ResourceStorage* storage);
-
-        ResourceObject(const ResourceObject&) = delete;
-        ResourceObject& operator=(const ResourceObject&) = delete;
+        explicit ResourceObject(ResourceData* data);
         virtual ~ResourceObject();
 
-        ConstPtr    GetValue(u32 index);
-        void        SetValue(u32 index, ConstPtr pointer);
-        void        Commit();
-        void        Rollback();
+        ResourceObject(const ResourceObject& object) = delete;
+        ResourceObject& operator=(const ResourceObject& object) = delete;
+
+        ConstPtr            GetValue(u32 index);
+        void                SetValue(u32 index, ConstPtr pointer);
+        void                SetSubObject(u32 index, RID subobject);
+        RID                 GetSubObject(u32 index);
+        void                AddToSubObjectSet(u32 index, RID subObject);
+        void                RemoveFromSubObjectSet(u32 index, RID subObject);
+        void                RemoveFromSubObjectSet(u32 index, const Span<RID>& subObjects);
+        void                AddToSubObjectSet(u32 index, const Span<RID>& subObjects);
+        void                ClearSubObjectSet(u32 index);
+        usize               GetSubObjectSetCount(u32 index);
+        void                GetSubObjectSet(u32 index, Span<RID> subObjects);
+        usize               GetRemoveFromPrototypeSubObjectSetCount(u32 index) const;
+        void                GetRemoveFromPrototypeSubObjectSet(u32 index, Span<RID> remove) const;
+        void                RemoveFromPrototypeSubObjectSet(u32 index, const Span<RID>& remove);
+        void                RemoveFromPrototypeSubObjectSet(u32 index, RID remove);
+        void                CancelRemoveFromPrototypeSubObjectSet(u32 index, const Span<RID>& remove);
+        void                CancelRemoveFromPrototypeSubObjectSet(u32 index, RID remove);
+        bool                Has(u32 index) const;
+        bool                Has(const StringView& name) const;
+        Array<RID>          GetSubObjectSetAsArray(u32 index);
+        u32                 GetValueCount() const;
+        u32                 GetIndex(const StringView& name) const;
+        StringView          GetName(u32 index) const;
+        TypeHandler*        GetFieldType(u32 index) const;
+        ResourceFieldType   GetResourceType(u32 index) const;
+        void                Commit();
+
+        explicit operator bool() const;
 
         template<typename T>
         ResourceObjectValue operator[](T index)
@@ -39,21 +65,24 @@ namespace Fyrion
             return {static_cast<u32>(index), this};
         }
 
+        template<typename T, typename = typename Traits::EnableIf<!std::is_pointer_v<T>>>
+        void SetValue(u32 index, const T& pointer)
+        {
+            SetValue(index, &pointer);
+        }
+
+        template<typename T, typename = typename Traits::EnableIf<!std::is_pointer_v<T>>>
+        const T& GetValue(u32 index)
+        {
+            return *static_cast<const T*>(GetValue(index));
+        }
+
+
     private:
-        ResourceStorage*   m_storage{};
-        VoidPtr            m_data{};
-        Array<VoidPtr>     m_fields{};
-        VoidPtr            m_dataOnWrite{};
+        ResourceData* m_data;
     };
 
     ResourceObjectValue::ResourceObjectValue(u32 index, ResourceObject* resourceObject) : m_index(index), m_resourceObject(resourceObject){}
-
-//    template<typename T>
-//    ResourceObjectValue::operator T()
-//    {
-//        //TODO find a better way of casting.
-//        return *static_cast<const T*>(m_resourceObject->GetValue(m_index));
-//    }
 
     template<typename T>
     const T& ResourceObjectValue::As()

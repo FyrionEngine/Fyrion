@@ -10,6 +10,8 @@ namespace Fyrion
 
     struct ResourceStorage;
     struct ResourceObject;
+    struct ResourceData;
+    struct ResourceType;
 
     //types
     struct RID
@@ -50,13 +52,15 @@ namespace Fyrion
         }
     };
 
-    enum class ResourceFieldType
+    enum class ResourceFieldType : u16
     {
         Value = 1,
         SubObject = 2,
         SubObjectSet = 3,
         Stream = 4
     };
+
+    ENUM_FLAGS(ResourceFieldType, u16);
 
     struct ResourceFieldCreation
     {

@@ -38,8 +38,6 @@ namespace Fyrion::Tests
         void CreateResourceTypes()
         {
 
-
-
             {
                 auto testStructResource = Registry::Type<TestStructResource>();
                 testStructResource.Field<&TestStructResource::strTest>("strTest");

@@ -2,13 +2,9 @@
 
 namespace Fyrion
 {
-    template<typename T, typename Enable = void>
-    class ResourceTypeBuilder
-    {
-    };
 
     template<typename T>
-    class ResourceTypeBuilder<T, Traits::EnableIf<Traits::IsComplete<T>>>
+    class ResourceTypeBuilder
     {
     public:
 

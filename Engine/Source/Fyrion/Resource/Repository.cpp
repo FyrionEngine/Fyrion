@@ -154,7 +154,7 @@ namespace Fyrion
             }
         }
 
-        void DestroyResourceData(ResourceData* resourceData)
+        void DestroyData(ResourceData* resourceData, bool destroySubobjects)
         {
 //        for (int i = 0; i < m_fields.Size(); ++i)
 //        {
@@ -170,7 +170,7 @@ namespace Fyrion
             allocator.DestroyAndFree(resourceData);
         }
 
-        void DestroyResourceStorage(ResourceStorage* resourceStorage)
+        void DestroyStorage(ResourceStorage* resourceStorage)
         {
             if (resourceStorage->data)
             {
@@ -191,7 +191,7 @@ namespace Fyrion
 //
 //                }
 
-                DestroyResourceData(resourceStorage->data);
+                DestroyData(resourceStorage->data, true);
             }
         }
     }
@@ -318,97 +318,195 @@ namespace Fyrion
 
     void Repository::DestroyResource(RID rid)
     {
-        //TODO
+        ResourceStorage* storage = &pages[rid.page]->elements[rid.offset];
+        toCollectItems.enqueue(ToDestroyResourceData{
+            .data = storage->data,
+            .destroySubObjects = true,
+            .destroyResource = true
+        });
+        storage->markedToDestroy = true;
     }
 
     void Repository::GarbageCollect()
     {
-        //TODO
+        ToDestroyResourceData data;
+        while (toCollectItems.try_dequeue(data))
+        {
+            if (data.destroyResource)
+            {
+                DestroyStorage(data.data->storage);
+            }
+            else
+            {
+                DestroyData(data.data, data.destroySubObjects);
+            }
+        }
     }
 
     TypeID Repository::GetResourceTypeID(const StringView& typeName)
     {
+        if (auto it = resourceTypesByName.Find(typeName))
+        {
+            return it->second->typeId;
+        }
         return 0;
     }
 
     TypeHandler* Repository::GetResourceTypeHandler(ResourceType* resourceType)
     {
-        return nullptr;
+        return resourceType->typeHandler;
     }
 
     StringView Repository::GetResourceTypeName(ResourceType* resourceType)
     {
-        return Fyrion::StringView();
+        return resourceType->name;
     }
 
     bool Repository::IsInstanced(ResourceType* resourceType)
     {
+        //return resourceType->isInstanced;
         return false;
     }
 
     RID Repository::CreateFromPrototype(RID prototype)
     {
-        return RID();
+        return CreateFromPrototype(prototype, {});
     }
 
     RID Repository::CreateFromPrototype(RID prototype, const UUID& uuid)
     {
-        return RID();
+        RID rid = GetID(uuid);
+        ResourceStorage* resourceStorage  = GetOrAllocate(rid);
+        ResourceStorage* prototypeStorage = &pages[prototype.page]->elements[prototype.offset];
+        FY_ASSERT(prototypeStorage->resourceType, "Prototype can't be created from resources without types");
+
+        ResourceData* data = allocator.Alloc<ResourceData>();
+        data->storage = resourceStorage;
+        data->memory  = nullptr;
+        data->fields.Resize(prototypeStorage->resourceType->fieldsByIndex.Size());
+
+        new(PlaceHolder(), resourceStorage) ResourceStorage{
+            .rid = rid,
+            .uuid = uuid,
+            .resourceType = prototypeStorage->resourceType,
+            .data = data,
+            .prototype = prototypeStorage
+        };
+        return rid;
     }
 
     void Repository::SetUUID(const RID& rid, const UUID& uuid)
     {
-
+        ResourceStorage* storage = &pages[rid.page]->elements[rid.offset];
+        storage->uuid = uuid;
+        {
+            std::unique_lock<std::mutex> lock(byUUIDMutex);
+            byUUID.Insert(uuid, rid);
+        }
     }
 
     void Repository::SetPath(const RID& rid, const StringView& path)
     {
-
+        std::unique_lock<std::mutex> lockByPath(byPathMutex);
+        byPath.Erase(path);
+        byPath.Insert(path, rid);
     }
 
     void Repository::RemovePath(const StringView& path)
     {
-
+        std::unique_lock<std::mutex> lockByPath(byPathMutex);
+        byPath.Erase(path);
     }
 
     UUID Repository::GetUUID(const RID& rid)
     {
-        return UUID();
+        ResourceStorage* storage = &pages[rid.page]->elements[rid.offset];
+        return storage->uuid;
     }
 
     RID Repository::GetPrototypeRID(const RID& rid)
     {
-        return RID();
+        ResourceStorage* storage = &pages[rid.page]->elements[rid.offset];
+        if (storage->prototype)
+        {
+            return storage->prototype->rid;
+        }
+        return {};
     }
 
     RID Repository::GetByUUID(const UUID& uuid)
     {
-        return RID();
+        std::unique_lock<std::mutex> lock(byUUIDMutex);
+
+        if (auto it = byUUID.Find(uuid))
+        {
+            return it->second;
+        }
+        return {};
     }
 
     RID Repository::GetByPath(const StringView& path)
     {
-        return RID();
+        std::unique_lock<std::mutex> lock(byPathMutex);
+
+        if (auto it = byPath.Find(path))
+        {
+            return it->second;
+        }
+        return {};
     }
 
     TypeID Repository::GetResourceTypeID(const RID& rid)
     {
-        return 0;
+        ResourceStorage* storage = &pages[rid.page]->elements[rid.offset];
+        return storage->resourceType->typeId;
     }
 
     ResourceType* Repository::GetResourceType(const RID& rid)
     {
-        return nullptr;
+        ResourceStorage* storage = &pages[rid.page]->elements[rid.offset];
+        return storage->resourceType;
     }
 
     RID Repository::GetOrCreateByUUID(const UUID& uuid)
     {
-        return RID();
+        return GetOrCreateByUUID(uuid, 0);
     }
 
     RID Repository::GetOrCreateByUUID(const UUID& uuid, TypeID typeId)
     {
-        return RID();
+        {
+            std::unique_lock<std::mutex> lock(byUUIDMutex);
+
+            auto it = byUUID.Find(uuid);
+            if (it != byUUID.end())
+            {
+                return it->second;
+            }
+        }
+
+        RID rid = GetID();
+        {
+            std::unique_lock<std::mutex> lock(byUUIDMutex);
+            byUUID.Insert(uuid, rid);
+        }
+
+        ResourceStorage* storage      = &pages[rid.page]->elements[rid.offset];
+        ResourceType   * resourceType = nullptr;
+
+        if (auto it = resourceTypes.Find(typeId))
+        {
+            resourceType = it->second.Get();
+        }
+
+        new(PlaceHolder(), storage) ResourceStorage{
+            .rid = rid,
+            .uuid = uuid,
+            .resourceType = resourceType,
+            .data = {}
+        };
+
+        return rid;
     }
 
     void Repository::ClearValues(RID rid)
@@ -461,34 +559,6 @@ namespace Fyrion
 
     ResourceObject::ResourceObject(ResourceData* data) : m_data(data)
     {
-    }
-
-    void ResourceObject::Commit()
-    {
-        m_data->readOnly = true;
-        if (m_data->dataOnWrite)
-        {
-            if (m_data->storage->data.compare_exchange_strong(m_data->dataOnWrite, m_data))
-            {
-
-            }
-        }
-        else
-        {
-            m_data->storage->data = m_data;
-            //TODO events
-            UpdateVersion(m_data->storage);
-        }
-    }
-
-    ResourceObject::~ResourceObject()
-    {
-        if (m_data)
-        {
-            DestroyResourceData(m_data);
-        }
-
-
     }
 
     void ResourceObject::SetValue(u32 index, ConstPtr pointer)
@@ -629,8 +699,31 @@ namespace Fyrion
         return false;
     }
 
+    void ResourceObject::Commit()
+    {
+        m_data->readOnly = true;
+        if (m_data->dataOnWrite)
+        {
+            if (m_data->storage->data.compare_exchange_strong(m_data->dataOnWrite, m_data))
+            {
 
+            }
+        }
+        else
+        {
+            m_data->storage->data = m_data;
+            //TODO events
+            UpdateVersion(m_data->storage);
+        }
+    }
 
+    ResourceObject::~ResourceObject()
+    {
+        if (m_data)
+        {
+            DestroyData(m_data);
+        }
+    }
 
     void RepositoryInit()
     {

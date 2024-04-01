@@ -45,6 +45,7 @@ namespace Fyrion
         String name;
         TypeID typeId;
         usize size;
+        usize alignment;
         HashMap<String, SharedPtr<ResourceField>> fieldsByName;
         Array<ResourceField*> fieldsByIndex;
         TypeHandler* typeHandler;
@@ -172,9 +173,18 @@ namespace Fyrion
 
         void DestroyStorage(ResourceStorage* resourceStorage)
         {
+
+//            for (auto itEvent: resourceStorage->resourceType->events)
+//            {
+//                if ((itEvent.Second.EventType & ResourceEventType_Destroy) != 0)
+//                {
+////				itEvent.Second.Event(itEvent.Second.UserData, ResourceEventType_Destroy, resourceStorage->rid);
+//                }
+//            }
+
+            //TODO
             if (resourceStorage->data)
             {
-
 //                if (m_storage->resourceType->fieldsByIndex[i]->fieldType == ResourceFieldType::SubObjectSet)
 //                {
 //                    SubObjectSetData& subObjectSetData = *static_cast<SubObjectSetData*>(m_fields[i]);
@@ -190,9 +200,20 @@ namespace Fyrion
 //                {
 //
 //                }
-
                 DestroyData(resourceStorage->data, true);
             }
+
+
+
+            if (resourceStorage->parent && resourceStorage->parentIndex != U32_MAX && !resourceStorage->parent->markedToDestroy)
+            {
+                ResourceObject parent = Repository::Write(resourceStorage->parent->rid);
+                parent.RemoveFromSubObjectSet(resourceStorage->parentIndex, resourceStorage->rid);
+                parent.Commit();
+            }
+
+            resourceStorage->~ResourceStorage();
+            MemSet(resourceStorage, 0, sizeof(ResourceStorage));
         }
     }
 
@@ -511,47 +532,92 @@ namespace Fyrion
 
     void Repository::ClearValues(RID rid)
     {
-
+        ResourceStorage* storage = &pages[rid.page]->elements[rid.offset];
+        if (storage->data)
+        {
+            ResourceData* data = storage->data.load();
+            if (data->memory)
+            {
+                for (int i = 0; i < data->fields.Size(); ++i)
+                {
+                    if (data->fields[i] != nullptr)
+                    {
+                        data->storage->resourceType->fieldsByIndex[i]->typeHandler->Destructor(data->fields[i]);
+                        data->fields[i] = nullptr;
+                    }
+                }
+                allocator.MemFree(data->memory);
+                data->memory = nullptr;
+            }
+        }
     }
 
     RID Repository::CloneResource(RID rid)
     {
+        FY_ASSERT(false, "Not Implemented yet");
         return RID();
     }
 
     ConstPtr Repository::Read(RID rid, TypeID typeId)
     {
+        ResourceStorage* storage = &pages[rid.page]->elements[rid.offset];
+        if (storage->resourceType->typeId == typeId)
+        {
+            return storage->data.load()->memory;
+        }
+        FY_ASSERT(false, "Mapping field is not implemented");
         return nullptr;
     }
 
     void Repository::InactiveResource(RID rid)
     {
-
+        ResourceStorage* storage = &pages[rid.page]->elements[rid.offset];
+        storage->active  = false;
+        storage->version = 0;
     }
 
     bool Repository::IsActive(RID rid)
     {
-        return false;
+        ResourceStorage* storage = &pages[rid.page]->elements[rid.offset];
+        return storage->active;
     }
 
     bool Repository::IsAlive(RID rid)
     {
-        return false;
+        ResourceStorage* storage = &pages[rid.page]->elements[rid.offset];
+        return storage->rid.id != 0;
     }
 
     bool Repository::IsEmpty(RID rid)
     {
-        return false;
+        ResourceStorage* storage = &pages[rid.page]->elements[rid.offset];
+        return !storage->data || !storage->data.load()->memory;
     }
 
     u32 Repository::GetVersion(RID rid)
     {
-        return 0;
+        ResourceStorage* storage = &pages[rid.page]->elements[rid.offset];
+        return storage->version;
     }
 
     void Repository::Commit(RID rid, ConstPtr pointer)
     {
+        ResourceStorage* storage = &pages[rid.page]->elements[rid.offset];
+        if (storage->data)
+        {
+            toCollectItems.enqueue(ToDestroyResourceData{
+                .data = storage->data,
+                .destroySubObjects = false,
+                .destroyResource = false
+            });
+        }
+        ResourceData* data = allocator.Alloc<ResourceData>();
+        data->storage = storage;
+        data->memory  = allocator.MemAlloc(storage->resourceType->size, storage->resourceType->alignment);
+        storage->resourceType->typeHandler->Copy(pointer, data->memory);
+        storage->data.store(data);
 
+        UpdateVersion(storage);
     }
 
     ///*********************************************************************ResourceObject**************************************************************************************************************
@@ -563,35 +629,51 @@ namespace Fyrion
 
     void ResourceObject::SetValue(u32 index, ConstPtr pointer)
     {
-//        ResourceField* field = m_storage->resourceType->fieldsByIndex[index];
-//
-//        if (m_fields[index] == nullptr)
-//        {
-//            m_fields[index] = static_cast<char*>(m_data) + field->offset;
-//        }
-//        field->typeHandler->Copy(pointer, m_fields[index]);
+        ResourceField* field = m_data->storage->resourceType->fieldsByIndex[index];
+        FY_ASSERT(field->fieldType == ResourceFieldType::Value, "Field is not ResourceFieldType::Value");
+        if (m_data->fields[index] == nullptr)
+        {
+            m_data->fields[index] = static_cast<char*>(m_data->memory) + field->offset;
+        }
+        field->typeHandler->Copy(pointer, m_data->fields[index]);
     }
 
     ConstPtr ResourceObject::GetValue(u32 index)
     {
-//        return m_fields[index];
-        return nullptr;
+        ConstPtr ptr = m_data->fields[index];
+        if (!ptr && m_data->storage->prototype)
+        {
+            ResourceObject prototype{m_data->storage->prototype->data};
+            return prototype.GetValue(index);
+        }
+        return ptr;
     }
 
 
     void ResourceObject::SetSubObject(u32 index, RID subobject)
     {
+        ResourceField* field = m_data->storage->resourceType->fieldsByIndex[index];
+        FY_ASSERT(field->fieldType == ResourceFieldType::SubObject, "Field is not ResourceFieldType::SubObject");
 
+        if (m_data->fields[index] == nullptr)
+        {
+            m_data->fields[index] = static_cast<char*>(m_data->memory) + field->offset;
+        }
+
+        ResourceStorage* storage = &pages[subobject.page]->elements[subobject.offset];
+        storage->parent      = m_data->storage;
+        storage->parentIndex = index;
+        new(PlaceHolder(), m_data->fields[index]) RID{subobject};
     }
 
     RID ResourceObject::GetSubObject(u32 index)
     {
-        return RID();
+        return GetValue<RID>(index);
     }
 
     void ResourceObject::AddToSubObjectSet(u32 index, RID subObject)
     {
-
+        AddToSubObjectSet(index, {&subObject, 1});
     }
 
     void ResourceObject::RemoveFromSubObjectSet(u32 index, RID subObject)
@@ -721,7 +803,7 @@ namespace Fyrion
     {
         if (m_data)
         {
-            DestroyData(m_data);
+            //DestroyData(m_data);
         }
     }
 

@@ -10,7 +10,7 @@ namespace Fyrion
         ResourceObjectValue(u32 index, ResourceObject* resourceObject);
 
         template<typename T>
-        operator const T&() const; // NOLINT
+        const T& As();
 
         template<typename T>
         ResourceObjectValue& operator=(const T& value);
@@ -56,7 +56,7 @@ namespace Fyrion
 //    }
 
     template<typename T>
-    ResourceObjectValue::operator const T&() const
+    const T& ResourceObjectValue::As()
     {
         return *static_cast<const T*>(m_resourceObject->GetValue(m_index));
     }

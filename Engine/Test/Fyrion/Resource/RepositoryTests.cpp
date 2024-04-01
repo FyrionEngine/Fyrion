@@ -37,10 +37,8 @@ namespace
         write[TestResource::Field1] = 20;
         write[TestResource::Field2] = String{"blabha"};
 
-        i32 value = write[TestResource::Field1];
-        const String& str = write[TestResource::Field2];
-
-
+        i32 value = write[TestResource::Field1].As<int>();
+        const String& str = write[TestResource::Field2].As<String>();
 
 
         write.Commit();

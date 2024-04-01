@@ -6,7 +6,12 @@
 
 namespace Fyrion
 {
+    //foward declarations
 
+    struct ResourceStorage;
+    struct ResourceObject;
+
+    //types
     struct RID
     {
         union

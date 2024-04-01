@@ -50,6 +50,7 @@ inline void operator delete(void*, Fyrion::PlaceHolder, Fyrion::VoidPtr) noexcep
 //--general defines
 #define FY_STRING_BUFFER_SIZE 18
 #define FY_FRAMES_IN_FLIGHT 2
+#define FY_REPO_PAGE_SIZE 4096
 
 
 //---platform defines

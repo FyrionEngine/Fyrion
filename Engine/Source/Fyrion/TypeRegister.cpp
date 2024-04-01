@@ -1,10 +1,12 @@
 #include "TypeRegister.hpp"
+#include "Fyrion/Resource/ResourceTypes.hpp"
 #include "Fyrion/Core/Registry.hpp"
-#include "Fyrion/Repository/ResourceTypes.hpp"
 #include "Fyrion/Core/Math.hpp"
 
 namespace Fyrion
 {
+    void RegisterResourceTypes();
+
     void TypeRegister()
     {
         Registry::Type<bool>("bool");
@@ -28,5 +30,7 @@ namespace Fyrion
         auto extent = Registry::Type<Extent>();
         extent.Field<&Extent::width>("width");
         extent.Field<&Extent::height>("height");
+
+        RegisterResourceTypes();
     }
 }

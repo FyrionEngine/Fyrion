@@ -8,9 +8,6 @@
 namespace Fyrion
 {
 
-    template<typename Type>
-    class BasePath;
-
     template<typename Type, usize BufferSize>
     class BasicString;
 
@@ -33,7 +30,6 @@ namespace Fyrion
         template<usize BufferSize>
         constexpr BasicStringView(const BasicString<Type, BufferSize>& string);
 
-        constexpr BasicStringView(const BasePath<Type>& path);
         constexpr BasicStringView(const BasicStringView&) = default;
 
         BasicStringView& operator=(const BasicStringView&) = default;
@@ -80,11 +76,6 @@ namespace Fyrion
         const Type* m_str;
         usize m_size;
     };
-
-    template<typename Type>
-    constexpr BasicStringView<Type>::BasicStringView(const BasePath<Type>& path) : m_str(path.begin()), m_size(path.end() - path.begin())
-    {
-    }
 
     template<typename Type>
     template<usize BufferSize>

@@ -5,6 +5,7 @@
 #include "ResourceTypes.hpp"
 #include "Fyrion/Core/Array.hpp"
 #include "Fyrion/Core/UUID.hpp"
+#include "ResourceObject.hpp"
 
 namespace Fyrion
 {
@@ -14,6 +15,14 @@ namespace Fyrion
 
         FY_API RID              CreateResource(TypeID typeId);
         FY_API RID              CreateResource(TypeID typeId, const UUID& uuid);
+        FY_API void             DestroyResource(RID rid);
+
+
+        FY_API ResourceObject&  Read(RID rid);
+        FY_API ResourceObject&  Write(RID rid);
+
+
+        FY_API void             GargageCollect();
 
 
         template<typename T>

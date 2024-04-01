@@ -1,6 +1,6 @@
 #include <doctest.h>
 
-#include "Fyrion/Repository/Repository.hpp"
+#include "Fyrion/Resource/Repository.hpp"
 #include "Fyrion/Core/String.hpp"
 #include "Fyrion/Engine.hpp"
 
@@ -18,7 +18,7 @@ namespace
     };
 
 
-    TEST_CASE("Repository::Basics")
+    TEST_CASE("Resource::Basics")
     {
         Engine::Init();
 
@@ -32,6 +32,21 @@ namespace
 
         RID testResource = Repository::CreateResource<TestResource>();
         CHECK(testResource);
+
+        ResourceObject& write = Repository::Write(testResource);
+        write[TestResource::Field1] = 20;
+        write[TestResource::Field2] = String{"blabha"};
+
+        i32 value = write[TestResource::Field1];
+        const String& str = write[TestResource::Field2];
+
+
+
+
+        write.Commit();
+
+
+
 
         Engine::Destroy();
     }

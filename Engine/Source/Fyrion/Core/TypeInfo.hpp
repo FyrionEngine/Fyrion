@@ -8,6 +8,7 @@ namespace Fyrion
     {
         TypeID       typeId{};
         usize        size{};
+        usize        alignment{};
     };
 
     template<typename Type>
@@ -64,11 +65,22 @@ namespace Fyrion
     }
 
     template<typename Type>
+    constexpr static usize GetTypeAlign()
+    {
+        if constexpr (Traits::IsComplete<Traits::RemoveAll<Type>>)
+        {
+            return alignof(Traits::RemoveAll<Type>);
+        }
+        return 0;
+    }
+
+    template<typename Type>
     constexpr TypeInfo GetTypeInfo()
     {
         TypeInfo typeInfo = TypeInfo{
             .typeId = GetTypeID<Type>(),
-            .size = GetTypeSize<Type>()
+            .size = GetTypeSize<Type>(),
+            .alignment = GetTypeAlign<Type>()
         };
         return typeInfo;
     }

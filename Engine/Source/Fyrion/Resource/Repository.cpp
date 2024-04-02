@@ -155,55 +155,62 @@ namespace Fyrion
             }
         }
 
-        void DestroyData(ResourceData* resourceData, bool destroySubobjects)
+        void DestroyStorage(ResourceStorage* resourceStorage);
+
+        void DestroyData(ResourceData* data, bool destroySubObjects)
         {
-//        for (int i = 0; i < m_fields.Size(); ++i)
-//        {
-//            if (m_fields[i] != nullptr)
-//            {
-//                m_storage->resourceType->fieldsByIndex[i]->typeHandler->Destructor(m_fields[i]);
-//                m_fields[i] = nullptr;
-//            }
-//        }
-//        allocator.MemFree(m_data);
+            if (data)
+            {
+                if (data->memory)
+                {
+                    for (int i = 0; i < data->fields.Size(); ++i)
+                    {
+                        if (data->fields[i] != nullptr)
+                        {
+                            if (data->storage->resourceType->fieldsByIndex[i]->fieldType == ResourceFieldType::SubObjectSet)
+                            {
+                                SubObjectSetData& subObjectSetData = *static_cast<SubObjectSetData*>(data->fields[i]);
+                                if (destroySubObjects)
+                                {
+                                    for (auto it: subObjectSetData.subObjects)
+                                    {
+                                        DestroyStorage(&pages[it.first.page]->elements[it.first.offset]);
+                                    }
+                                }
+                                subObjectSetData.~SubObjectSetData();
+                            }
+                            else if (destroySubObjects && data->storage->resourceType->fieldsByIndex[i]->fieldType == ResourceFieldType::SubObject)
+                            {
+                                RID suboject = *static_cast<RID*>(data->fields[i]);
+                                DestroyStorage(&pages[suboject.page]->elements[suboject.offset]);
+                            }
+                            else if (data->storage->resourceType->fieldsByIndex[i]->typeHandler)
+                            {
+                                data->storage->resourceType->fieldsByIndex[i]->typeHandler->Destructor(data->fields[i]);
+                            }
 
+                            data->fields[i] = nullptr;
+                        }
+                    }
 
-            allocator.DestroyAndFree(resourceData);
+                    if (data->storage->resourceType->typeHandler)
+                    {
+                        data->storage->resourceType->typeHandler->Destructor(data->memory);
+                    }
+
+                    allocator.MemFree(data->memory);
+                    data->memory = nullptr;
+                }
+                allocator.DestroyAndFree(data);
+            }
         }
 
         void DestroyStorage(ResourceStorage* resourceStorage)
         {
-
-//            for (auto itEvent: resourceStorage->resourceType->events)
-//            {
-//                if ((itEvent.Second.EventType & ResourceEventType_Destroy) != 0)
-//                {
-////				itEvent.Second.Event(itEvent.Second.UserData, ResourceEventType_Destroy, resourceStorage->rid);
-//                }
-//            }
-
-            //TODO
             if (resourceStorage->data)
             {
-//                if (m_storage->resourceType->fieldsByIndex[i]->fieldType == ResourceFieldType::SubObjectSet)
-//                {
-//                    SubObjectSetData& subObjectSetData = *static_cast<SubObjectSetData*>(m_fields[i]);
-//                    if (destroySubObjects)
-//                    {
-//                        for (auto it: subObjectSetData.SubObjects)
-//                        {
-//                            DestroyResource(&Context->Pages[it.First.Page]->Elements[it.First.Offset]);
-//                        }
-//                    }
-//                }
-//                else if (m_storage->resourceType->fieldsByIndex[i]->fieldType == ResourceFieldType::SubObject)
-//                {
-//
-//                }
                 DestroyData(resourceStorage->data, true);
             }
-
-
 
             if (resourceStorage->parent && resourceStorage->parentIndex != U32_MAX && !resourceStorage->parent->markedToDestroy)
             {
@@ -276,6 +283,24 @@ namespace Fyrion
         logger.Debug("Resource Type {} Created", resourceTypeCreation.name);
     }
 
+    void Repository::CreateResourceType(TypeID typeId)
+    {
+        TypeHandler* typeHandler = Registry::FindTypeById(typeId);
+        FY_ASSERT(typeHandler, "Type not found");
+
+        SharedPtr<ResourceType> resourceType = MakeShared<ResourceType>();
+        resourceType->name        = typeHandler->GetName();
+        resourceType->typeId      = typeId;
+        resourceType->size        = typeHandler->GetTypeInfo().size;
+        resourceType->alignment   = typeHandler->GetTypeInfo().alignment;
+        resourceType->typeHandler = typeHandler;
+
+        logger.Debug("Resource Type {} Created", resourceType->name);
+
+        resourceTypesByName.Insert(resourceType->name, resourceType);
+        resourceTypes.Emplace(resourceType->typeId, Traits::Move(resourceType));
+    }
+
     RID Repository::CreateResource(TypeID typeId)
     {
         return CreateResource(typeId, {});
@@ -316,6 +341,7 @@ namespace Fyrion
         ResourceData* data = allocator.Alloc<ResourceData>(storage);
         data->memory = allocator.MemAlloc(resourceType->size, 1);
         data->fields.Resize(resourceType->fieldsByIndex.Size());
+        data->readOnly = false;
 
         if (storage->data)
         {
@@ -350,7 +376,7 @@ namespace Fyrion
 
     void Repository::GarbageCollect()
     {
-        ToDestroyResourceData data;
+        ToDestroyResourceData data{};
         while (toCollectItems.try_dequeue(data))
         {
             if (data.destroyResource)
@@ -381,12 +407,6 @@ namespace Fyrion
     StringView Repository::GetResourceTypeName(ResourceType* resourceType)
     {
         return resourceType->name;
-    }
-
-    bool Repository::IsInstanced(ResourceType* resourceType)
-    {
-        //return resourceType->isInstanced;
-        return false;
     }
 
     RID Repository::CreateFromPrototype(RID prototype)
@@ -638,7 +658,7 @@ namespace Fyrion
         field->typeHandler->Copy(pointer, m_data->fields[index]);
     }
 
-    ConstPtr ResourceObject::GetValue(u32 index)
+    ConstPtr ResourceObject::GetValue(u32 index) const
     {
         ConstPtr ptr = m_data->fields[index];
         if (!ptr && m_data->storage->prototype)
@@ -676,109 +696,210 @@ namespace Fyrion
         AddToSubObjectSet(index, {&subObject, 1});
     }
 
+    void ResourceObject::AddToSubObjectSet(u32 index, const Span<RID>& subObjects)
+    {
+        ResourceField* field = m_data->storage->resourceType->fieldsByIndex[index];
+        FY_ASSERT(field->fieldType == ResourceFieldType::SubObjectSet, "Field is not ResourceFieldType::SubObjectSet");
+
+        if (m_data->fields[index] == nullptr)
+        {
+            m_data->fields[index] = static_cast<char*>(m_data->memory) + field->offset;
+            new(PlaceHolder(), m_data->fields[index]) SubObjectSetData();
+        }
+
+        SubObjectSetData& subObjectSetData = *static_cast<SubObjectSetData*>(m_data->fields[index]);
+
+        for (const RID& rid: subObjects)
+        {
+            subObjectSetData.subObjects.Insert(rid);
+            ResourceStorage* storage = &pages[rid.page]->elements[rid.offset];
+            storage->parent      = m_data->storage;
+            storage->parentIndex = index;
+        }
+    }
+
+
     void ResourceObject::RemoveFromSubObjectSet(u32 index, RID subObject)
     {
-
+        RemoveFromSubObjectSet(index, {&subObject, 1});
     }
 
     void ResourceObject::RemoveFromSubObjectSet(u32 index, const Span<RID>& subObjects)
     {
+        ResourceField* field = m_data->storage->resourceType->fieldsByIndex[index];
+        FY_ASSERT(field->fieldType == ResourceFieldType::SubObjectSet, "Field is not ResourceFieldType::SubObjectSet");
+        if (m_data->fields[index] != nullptr)
+        {
+            SubObjectSetData& subObjectSetData = *static_cast<SubObjectSetData*>(m_data->fields[index]);
 
-    }
-
-    void ResourceObject::AddToSubObjectSet(u32 index, const Span<RID>& subObjects)
-    {
-
+            for (const RID& rid: subObjects)
+            {
+                ResourceStorage* storage = &pages[rid.page]->elements[rid.offset];
+                storage->parent = nullptr;
+                storage->parentIndex = U32_MAX;
+                subObjectSetData.subObjects.Erase(rid);
+            }
+        }
     }
 
     void ResourceObject::ClearSubObjectSet(u32 index)
     {
-
+        ResourceField* field = m_data->storage->resourceType->fieldsByIndex[index];
+        FY_ASSERT(field->fieldType == ResourceFieldType::SubObjectSet, "Field is not ResourceFieldType::SubObjectSet");
+        if (m_data->fields[index] != nullptr)
+        {
+            SubObjectSetData& subObjectSetData = *static_cast<SubObjectSetData*>(m_data->fields[index]);
+            for (auto& it: subObjectSetData.subObjects)
+            {
+                ResourceStorage* storage = &pages[it.first.page]->elements[it.first.offset];
+                storage->parent = nullptr;
+                storage->parentIndex = U32_MAX;
+            }
+            subObjectSetData.subObjects.Clear();
+            if (subObjectSetData.prototypeRemoved.Empty())
+            {
+                subObjectSetData.~SubObjectSetData();
+                m_data->fields[index] = nullptr;
+            }
+        }
     }
 
     usize ResourceObject::GetSubObjectSetCount(u32 index)
     {
-        return 0;
+        usize count{};
+        ResourceGetSubObjectSet(m_data, nullptr, index, count, nullptr);
+        return count;
     }
 
     void ResourceObject::GetSubObjectSet(u32 index, Span<RID> subObjects)
     {
-
+        usize count{};
+        ResourceGetSubObjectSet(m_data, nullptr, index, count, &subObjects);
     }
 
     usize ResourceObject::GetRemoveFromPrototypeSubObjectSetCount(u32 index) const
     {
-        return 0;
+        ResourceField* field = m_data->storage->resourceType->fieldsByIndex[index];
+        FY_ASSERT(field->fieldType == ResourceFieldType::SubObjectSet, "Field is not ResourceFieldType::SubObjectSet");
+        if (m_data->fields[index] == nullptr)
+        {
+            return 0;
+        }
+        SubObjectSetData& subObjectSetData = *static_cast<SubObjectSetData*>(m_data->fields[index]);
+        return subObjectSetData.prototypeRemoved.Size();
     }
 
     void ResourceObject::GetRemoveFromPrototypeSubObjectSet(u32 index, Span<RID> remove) const
     {
+        ResourceField* field = m_data->storage->resourceType->fieldsByIndex[index];
+        FY_ASSERT(field->fieldType == ResourceFieldType::SubObjectSet, "Field is not ResourceFieldType::SubObjectSet");
+        if (m_data->fields[index] == nullptr)
+        {
+            return;
+        }
+        SubObjectSetData& subObjectSetData = *static_cast<SubObjectSetData*>(m_data->fields[index]);
+        u32 i = 0;
 
-    }
-
-    void ResourceObject::RemoveFromPrototypeSubObjectSet(u32 index, const Span<RID>& remove)
-    {
-
+        for (const auto rid: subObjectSetData.prototypeRemoved)
+        {
+            remove[i++] = rid.first;
+        }
     }
 
     void ResourceObject::RemoveFromPrototypeSubObjectSet(u32 index, RID remove)
     {
-
+        RemoveFromPrototypeSubObjectSet(index, {&remove, 1});
     }
 
-    void ResourceObject::CancelRemoveFromPrototypeSubObjectSet(u32 index, const Span<RID>& remove)
+    void ResourceObject::RemoveFromPrototypeSubObjectSet(u32 index, const Span<RID>& remove)
     {
+        ResourceField* field = m_data->storage->resourceType->fieldsByIndex[index];
+        FY_ASSERT(field->fieldType == ResourceFieldType::SubObjectSet, "Field is not ResourceFieldType::SubObjectSet");
+        if (m_data->fields[index] == nullptr)
+        {
+            m_data->fields[index] = static_cast<char*>(m_data->memory) + field->offset;
+            new(PlaceHolder(), m_data->fields[index]) SubObjectSetData();
+        }
 
+        SubObjectSetData& subObjectSetData = *static_cast<SubObjectSetData*>(m_data->fields[index]);
+        for (const RID& rid: remove)
+        {
+            subObjectSetData.prototypeRemoved.Insert(rid);
+        }
     }
 
     void ResourceObject::CancelRemoveFromPrototypeSubObjectSet(u32 index, RID remove)
     {
+        CancelRemoveFromPrototypeSubObjectSet(index, {&remove, 1});
+    }
 
+    void ResourceObject::CancelRemoveFromPrototypeSubObjectSet(u32 index, const Span<RID>& remove)
+    {
+        ResourceField* field = m_data->storage->resourceType->fieldsByIndex[index];
+        FY_ASSERT(field->fieldType == ResourceFieldType::SubObjectSet, "Field is not ResourceFieldType::SubObjectSet");
+        if (m_data->fields[index] == nullptr)
+        {
+            m_data->fields[index] = static_cast<char*>(m_data->memory) + field->offset;
+            new(PlaceHolder(), m_data->fields[index]) SubObjectSetData();
+        }
+
+        SubObjectSetData& subObjectSetData = *static_cast<SubObjectSetData*>(m_data->fields[index]);
+        for (const RID& rid: remove)
+        {
+            subObjectSetData.prototypeRemoved.Erase(rid);
+        }
     }
 
     bool ResourceObject::Has(u32 index) const
     {
-        return false;
-    }
-
-    bool ResourceObject::Has(const StringView& name) const
-    {
-        return false;
+        return GetValue(index) != nullptr;
     }
 
     Array<RID> ResourceObject::GetSubObjectSetAsArray(u32 index)
     {
-        return Array<RID>();
+        u32 count = GetSubObjectSetCount(index);
+        Array<RID> rids{count};
+        GetSubObjectSet(index, rids);
+        return rids;
     }
 
     u32 ResourceObject::GetValueCount() const
     {
-        return 0;
+        return m_data->storage->resourceType->fieldsByIndex.Size();
     }
 
     u32 ResourceObject::GetIndex(const StringView& name) const
     {
-        return 0;
+        if (auto it = m_data->storage->resourceType->fieldsByName.Find(name))
+        {
+            return it->second->index;
+        }
+        return U32_MAX;
     }
 
     StringView ResourceObject::GetName(u32 index) const
     {
-        return Fyrion::StringView();
+        return m_data->storage->resourceType->fieldsByIndex[index]->name;
     }
 
     TypeHandler* ResourceObject::GetFieldType(u32 index) const
     {
-        return nullptr;
+        return m_data->storage->resourceType->fieldsByIndex[index]->typeHandler;
     }
 
     ResourceFieldType ResourceObject::GetResourceType(u32 index) const
     {
-        return ResourceFieldType::SubObject;
+        return m_data->storage->resourceType->fieldsByIndex[index]->fieldType;
     }
 
     ResourceObject::operator bool() const
     {
-        return false;
+        return m_data != nullptr;
+    }
+
+    RID ResourceObject::GetRID() const
+    {
+        return m_data->storage->rid;
     }
 
     void ResourceObject::Commit()
@@ -788,7 +909,14 @@ namespace Fyrion
         {
             if (m_data->storage->data.compare_exchange_strong(m_data->dataOnWrite, m_data))
             {
+                UpdateVersion(m_data->storage);
 
+                toCollectItems.enqueue(ToDestroyResourceData{
+                    .data = m_data->dataOnWrite,
+                    .destroySubObjects = false,
+                    .destroyResource = false
+                });
+                m_data = nullptr;
             }
         }
         else
@@ -801,9 +929,53 @@ namespace Fyrion
 
     ResourceObject::~ResourceObject()
     {
-        if (m_data)
+        if (m_data && !m_data->readOnly)
         {
-            //DestroyData(m_data);
+            DestroyData(m_data, true);
+        }
+    }
+
+    bool ResourceObject::ResourceSubObjectAllowed(u32 index, ResourceData* data, ResourceData* ownerData, const RID& rid)
+    {
+        if (ownerData)
+        {
+            SubObjectSetData* subObjectSetData = static_cast<SubObjectSetData*>(ownerData->fields[index]);
+            if (subObjectSetData && subObjectSetData->prototypeRemoved.Has(rid))
+            {
+                return false;
+            }
+        }
+
+        if (data->storage->prototype)
+        {
+            return ResourceSubObjectAllowed(index, data->storage->prototype->data, data, rid);
+        }
+
+        return true;
+    }
+
+    void ResourceObject::ResourceGetSubObjectSet(ResourceData* data, ResourceData* ownerData, u32 index, usize& count, Span<RID>* subObjects)
+    {
+        SubObjectSetData* subObjectSetData = static_cast<SubObjectSetData*>(data->fields[index]);
+
+        if (data->storage->prototype)
+        {
+            ResourceGetSubObjectSet(data->storage->prototype->data, data, index, count, subObjects);
+        }
+
+        if (subObjectSetData)
+        {
+            for (auto it: subObjectSetData->subObjects)
+            {
+                if (ResourceSubObjectAllowed(index, data, ownerData, it.first))
+                {
+                    if (subObjects)
+                    {
+                        (*subObjects)[count] = it.first;
+                    }
+                    count++;
+                }
+            }
         }
     }
 
@@ -814,6 +986,27 @@ namespace Fyrion
 
     void RepositoryShutdown()
     {
+        Repository::GarbageCollect();
+
+        for (u64 i = 0; i < counter; ++i)
+        {
+            ResourceStorage* storage = &pages[PAGE(i)]->elements[OFFSET(i)];
+            DestroyData(storage->data, false);
+            storage->~ResourceStorage();
+        }
+
+        for (u64 i = 0; i < pageCount; ++i)
+        {
+            if (!pages[i])
+            {
+                break;
+            }
+            allocator.MemFree(pages[i]);
+            pages[i] = nullptr;
+        }
+
+        counter = 0;
+        pageCount = 0;
         resourceTypes.Clear();
         resourceTypesByName.Clear();
         byUUID.Clear();

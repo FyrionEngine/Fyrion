@@ -21,6 +21,8 @@ int main(int argc, char** argv)
 
     i32 res = context.run();
 
+    Logger::Reset();
+
     HeapStats heapStats = MemoryGlobals::GetHeapStats();
     if (heapStats.totalAllocated != heapStats.totalFreed)
     {

@@ -13,10 +13,10 @@ namespace Fyrion
     namespace Repository
     {
         FY_API void             CreateResourceType(const ResourceTypeCreation& resourceTypeCreation);
+        FY_API void             CreateResourceType(TypeID typeId);
         FY_API TypeID           GetResourceTypeID(const StringView& typeName);
         FY_API TypeHandler*     GetResourceTypeHandler(ResourceType* resourceType);
         FY_API StringView       GetResourceTypeName(ResourceType* resourceType);
-        FY_API bool             IsInstanced(ResourceType* resourceType);
 
         FY_API RID              CreateResource(TypeID typeId);
         FY_API RID              CreateResource(TypeID typeId, const UUID& uuid);
@@ -47,6 +47,13 @@ namespace Fyrion
         FY_API u32              GetVersion(RID rid);
 
         FY_API void             GarbageCollect();
+
+
+        template<typename T>
+        void CreateResourceType()
+        {
+            return CreateResourceType(GetTypeID<T>());
+        }
 
 
         template<typename T>

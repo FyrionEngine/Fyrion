@@ -4,6 +4,8 @@
 #include "Allocator.hpp"
 #include "Hash.hpp"
 #include "StringConverter.hpp"
+#include "Format.hpp"
+
 
 namespace Fyrion
 {
@@ -945,3 +947,12 @@ namespace Fyrion
     using BufferString = BasicString<char, BufferSize>;
     using String = BasicString<char, FY_STRING_BUFFER_SIZE>;
 }
+
+template<>
+struct fmt::formatter<Fyrion::String> : fmt::formatter<std::string_view>
+{
+    auto format(const Fyrion::String& c, format_context& ctx) const
+    {
+        return formatter<std::string_view>::format(std::string_view(c.CStr(), c.Size()), ctx);
+    }
+};

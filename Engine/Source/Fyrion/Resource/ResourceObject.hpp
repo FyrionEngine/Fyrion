@@ -30,31 +30,31 @@ namespace Fyrion
         ResourceObject(const ResourceObject& object) = delete;
         ResourceObject& operator=(const ResourceObject& object) = delete;
 
-        ConstPtr            GetValue(u32 index);
+        ConstPtr            GetValue(u32 index) const;
         void                SetValue(u32 index, ConstPtr pointer);
         void                SetSubObject(u32 index, RID subobject);
         RID                 GetSubObject(u32 index);
         void                AddToSubObjectSet(u32 index, RID subObject);
+        void                AddToSubObjectSet(u32 index, const Span<RID>& subObjects);
         void                RemoveFromSubObjectSet(u32 index, RID subObject);
         void                RemoveFromSubObjectSet(u32 index, const Span<RID>& subObjects);
-        void                AddToSubObjectSet(u32 index, const Span<RID>& subObjects);
         void                ClearSubObjectSet(u32 index);
         usize               GetSubObjectSetCount(u32 index);
         void                GetSubObjectSet(u32 index, Span<RID> subObjects);
         usize               GetRemoveFromPrototypeSubObjectSetCount(u32 index) const;
         void                GetRemoveFromPrototypeSubObjectSet(u32 index, Span<RID> remove) const;
-        void                RemoveFromPrototypeSubObjectSet(u32 index, const Span<RID>& remove);
         void                RemoveFromPrototypeSubObjectSet(u32 index, RID remove);
-        void                CancelRemoveFromPrototypeSubObjectSet(u32 index, const Span<RID>& remove);
+        void                RemoveFromPrototypeSubObjectSet(u32 index, const Span<RID>& remove);
         void                CancelRemoveFromPrototypeSubObjectSet(u32 index, RID remove);
+        void                CancelRemoveFromPrototypeSubObjectSet(u32 index, const Span<RID>& remove);
         bool                Has(u32 index) const;
-        bool                Has(const StringView& name) const;
         Array<RID>          GetSubObjectSetAsArray(u32 index);
         u32                 GetValueCount() const;
         u32                 GetIndex(const StringView& name) const;
         StringView          GetName(u32 index) const;
         TypeHandler*        GetFieldType(u32 index) const;
         ResourceFieldType   GetResourceType(u32 index) const;
+        RID                 GetRID() const;
         void                Commit();
 
         explicit operator bool() const;
@@ -77,8 +77,10 @@ namespace Fyrion
             return *static_cast<const T*>(GetValue(index));
         }
 
-
     private:
+        static bool ResourceSubObjectAllowed(u32 index, ResourceData* data, ResourceData* ownerData, const RID& rid);
+        static void ResourceGetSubObjectSet(ResourceData* data, ResourceData* ownerData, u32 index, usize& count, Span<RID>* subObjects);
+
         ResourceData* m_data;
     };
 

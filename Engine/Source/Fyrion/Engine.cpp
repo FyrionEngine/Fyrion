@@ -90,7 +90,6 @@ namespace Fyrion
 
             ImGui::BeginFrame(window, deltaTime);
 
-            ImGui::ShowDemoWindow(0);
 
             if (Platform::UserRequestedClose(window))
             {

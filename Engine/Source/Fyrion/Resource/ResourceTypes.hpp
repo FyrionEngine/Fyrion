@@ -77,4 +77,32 @@ namespace Fyrion
         Span<ResourceFieldCreation> fields{};
     };
 
+
+    typedef RID (*FnImportAsset)(RID asset, const StringView& path);
+
+    struct AssetRoot
+    {
+        constexpr static u32 Name = 0;
+        constexpr static u32 Assets = 1;
+        constexpr static u32 Directories = 2;
+        constexpr static u32 Path = 3;
+    };
+
+    struct AssetDirectory
+    {
+        constexpr static u32 Name = 0;
+        constexpr static u32 Parent = 1;
+        constexpr static u32 Path = 2;
+    };
+
+    struct Asset
+    {
+        constexpr static u32 Name = 0;
+        constexpr static u32 Directory = 1;
+        constexpr static u32 Object = 2;
+        constexpr static u32 Path = 3;
+        constexpr static u32 Extension = 4;
+    };
+
+
 }

@@ -48,6 +48,7 @@ namespace Fyrion
         void                CancelRemoveFromPrototypeSubObjectSet(u32 index, RID remove);
         void                CancelRemoveFromPrototypeSubObjectSet(u32 index, const Span<RID>& remove);
         bool                Has(u32 index) const;
+        bool                HasNoPrototype(u32 index) const;
         Array<RID>          GetSubObjectSetAsArray(u32 index);
         u32                 GetValueCount() const;
         u32                 GetIndex(const StringView& name) const;
@@ -84,16 +85,16 @@ namespace Fyrion
         ResourceData* m_data;
     };
 
-    ResourceObjectValue::ResourceObjectValue(u32 index, ResourceObject* resourceObject) : m_index(index), m_resourceObject(resourceObject){}
+    inline ResourceObjectValue::ResourceObjectValue(u32 index, ResourceObject* resourceObject) : m_index(index), m_resourceObject(resourceObject){}
 
     template<typename T>
-    const T& ResourceObjectValue::As()
+    inline const T& ResourceObjectValue::As()
     {
         return *static_cast<const T*>(m_resourceObject->GetValue(m_index));
     }
 
     template<typename T>
-    ResourceObjectValue& ResourceObjectValue::operator=(const T& value)
+    inline ResourceObjectValue& ResourceObjectValue::operator=(const T& value)
     {
         m_resourceObject->SetValue(m_index, &value);
         return *this;

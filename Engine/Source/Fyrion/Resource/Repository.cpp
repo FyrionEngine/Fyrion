@@ -855,6 +855,11 @@ namespace Fyrion
         return GetValue(index) != nullptr;
     }
 
+    bool ResourceObject::HasNoPrototype(u32 index) const
+    {
+        return m_data->fields[index] != nullptr;
+    }
+
     Array<RID> ResourceObject::GetSubObjectSetAsArray(u32 index)
     {
         u32 count = GetSubObjectSetCount(index);

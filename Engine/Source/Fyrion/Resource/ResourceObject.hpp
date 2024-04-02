@@ -2,6 +2,7 @@
 
 #include "ResourceTypes.hpp"
 #include "Fyrion/Core/Array.hpp"
+#include "StreamObject.hpp"
 
 namespace Fyrion
 {
@@ -47,6 +48,8 @@ namespace Fyrion
         void                RemoveFromPrototypeSubObjectSet(u32 index, const Span<RID>& remove);
         void                CancelRemoveFromPrototypeSubObjectSet(u32 index, RID remove);
         void                CancelRemoveFromPrototypeSubObjectSet(u32 index, const Span<RID>& remove);
+        StreamObject*       GetStream(u32 index);
+        StreamObject*       WriteStream(u32 index);
         bool                Has(u32 index) const;
         bool                HasNoPrototype(u32 index) const;
         Array<RID>          GetSubObjectSetAsArray(u32 index);

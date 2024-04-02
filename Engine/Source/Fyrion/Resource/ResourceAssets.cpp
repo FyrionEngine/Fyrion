@@ -11,7 +11,7 @@ namespace Fyrion::ResourceAssets
     void LoadAssetFile(ResourceObject& assetRoot, RID directoryAsset, const StringView& assetFile);
     String MakeDirectoryAbsolutePath(RID rid);
     String MakeAssetAbsolutePath(RID rid);
-    void UpdateStreams(RID object, const StringView& assetFile);
+    void UpdateStreams(RID rid, const StringView& assetFile);
 }
 
 namespace Fyrion
@@ -65,7 +65,11 @@ namespace Fyrion
         {
             String buffer = {};
 
-//            FileSystem::LoadTextFile(assetFile, buffer);
+            FileHandler handler = FileSystem::OpenFile(assetFile, AccessMode::ReadOnly);
+            usize size = FileSystem::GetFileSize(handler);
+            buffer.Resize(size);
+            FileSystem::ReadFile(handler, buffer.begin(), size);
+            FileSystem::CloseFile(handler);
 
             if (buffer.Empty()) return;
 
@@ -118,29 +122,29 @@ namespace Fyrion
         }
     }
 
-    void ResourceAssets::UpdateStreams(RID object, const StringView& assetFile)
+    void ResourceAssets::UpdateStreams(RID rid, const StringView& assetFile)
     {
-//        Path dataPath = assetFile.Parent() + assetFile.Name() + FY_DATA_EXTENSION;
-//        if (FileSystem::GetFileStatus(dataPath).exists)
-//        {
-//            ResourceObject objectNoPro = Repository::ReadNoPrototypes(object);
-//            u32 valueCount = objectNoPro.GetValueCount();
-//            for (int i = 0; i < valueCount; ++i)
-//            {
-//                if (objectNoPro.GetResourceType(i) == ResourceFieldType_Buffer)
-//                {
-//                    BufferObject* bufferObject = objectNoPro.GetBuffer(i);
-//                    if (bufferObject)
-//                    {
-//                        char strBuffer[17]{};
-//                        usize bufSize = U64ToHex(Buffer::GetBufferId(bufferObject), strBuffer);
-//                        StringView bufferName = {strBuffer, bufSize};
-//                        Path bufferPath =  dataPath + bufferName;
-//                        Buffer::MapTo(bufferObject, bufferPath, 0);
-//                    }
-//                }
-//            }
-//        }
+        String dataPath =  Path::Join(Path::Parent(assetFile), Path::Name(assetFile), FY_DATA_EXTENSION);
+        if (FileSystem::GetFileStatus(dataPath).exists)
+        {
+            ResourceObject read = Repository::Read(rid);
+            u32 valueCount = read.GetValueCount();
+            for (int i = 0; i < valueCount; ++i)
+            {
+                if (read.HasNoPrototype(i) && read.GetResourceType(i) == ResourceFieldType::SubObjectSet)
+                {
+                    StreamObject* streamObject = read.GetStream(i);
+                    if (streamObject)
+                    {
+                        char strBuffer[17]{};
+                        usize bufSize = U64ToHex(streamObject->GetBufferId(), strBuffer);
+                        StringView streamName = {strBuffer, bufSize};
+                        String streamPath =  Path::Join(dataPath, streamName);
+                        streamObject->MapTo(streamPath, 0);
+                    }
+                }
+            }
+        }
     }
 
     RID ResourceAssets::LoadAssetsFromDirectory(const StringView& name, const StringView& directory)
@@ -271,7 +275,10 @@ namespace Fyrion
                     String dataPath = Path::Join(parentPath, Path::Name(newAbsolutePath), FY_DATA_EXTENSION);
 
                     String str = ResourceSerialization::WriteResourceInfo(objectRid);
-                    //FileSystem::SaveFile(newAbsolutePath, {reinterpret_cast<u8*>(str.begin()), reinterpret_cast<u8*>(str.end())});
+
+                    FileHandler handler = FileSystem::OpenFile(newAbsolutePath, AccessMode::WriteOnly);
+                    FileSystem::WriteFile(handler, str.begin(), str.Size());
+                    FileSystem::CloseFile(handler);
 
                     Context->Logger.Debug("Asset {} saved on {} ", rid.id, newAbsolutePath);
 
@@ -283,36 +290,35 @@ namespace Fyrion
                         {
                             if (object.GetResourceType(i) == ResourceFieldType::Stream)
                             {
-//                            BufferObject* bufferObject = object.GetBuffer(i);
-//                            if (bufferObject)
-//                            {
-//                                char strBuffer[17]{};
-//                                usize bufSize = U64ToHex(Buffer::GetBufferId(bufferObject), strBuffer);
-//                                StringView bufferName = {strBuffer, bufSize};
-//                                Path bufferPath = dataPath + bufferName;
-//
-//
-//                                if (!FileSystem::GetFileStatus(dataPath).exists)
-//                                {
-//                                    FileSystem::CreateDirectory(dataPath);
-//                                }
-//
-//                                //if it's still mapped, it's not changed.
-//                                StringView path = Buffer::MappedTo(bufferObject);
-//                                if (!path.Empty())
-//                                {
-//                                    if (bufferPath.GetString() != path)
-//                                    {
-//                                        FileSystem::Rename(path, bufferPath);
-//                                    }
-//                                }
-//                                else
-//                                {
-//                                    Path tempPath = FileSystem::TempFolder() + bufferName;
-//                                    FileSystem::Rename(tempPath, bufferPath);
-//                                }
-//                                Buffer::MapTo(bufferObject, bufferPath, 0);
-//                            }
+                            StreamObject* streamObject = object.GetStream(i);
+                            if (streamObject)
+                            {
+                                char strBuffer[17]{};
+                                usize bufSize = U64ToHex(streamObject->GetBufferId(), strBuffer);
+                                StringView streamName = {strBuffer, bufSize};
+                                String streamPath = Path::Join(dataPath, streamName);
+
+                                if (!FileSystem::GetFileStatus(dataPath).exists)
+                                {
+                                    FileSystem::CreateDirectory(dataPath);
+                                }
+
+                                //if it's still mapped, it's not changed.
+                                StringView path = streamObject->MappedTo();
+                                if (!path.Empty())
+                                {
+                                    if (streamPath != path)
+                                    {
+                                        FileSystem::Rename(path, streamPath);
+                                    }
+                                }
+                                else
+                                {
+                                    String tempPath = Path::Join(FileSystem::TempFolder(), streamName);
+                                    FileSystem::Rename(tempPath, streamPath);
+                                }
+                                streamObject->MapTo(streamPath, 0);
+                            }
                             }
                         }
                     }

@@ -11,6 +11,7 @@
 #include "Fyrion/IO/FileTypes.hpp"
 #include "Fyrion/Core/HashSet.hpp"
 #include "ResourceObject.hpp"
+#include "StreamObject.hpp"
 
 #include "concurrentqueue.h"
 
@@ -23,12 +24,6 @@ namespace Fyrion
     {
         HashSet<RID> subObjects{};
         HashSet<RID> prototypeRemoved{};
-    };
-
-    struct StreamObject
-    {
-        u64 streamId{};
-        FileHandler fileHandler{};
     };
 
     struct ResourceField
@@ -982,6 +977,51 @@ namespace Fyrion
                 }
             }
         }
+    }
+
+    StreamObject* ResourceObject::GetStream(u32 index)
+    {
+        return nullptr;
+    }
+
+    StreamObject* ResourceObject::WriteStream(u32 index)
+    {
+        return nullptr;
+    }
+
+    void StreamObject::MapTo(const StringView& file, usize offset)
+    {
+
+    }
+
+    StringView StreamObject::MappedTo()
+    {
+        return Fyrion::StringView();
+    }
+
+    void StreamObject::Set(VoidPtr data, usize size)
+    {
+
+    }
+
+    usize StreamObject::Size()
+    {
+        return 0;
+    }
+
+    void StreamObject::Get(VoidPtr data, usize size, usize offset)
+    {
+
+    }
+
+    u64 StreamObject::GetBufferId()
+    {
+        return 0;
+    }
+
+    void StreamObject::SetBufferId(u64 bufferId)
+    {
+
     }
 
     void RepositoryInit()

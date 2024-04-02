@@ -30,6 +30,10 @@ Files extracted from upstream source:
 - `LICENSE.md`
 
 
+## ImGui
+- Upstream: https://github.com/FyrionEngine/imgui
+- License: MIT
+
 ## fmt
 - Upstream: https://github.com/fmtlib/fmt
 - Version: 10.2.1 (e69e5f977d458f2650bb346dadf2ad30c5320281, 2024)
@@ -40,6 +44,12 @@ Files extracted from upstream source:
 - `base.h`
 - `format.h`
 - `format-inl.h`
+
+## freetype
+- Upstream: https://download.savannah.gnu.org/releases/freetype/freetype-2.10.0.tar.bz2
+- Version: freetype-2.10.0
+- License: The FreeType Project LICENSE
+
 
 Additional Info:
 these files are converted to Format.hpp and Format.cpp on /Core

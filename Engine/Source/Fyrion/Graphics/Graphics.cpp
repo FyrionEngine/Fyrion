@@ -36,6 +36,11 @@ namespace Fyrion
         return renderDevice->BeginFrame();
     }
 
+    RenderDevice& GetRenderDevice()
+    {
+        return *renderDevice;
+    }
+
     void GraphicsEndFrame(Swapchain swapchain)
     {
         renderDevice->EndFrame(swapchain);

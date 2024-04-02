@@ -66,6 +66,10 @@ namespace Fyrion
 
         bool                CreateSwapchain(VulkanSwapchain* vulkanSwapchain);
         void                DestroySwapchain(VulkanSwapchain* vulkanSwapchain);
+
+        void ImGuiInit(Swapchain renderSwapchain) override;
+        void ImGuiNewFrame() override;
+        void ImGuiRender(RenderCommands& renderCommands) override;
     };
 
 

@@ -10,6 +10,9 @@
 #include "Fyrion/Core/Span.hpp"
 #include "Fyrion/Graphics/Device/Vulkan/VulkanPlatform.hpp"
 
+#include "Fyrion/ImGui/ImGuiPlatform.hpp"
+#include "Fyrion/ImGui/Lib/imgui_impl_glfw.h"
+
 namespace Fyrion
 {
     namespace
@@ -158,6 +161,16 @@ namespace Fyrion
     VkResult Platform::CreateWindowSurface(Window window, VkInstance instance, VkSurfaceKHR* surface)
     {
         return glfwCreateWindowSurface(instance, (GLFWwindow*)window.handler, nullptr, surface);
+    }
+
+    void Platform::ImGuiInit(Fyrion::Window window)
+    {
+        ImGui_ImplGlfw_InitForOther((GLFWwindow*)window.handler, true);
+    }
+
+    void Platform::ImGuiNewFrame()
+    {
+        ImGui_ImplGlfw_NewFrame();
     }
 
 }

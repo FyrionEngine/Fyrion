@@ -9,8 +9,7 @@ target_include_directories(FyrionEngine PUBLIC Thirdparty/concurrentqueue)
 
 target_compile_definitions(FyrionEngine PUBLIC FMT_LIB_EXPORT=1)
 
-target_link_libraries(FyrionEngine PRIVATE mimalloc glfw vma volk vulkan-sdk)
-
+target_link_libraries(FyrionEngine PRIVATE mimalloc glfw vma volk vulkan-sdk freetype)
 
 ##tests
 file(GLOB_RECURSE FYRION_ENGINE_TESTS_SOURCES Test/*.hpp Test/*.cpp Test/*.h Test/*.c)

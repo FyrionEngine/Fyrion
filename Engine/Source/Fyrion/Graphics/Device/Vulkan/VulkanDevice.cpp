@@ -7,6 +7,7 @@
 #include "VulkanPlatform.hpp"
 #include "VulkanUtils.hpp"
 #include "Fyrion/Platform/Platform.hpp"
+#include "Fyrion/ImGui/Lib/imgui_impl_vulkan.h"
 
 namespace Fyrion
 {
@@ -14,6 +15,8 @@ namespace Fyrion
 
     VulkanDevice::~VulkanDevice()
     {
+        ImGui_ImplVulkan_Shutdown();
+
         for (size_t i = 0; i < FY_FRAMES_IN_FLIGHT; i++)
         {
             vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
@@ -673,6 +676,54 @@ namespace Fyrion
         }
 
         currentFrame = (currentFrame + 1) % FY_FRAMES_IN_FLIGHT;
+    }
+
+    static void CheckVkResult(VkResult err)
+    {
+        if (err == 0)
+        {
+            return;
+        }
+       //logger.Error("VkResult = {}", (i32) err);
+    }
+
+    void VulkanDevice::ImGuiInit(Swapchain renderSwapchain)
+    {
+        VulkanSwapchain* vulkanSwapchain = static_cast<VulkanSwapchain*>(renderSwapchain.handler);
+
+        ImGui_ImplVulkan_LoadFunctions([](const char* functionName, void* userData)
+        {
+            return vkGetInstanceProcAddr(static_cast<VulkanDevice*>(userData)->instance, functionName);
+        }, this);
+
+        ImGui_ImplVulkan_InitInfo Info = {};
+        Info.Instance        = instance;
+        Info.PhysicalDevice  = physicalDevice;
+        Info.Device          = device;
+        Info.QueueFamily     = graphicsFamily;
+        Info.Queue           = graphicsQueue;
+        Info.PipelineCache   = VK_NULL_HANDLE;
+        Info.DescriptorPool  = descriptorPool;
+        Info.Subpass         = 0;
+        Info.MinImageCount   = 2;
+        Info.ImageCount      = vulkanSwapchain->images.Size();
+        Info.MSAASamples     = VK_SAMPLE_COUNT_1_BIT;
+        Info.Allocator       = nullptr;
+        Info.RenderPass      = vulkanSwapchain->renderPasses[0].renderPass;
+        Info.CheckVkResultFn = CheckVkResult;
+
+        ImGui_ImplVulkan_Init(&Info);
+        ImGui_ImplVulkan_CreateFontsTexture();
+    }
+
+    void VulkanDevice::ImGuiNewFrame()
+    {
+        ImGui_ImplVulkan_NewFrame();
+    }
+
+    void VulkanDevice::ImGuiRender(RenderCommands& renderCommands)
+    {
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), static_cast<VulkanCommands&>(renderCommands).commandBuffer);
     }
 
     SharedPtr<RenderDevice> CreateVulkanDevice()

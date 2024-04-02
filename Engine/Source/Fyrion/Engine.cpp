@@ -5,7 +5,7 @@
 #include "Fyrion/Graphics/GraphicsTypes.hpp"
 #include "Fyrion/Graphics/Graphics.hpp"
 #include "TypeRegister.hpp"
-#include <iostream>
+#include "Fyrion/ImGui/ImGui.hpp"
 
 namespace Fyrion
 {
@@ -72,6 +72,8 @@ namespace Fyrion
             .window = window,
             .vsync = true
         });
+
+        ImGui::Init(window, swapchain);
     }
 
     void Engine::Run()
@@ -85,6 +87,10 @@ namespace Fyrion
             lastTime  = currentTime;
 
             Platform::ProcessEvents();
+
+            ImGui::BeginFrame(window, deltaTime);
+
+            ImGui::ShowDemoWindow(0);
 
             if (Platform::UserRequestedClose(window))
             {
@@ -117,7 +123,7 @@ namespace Fyrion
             cmd.SetViewport(viewportInfo);
             cmd.SetScissor(Rect{.x= 0, .y = 0, .width = extent.width, .height = extent.height});
 
-            //Draw to swapchain.
+            ImGui::Render(cmd);
 
             cmd.EndRenderPass();
             cmd.End();

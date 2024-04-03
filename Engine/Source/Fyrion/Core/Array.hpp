@@ -3,6 +3,7 @@
 #include "Fyrion/Common.hpp"
 #include "Traits.hpp"
 #include "Allocator.hpp"
+#include "TypeInfo.hpp"
 #include <initializer_list>
 
 namespace Fyrion
@@ -461,4 +462,78 @@ namespace Fyrion
             m_allocator.MemFree(m_first);
         }
     }
+
+
+
+
+    struct ArrayApi
+    {
+        typedef usize(*FnArraySize)(ConstPtr array);
+        typedef void(*FnArrayClear)(VoidPtr array);
+        typedef VoidPtr(*FnArrayData)(VoidPtr array);
+        typedef VoidPtr(*FnArrayGet)(VoidPtr array, usize index);
+        typedef ConstPtr (*FnArrayGetConst)(ConstPtr array, usize index);
+        typedef void(*FnArraySet)(VoidPtr array, usize index, ConstPtr value);
+        typedef VoidPtr(*FnArrayPushNew)(VoidPtr array);
+        typedef TypeInfo(*FnArrayGetTypeInfo)();
+
+        FnArraySize        size{};
+        FnArrayClear       clear{};
+        FnArrayData        data{};
+        FnArrayGet         get{};
+        FnArrayGetConst    getConst{};
+        FnArraySet         set{};
+        FnArrayPushNew     pushNew{};
+        FnArrayGetTypeInfo getTypeInfo{};
+    };
+
+    template<typename Type>
+    struct TypeApiInfo<Array<Type>>
+    {
+        static void ExtractApi(VoidPtr pointer)
+        {
+            ArrayApi& arrayApi = *static_cast<ArrayApi*>(pointer);
+            arrayApi.size = [](ConstPtr pointer)
+            {
+                return static_cast<const Array<Type>*>(pointer)->Size();
+            };
+
+            arrayApi.clear = [](VoidPtr pointer)
+            {
+                static_cast<Array<Type>*>(pointer)->Clear();
+            };
+
+            arrayApi.data = [](VoidPtr pointer)
+            {
+                return static_cast<VoidPtr>(static_cast<Array<Type>*>(pointer)->Data());
+            };
+
+            arrayApi.get = [](VoidPtr pointer, usize index)
+            {
+                Array<Type>& array = *static_cast<Array<Type>*>(pointer);
+                return static_cast<VoidPtr>(&array[index]);
+            };
+
+            arrayApi.set = [](VoidPtr pointer, usize index, ConstPtr value)
+            {
+                Array<Type>& array = *static_cast<Array<Type>*>(pointer);
+                array[index] = *static_cast<const Type*>(value);
+            };
+
+            arrayApi.pushNew = [](VoidPtr array)
+            {
+                return static_cast<VoidPtr>(&static_cast<Array<Type>*>(array)->EmplaceBack());
+            };
+
+            arrayApi.getTypeInfo = []()
+            {
+                return GetTypeInfo<Type>();
+            };
+        }
+
+        static constexpr TypeID GetApiId()
+        {
+            return GetTypeID<ArrayApi>();
+        }
+    };
 }

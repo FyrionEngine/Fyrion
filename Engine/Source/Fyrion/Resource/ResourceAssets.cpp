@@ -18,8 +18,8 @@ namespace Fyrion
 {
     struct AssetFileInfo
     {
-        u32    LoadedVersion;
-        String AbsolutePath;
+        u32    loadedVersion;
+        String absolutePath;
     };
 
     namespace
@@ -45,8 +45,8 @@ namespace Fyrion
             assetDirectory.Commit();
 
             assetFileInfos.Insert(rid, AssetFileInfo{
-                .LoadedVersion = Repository::GetVersion(rid),
-                .AbsolutePath = assetFile
+                .loadedVersion = Repository::GetVersion(rid),
+                .absolutePath = assetFile
             });
 
             assetRoot.AddToSubObjectSet(AssetRoot::Directories, rid);
@@ -83,8 +83,8 @@ namespace Fyrion
             assetRoot.AddToSubObjectSet(AssetRoot::Assets, rid);
 
             assetFileInfos.Insert(rid, AssetFileInfo{
-                .LoadedVersion = Repository::GetVersion(rid),
-                .AbsolutePath = assetFile
+                .loadedVersion = Repository::GetVersion(rid),
+                .absolutePath = assetFile
             });
         }
         else if (auto it = assetImporters.Find(extension))
@@ -110,8 +110,8 @@ namespace Fyrion
                 asset.Commit();
 
                 assetFileInfos.Insert(rid, AssetFileInfo{
-                    .LoadedVersion = Repository::GetVersion(rid),
-                    .AbsolutePath = assetFile
+                    .loadedVersion = Repository::GetVersion(rid),
+                    .absolutePath = assetFile
                 });
             }
         }
@@ -170,8 +170,8 @@ namespace Fyrion
         }
 
         assetFileInfos.Insert(rid, AssetFileInfo{
-            .LoadedVersion = Repository::GetVersion(rid),
-            .AbsolutePath = directory
+            .loadedVersion = Repository::GetVersion(rid),
+            .absolutePath = directory
         });
 
         return rid;
@@ -200,15 +200,15 @@ namespace Fyrion
             AssetFileInfo& info = it->second;
             u32 version = Repository::GetVersion(dir);
 
-            if (version > info.LoadedVersion)
+            if (version > info.loadedVersion)
             {
-                bool   oldPathExists   = FileSystem::GetFileStatus(info.AbsolutePath).exists;
+                bool   oldPathExists   = FileSystem::GetFileStatus(info.absolutePath).exists;
                 String newAbsolutePath = MakeDirectoryAbsolutePath(dir);
 
                 if (oldPathExists)
                 {
-                    FileSystem::Rename(info.AbsolutePath, newAbsolutePath);
-                    logger.Debug("Directory {} moved from {} to {} ", rid.id, info.AbsolutePath, newAbsolutePath);
+                    FileSystem::Rename(info.absolutePath, newAbsolutePath);
+                    logger.Debug("Directory {} moved from {} to {} ", rid.id, info.absolutePath, newAbsolutePath);
                 }
                 else if (!FileSystem::GetFileStatus(newAbsolutePath).exists)
                 {
@@ -216,15 +216,15 @@ namespace Fyrion
                     logger.Debug("Directory {} created on {} ", rid.id, newAbsolutePath);
                 }
 
-                info.AbsolutePath  = newAbsolutePath;
-                info.LoadedVersion = version;
+                info.absolutePath  = newAbsolutePath;
+                info.loadedVersion = version;
             }
             else if (!Repository::IsActive(dir))
             {
-                if (FileSystem::GetFileStatus(info.AbsolutePath).exists)
+                if (FileSystem::GetFileStatus(info.absolutePath).exists)
                 {
-                    FileSystem::Remove(info.AbsolutePath);
-                    logger.Debug("Directory {} deleted from {} ", rid.id, info.AbsolutePath);
+                    FileSystem::Remove(info.absolutePath);
+                    logger.Debug("Directory {} deleted from {} ", rid.id, info.absolutePath);
                 }
                 Repository::DestroyResource(dir);
                 assetFileInfos.Erase(it);
@@ -249,16 +249,16 @@ namespace Fyrion
             AssetFileInfo& info = it->second;
             u32 version = Repository::GetVersion(asset);
 
-            if (version > info.LoadedVersion)
+            if (version > info.loadedVersion)
             {
                 String newAbsolutePath = MakeAssetAbsolutePath(asset);
                 if (!newAbsolutePath.Empty())
                 {
-                    bool oldPathExists = FileSystem::GetFileStatus(info.AbsolutePath).exists;
+                    bool oldPathExists = FileSystem::GetFileStatus(info.absolutePath).exists;
                     if (oldPathExists)
                     {
-                        FileSystem::Remove(info.AbsolutePath);
-                        logger.Debug("Asset {} Removed from {} ", rid.id, info.AbsolutePath);
+                        FileSystem::Remove(info.absolutePath);
+                        logger.Debug("Asset {} Removed from {} ", rid.id, info.absolutePath);
                     }
 
                     String parentPath = Path::Parent(newAbsolutePath);
@@ -318,26 +318,26 @@ namespace Fyrion
                         }
                     }
 
-                    String oldPath = info.AbsolutePath;
-                    String oldDataPath = Path::Join(Path::Parent(info.AbsolutePath), Path::Name(info.AbsolutePath), FY_DATA_EXTENSION);
+                    String oldPath = info.absolutePath;
+                    String oldDataPath = Path::Join(Path::Parent(info.absolutePath), Path::Name(info.absolutePath), FY_DATA_EXTENSION);
                     if (oldDataPath != dataPath)
                     {
                         FileSystem::Remove(oldDataPath);
                     }
 
-                    info.AbsolutePath = newAbsolutePath;
+                    info.absolutePath = newAbsolutePath;
                 }
-                info.LoadedVersion   = version;
+                info.loadedVersion   = version;
             }
             else if (!Repository::IsActive(asset))
             {
-                if (FileSystem::GetFileStatus(info.AbsolutePath).exists)
+                if (FileSystem::GetFileStatus(info.absolutePath).exists)
                 {
-                    FileSystem::Remove(info.AbsolutePath);
-                    logger.Debug("Asset {} deleted from {} ", rid.id, info.AbsolutePath);
+                    FileSystem::Remove(info.absolutePath);
+                    logger.Debug("Asset {} deleted from {} ", rid.id, info.absolutePath);
                 }
 
-                String dataPath = Path::Join(Path::Parent(info.AbsolutePath), Path::Name(info.AbsolutePath), FY_DATA_EXTENSION);
+                String dataPath = Path::Join(Path::Parent(info.absolutePath), Path::Name(info.absolutePath), FY_DATA_EXTENSION);
                 if (FileSystem::GetFileStatus(dataPath).exists)
                 {
                     FileSystem::Remove(dataPath);
@@ -398,7 +398,7 @@ namespace Fyrion
     {
         if (auto it = assetFileInfos.Find(rid))
         {
-            return it->second.LoadedVersion;
+            return it->second.loadedVersion;
         }
         return 0;
     }
@@ -407,7 +407,7 @@ namespace Fyrion
     {
         if (auto it = assetFileInfos.Find(rid))
         {
-            return it->second.AbsolutePath;
+            return it->second.absolutePath;
         }
         return {};
     }

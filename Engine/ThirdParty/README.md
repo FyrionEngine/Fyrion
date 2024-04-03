@@ -30,9 +30,6 @@ Files extracted from upstream source:
 - `LICENSE.md`
 
 
-## ImGui
-- Upstream: https://github.com/FyrionEngine/imgui
-- License: MIT
 
 ## fmt
 - Upstream: https://github.com/fmtlib/fmt
@@ -54,6 +51,11 @@ Files extracted from upstream source:
 Additional Info:
 these files are converted to Format.hpp and Format.cpp on /Core
 
+## ImGui
+- Upstream: https://github.com/FyrionEngine/imgui
+- License: MIT
+- `//TODO`
+
 ## mimalloc
 - Upstream: https://github.com/microsoft/mimalloc
 - Version: 2.1.2 (43ce4bd7fd34bcc730c1c7471c99995597415488, 2023)
@@ -62,7 +64,6 @@ these files are converted to Format.hpp and Format.cpp on /Core
 Files extracted from upstream source:
 - `include/*`
 - `src/*`
-
 
 ## tinystl
 - Upstream: https://github.com/mendsley/tinystl

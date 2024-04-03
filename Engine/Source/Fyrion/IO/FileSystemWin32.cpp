@@ -34,7 +34,7 @@ namespace Fyrion
                     bool isDirEntry = !(strcmp(fd.cFileName, ".") == 0 || strcmp(fd.cFileName, "..") == 0);
                     if (isDirEntry)
                     {
-                        m_path = m_directory + fd.cFileName;
+                        m_path = Path::Join(m_directory, fd.cFileName);
                         return *this;
                     }
                 } while (::FindNextFile(m_handler, &fd) != 0);

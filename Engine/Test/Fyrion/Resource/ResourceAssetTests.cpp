@@ -89,7 +89,7 @@ namespace
 
 		{
 			RID rid = Repository::GetByPath("Fyrion://Dir2/TxtFile2.txt");
-			CHECK(rid);
+			REQUIRE(rid);
 			ResourceObject txtAsset = Repository::Read(rid);
 			CHECK(txtAsset.GetValue<String>(TxtAsset::Content) == "bbbb");
 		}

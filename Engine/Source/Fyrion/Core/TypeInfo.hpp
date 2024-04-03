@@ -2,13 +2,24 @@
 
 #include "Fyrion/Common.hpp"
 #include "StringView.hpp"
+#include "TypeApiInfo.hpp"
 namespace Fyrion
 {
+    typedef void(*FnExtractApi)(VoidPtr pointer);
+    typedef usize(*FnStringSize)(ConstPtr pointer);
+    typedef usize(*FnToString)(ConstPtr pointer, char* buffer);
+    typedef void (*FnFromString)(VoidPtr pointer, const StringView& stringView);
+
     struct TypeInfo
     {
         TypeID       typeId{};
         usize        size{};
         usize        alignment{};
+        TypeID       apiId{};
+        FnExtractApi extractApi = nullptr;
+        FnStringSize stringSize = nullptr;
+        FnToString   toString   = nullptr;
+        FnFromString fromString = nullptr;
     };
 
     template<typename Type>
@@ -80,8 +91,29 @@ namespace Fyrion
         TypeInfo typeInfo = TypeInfo{
             .typeId = GetTypeID<Type>(),
             .size = GetTypeSize<Type>(),
-            .alignment = GetTypeAlign<Type>()
+            .alignment = GetTypeAlign<Type>(),
+            .apiId = TypeApiInfo<Traits::RemoveAll<Type>>::GetApiId(),
+            .extractApi = TypeApiInfo<Traits::RemoveAll<Type>>::ExtractApi,
         };
+
+        if constexpr (StringConverter<Type>::hasConverter)
+        {
+            typeInfo.stringSize = [](ConstPtr  pointer)
+            {
+                return StringConverter<Type>::Size(*static_cast<const Traits::RemoveAll<Type>*>(pointer));
+            };
+
+            typeInfo.toString = [](ConstPtr pointer, char* buffer)
+            {
+                return StringConverter<Type>::ToString(buffer, 0, *static_cast<const Traits::RemoveAll<Type>*>(pointer));
+            };
+
+            typeInfo.fromString = [](VoidPtr pointer, const StringView& stringView)
+            {
+                StringConverter<Type>::FromString(stringView.Data(), stringView.Size(), *static_cast<Traits::RemoveAll<Type>*>(pointer));
+            };
+        }
+
         return typeInfo;
     }
 }

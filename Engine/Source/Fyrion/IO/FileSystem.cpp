@@ -59,4 +59,13 @@ namespace Fyrion
         fs::copy(fs::path(from.begin(), from.end()), toPath, copyOptions, ec);
         return ec.value() == 0;
     }
+
+    String FileSystem::ReadFileAsString(const StringView& path)
+    {
+        String ret{};
+        FileHandler fileHandler = OpenFile(path, AccessMode::ReadOnly);
+        ret.Resize(GetFileSize(fileHandler));
+        ReadFile(fileHandler, ret.begin(), ret.Size());
+        return ret;
+    }
 }

@@ -14,6 +14,8 @@
 #include "StreamObject.hpp"
 
 #include "concurrentqueue.h"
+#include "Fyrion/IO/FileSystem.hpp"
+#include "Fyrion/IO/Path.hpp"
 
 #define PAGE(value)    u32((value)/FY_REPO_PAGE_SIZE)
 #define OFFSET(value)  (u32)((value) & (FY_REPO_PAGE_SIZE - 1))
@@ -216,6 +218,26 @@ namespace Fyrion
 
             resourceStorage->~ResourceStorage();
             MemSet(resourceStorage, 0, sizeof(ResourceStorage));
+        }
+
+        u64 GenerateBufferId()
+        {
+            return Random::Xorshift64star();
+        }
+
+        String GetBufferFile(StreamObject* streamObject)
+        {
+
+            if (!streamObject->MappedTo().Empty())
+            {
+                return streamObject->MappedTo();
+            }
+            else
+            {
+                char strBuffer[17]{};
+                usize bufSize = U64ToHex(streamObject->GetBufferId(), strBuffer);
+                return Path::Join(FileSystem::TempFolder(), StringView{strBuffer, bufSize});
+            }
         }
     }
 
@@ -981,47 +1003,62 @@ namespace Fyrion
 
     StreamObject* ResourceObject::GetStream(u32 index)
     {
-        return nullptr;
+        return (StreamObject*)GetValue(index);
     }
 
     StreamObject* ResourceObject::WriteStream(u32 index)
     {
-        return nullptr;
+        ResourceField* field = m_data->storage->resourceType->fieldsByIndex[index];
+        FY_ASSERT(field->fieldType == ResourceFieldType::Stream, "Field is not ResourceFieldType::Stream");
+
+        if (m_data->fields[index] == nullptr)
+        {
+            m_data->fields[index] = static_cast<char*>(m_data->memory) + field->offset;
+            StreamObject* streamObject = new(PlaceHolder(), m_data->fields[index]) StreamObject{};
+            streamObject->SetBufferId(GenerateBufferId());
+        }
+
+        return static_cast<StreamObject*>(m_data->fields[index]);
     }
 
     void StreamObject::MapTo(const StringView& file, usize offset)
     {
-
+        m_mapFile = file;
     }
 
     StringView StreamObject::MappedTo()
     {
-        return Fyrion::StringView();
+        return m_mapFile;
     }
 
     void StreamObject::Set(VoidPtr data, usize size)
     {
-
+        m_mapFile.Clear();
+        FileHandler fileHandler = FileSystem::OpenFile(GetBufferFile(this), AccessMode::WriteOnly);
+        FileSystem::WriteFile(fileHandler, data, size);
+        FileSystem::CloseFile(fileHandler);
     }
 
     usize StreamObject::Size()
     {
-        return 0;
+        return FileSystem::GetFileStatus(GetBufferFile(this)).fileSize;
     }
 
     void StreamObject::Get(VoidPtr data, usize size, usize offset)
     {
-
+        FileHandler fileHandler = FileSystem::OpenFile(GetBufferFile(this), AccessMode::ReadOnly);
+        FileSystem::ReadFile(fileHandler, data, size);
+        FileSystem::CloseFile(fileHandler);
     }
 
-    u64 StreamObject::GetBufferId()
+    u64 StreamObject::GetBufferId() const
     {
-        return 0;
+        return m_id;
     }
 
     void StreamObject::SetBufferId(u64 bufferId)
     {
-
+        m_id = bufferId;
     }
 
     void RepositoryInit()

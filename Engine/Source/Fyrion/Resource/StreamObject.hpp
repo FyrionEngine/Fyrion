@@ -5,6 +5,7 @@
 
 namespace Fyrion
 {
+    //TODO: use mmap instead of String.
 
     class FY_API StreamObject
     {
@@ -14,7 +15,7 @@ namespace Fyrion
         void        Set(VoidPtr data, usize size);
         usize       Size();
         void        Get(VoidPtr data, usize size, usize offset);
-        u64         GetBufferId();
+        u64         GetBufferId() const;
         void        SetBufferId(u64 bufferId);
     private:
         u64         m_id{};

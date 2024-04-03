@@ -21,11 +21,11 @@ namespace Fyrion
         Registry::Type<i64>("i64");
         Registry::Type<f32>("f32");
         Registry::Type<f64>("f64");
-        Registry::Type<String>("Skore::String");
-        Registry::Type<StringView>("Skore::StringView");
+        Registry::Type<String>("Fyrion::String");
+        Registry::Type<StringView>("Fyrion::StringView");
 
-        Registry::Type<RID>("Skore::RID");
-        Registry::Type<Array<RID>>("Skore::RIDArray");
+        Registry::Type<RID>("Fyrion::RID");
+        Registry::Type<Array<RID>>("Fyrion::RIDArray");
 
         auto extent = Registry::Type<Extent>();
         extent.Field<&Extent::width>("width");

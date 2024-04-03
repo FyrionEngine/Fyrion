@@ -24,6 +24,9 @@ namespace Fyrion
     void RepositoryInit();
     void RepositoryShutdown();
 
+    void ResourceAssetsInit();
+    void ResourceAssetsShutdown();
+
 
     namespace
     {
@@ -46,6 +49,7 @@ namespace Fyrion
     {
         RepositoryInit();
         TypeRegister();
+        ResourceAssetsInit();
     }
 
     void Engine::CreateContext(const EngineContextCreation& contextCreation)
@@ -145,6 +149,7 @@ namespace Fyrion
 
     void Engine::Destroy()
     {
+        ResourceAssetsShutdown();
         RepositoryShutdown();
         RegistryShutdown();
         EventShutdown();

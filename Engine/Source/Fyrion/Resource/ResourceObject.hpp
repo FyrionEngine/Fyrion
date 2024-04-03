@@ -6,6 +6,14 @@
 
 namespace Fyrion
 {
+
+    template<typename T>
+    struct ObjectValueHandler
+    {
+        static void SetValue(ResourceObject& resourceObject, u32 index, const T& value);
+    };
+
+
     class TypeHandler;
 
     class ResourceObjectValue {
@@ -70,9 +78,9 @@ namespace Fyrion
         }
 
         template<typename T, typename = typename Traits::EnableIf<!std::is_pointer_v<T>>>
-        void SetValue(u32 index, const T& pointer)
+        void SetValue(u32 index, const T& value)
         {
-            SetValue(index, &pointer);
+            ObjectValueHandler<T>::SetValue(*this, index, value);
         }
 
         template<typename T, typename = typename Traits::EnableIf<!std::is_pointer_v<T>>>
@@ -102,4 +110,20 @@ namespace Fyrion
         m_resourceObject->SetValue(m_index, &value);
         return *this;
     }
+
+    template<typename T>
+    void ObjectValueHandler<T>::SetValue(ResourceObject& resourceObject, u32 index, const T& value)
+    {
+        resourceObject.SetValue(index, &value);
+    }
+
+    template<>
+    struct ObjectValueHandler<StringView>
+    {
+        static void SetValue(ResourceObject& resourceObject, u32 index, const StringView& value)
+        {
+            String valueStr{value};
+            resourceObject.SetValue(index, &valueStr);
+        }
+    };
 }

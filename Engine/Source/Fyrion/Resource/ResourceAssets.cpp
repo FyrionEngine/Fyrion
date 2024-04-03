@@ -1,7 +1,7 @@
 
 #include "ResourceAssets.hpp"
 #include "Repository.hpp"
-#include "Fyrion/Core/Logger.hpp"
+#include "Fyrion/Core/logger.hpp"
 #include "Fyrion/IO/Path.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
 #include "ResourceSerialization.hpp"
@@ -22,17 +22,12 @@ namespace Fyrion
         String AbsolutePath;
     };
 
-    struct RepositoryAssetsContext
-    {
-        HashMap<String, FnImportAsset> AssetImporters{};
-        HashMap<String, RID> AssetRoots{};
-        HashMap<RID, AssetFileInfo> AssetFileInfos{};
-        Logger& Logger = Logger::GetLogger("Fyrion::ResourceAssets", LogLevel::Debug);
-    };
-
     namespace
     {
-        RepositoryAssetsContext* Context = nullptr;
+        HashMap<String, FnImportAsset>      assetImporters{};
+        HashMap<String, RID>                assetRoots{};
+        HashMap<RID, AssetFileInfo>         assetFileInfos{};
+        Logger& logger = Logger::GetLogger("Fyrion::ResourceAssets", LogLevel::Debug);
     }
 
     void ResourceAssets::LoadAssetFile(ResourceObject& assetRoot, RID directoryAsset, const StringView& assetFile)
@@ -49,7 +44,7 @@ namespace Fyrion
             assetDirectory.SetValue(AssetDirectory::Parent, directoryAsset);
             assetDirectory.Commit();
 
-            Context->AssetFileInfos.Insert(rid, AssetFileInfo{
+            assetFileInfos.Insert(rid, AssetFileInfo{
                 .LoadedVersion = Repository::GetVersion(rid),
                 .AbsolutePath = assetFile
             });
@@ -87,12 +82,12 @@ namespace Fyrion
 
             assetRoot.AddToSubObjectSet(AssetRoot::Assets, rid);
 
-            Context->AssetFileInfos.Insert(rid, AssetFileInfo{
+            assetFileInfos.Insert(rid, AssetFileInfo{
                 .LoadedVersion = Repository::GetVersion(rid),
                 .AbsolutePath = assetFile
             });
         }
-        else if (auto it = Context->AssetImporters.Find(extension))
+        else if (auto it = assetImporters.Find(extension))
         {
             FnImportAsset importAsset = it->second;
             if (importAsset)
@@ -114,7 +109,7 @@ namespace Fyrion
 
                 asset.Commit();
 
-                Context->AssetFileInfos.Insert(rid, AssetFileInfo{
+                assetFileInfos.Insert(rid, AssetFileInfo{
                     .LoadedVersion = Repository::GetVersion(rid),
                     .AbsolutePath = assetFile
                 });
@@ -154,7 +149,7 @@ namespace Fyrion
             return {};
         }
         RID rid = Repository::CreateResource<AssetRoot>();
-        Context->AssetRoots.Insert(name, rid);
+        assetRoots.Insert(name, rid);
 
         String path = String{name} + ":/";
         Repository::SetPath(rid, path);
@@ -174,7 +169,7 @@ namespace Fyrion
             assetRoot.Commit();
         }
 
-        Context->AssetFileInfos.Insert(rid, AssetFileInfo{
+        assetFileInfos.Insert(rid, AssetFileInfo{
             .LoadedVersion = Repository::GetVersion(rid),
             .AbsolutePath = directory
         });
@@ -191,16 +186,16 @@ namespace Fyrion
 
         ResourceObject assetRoot = Repository::Read(rid);
         const String& name = assetRoot.GetValue<String>(AssetRoot::Name);
-        Context->Logger.Debug("Saving {} to {} ", name, directory);
+        logger.Debug("Saving {} to {} ", name, directory);
 
         Array<RID> directories = assetRoot.GetSubObjectSetAsArray(AssetRoot::Directories);
 
         for (RID dir: directories)
         {
-            auto it = Context->AssetFileInfos.Find(dir);
-            if (it == Context->AssetFileInfos.end())
+            auto it = assetFileInfos.Find(dir);
+            if (it == assetFileInfos.end())
             {
-                it = Context->AssetFileInfos.Insert(dir, AssetFileInfo{}).first;
+                it = assetFileInfos.Insert(dir, AssetFileInfo{}).first;
             }
             AssetFileInfo& info = it->second;
             u32 version = Repository::GetVersion(dir);
@@ -213,12 +208,12 @@ namespace Fyrion
                 if (oldPathExists)
                 {
                     FileSystem::Rename(info.AbsolutePath, newAbsolutePath);
-                    Context->Logger.Debug("Directory {} moved from {} to {} ", rid.id, info.AbsolutePath, newAbsolutePath);
+                    logger.Debug("Directory {} moved from {} to {} ", rid.id, info.AbsolutePath, newAbsolutePath);
                 }
                 else if (!FileSystem::GetFileStatus(newAbsolutePath).exists)
                 {
                     FileSystem::CreateDirectory(newAbsolutePath);
-                    Context->Logger.Debug("Directory {} created on {} ", rid.id, newAbsolutePath);
+                    logger.Debug("Directory {} created on {} ", rid.id, newAbsolutePath);
                 }
 
                 info.AbsolutePath  = newAbsolutePath;
@@ -229,10 +224,10 @@ namespace Fyrion
                 if (FileSystem::GetFileStatus(info.AbsolutePath).exists)
                 {
                     FileSystem::Remove(info.AbsolutePath);
-                    Context->Logger.Debug("Directory {} deleted from {} ", rid.id, info.AbsolutePath);
+                    logger.Debug("Directory {} deleted from {} ", rid.id, info.AbsolutePath);
                 }
                 Repository::DestroyResource(dir);
-                Context->AssetFileInfos.Erase(it);
+                assetFileInfos.Erase(it);
             }
         }
 
@@ -246,10 +241,10 @@ namespace Fyrion
                 continue;
             }
 
-            auto it = Context->AssetFileInfos.Find(asset);
-            if (it == Context->AssetFileInfos.end())
+            auto it = assetFileInfos.Find(asset);
+            if (it == assetFileInfos.end())
             {
-                it = Context->AssetFileInfos.Insert(asset, AssetFileInfo{}).first;
+                it = assetFileInfos.Insert(asset, AssetFileInfo{}).first;
             }
             AssetFileInfo& info = it->second;
             u32 version = Repository::GetVersion(asset);
@@ -263,7 +258,7 @@ namespace Fyrion
                     if (oldPathExists)
                     {
                         FileSystem::Remove(info.AbsolutePath);
-                        Context->Logger.Debug("Asset {} Removed from {} ", rid.id, info.AbsolutePath);
+                        logger.Debug("Asset {} Removed from {} ", rid.id, info.AbsolutePath);
                     }
 
                     String parentPath = Path::Parent(newAbsolutePath);
@@ -280,7 +275,7 @@ namespace Fyrion
                     FileSystem::WriteFile(handler, str.begin(), str.Size());
                     FileSystem::CloseFile(handler);
 
-                    Context->Logger.Debug("Asset {} saved on {} ", rid.id, newAbsolutePath);
+                    logger.Debug("Asset {} saved on {} ", rid.id, newAbsolutePath);
 
                     ResourceObject object = Repository::Read(objectRid);
                     u32 valueCount = object.GetValueCount();
@@ -339,18 +334,18 @@ namespace Fyrion
                 if (FileSystem::GetFileStatus(info.AbsolutePath).exists)
                 {
                     FileSystem::Remove(info.AbsolutePath);
-                    Context->Logger.Debug("Asset {} deleted from {} ", rid.id, info.AbsolutePath);
+                    logger.Debug("Asset {} deleted from {} ", rid.id, info.AbsolutePath);
                 }
 
                 String dataPath = Path::Join(Path::Parent(info.AbsolutePath), Path::Name(info.AbsolutePath), FY_DATA_EXTENSION);
                 if (FileSystem::GetFileStatus(dataPath).exists)
                 {
                     FileSystem::Remove(dataPath);
-                    Context->Logger.Debug("Asset Data Directory {} deleted from {} ", rid.id, dataPath);
+                    logger.Debug("Asset Data Directory {} deleted from {} ", rid.id, dataPath);
                 }
 
                 Repository::DestroyResource(asset);
-                Context->AssetFileInfos.Erase(it);
+                assetFileInfos.Erase(it);
             }
         }
     }
@@ -392,7 +387,7 @@ namespace Fyrion
 
     RID ResourceAssets::GetAssetRootByName(const StringView& name)
     {
-        if (auto it = Context->AssetRoots.Find(name))
+        if (auto it = assetRoots.Find(name))
         {
             return it->second;
         }
@@ -401,7 +396,7 @@ namespace Fyrion
 
     u32 ResourceAssets::GetLoadedVersion(RID rid)
     {
-        if (auto it = Context->AssetFileInfos.Find(rid))
+        if (auto it = assetFileInfos.Find(rid))
         {
             return it->second.LoadedVersion;
         }
@@ -410,7 +405,7 @@ namespace Fyrion
 
     StringView ResourceAssets::GetAbsolutePath(RID rid)
     {
-        if (auto it = Context->AssetFileInfos.Find(rid))
+        if (auto it = assetFileInfos.Find(rid))
         {
             return it->second.AbsolutePath;
         }
@@ -421,7 +416,7 @@ namespace Fyrion
     {
         String extension = Path::Extension(absolutePath);
 
-        if (auto it = Context->AssetImporters.Find(extension))
+        if (auto it = assetImporters.Find(extension))
         {
             FnImportAsset importAsset = it->second;
             if (importAsset)
@@ -475,7 +470,7 @@ namespace Fyrion
     {
         Split(extensions, StringView{","}, [&](const StringView& extension)
         {
-            Context->AssetImporters.Insert(extension, fnImportAsset);
+            assetImporters.Insert(extension, fnImportAsset);
         });
     }
 
@@ -514,79 +509,65 @@ namespace Fyrion
         return Path::Join(parentPath, assetName, FY_ASSET_EXTENSION);
     }
 
-//    void DirectoryChanges(CPtr userData, ResourceEventType eventType, ResourceObject& resourceObject)
-//    {
-//        const ResourceData* writeData = resourceObject.GetWriteData();
-//        RID parent = *static_cast<const RID*>(Repository::GetValue(writeData, AssetDirectory::Parent));
-//        const String& name = *static_cast<const String*>(Repository::GetValue(writeData, AssetDirectory::Name));
-//
-//        String path = ResourceAssets::GetPath(parent) + "/" + name;
-//        resourceObject.SetValue(AssetDirectory::Path, path);
-//        Repository::SetPath(resourceObject.GetRID(), path);
-//    }
-//
-//    void AssetChanges(CPtr userData, ResourceEventType eventType, ResourceObject& resourceObject)
-//    {
-//        const ResourceData* writeData = resourceObject.GetWriteData();
-//        RID parent = *static_cast<const RID*>(Repository::GetValue(writeData, Asset::Directory));
-//        const String& name = *static_cast<const String*>(Repository::GetValue(writeData, Asset::Name));
-//        const String& extension = *static_cast<const String*>(Repository::GetValue(writeData, Asset::Extension));
-//        String path = ResourceAssets::GetPath(parent) + "/" + name + extension;
-//        resourceObject.SetValue(Asset::Path, path);
-//
-//        const RID* object = static_cast<const RID*>(Repository::GetValue(writeData, Asset::Object));
-//        if (object)
-//        {
-//            Repository::SetPath(*object, path);
-//            Context->Logger.Debug("Asset Registered to Path {} ", path);
-//        }
-//    }
-
-    void RepositoryAssetsInit()
+    void DirectoryChanges(VoidPtr userData, ResourceEventType eventType, ResourceObject& oldData, ResourceObject& newData)
     {
-//        Context = Alloc<RepositoryAssetsContext>();
+        RID parent = newData[AssetDirectory::Parent].As<RID>();
+        const String& name =  newData[AssetDirectory::Name].As<String>();
+
+        String path = ResourceAssets::GetPath(parent) + "/" + name;
+        newData.SetValue(AssetDirectory::Path, path);
+        Repository::SetPath(newData.GetRID(), path);
+    }
 //
-//        //asset root
-//        {
-//            FixedArray<ResourceFieldCreation, 4> fields{
-//                ResourceFieldCreation{.Index = AssetRoot::Name, .Name = "Name", .Type =  ResourceFieldType_Value, .FieldTypeId = GetTypeID<String>()},
-//                ResourceFieldCreation{.Index = AssetRoot::Assets, .Name = "Assets", .Type =  ResourceFieldType_SubObjectSet},
-//                ResourceFieldCreation{.Index = AssetRoot::Directories, .Name = "Directories", .Type =  ResourceFieldType_SubObjectSet},
-//                ResourceFieldCreation{.Index = AssetRoot::Path, .Name = "Path", .Type =  ResourceFieldType_Value, .FieldTypeId = GetTypeID<String>()},
-//            };
-//            ResourceTypeCreation resourceTypeCreation{.Name = "AssetRoot", .TypeId = AssetRoot, .Fields = fields};
-//            Repository::CreateResourceType(resourceTypeCreation);
-//        }
-//
-//        //asset directory
-//        {
-//            FixedArray<ResourceFieldCreation, 3> fields{
-//                ResourceFieldCreation{.Index = AssetDirectory::Name, .Name = "Name", .Type =  ResourceFieldType_Value, .FieldTypeId = GetTypeID<String>()},
-//                ResourceFieldCreation{.Index = AssetDirectory::Parent, .Name = "Parent", .Type =  ResourceFieldType_Value, .FieldTypeId = GetTypeID<RID>()},
-//                ResourceFieldCreation{.Index = AssetDirectory::Path, .Name = "Path", .Type =  ResourceFieldType_Value, .FieldTypeId = GetTypeID<String>()}
-//            };
-//            ResourceTypeCreation resourceTypeCreation{.Name = "AssetDirectory", .TypeId = AssetDirectory, .Fields = fields};
-//            Repository::CreateResourceType(resourceTypeCreation);
-//            Repository::AddResourceTypeEvent(AssetDirectory, nullptr, ResourceEventType_Insert | ResourceEventType_Update, DirectoryChanges);
-//        }
-//
-//        //assets
-//        {
-//            FixedArray<ResourceFieldCreation, 5> fields{
-//                ResourceFieldCreation{.Index = Asset::Name, .Name = "Name", .Type =  ResourceFieldType_Value, .FieldTypeId = GetTypeID<String>()},
-//                ResourceFieldCreation{.Index = Asset::Directory, .Name = "Directory", .Type =  ResourceFieldType_Value, .FieldTypeId = GetTypeID<RID>()},
-//                ResourceFieldCreation{.Index = Asset::Object, .Name = "Object", .Type =  ResourceFieldType_SubObject},
-//                ResourceFieldCreation{.Index = Asset::Path, .Name = "Path", .Type =  ResourceFieldType_Value, .FieldTypeId = GetTypeID<String>()},
-//                ResourceFieldCreation{.Index = Asset::Extension, .Name = "Extension", .Type =  ResourceFieldType_Value, .FieldTypeId = GetTypeID<String>()}
-//            };
-//            ResourceTypeCreation resourceTypeCreation{.Name = "Asset", .TypeId = Asset, .Fields = fields};
-//            Repository::CreateResourceType(resourceTypeCreation);
-//            Repository::AddResourceTypeEvent(Asset, nullptr, ResourceEventType_Insert | ResourceEventType_Update, AssetChanges);
-//        }
+    void AssetChanges(VoidPtr userData, ResourceEventType eventType, ResourceObject& oldData, ResourceObject& newData)
+    {
+        RID parent = newData[Asset::Directory].As<RID>();
+        const String& name = newData[Asset::Name].As<String>();
+        const String& extension = newData[Asset::Extension].As<String>();
+
+        String path = ResourceAssets::GetPath(parent) + "/" + name + extension;
+        newData.SetValue(Asset::Path, path);
+
+        RID* object = (RID*) newData.GetValue(Asset::Object);
+        if (object)
+        {
+            Repository::SetPath(*object, path);
+            logger.Debug("Asset Registered to Path {} ", path);
+        }
     }
 
-    void RepositoryAssetsShutdown()
+    void ResourceAssetsInit()
     {
-//        DestroyAndFree(Context);
+        ResourceTypeBuilder<AssetRoot>::Builder()
+            .Value<AssetRoot::Name, String>("Name")
+            .SubObjectSet<AssetRoot::Assets>("Assets")
+            .SubObjectSet<AssetRoot::Directories>("Directories")
+            .Value<AssetRoot::Path, String>("Path")
+            .Build();
+
+        ResourceTypeBuilder<AssetDirectory>::Builder()
+            .Value<AssetDirectory::Name, String>("Name")
+            .Value<AssetDirectory::Parent, String>("RID")
+            .Value<AssetDirectory::Path, String>("Path")
+            .Build();
+
+        Repository::AddResourceTypeEvent(GetTypeID<AssetDirectory>(), nullptr, ResourceEventType::Insert | ResourceEventType::Update, DirectoryChanges);
+
+        ResourceTypeBuilder<Asset>::Builder()
+            .Value<Asset::Name, String>("Name")
+            .Value<Asset::Directory, RID>("Directory")
+            .SubObject<Asset::Object>("Object")
+            .Value<Asset::Path, String>("Path")
+            .Value<Asset::Extension, String>("Extension")
+            .Build();
+
+        Repository::AddResourceTypeEvent(GetTypeID<Asset>(), nullptr, ResourceEventType::Insert | ResourceEventType::Update, AssetChanges);
+    }
+
+    void ResourceAssetsShutdown()
+    {
+        assetImporters.Clear();
+        assetRoots.Clear();
+        assetFileInfos.Clear();
     }
 }

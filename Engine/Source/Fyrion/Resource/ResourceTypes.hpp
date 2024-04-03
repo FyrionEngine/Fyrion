@@ -62,6 +62,15 @@ namespace Fyrion
 
     ENUM_FLAGS(ResourceFieldType, u16);
 
+    enum class ResourceEventType : u32
+    {
+        Insert  = 1 << 0,
+        Update  = 1 << 1,
+        Destroy = 1 << 2
+    };
+
+    ENUM_FLAGS(ResourceEventType, u32);
+
     struct ResourceFieldCreation
     {
         u32 index{U32_MAX};
@@ -77,8 +86,6 @@ namespace Fyrion
         Span<ResourceFieldCreation> fields{};
     };
 
-
-    typedef RID (*FnImportAsset)(RID asset, const StringView& path);
 
     struct AssetRoot
     {
@@ -104,5 +111,6 @@ namespace Fyrion
         constexpr static u32 Extension = 4;
     };
 
-
+    typedef RID (*FnImportAsset)(RID asset, const StringView& path);
+    typedef void(*FnResourceEvent)(VoidPtr userData, ResourceEventType eventType, ResourceObject& oldObject, ResourceObject& newObject);
 }

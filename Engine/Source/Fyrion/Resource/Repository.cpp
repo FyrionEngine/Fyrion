@@ -28,6 +28,13 @@ namespace Fyrion
         HashSet<RID> prototypeRemoved{};
     };
 
+    struct ResourceTypeEvent
+    {
+        VoidPtr userData{};
+        ResourceEventType eventType{};
+        FnResourceEvent event{};
+    };
+
     struct ResourceField
     {
         String            name{};
@@ -46,6 +53,7 @@ namespace Fyrion
         HashMap<String, SharedPtr<ResourceField>> fieldsByName;
         Array<ResourceField*> fieldsByIndex;
         TypeHandler* typeHandler;
+        HashMap<usize, ResourceTypeEvent> events;
     };
 
     struct ResourceData
@@ -88,7 +96,7 @@ namespace Fyrion
     {
         Allocator& allocator = MemoryGlobals::GetDefaultAllocator();
 
-        Logger& logger = Logger::GetLogger("Fyrion::Repository", LogLevel::Debug);
+        Logger& logger = Logger::GetLogger("Fyrion::Repository");
         HashMap<TypeID, SharedPtr<ResourceType>> resourceTypes{};
         HashMap<String, SharedPtr<ResourceType>> resourceTypesByName{};
 
@@ -204,6 +212,17 @@ namespace Fyrion
 
         void DestroyStorage(ResourceStorage* resourceStorage)
         {
+
+            for (auto itEvent: resourceStorage->resourceType->events)
+            {
+                if ((itEvent.second.eventType && ResourceEventType::Destroy) != 0)
+                {
+                    ResourceObject oldObject{resourceStorage->data};
+                    ResourceObject newObject{nullptr};
+				    itEvent.second.event(itEvent.second.userData, ResourceEventType::Destroy, oldObject, newObject);
+                }
+            }
+
             if (resourceStorage->data)
             {
                 DestroyData(resourceStorage->data, true);
@@ -355,6 +374,8 @@ namespace Fyrion
         ResourceStorage* storage = &pages[rid.page]->elements[rid.offset];
         ResourceType* resourceType = storage->resourceType;
 
+        FY_ASSERT(resourceType, "Resource type is null");
+
         ResourceData* data = allocator.Alloc<ResourceData>(storage);
         data->memory = allocator.MemAlloc(resourceType->size, 1);
         data->fields.Resize(resourceType->fieldsByIndex.Size());
@@ -424,6 +445,24 @@ namespace Fyrion
     StringView Repository::GetResourceTypeName(ResourceType* resourceType)
     {
         return resourceType->name;
+    }
+
+    void Repository::AddResourceTypeEvent(TypeID typeId, VoidPtr userData, ResourceEventType eventType, FnResourceEvent event)
+    {
+        if (auto it = resourceTypes.Find(typeId))
+        {
+            usize eventPtr = reinterpret_cast<usize>(event);
+            it->second->events.Emplace(eventPtr, ResourceTypeEvent{
+                .userData = userData,
+                .eventType = eventType,
+                .event = event
+            });
+        }
+    }
+
+    void Repository::RemoveResourceTypeEvent(TypeID typeId, FnResourceEvent event)
+    {
+
     }
 
     RID Repository::CreateFromPrototype(RID prototype)
@@ -931,6 +970,16 @@ namespace Fyrion
         {
             if (m_data->storage->data.compare_exchange_strong(m_data->dataOnWrite, m_data))
             {
+                for (auto itEvent: m_data->storage->resourceType->events)
+                {
+                    if ((itEvent.second.eventType && ResourceEventType::Update) != 0)
+                    {
+                        ResourceObject oldObject{m_data->dataOnWrite};
+                        ResourceObject newObject{m_data};
+                        itEvent.second.event(itEvent.second.userData, ResourceEventType::Destroy, oldObject, newObject);
+                    }
+                }
+
                 UpdateVersion(m_data->storage);
 
                 toCollectItems.enqueue(ToDestroyResourceData{
@@ -943,8 +992,17 @@ namespace Fyrion
         }
         else
         {
+            for (auto itEvent: m_data->storage->resourceType->events)
+            {
+                if ((itEvent.second.eventType && ResourceEventType::Insert) != 0)
+                {
+                    ResourceObject oldObject{nullptr};
+                    ResourceObject newObject{m_data};
+                    itEvent.second.event(itEvent.second.userData, ResourceEventType::Destroy, oldObject, newObject);
+                }
+            }
+
             m_data->storage->data = m_data;
-            //TODO events
             UpdateVersion(m_data->storage);
         }
     }

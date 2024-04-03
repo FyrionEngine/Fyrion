@@ -41,6 +41,7 @@ namespace Fyrion
 
         ConstPtr            GetValue(u32 index) const;
         void                SetValue(u32 index, ConstPtr pointer);
+        VoidPtr             WriteValue(u32 index);
         void                SetSubObject(u32 index, RID subobject);
         RID                 GetSubObject(u32 index);
         void                AddToSubObjectSet(u32 index, RID subObject);

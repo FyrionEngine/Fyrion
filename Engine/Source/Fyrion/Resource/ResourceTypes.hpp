@@ -54,6 +54,7 @@ namespace Fyrion
 
     enum class ResourceFieldType : u16
     {
+        Undefined = 0,
         Value = 1,
         SubObject = 2,
         SubObjectSet = 3,

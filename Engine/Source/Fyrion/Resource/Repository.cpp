@@ -54,6 +54,7 @@ namespace Fyrion
         Array<ResourceField*> fieldsByIndex;
         TypeHandler* typeHandler;
         HashMap<usize, ResourceTypeEvent> events;
+        bool dataType = false;
     };
 
     struct ResourceData
@@ -330,6 +331,7 @@ namespace Fyrion
         resourceType->size        = typeHandler->GetTypeInfo().size;
         resourceType->alignment   = typeHandler->GetTypeInfo().alignment;
         resourceType->typeHandler = typeHandler;
+        resourceType->dataType    = true;
 
         logger.Debug("Resource Type {} Created", resourceType->name);
 
@@ -462,7 +464,12 @@ namespace Fyrion
 
     void Repository::RemoveResourceTypeEvent(TypeID typeId, FnResourceEvent event)
     {
+        //TODO
+    }
 
+    bool Repository::IsResourceTypeData(ResourceType* resourceTyp)
+    {
+        return resourceTyp->dataType;
     }
 
     RID Repository::CreateFromPrototype(RID prototype)
@@ -706,12 +713,19 @@ namespace Fyrion
     void ResourceObject::SetValue(u32 index, ConstPtr pointer)
     {
         ResourceField* field = m_data->storage->resourceType->fieldsByIndex[index];
+        field->typeHandler->Copy(pointer, WriteValue(index));
+    }
+
+    VoidPtr ResourceObject::WriteValue(u32 index)
+    {
+        ResourceField* field = m_data->storage->resourceType->fieldsByIndex[index];
         FY_ASSERT(field->fieldType == ResourceFieldType::Value, "Field is not ResourceFieldType::Value");
         if (m_data->fields[index] == nullptr)
         {
             m_data->fields[index] = static_cast<char*>(m_data->memory) + field->offset;
         }
-        field->typeHandler->Copy(pointer, m_data->fields[index]);
+
+        return m_data->fields[index];
     }
 
     ConstPtr ResourceObject::GetValue(u32 index) const

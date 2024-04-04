@@ -3,6 +3,10 @@
 #include "Fyrion/IO/InputTypes.hpp"
 #include "ImGuiPlatform.hpp"
 #include "Fyrion/Graphics/Device/RenderDevice.hpp"
+#include "Fyrion/Resource/ResourceObject.hpp"
+#include "Fyrion/Resource/Repository.hpp"
+#include "Fyrion/Assets/AssetTypes.hpp"
+#include "IconsFontAwesome6.h"
 
 using namespace Fyrion;
 
@@ -285,7 +289,45 @@ namespace ImGui
 
     void ApplyFonts()
     {
+        f32 fontSize = 15.f;
 
+        ImGuiIO& io = ImGui::GetIO();
+        io.Fonts->Clear();
+        ResourceObject dejaVuSans = Repository::Read(Repository::GetByPath("Fyrion://Fonts/OpenSans-Regular.ttf"));
+        if (dejaVuSans)
+        {
+            const Array<u8>& dejaVuSansBytes = dejaVuSans.GetValue<Array<u8>>(UIFont::FontBytes);
+
+            auto font = ImFontConfig();
+            font.SizePixels = fontSize * scaleFactor * 1.1;
+            memcpy(font.Name, "DejaVuSans", 10);
+            font.FontDataOwnedByAtlas = false;
+            io.Fonts->AddFontFromMemoryTTF((void*) dejaVuSansBytes.Data(), dejaVuSansBytes.Size(), font.SizePixels, &font);
+        }
+        else
+        {
+            ImFontConfig config{};
+            config.SizePixels = fontSize * scaleFactor;
+            io.Fonts->AddFontDefault(&config);
+        }
+
+        ResourceObject faSolid = Repository::Read(Repository::GetByPath("Fyrion://Fonts/fa-solid-900.otf"));
+        if (faSolid)
+        {
+            static const ImWchar icon_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
+            static const ImWchar icon_ranges_[] = {ICON_MIN_FA + ICON_MAX_FA, ICON_MAX_FA + ICON_MAX_FA, 0};
+
+            ImFontConfig config = ImFontConfig();
+            config.SizePixels = fontSize * scaleFactor;
+            config.MergeMode = true;
+            config.GlyphMinAdvanceX = fontSize * scaleFactor;
+            config.GlyphMaxAdvanceX = fontSize * scaleFactor;
+            config.FontDataOwnedByAtlas = false;
+            memcpy(config.Name, "FontAwesome", 11);
+
+            const Array<u8>& faSolidBytes = faSolid.GetValue<Array<u8>>(UIFont::FontBytes);
+            io.Fonts->AddFontFromMemoryTTF((void*) faSolidBytes.Data(), faSolidBytes.Size(), config.SizePixels, &config, icon_ranges);
+        }
     }
 
     void Init(Fyrion::Window window, Fyrion::Swapchain swapchain)

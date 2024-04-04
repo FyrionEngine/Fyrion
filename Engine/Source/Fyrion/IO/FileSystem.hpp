@@ -3,6 +3,7 @@
 #include "FileTypes.hpp"
 #include "Fyrion/Core/String.hpp"
 #include "Fyrion/Core/StringView.hpp"
+#include "Fyrion/Core/Array.hpp"
 
 namespace Fyrion::FileSystem
 {
@@ -25,4 +26,5 @@ namespace Fyrion::FileSystem
     FY_API void         CloseFile(FileHandler fileHandler);
 
     FY_API String       ReadFileAsString(const StringView &path);
+    FY_API Array<u8>    ReadFileAsByteArray(const StringView &path);
 }

@@ -6,6 +6,9 @@
 #include "Fyrion/Graphics/Graphics.hpp"
 #include "TypeRegister.hpp"
 #include "Fyrion/ImGui/ImGui.hpp"
+#include "Fyrion/Resource/ResourceAssets.hpp"
+#include "Fyrion/IO/FileSystem.hpp"
+#include "Fyrion/IO/Path.hpp"
 
 namespace Fyrion
 {
@@ -26,6 +29,8 @@ namespace Fyrion
 
     void ResourceAssetsInit();
     void ResourceAssetsShutdown();
+
+    void RegisterAssets();
 
 
     namespace
@@ -50,10 +55,13 @@ namespace Fyrion
         RepositoryInit();
         TypeRegister();
         ResourceAssetsInit();
+        RegisterAssets();
     }
 
     void Engine::CreateContext(const EngineContextCreation& contextCreation)
     {
+        ResourceAssets::LoadAssetsFromDirectory("Fyrion", Path::Join(FileSystem::AssetFolder(), "Fyrion"));
+
         PlatformInit();
 
         WindowFlags windowFlags = WindowFlags::None;
@@ -103,6 +111,8 @@ namespace Fyrion
                     Platform::SetWindowShouldClose(window, false);
                 }
             }
+
+            ImGui::ShowDemoWindow(0);
 
             Extent extent = Platform::GetWindowExtent(window);
 

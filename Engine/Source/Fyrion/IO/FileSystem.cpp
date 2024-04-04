@@ -68,4 +68,13 @@ namespace Fyrion
         ReadFile(fileHandler, ret.begin(), ret.Size());
         return ret;
     }
+
+    Array<u8> FileSystem::ReadFileAsByteArray(const StringView& path)
+    {
+        Array<u8> ret{};
+        FileHandler fileHandler = OpenFile(path, AccessMode::ReadOnly);
+        ret.Resize(GetFileSize(fileHandler));
+        ReadFile(fileHandler, ret.begin(), ret.Size());
+        return ret;
+    }
 }

@@ -26,6 +26,7 @@ namespace Fyrion
 
         Registry::Type<RID>("Fyrion::RID");
         Registry::Type<Array<RID>>("Fyrion::RIDArray");
+        Registry::Type<Array<u8>>("Fyrion::ByteArray");
 
         auto extent = Registry::Type<Extent>();
         extent.Field<&Extent::width>("width");

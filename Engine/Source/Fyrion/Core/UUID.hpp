@@ -124,14 +124,14 @@ namespace Fyrion
 	template<>
 	struct StringConverter<UUID>
 	{
-		constexpr static bool  HasConverter = true;
-		constexpr static usize BufferCount  = 36;
-		constexpr static char  Digits[]     = "0123456789abcdef";
-		constexpr static i32   Base         = 16;
+		constexpr static bool  hasConverter = true;
+		constexpr static usize bufferCount  = 36;
+		constexpr static char  digits[]     = "0123456789abcdef";
+		constexpr static i32   base         = 16;
 
 		static usize Size(const UUID& value)
 		{
-			return BufferCount;
+			return bufferCount;
 		}
 
 		static void FromString(const char* str, usize size, UUID& value)
@@ -147,8 +147,8 @@ namespace Fyrion
 			{
 				if (i != 8 && i != 13)
 				{
-					buffer[pos + i] = Digits[firstValue % Base];
-					firstValue = firstValue / Base;
+					buffer[pos + i] = digits[firstValue % base];
+					firstValue = firstValue / base;
 				}
 				else
 				{
@@ -163,8 +163,8 @@ namespace Fyrion
 			{
 				if (i != 23)
 				{
-					buffer[pos + i] = Digits[secondValue % Base];
-					secondValue = secondValue / Base;
+					buffer[pos + i] = digits[secondValue % base];
+					secondValue = secondValue / base;
 				}
 				else
 				{
@@ -172,7 +172,7 @@ namespace Fyrion
 				}
 				i--;
 			} while (i > 18);
-			return BufferCount;
+			return bufferCount;
 		}
 	};
 

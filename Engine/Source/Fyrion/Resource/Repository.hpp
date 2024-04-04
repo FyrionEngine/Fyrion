@@ -40,6 +40,7 @@ namespace Fyrion
         FY_API void             DestroyResource(RID rid);
         FY_API RID              CloneResource(RID rid);
         FY_API ResourceObject   Read(RID rid);
+        FY_API ResourceObject   ReadNoPrototypes(RID rid);
         FY_API ConstPtr         Read(RID rid, TypeID typeId);
         FY_API ResourceObject   Write(RID rid);
         FY_API void             Commit(RID rid, ConstPtr pointer);

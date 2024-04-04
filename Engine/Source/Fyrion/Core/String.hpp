@@ -946,6 +946,16 @@ namespace Fyrion
     template<usize BufferSize>
     using BufferString = BasicString<char, BufferSize>;
     using String = BasicString<char, FY_STRING_BUFFER_SIZE>;
+
+    template<typename T>
+    String ToString(const T& value)
+    {
+        static_assert(StringConverter<T>::hasConverter);
+        usize size = StringConverter<T>::Size(value);
+        String string(size);
+        StringConverter<T>::ToString(string.begin(), 0, value);
+        return string;
+    }
 }
 
 template<>

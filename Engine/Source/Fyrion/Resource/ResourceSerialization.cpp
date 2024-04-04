@@ -7,9 +7,9 @@ namespace Fyrion::ResourceSerialization
 {
     struct ParserContext
     {
-        StringView Buffer{};
-        String     Identifier{};
-        String     Value{};
+        StringView buffer{};
+        String     identifier{};
+        String     value{};
         usize      Pos{};
     };
 
@@ -18,54 +18,54 @@ namespace Fyrion::ResourceSerialization
 
     void RemoveSpaces(ParserContext& context)
     {
-        auto c = context.Buffer[context.Pos];
+        auto c = context.buffer[context.Pos];
         while (c == ' ' || c == '\n' || c == '\r' || c == '\t')
         {
             context.Pos++;
-            if (context.Pos >= context.Buffer.Size()) return;
-            c = context.Buffer[context.Pos];
+            if (context.Pos >= context.buffer.Size()) return;
+            c = context.buffer[context.Pos];
         }
     }
 
     void EndObject(ParserContext& context)
     {
-        auto c = context.Buffer[context.Pos];
+        auto c = context.buffer[context.Pos];
         while (c != '}')
         {
             context.Pos++;
-            if (context.Pos >= context.Buffer.Size()) return;
-            c = context.Buffer[context.Pos];
+            if (context.Pos >= context.buffer.Size()) return;
+            c = context.buffer[context.Pos];
         }
         context.Pos++;
     }
 
     bool CheckString(ParserContext& context)
     {
-        auto c = context.Buffer[context.Pos];
+        auto c = context.buffer[context.Pos];
         if (c != '\"')
         {
             return false;
         }
         context.Pos++;
-        c = context.Buffer[context.Pos];
+        c = context.buffer[context.Pos];
         while (c != '\"')
         {
-            context.Value.Append(c);
+            context.value.Append(c);
             context.Pos++;
-            if (context.Pos >= context.Buffer.Size()) return true;
-            c = context.Buffer[context.Pos];
+            if (context.Pos >= context.buffer.Size()) return true;
+            c = context.buffer[context.Pos];
 
             //scape char
             if (c == '\\')
             {
                 context.Pos++; //ignore scape
-                if (context.Pos >= context.Buffer.Size()) return true;
+                if (context.Pos >= context.buffer.Size()) return true;
 
-                c = context.Buffer[context.Pos];
-                context.Value.Append(c);
+                c = context.buffer[context.Pos];
+                context.value.Append(c);
                 context.Pos++;
-                if (context.Pos >= context.Buffer.Size()) return true;
-                c = context.Buffer[context.Pos];
+                if (context.Pos >= context.buffer.Size()) return true;
+                c = context.buffer[context.Pos];
             }
 
         }
@@ -75,24 +75,24 @@ namespace Fyrion::ResourceSerialization
 
     bool CheckIdentifier(ParserContext& context)
     {
-        auto c = context.Buffer[context.Pos];
+        auto c = context.buffer[context.Pos];
         while (c != ':')
         {
             if (c != ' ')
             {
-                context.Identifier.Append(c);
+                context.identifier.Append(c);
             }
             context.Pos++;
-            if (context.Pos >= context.Buffer.Size()) return !context.Identifier.Empty();
-            c = context.Buffer[context.Pos];
+            if (context.Pos >= context.buffer.Size()) return !context.identifier.Empty();
+            c = context.buffer[context.Pos];
         }
         context.Pos++;
-        return !context.Identifier.Empty();
+        return !context.identifier.Empty();
     }
 
     bool CheckObject(ParserContext& context)
     {
-        auto c = context.Buffer[context.Pos];
+        auto c = context.buffer[context.Pos];
         if (c != '{')
         {
             return false;
@@ -103,7 +103,7 @@ namespace Fyrion::ResourceSerialization
 
     bool CheckArray(ParserContext& context)
     {
-        auto c = context.Buffer[context.Pos];
+        auto c = context.buffer[context.Pos];
         if (c != '[')
         {
             return false;
@@ -114,8 +114,8 @@ namespace Fyrion::ResourceSerialization
 
     bool CheckText(ParserContext& context)
     {
-        auto c = context.Buffer[context.Pos];
-        auto cn = context.Buffer[context.Pos + 1];
+        auto c = context.buffer[context.Pos];
+        auto cn = context.buffer[context.Pos + 1];
         if (c != '[' || cn != '[')
         {
             return false;
@@ -126,27 +126,27 @@ namespace Fyrion::ResourceSerialization
 
     char Current(ParserContext& context)
     {
-        if (context.Pos >= context.Buffer.Size()) return '\3';
-        return context.Buffer[context.Pos];
+        if (context.Pos >= context.buffer.Size()) return '\3';
+        return context.buffer[context.Pos];
     }
 
     void ParseText(ParserContext& context)
     {
-        if (context.Pos + 2 >= context.Buffer.Size()) return;
+        if (context.Pos + 2 >= context.buffer.Size()) return;
 
-        auto c = context.Buffer[context.Pos];
-        auto cn = context.Buffer[context.Pos + 1];
+        auto c = context.buffer[context.Pos];
+        auto cn = context.buffer[context.Pos + 1];
         bool isEnd = c == ']' && cn == ']';
 
         while (!isEnd)
         {
-            context.Value.Append(c);
+            context.value.Append(c);
             context.Pos++;
 
-            if (context.Pos + 2 >= context.Buffer.Size()) return;
+            if (context.Pos + 2 >= context.buffer.Size()) return;
 
-            c = context.Buffer[context.Pos];
-            cn = context.Buffer[context.Pos + 1];
+            c = context.buffer[context.Pos];
+            cn = context.buffer[context.Pos + 1];
             isEnd = c == ']' && cn == ']';
         }
         context.Pos += 2;
@@ -167,10 +167,10 @@ namespace Fyrion::ResourceSerialization
 
         RemoveSpaces(context);
 
-        auto c = context.Buffer[context.Pos];
+        auto c = context.buffer[context.Pos];
         while (c != ']')
         {
-            context.Value.Clear();
+            context.value.Clear();
             if (CheckString(context))
             {
                 if (elementInfo.typeId == GetTypeID<RID>())
@@ -178,14 +178,14 @@ namespace Fyrion::ResourceSerialization
                     if (pointer)
                     {
                         VoidPtr newElement = arrayApi.pushNew(pointer);
-                        new(PlaceHolder(), newElement) RID{Repository::GetOrCreateByUUID(UUID::FromString(context.Value))};
+                        new(PlaceHolder(), newElement) RID{Repository::GetOrCreateByUUID(UUID::FromString(context.value))};
                     }
                 }
                 else if (fromString)
                 {
                     if (pointer)
                     {
-                        fromString(arrayApi.pushNew(pointer), context.Value);
+                        fromString(arrayApi.pushNew(pointer), context.value);
                     }
                 }
             }
@@ -214,35 +214,35 @@ namespace Fyrion::ResourceSerialization
                 context.Pos++;
             }
 
-            c = context.Buffer[context.Pos];
+            c = context.buffer[context.Pos];
         }
         context.Pos++;
     }
 
     void ParseObject(ParserContext& context, VoidPtr instance, TypeHandler* typeHandler)
     {
-        while (context.Pos < context.Buffer.Size())
+        while (context.Pos < context.buffer.Size())
         {
             RemoveSpaces(context);
-            auto c = context.Buffer[context.Pos];
+            auto c = context.buffer[context.Pos];
             if (c == '}')
             {
                 context.Pos++;
                 break;
             }
-            context.Identifier.Clear();
+            context.identifier.Clear();
             if (CheckIdentifier(context))
             {
                 FieldHandler* field = nullptr;
 
                 if (typeHandler)
                 {
-                    field = typeHandler->FindField(context.Identifier);
+                    field = typeHandler->FindField(context.identifier);
                 }
 
                 RemoveSpaces(context);
 
-                context.Value.Clear();
+                context.value.Clear();
 
                 if (CheckString(context))
                 {
@@ -251,13 +251,13 @@ namespace Fyrion::ResourceSerialization
                         FieldInfo fieldInfo = field->GetFieldInfo();
                         if (fieldInfo.typeInfo.typeId == GetTypeID<RID>())
                         {
-                            RID rid = Repository::GetOrCreateByUUID(UUID::FromString(context.Value));
+                            RID rid = Repository::GetOrCreateByUUID(UUID::FromString(context.value));
                             field->SetValue(instance, &rid);
                         }
                         else if (fieldInfo.typeInfo.fromString != nullptr)
                         {
 
-                            fieldInfo.typeInfo.fromString(field->GetFieldPointer(instance), context.Value);
+                            fieldInfo.typeInfo.fromString(field->GetFieldPointer(instance), context.value);
                         }
                     }
                 }
@@ -270,7 +270,7 @@ namespace Fyrion::ResourceSerialization
                         if (fieldInfo.typeInfo.fromString != nullptr)
                         {
 
-                            fieldInfo.typeInfo.fromString(field->GetFieldPointer(instance), context.Value);
+                            fieldInfo.typeInfo.fromString(field->GetFieldPointer(instance), context.value);
                         }
                     }
                 }
@@ -303,14 +303,14 @@ namespace Fyrion::ResourceSerialization
 
     void ParseObject(const StringView& buffer, VoidPtr instance, TypeHandler* typeHandler)
     {
-        ParserContext parseContext{.Buffer = buffer};
+        ParserContext parseContext{.buffer = buffer};
         ParseObject(parseContext, instance, typeHandler);
     }
 
     RID ParseResourceInfo(ParserContext& context)
     {
         RemoveSpaces(context);
-        auto c = context.Buffer[context.Pos];
+        auto c = context.buffer[context.Pos];
         if (c == '}')
         {
             return {};
@@ -320,44 +320,44 @@ namespace Fyrion::ResourceSerialization
         TypeID typeId = {};
 
         //uuid
-        context.Identifier.Clear();
+        context.identifier.Clear();
         CheckIdentifier(context);
-        FY_ASSERT(context.Identifier == "_uuid", "for subobjects, first item should be _uuid");
+        FY_ASSERT(context.identifier == "_uuid", "for subobjects, first item should be _uuid");
         RemoveSpaces(context);
-        context.Value.Clear();
+        context.value.Clear();
         CheckString(context);
-        objectUUID = UUID::FromString(context.Value);
+        objectUUID = UUID::FromString(context.value);
 
-        context.Identifier.Clear();
+        context.identifier.Clear();
         RemoveSpaces(context);
         CheckIdentifier(context);
-        FY_ASSERT(context.Identifier == "_type", "for subobjects, second item should be _type");
+        FY_ASSERT(context.identifier == "_type", "for subobjects, second item should be _type");
         RemoveSpaces(context);
-        context.Value.Clear();
+        context.value.Clear();
         CheckString(context);
-        typeId = Repository::GetResourceTypeID(context.Value);
+        typeId = Repository::GetResourceTypeID(context.value);
 
-        context.Identifier.Clear();
+        context.identifier.Clear();
         RemoveSpaces(context);
         CheckIdentifier(context);
         RemoveSpaces(context);
 
-        if (context.Identifier == "_prototype")
+        if (context.identifier == "_prototype")
         {
-            context.Value.Clear();
+            context.value.Clear();
             CheckString(context);
             RemoveSpaces(context);
-            RID prototype = Repository::GetOrCreateByUUID(UUID::FromString(context.Value), typeId);
+            RID prototype = Repository::GetOrCreateByUUID(UUID::FromString(context.value), typeId);
             RID rid = Repository::CreateFromPrototype(prototype, objectUUID);
 
             //no overrides
-            if (context.Buffer[context.Pos] == '}')
+            if (context.buffer[context.Pos] == '}')
             {
                 context.Pos++;
                 return rid;
             }
 
-            context.Identifier.Clear();
+            context.identifier.Clear();
             RemoveSpaces(context);
             CheckIdentifier(context);
             RemoveSpaces(context);
@@ -366,7 +366,7 @@ namespace Fyrion::ResourceSerialization
             {
                 ParseResource(context, rid);
                 RemoveSpaces(context);
-                if (context.Buffer[context.Pos] == '}')
+                if (context.buffer[context.Pos] == '}')
                 {
                     context.Pos++;
                 }
@@ -379,7 +379,7 @@ namespace Fyrion::ResourceSerialization
             RID rid = Repository::CreateResource(typeId, objectUUID);
             ParseResource(context, rid);
             RemoveSpaces(context);
-            if (context.Buffer[context.Pos] == '}')
+            if (context.buffer[context.Pos] == '}')
             {
                 context.Pos++;
             }
@@ -391,18 +391,18 @@ namespace Fyrion::ResourceSerialization
     void ParseSubobjectSet(ParserContext& context, u32 index, ResourceObject& parent)
     {
         RemoveSpaces(context);
-        auto c = context.Buffer[context.Pos];
+        auto c = context.buffer[context.Pos];
         if (c == '}')
         {
             context.Pos++;
             return;
         }
 
-        context.Identifier.Clear();
+        context.identifier.Clear();
         CheckIdentifier(context);
         RemoveSpaces(context);
 
-        if (context.Identifier == "_exclude")
+        if (context.identifier == "_exclude")
         {
             if (CheckArray(context))
             {
@@ -411,19 +411,19 @@ namespace Fyrion::ResourceSerialization
                 {
                     if (CheckString(context))
                     {
-                        RID rid = Repository::GetOrCreateByUUID(UUID::FromString(context.Value));
+                        RID rid = Repository::GetOrCreateByUUID(UUID::FromString(context.value));
                         parent.RemoveFromPrototypeSubObjectSet(index,rid);
                     }
                     else
                     {
                         context.Pos++;
                     }
-                    c = context.Buffer[context.Pos];
+                    c = context.buffer[context.Pos];
                 }
                 context.Pos++;
             }
 
-            context.Identifier.Clear();
+            context.identifier.Clear();
             CheckIdentifier(context);
             RemoveSpaces(context);
         }
@@ -431,7 +431,7 @@ namespace Fyrion::ResourceSerialization
         if (CheckArray(context))
         {
             RemoveSpaces(context);
-            c = context.Buffer[context.Pos];
+            c = context.buffer[context.Pos];
             while (c != ']')
             {
                 if (CheckObject(context))
@@ -443,12 +443,12 @@ namespace Fyrion::ResourceSerialization
                 {
                     context.Pos++;
                 }
-                c = context.Buffer[context.Pos];
+                c = context.buffer[context.Pos];
             }
             context.Pos++;
         }
         RemoveSpaces(context);
-        if (context.Buffer[context.Pos] == '}')
+        if (context.buffer[context.Pos] == '}')
         {
             context.Pos++;
         }
@@ -462,23 +462,23 @@ namespace Fyrion::ResourceSerialization
         if (!Repository::IsResourceTypeData(resourceType))
         {
             ResourceObject object = Repository::Write(rid);
-            while (context.Pos < context.Buffer.Size())
+            while (context.Pos < context.buffer.Size())
             {
                 RemoveSpaces(context);
-                auto c = context.Buffer[context.Pos];
+                auto c = context.buffer[context.Pos];
                 if (c == '}')
                 {
                     context.Pos++;
                     break;
                 }
-                context.Identifier.Clear();
+                context.identifier.Clear();
                 if (CheckIdentifier(context))
                 {
                     RemoveSpaces(context);
-                    context.Value.Clear();
+                    context.value.Clear();
 
 
-                    u32 index = object.GetIndex(context.Identifier);
+                    u32 index = object.GetIndex(context.identifier);
                     ResourceFieldType type = ResourceFieldType::Undefined;
 
                     TypeInfo typeInfo = {};
@@ -497,16 +497,16 @@ namespace Fyrion::ResourceSerialization
                         if (type == ResourceFieldType::Stream)
                         {
                             StreamObject* stream = object.WriteStream(index);
-                            stream->SetBufferId(HexTo64(StringView{context.Value}));
+                            stream->SetBufferId(HexTo64(StringView{context.value}));
                         }
                         else if (typeInfo.typeId == GetTypeID<RID>())
                         {
-                            object.SetValue(index, Repository::GetOrCreateByUUID(UUID::FromString(context.Value)));
+                            object.SetValue(index, Repository::GetOrCreateByUUID(UUID::FromString(context.value)));
                         }
                         else if (typeInfo.fromString)
                         {
                             VoidPtr value = object.WriteValue(index);
-                            typeInfo.fromString(value, context.Value);
+                            typeInfo.fromString(value, context.value);
                         }
                     }
                     else if (CheckText(context))
@@ -515,7 +515,7 @@ namespace Fyrion::ResourceSerialization
                         if (typeInfo.fromString)
                         {
                             VoidPtr value = object.WriteValue(index);
-                            typeInfo.fromString(value, context.Value);
+                            typeInfo.fromString(value, context.value);
                         }
                     }
                     else if (CheckArray(context))
@@ -567,13 +567,13 @@ namespace Fyrion::ResourceSerialization
 
     void ParseResource(const StringView& buffer, RID rid)
     {
-        ParserContext parseContext{.Buffer = buffer};
+        ParserContext parseContext{.buffer = buffer};
         ParseResource(parseContext, rid);
     }
 
     RID ParseResourceInfo(const StringView& buffer)
     {
-        ParserContext parseContext{.Buffer = buffer};
+        ParserContext parseContext{.buffer = buffer};
         return ParseResourceInfo(parseContext);
     }
 
@@ -618,7 +618,7 @@ namespace Fyrion::ResourceSerialization
             bool subobjectField = false;
             RID rid = *static_cast<const RID*>(pointer);
             context.buffer.Append("\"");
-            char buffer[StringConverter<UUID>::BufferCount + 1] = {};
+            char buffer[StringConverter<UUID>::bufferCount + 1] = {};
             StringConverter<UUID>::ToString(buffer, 0, Repository::GetUUID(rid));
             context.buffer.Append(buffer);
             context.buffer.Append("\"");
@@ -710,7 +710,7 @@ namespace Fyrion::ResourceSerialization
     {
         context.Indent();
         context.buffer.Append("_uuid: ");
-        char buffer[StringConverter<UUID>::BufferCount + 1] = {};
+        char buffer[StringConverter<UUID>::bufferCount + 1] = {};
         StringConverter<UUID>::ToString(buffer, 0, Repository::GetUUID(rid));
         context.buffer.Append("\"");
         context.buffer.Append(buffer);
@@ -752,12 +752,10 @@ namespace Fyrion::ResourceSerialization
 
     void WriteResource(WriterContext& context, RID rid)
     {
-        ResourceObject object = Repository::Read(rid);
+        ResourceObject object = Repository::ReadNoPrototypes(rid);
         u32 valueCount = object.GetValueCount();
         for (int i = 0; i < valueCount; ++i)
         {
-            if (!object.HasNoPrototype(i)) continue;
-
 
             ResourceFieldType type = object.GetResourceType(i);
             StringView name = object.GetName(i);
@@ -829,7 +827,7 @@ namespace Fyrion::ResourceSerialization
                     Array<RID> removedRids(removedCount);
                     object.GetRemoveFromPrototypeSubObjectSet(i, removedRids);
 
-                    char buffer[StringConverter<UUID>::BufferCount + 1] = {};
+                    char buffer[StringConverter<UUID>::bufferCount + 1] = {};
 
                     for (RID removed: removedRids)
                     {

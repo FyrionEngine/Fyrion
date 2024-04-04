@@ -218,8 +218,8 @@ namespace Fyrion
             {
                 if ((itEvent.second.eventType && ResourceEventType::Destroy) != 0)
                 {
-                    ResourceObject oldObject{resourceStorage->data};
-                    ResourceObject newObject{nullptr};
+                    ResourceObject oldObject{resourceStorage->data, true};
+                    ResourceObject newObject{nullptr, true};
 				    itEvent.second.event(itEvent.second.userData, ResourceEventType::Destroy, oldObject, newObject);
                 }
             }
@@ -368,7 +368,13 @@ namespace Fyrion
     ResourceObject Repository::Read(RID rid)
     {
         ResourceStorage* storage = &pages[rid.page]->elements[rid.offset];
-        return ResourceObject{storage->data};
+        return ResourceObject{storage->data, true};
+    }
+
+    ResourceObject Repository::ReadNoPrototypes(RID rid)
+    {
+        ResourceStorage* storage = &pages[rid.page]->elements[rid.offset];
+        return ResourceObject{storage->data, false};
     }
 
     ResourceObject Repository::Write(RID rid)
@@ -400,7 +406,7 @@ namespace Fyrion
                 }
             }
         }
-        return ResourceObject{data};
+        return ResourceObject{data, true};
     }
 
     void Repository::DestroyResource(RID rid)
@@ -706,7 +712,7 @@ namespace Fyrion
     ///*********************************************************************ResourceObject**************************************************************************************************************
 
 
-    ResourceObject::ResourceObject(ResourceData* data) : m_data(data)
+    ResourceObject::ResourceObject(ResourceData* data, bool readPrototypes) : m_data(data), m_readPrototypes(readPrototypes)
     {
     }
 
@@ -723,17 +729,17 @@ namespace Fyrion
         if (m_data->fields[index] == nullptr)
         {
             m_data->fields[index] = static_cast<char*>(m_data->memory) + field->offset;
+            field->typeHandler->Construct(m_data->fields[index]);
         }
-
         return m_data->fields[index];
     }
 
     ConstPtr ResourceObject::GetValue(u32 index) const
     {
         ConstPtr ptr = m_data->fields[index];
-        if (!ptr && m_data->storage->prototype)
+        if (m_readPrototypes && !ptr && m_data->storage->prototype)
         {
-            ResourceObject prototype{m_data->storage->prototype->data};
+            ResourceObject prototype{m_data->storage->prototype->data, m_readPrototypes};
             return prototype.GetValue(index);
         }
         return ptr;
@@ -837,14 +843,14 @@ namespace Fyrion
     usize ResourceObject::GetSubObjectSetCount(u32 index)
     {
         usize count{};
-        ResourceGetSubObjectSet(m_data, nullptr, index, count, nullptr);
+        ResourceGetSubObjectSet(m_data, nullptr, index, count, nullptr, m_readPrototypes);
         return count;
     }
 
     void ResourceObject::GetSubObjectSet(u32 index, Span<RID> subObjects)
     {
         usize count{};
-        ResourceGetSubObjectSet(m_data, nullptr, index, count, &subObjects);
+        ResourceGetSubObjectSet(m_data, nullptr, index, count, &subObjects, m_readPrototypes);
     }
 
     usize ResourceObject::GetRemoveFromPrototypeSubObjectSetCount(u32 index) const
@@ -925,11 +931,6 @@ namespace Fyrion
         return GetValue(index) != nullptr;
     }
 
-    bool ResourceObject::HasNoPrototype(u32 index) const
-    {
-        return m_data->fields[index] != nullptr;
-    }
-
     Array<RID> ResourceObject::GetSubObjectSetAsArray(u32 index)
     {
         u32 count = GetSubObjectSetCount(index);
@@ -988,8 +989,8 @@ namespace Fyrion
                 {
                     if ((itEvent.second.eventType && ResourceEventType::Update) != 0)
                     {
-                        ResourceObject oldObject{m_data->dataOnWrite};
-                        ResourceObject newObject{m_data};
+                        ResourceObject oldObject{m_data->dataOnWrite, true};
+                        ResourceObject newObject{m_data, true};
                         itEvent.second.event(itEvent.second.userData, ResourceEventType::Destroy, oldObject, newObject);
                     }
                 }
@@ -1010,8 +1011,8 @@ namespace Fyrion
             {
                 if ((itEvent.second.eventType && ResourceEventType::Insert) != 0)
                 {
-                    ResourceObject oldObject{nullptr};
-                    ResourceObject newObject{m_data};
+                    ResourceObject oldObject{nullptr, true};
+                    ResourceObject newObject{m_data, true};
                     itEvent.second.event(itEvent.second.userData, ResourceEventType::Destroy, oldObject, newObject);
                 }
             }
@@ -1029,7 +1030,7 @@ namespace Fyrion
         }
     }
 
-    bool ResourceObject::ResourceSubObjectAllowed(u32 index, ResourceData* data, ResourceData* ownerData, const RID& rid)
+    bool ResourceObject::ResourceSubObjectAllowed(u32 index, ResourceData* data, ResourceData* ownerData, const RID& rid, bool checkPrototypes)
     {
         if (ownerData)
         {
@@ -1040,28 +1041,28 @@ namespace Fyrion
             }
         }
 
-        if (data->storage->prototype)
+        if (data->storage->prototype && checkPrototypes)
         {
-            return ResourceSubObjectAllowed(index, data->storage->prototype->data, data, rid);
+            return ResourceSubObjectAllowed(index, data->storage->prototype->data, data, rid, checkPrototypes);
         }
 
         return true;
     }
 
-    void ResourceObject::ResourceGetSubObjectSet(ResourceData* data, ResourceData* ownerData, u32 index, usize& count, Span<RID>* subObjects)
+    void ResourceObject::ResourceGetSubObjectSet(ResourceData* data, ResourceData* ownerData, u32 index, usize& count, Span<RID>* subObjects, bool checkPrototypes)
     {
         SubObjectSetData* subObjectSetData = static_cast<SubObjectSetData*>(data->fields[index]);
 
-        if (data->storage->prototype)
+        if (data->storage->prototype && checkPrototypes)
         {
-            ResourceGetSubObjectSet(data->storage->prototype->data, data, index, count, subObjects);
+            ResourceGetSubObjectSet(data->storage->prototype->data, data, index, count, subObjects, checkPrototypes);
         }
 
         if (subObjectSetData)
         {
             for (auto it: subObjectSetData->subObjects)
             {
-                if (ResourceSubObjectAllowed(index, data, ownerData, it.first))
+                if (ResourceSubObjectAllowed(index, data, ownerData, it.first, checkPrototypes))
                 {
                     if (subObjects)
                     {

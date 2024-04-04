@@ -33,7 +33,7 @@ namespace Fyrion
     class FY_API ResourceObject
     {
     public:
-        explicit ResourceObject(ResourceData* data);
+        explicit ResourceObject(ResourceData* data, bool readPrototypes);
         virtual ~ResourceObject();
 
         ResourceObject(const ResourceObject& object) = delete;
@@ -60,7 +60,6 @@ namespace Fyrion
         StreamObject*       GetStream(u32 index);
         StreamObject*       WriteStream(u32 index);
         bool                Has(u32 index) const;
-        bool                HasNoPrototype(u32 index) const;
         Array<RID>          GetSubObjectSetAsArray(u32 index);
         u32                 GetValueCount() const;
         u32                 GetIndex(const StringView& name) const;
@@ -91,10 +90,11 @@ namespace Fyrion
         }
 
     private:
-        static bool ResourceSubObjectAllowed(u32 index, ResourceData* data, ResourceData* ownerData, const RID& rid);
-        static void ResourceGetSubObjectSet(ResourceData* data, ResourceData* ownerData, u32 index, usize& count, Span<RID>* subObjects);
+        static bool ResourceSubObjectAllowed(u32 index, ResourceData* data, ResourceData* ownerData, const RID& rid, bool checkPrototypes);
+        static void ResourceGetSubObjectSet(ResourceData* data, ResourceData* ownerData, u32 index, usize& count, Span<RID>* subObjects , bool checkPrototypes);
 
-        ResourceData* m_data;
+        ResourceData*   m_data;
+        bool            m_readPrototypes;
     };
 
     inline ResourceObjectValue::ResourceObjectValue(u32 index, ResourceObject* resourceObject) : m_index(index), m_resourceObject(resourceObject){}

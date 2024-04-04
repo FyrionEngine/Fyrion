@@ -353,7 +353,7 @@ namespace
             CHECK(prototypeWithOverride.GetValue<String>(SerializationSubObjectBasics::StringValue) == String{"OverrideValue"});
             CHECK(prototypeWithOverride.GetValue<i32>(SerializationSubObjectBasics::IntValue) == 667788);
 
-            RID ridPrototypeAll = Repository::CreateFromPrototype(rid);
+            RID ridPrototypeAll =  Repository::CreateFromPrototype(rid);
             ResourceSerialization::ParseResource(prototype2Str, ridPrototypeAll);
 
             {
@@ -364,12 +364,12 @@ namespace
                 CHECK(value.string == valueSubObject.string);
 
                 {
-                    u32 count = subobject.GetSubObjectSetCount(SerializationResourceBasics::SubobjectSet);
-                    Array<RID> subObjects(count);
+                    u32 countSubObjects = subobject.GetSubObjectSetCount(SerializationResourceBasics::SubobjectSet);
+                    Array<RID> subObjects(countSubObjects);
                     subobject.GetSubObjectSet(SerializationResourceBasics::SubobjectSet, subObjects);
                     CHECK(subObjects.Size() == 2);
                     u32 checks = 0;
-                    for (int i = 0; i < count; ++i)
+                    for (int i = 0; i < countSubObjects; ++i)
                     {
                         RID subobjectItem = subObjects[i];
                         if (Repository::GetUUID(subobjectItem) == UUID::FromString("82e8aab4-7981-4c83-9b3f-c4d0738c4337"))
@@ -387,7 +387,7 @@ namespace
                             checks++;
                         }
                     }
-                    CHECK(checks == count);
+                    CHECK(checks == countSubObjects);
                 }
             }
             Engine::Destroy();

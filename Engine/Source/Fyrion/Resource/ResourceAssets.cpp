@@ -122,11 +122,11 @@ namespace Fyrion
         String dataPath =  Path::Join(Path::Parent(assetFile), Path::Name(assetFile), FY_DATA_EXTENSION);
         if (FileSystem::GetFileStatus(dataPath).exists)
         {
-            ResourceObject read = Repository::Read(rid);
+            ResourceObject read = Repository::ReadNoPrototypes(rid);
             u32 valueCount = read.GetValueCount();
             for (int i = 0; i < valueCount; ++i)
             {
-                if (read.HasNoPrototype(i) && read.GetResourceType(i) == ResourceFieldType::SubObjectSet)
+                if (read.GetResourceType(i) == ResourceFieldType::SubObjectSet)
                 {
                     StreamObject* streamObject = read.GetStream(i);
                     if (streamObject)
@@ -277,14 +277,13 @@ namespace Fyrion
 
                     logger.Debug("Asset {} saved on {} ", rid.id, newAbsolutePath);
 
-                    ResourceObject object = Repository::Read(objectRid);
+                    ResourceObject object = Repository::ReadNoPrototypes(objectRid);
                     u32 valueCount = object.GetValueCount();
                     for (int i = 0; i < valueCount; ++i)
                     {
-                        if (object.HasNoPrototype(i))
+
+                        if (object.GetResourceType(i) == ResourceFieldType::Stream)
                         {
-                            if (object.GetResourceType(i) == ResourceFieldType::Stream)
-                            {
                             StreamObject* streamObject = object.GetStream(i);
                             if (streamObject)
                             {
@@ -313,7 +312,6 @@ namespace Fyrion
                                     FileSystem::Rename(tempPath, streamPath);
                                 }
                                 streamObject->MapTo(streamPath, 0);
-                            }
                             }
                         }
                     }

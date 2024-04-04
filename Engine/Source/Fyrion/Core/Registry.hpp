@@ -270,6 +270,14 @@ namespace Fyrion
         {
             return NewInstance(MemoryGlobals::GetDefaultAllocator(), Traits::Forward<Args>(args)...);
         }
+
+        void Construct(VoidPtr memory)
+        {
+            if (ConstructorHandler* constructor = FindConstructor(nullptr, 0))
+            {
+                return constructor->Construct(memory, nullptr);
+            }
+        }
     };
 
     ///-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

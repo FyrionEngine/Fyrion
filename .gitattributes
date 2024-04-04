@@ -1,0 +1,4 @@
+* linguist-detectable=true
+*.h linguist-language=C++
+*.c linguist-detectable=false
+*.svg linguist-detectable=false

@@ -7,6 +7,7 @@
 #include "Fyrion/Resource/Repository.hpp"
 #include "Fyrion/Assets/AssetTypes.hpp"
 #include "IconsFontAwesome6.h"
+#include "Fyrion/ImGui/Lib/imgui_internal.h"
 
 using namespace Fyrion;
 
@@ -17,16 +18,613 @@ namespace Fyrion
 
 namespace ImGui
 {
+
+    struct ContentTable
+    {
+        f32 thumbnailSize{};
+        u32 selectedItem{};
+        u32 hoveredItem{};
+        bool renamingSelected{};
+        u32 renamingId{};
+        String renamingStringCache{};
+        u32 renamedItem{};
+        u32 renamedCancelled{};
+        bool renamingFocus{};
+        bool selectionNoFocus{};
+        u32 acceptPayloadItem{U32_MAX};
+        u32 beginPayloadItem{U32_MAX};
+    };
+
     namespace
     {
         f32 scaleFactor = 1.0;
         ImGuiKey keys[static_cast<u32>(Key::MAX)];
+
+        HashMap<ImGuiID, ContentTable> contentTables{};
+        ImGuiID currentContentTable{U32_MAX};
+    }
+
+    struct InputTextCallback_UserData
+    {
+        String& str;
+    };
+
+    static int InputTextCallback(ImGuiInputTextCallbackData* data)
+    {
+        auto userData = (InputTextCallback_UserData*) data->UserData;
+        if (data->BufTextLen >= (userData->str.Capacity() - 1))
+        {
+            auto new_size = userData->str.Capacity() + (userData->str.Capacity() * 2) / 3;
+            userData->str.Reserve(new_size);
+            data->Buf = userData->str.begin();
+        }
+        userData->str.SetSize(data->BufTextLen);
+        return 0;
+    }
+
+    void CreateDockSpace(ImGuiID dockSpaceId)
+    {
+        static ImGuiDockNodeFlags dockNodeFlags = ImGuiDockNodeFlags_None;
+
+        ImGuiWindowFlags windowFlags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
+        auto viewport = ImGui::GetMainViewport();
+        ImGui::SetNextWindowPos(viewport->WorkPos);
+        ImGui::SetNextWindowSize(viewport->WorkSize);
+        ImGui::SetNextWindowViewport(viewport->ID);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, IM_COL32(20, 20, 23, 255));
+        windowFlags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+        windowFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+        dockNodeFlags |= ImGuiDockNodeFlags_NoWindowMenuButton;
+
+        ImGui::Begin("DockSpace", 0, windowFlags);
+        ImGui::PopStyleVar(3);
+        ImGui::PopStyleColor(1);
+
+        ImGuiStyle& style = ImGui::GetStyle();
+        ImGui::DockSpace(dockSpaceId, ImVec2(0.0f, viewport->WorkSize.y - 40 * style.ScaleFactor), dockNodeFlags);
+
+//		auto* drawList = ImGui::GetWindowDrawList();
+//		drawList->AddLine(ImVec2(0.0f, viewport->WorkSize.y - 30), ImVec2(viewport->WorkSize.x, viewport->WorkSize.y), IM_COL32(0, 0, 0, 255), 1.f * style.ScaleFactor);
+    }
+
+    bool Begin(u32 id, const char* name, bool* pOpen, ImGuiWindowFlags flags)
+    {
+        ImGuiStyle& style = ImGui::GetStyle();
+        ImGui::SetNextWindowSize({800 * style.ScaleFactor, 400 * style.ScaleFactor}, ImGuiCond_Once);
+
+        char str[100];
+        sprintf(str, "%s###%d", name, id);
+        bool open = ImGui::Begin(str, pOpen, flags);
+        if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))
+        {
+            //hoveredWindowId = id;
+        }
+        return open;
+    }
+
+    void DockBuilderReset(ImGuiID dockSpaceId)
+    {
+        auto viewport = ImGui::GetMainViewport();
+        ImGui::DockBuilderRemoveNode(dockSpaceId);
+        ImGui::DockBuilderAddNode(dockSpaceId, ImGuiDockNodeFlags_DockSpace);
+        ImGui::DockBuilderSetNodeSize(dockSpaceId, viewport->WorkSize);
+    }
+
+    void DockBuilderDockWindow(ImGuiID windowId, ImGuiID nodeId)
+    {
+        char str[20];
+        sprintf(str, "###%d", windowId);
+        ImGui::DockBuilderDockWindow(str, nodeId);
+    }
+
+    bool InputText(u32 idx, Fyrion::String& string, ImGuiInputTextFlags flags)
+    {
+        char str[100];
+        sprintf(str, "###txtid%d", idx);
+
+        InputTextCallback_UserData user_data{string};
+        flags |= ImGuiInputTextFlags_CallbackResize;
+
+        auto ret = ImGui::InputText(str, string.begin(), string.Capacity() + 1, flags, InputTextCallback, &user_data);
+
+        auto& imguiContext = *ImGui::GetCurrentContext();
+
+        auto& rect = imguiContext.LastItemData.Rect;
+        auto* drawList = ImGui::GetWindowDrawList();
+
+        if (ImGui::IsItemFocused())
+        {
+            drawList->AddRect(rect.Min, ImVec2(rect.Max.x - ImGui::GetStyle().ScaleFactor, rect.Max.y), IM_COL32(66, 140, 199, 255), ImGui::GetStyle().FrameRounding, 0,
+                1 * ImGui::GetStyle().ScaleFactor);
+        }
+
+        return ret;
+    }
+
+    bool SearchInputText(ImGuiID idx, Fyrion::String& string, ImGuiInputTextFlags flags)
+    {
+        const auto searching = !string.Empty();
+
+        auto& style = ImGui::GetStyle();
+        const float newPadding = 28.0f * ImGui::GetStyle().ScaleFactor;
+        auto& context = *ImGui::GetCurrentContext();
+        auto* drawList = ImGui::GetWindowDrawList();
+        auto& rect = context.LastItemData.Rect;
+
+        ImGui::StyleVar styleVar{ImGuiStyleVar_FramePadding, ImVec2(newPadding, style.FramePadding.y)};
+
+        auto modified = InputText(idx, string, flags);
+
+        if (!searching)
+        {
+            drawList->AddText(ImVec2(rect.Min.x + newPadding, rect.Min.y + style.FramePadding.y), ImGui::GetColorU32(ImGuiCol_TextDisabled), "Search");
+        }
+
+        drawList->AddText(ImVec2(rect.Min.x + style.ItemInnerSpacing.x, rect.Min.y + style.FramePadding.y), ImGui::GetColorU32(ImGuiCol_Text), ICON_FA_MAGNIFYING_GLASS);
+
+        return modified;
+    }
+
+    void BeginTreeNode()
+    {
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {0.0f, 0.0f});
+        ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.26f, 0.59f, 0.98f, 0.67f)); //TODO - get from config (selected item)
+        ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.26f, 0.59f, 0.98f, 0.67f));
+        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.0, 0.0f, 0.0f, 0.0f));
+    }
+
+    void EndTreeNode()
+    {
+        ImGui::PopStyleColor(3);
+        ImGui::PopStyleVar(2);
+    }
+
+    bool TreeNode(u32 id, const char* label, ImGuiTreeNodeFlags flags)
+    {
+        flags |= ImGuiTreeNodeFlags_OpenOnArrow |
+            ImGuiTreeNodeFlags_OpenOnDoubleClick |
+            ImGuiTreeNodeFlags_SpanAvailWidth |
+            ImGuiTreeNodeFlags_SpanFullWidth;
+
+        return ImGui::TreeNodeEx((void*) (usize) id, flags, "%s", label);
+    }
+
+    bool TreeLeaf(u32 id, const char* label, ImGuiTreeNodeFlags flags)
+    {
+        flags |= ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick |
+            ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_Leaf |
+            ImGuiTreeNodeFlags_SpanFullWidth |
+            ImGuiTreeNodeFlags_NoTreePushOnOpen;
+        return ImGui::TreeNodeEx((void*) (usize) id, flags, "%s", label);
+    }
+
+    void DrawImage(Texture texture, const Rect& rect, const ImVec4& tintCol)
+    {
+        ImDrawList* drawList = ImGui::GetWindowDrawList();
+
+//      TODO - keep the aspect ratio of the texture?
+//      auto& container = *static_cast<TextureContainer*>(texture);
+//      auto ratio = container.size.width / container.size.height;
+//      ImVec2(rect.width / , rect.height / ),
+
+//        drawList->AddImage(
+//            RenderDevice::GetTextureHandler(texture),
+//            ImVec2(rect.X, rect.Y),
+//            ImVec2(rect.Width, rect.Height),
+//            ImVec2(0, 0),
+//            ImVec2(1, 1),
+//            ImGui::ColorConvertFloat4ToU32(tintCol));
+    }
+
+    bool BeginPopupMenu(const char* str, ImGuiWindowFlags popupFlags, bool setSize)
+    {
+        ImGuiStyle& style = ImGui::GetStyle();
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{6 * style.ScaleFactor, 4 * style.ScaleFactor});
+        ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2{1, 1});
+
+        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.26f, 0.59f, 0.98f, 0.67f)); //TODO - get from config (selected item)
+        ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.46f, 0.49f, 0.50f, 0.67f));
+        ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(0.46f, 0.49f, 0.50f, 0.67f));
+
+        if (setSize)
+        {
+            ImGui::SetNextWindowSize(ImVec2{300, 0,}, ImGuiCond_Once);
+        }
+        bool res = ImGui::BeginPopup(str, popupFlags);
+        return res;
+    }
+
+    void EndPopupMenu(bool closePopup)
+    {
+        if (closePopup)
+        {
+            ImGui::EndPopup();
+        }
+        ImGui::PopStyleVar(2);
+        ImGui::PopStyleColor(3);
+    }
+
+    ImU32 TextToColor(const char* str)
+    {
+        auto color = ImHashStr(str, strlen(str));
+        auto vecColor = ImGui::ColorConvertU32ToFloat4(color);
+        return IM_COL32(vecColor.x * 255, vecColor.y * 255, vecColor.z * 255, 255);
+    }
+
+    ContentTable& CurrentTable()
+    {
+        return contentTables[currentContentTable];
+    }
+
+    ContentTable& CurrentTable(ImGuiID id)
+    {
+        return contentTables[id];
+    }
+
+    bool BeginContentTable(u32 id, f32 ThumbnailSize, ImGuiContentTableFlags flags)
+    {
+
+        auto& contentTable = contentTables[id];
+        contentTable.thumbnailSize = ThumbnailSize;
+        currentContentTable = id;
+        contentTable.hoveredItem = U32_MAX;
+        contentTable.renamedItem = U32_MAX;
+        contentTable.renamedCancelled = U32_MAX;
+        contentTable.selectionNoFocus = (flags & ImGuiContentTableFlags_SelectionNoFocus);
+
+        if (contentTable.renamingSelected && contentTable.renamingId != contentTable.selectedItem)
+        {
+            CancelRenameContentSelected(id);
+        }
+
+        static ImGuiTableFlags tableFlags = ImGuiTableFlags_SizingFixedSame;
+        auto cellPadding = ImGui::GetStyle().CellPadding;
+
+        auto totalThumbnailSize = ThumbnailSize + cellPadding.x;
+
+        u32 columns = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x) / totalThumbnailSize;
+        columns = Math::Max(columns, 1u);
+        bool tableRes = ImGui::BeginTable("ContentTable", columns, tableFlags);
+
+        if (tableRes)
+        {
+            for (int i = 0; i < columns; ++i)
+            {
+
+                char buffer[20]{};
+                StringConverter<i32>::ToString(buffer, 0, i);
+                ImGui::TableSetupColumn(buffer, ImGuiTableColumnFlags_WidthFixed, ThumbnailSize);
+            }
+        }
+        return tableRes;
+    }
+
+    bool DrawContentItem(const ContentItemDesc& contentItemDesc)
+    {
+        FY_ASSERT(currentContentTable != U32_MAX, "missing BeginContentTable");
+
+        auto& contentTable = contentTables[currentContentTable];
+        auto ThumbnailSize = contentTable.thumbnailSize;
+        contentTable.acceptPayloadItem = U32_MAX;
+        contentTable.beginPayloadItem = U32_MAX;
+
+        ImGui::TableNextColumn();
+
+        auto* drawList = ImGui::GetWindowDrawList();
+        auto cursorPos = ImGui::GetCursorScreenPos();
+        cursorPos.x += 2;
+        auto table = ImGui::GetCurrentTable();
+        auto width = table->Columns.Data->WidthGiven;
+        auto contentInfoSize = ThumbnailSize + (ThumbnailSize / 2);
+        auto contentFullSize = ImVec2(width, contentInfoSize);
+        auto bottomRight = ImVec2(cursorPos.x + width, cursorPos.y + contentInfoSize);
+        auto bottomIcon = ImVec2(cursorPos.x + width, cursorPos.y + ThumbnailSize);
+
+//        auto topIcon = ImVec2(cursorPos.x + width - 1, cursorPos.y + 13 * ImGui::GetStyle().ScaleFactor);
+
+        ImGui::ItemAdd(ImRect(cursorPos, bottomRight), contentItemDesc.ItemId);
+        ImGui::PushID(contentItemDesc.ItemId);
+        ImGui::BeginGroup();
+
+        bool windowHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows);
+        bool isHovered = ImGui::IsItemHovered();
+        bool isSelected = contentTable.selectedItem == contentItemDesc.ItemId;
+        i32 mouseCount = ImGui::GetMouseClickedCount(ImGuiMouseButton_Left);
+        bool isDoubleClicked = mouseCount >= 2 && (mouseCount % 2) == 0 && isHovered;
+        bool isEnter =
+            (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter)) || ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_KeypadEnter))) && ContentItemFocused(contentItemDesc.ItemId) &&
+                !contentTable.renamingSelected && windowHovered;
+        bool isClicked = (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)) && isHovered;
+
+        auto scaleFactor = ImGui::GetStyle().ScaleFactor;
+        auto separatorLineSize = 2 * scaleFactor;
+
+        if (isHovered)
+        {
+            contentTable.hoveredItem = contentItemDesc.ItemId;
+        }
+
+        if (contentItemDesc.TooltipText && ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort) && ImGui::BeginTooltip())
+        {
+            ImGui::TextUnformatted(contentItemDesc.TooltipText);
+            ImGui::EndTooltip();
+        }
+
+        if (contentItemDesc.ShowDetails)
+        {
+            //shadow
+            drawList->AddRect(ImVec2(cursorPos.x + 1.5 * ImGui::GetStyle().ScaleFactor, cursorPos.y + 1.5 * ImGui::GetStyle().ScaleFactor),
+                ImVec2(bottomRight.x + 1.5 * ImGui::GetStyle().ScaleFactor, bottomRight.y + 1.5 * ImGui::GetStyle().ScaleFactor),
+                IM_COL32(2, 4, 6, 255),
+                6.0f, 0, 3);
+
+            drawList->AddRectFilled(cursorPos, bottomIcon, IM_COL32(20, 21, 23, 255), 6, ImDrawFlags_RoundCornersTop);
+
+            //bottom color
+            drawList->AddRectFilled(ImVec2(cursorPos.x, cursorPos.y + ThumbnailSize),
+                ImVec2(bottomRight.x, bottomRight.y),
+                IM_COL32(32, 33, 35, 255), 6, ImDrawFlags_RoundCornersBottom);
+
+        }
+        else if (isHovered || isSelected)
+        {
+
+            //shadow
+            drawList->AddRect(ImVec2(cursorPos.x + 1, cursorPos.y + 1), ImVec2(bottomRight.x + 1 * ImGui::GetStyle().ScaleFactor, bottomRight.y + 1 * ImGui::GetStyle().ScaleFactor),
+                IM_COL32(2, 4, 6, 255),
+                6.0f, 0, 3);
+
+            drawList->AddRectFilled(cursorPos, bottomRight,
+                IM_COL32(40, 41, 43, 255),
+                6.0f, 0);
+        }
+
+        ImVec2 oldCursor = ImGui::GetCursorPos();
+        char str[50];
+        sprintf(str, "###invisibebutton_%d", contentItemDesc.ItemId);
+
+        ImGui::SetCursorPos(ImVec2(oldCursor.x + 4, oldCursor.y));
+        ImGui::InvisibleButton(str, ImVec2(contentFullSize.x - 4, contentFullSize.y));
+
+        if (contentItemDesc.AcceptPayload != nullptr && ImGui::BeginDragDropTarget())
+        {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(contentItemDesc.AcceptPayload))
+            {
+                contentTable.acceptPayloadItem = contentItemDesc.ItemId;
+            }
+            ImGui::EndDragDropTarget();
+        }
+
+        if (contentItemDesc.SetPayload != nullptr && !isDoubleClicked && ImGui::BeginDragDropSource())
+        {
+            contentTable.beginPayloadItem = contentItemDesc.ItemId;
+
+            ImGui::SetDragDropPayload(contentItemDesc.SetPayload, nullptr, 0);
+            ImGui::Text("%s", contentItemDesc.Label);
+            ImGui::EndDragDropSource();
+        }
+
+        ImGui::SetCursorPos(oldCursor);
+
+        ImGui::ItemSize(ImVec2{width, ThumbnailSize});
+        //drawImage(contentItemDesc.texture, {cursorPos.x, cursorPos.y, cursorPos.x + width, cursorPos.y + ThumbnailSize});
+        if (contentItemDesc.Texture)
+        {
+            DrawImage(contentItemDesc.Texture, {(i32) cursorPos.x,
+                                                (i32) cursorPos.y,
+                                                (u32) (cursorPos.x + width),
+                                                (u32) (cursorPos.y + ThumbnailSize)});
+        }
+
+        if (contentItemDesc.ShowDetails)
+        {
+            drawList->AddRectFilled(ImVec2(cursorPos.x, cursorPos.y - separatorLineSize + ThumbnailSize),
+                ImVec2(bottomRight.x + 1, cursorPos.y + ThumbnailSize),
+                contentItemDesc.Color != nullptr ? *contentItemDesc.Color : TextToColor(contentItemDesc.DetailsDesc), 0, 0);
+
+            if (isHovered && !isSelected)
+            {
+                drawList->AddRect(ImVec2(cursorPos.x - 1, cursorPos.y - 1), ImVec2(bottomRight.x + 1, bottomRight.y + 1), IM_COL32(90, 90, 90, 255), 6, 0, 1);
+            }
+        }
+
+        if (isSelected)
+        {
+            drawList->AddRect(ImVec2(cursorPos.x - 1, cursorPos.y - 1), ImVec2(bottomRight.x + 1, bottomRight.y + 1),
+                ImGui::ColorConvertFloat4ToU32(ImVec4(0.26f, 0.59f, 0.98f, 1.0f)),
+                6.0f, 0, 1);
+
+//			drawList->AddRect(ImVec2(cursorPos.x - 1, cursorPos.y - 1), ImVec2(bottomRight.x + 1, bottomRight.y + 1),
+//				IM_COL32(213, 124, 22, 255),
+//				6.0f, 0, 1);
+        }
+
+        //separator size
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + separatorLineSize);
+
+        ImGui::BeginVertical(contentItemDesc.ItemId + 1, ImVec2(width, contentInfoSize - ThumbnailSize), 0.2);
+        {
+            ImGui::BeginHorizontal(contentItemDesc.ItemId + 2, ImVec2(width, 0.0f));
+
+            ImGui::Spring();
+            {
+
+                auto cursor = ImGui::GetCursorScreenPos();
+
+                auto textSize = ImGui::CalcTextSize(contentItemDesc.Label);
+
+                if (contentTable.renamingSelected && isSelected)
+                {
+
+                    auto magicNumber = 8.f;
+
+                    ImGui::SetNextItemWidth(width - magicNumber);
+                    ImGui::SetCursorScreenPos(ImVec2{cursor.x - magicNumber, cursor.y});
+
+                    if (!contentTable.renamingFocus)
+                    {
+                        contentTable.renamingStringCache = contentItemDesc.Label;
+                        ImGui::SetKeyboardFocusHere();
+                    }
+
+                    ImGui::StyleColor frameColor(ImGuiCol_FrameBg, IM_COL32(52, 53, 55, 255));
+                    InputText(40101, contentTable.renamingStringCache);
+
+                    //defer renamingFocus change, because InputText is not active in the first frame, canceling rename
+                    if (!ImGui::IsItemActive() && contentTable.renamingFocus)
+                    {
+                        if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape)))
+                        {
+                            contentTable.renamedCancelled = contentItemDesc.ItemId;
+                        }
+                        else
+                        {
+                            contentTable.renamedItem = contentItemDesc.ItemId;
+                        }
+
+                        contentTable.renamingSelected = false;
+                        contentTable.renamingFocus = false;
+                        ImGui::SetFocusID(Math::Max(contentItemDesc.ItemId, 1u), ImGui::GetCurrentWindow());
+
+                    }
+                    else if (!contentTable.renamingFocus)
+                    {
+                        contentTable.renamingFocus = true;
+                    }
+                }
+                else
+                {
+                    auto rect = ImVec2{cursor.x + ThumbnailSize - 20, cursor.y + (textSize.y * 2)};
+
+                    //TODO PushTextWrapPos + PushClipRect is messing with the CursorPos if the text is too large.
+                    ImGui::PushClipRect(cursor, rect, true);
+
+//                    ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + width - 15);
+
+                    const float textWidth = Math::Min(textSize.x, width);
+
+                    ImGui::SetNextItemWidth(textWidth);
+                    ImGui::Text("%s%s", contentItemDesc.PreLabel != nullptr ? contentItemDesc.PreLabel : "", contentItemDesc.Label);
+
+//                    ImGui::PopTextWrapPos();
+
+                    ImGui::PopClipRect();
+                }
+            }
+
+            ImGui::Spring();
+            ImGui::EndHorizontal();
+
+            ImGui::Spring();
+
+            if (isClicked)
+            {
+                contentTable.selectedItem = contentItemDesc.ItemId;
+                ImGui::SetFocusID(Math::Max(contentItemDesc.ItemId, 1u), ImGui::GetCurrentWindow());
+            }
+
+            if (contentItemDesc.ShowDetails)
+            {
+                ImGui::TextDisabled("%s", contentItemDesc.DetailsDesc);
+                ImGui::Spring(0.4);
+            }
+            ImGui::EndVertical();
+        }
+
+        ImGui::EndGroup();
+        ImGui::PopID();
+
+        return (isDoubleClicked || isEnter) && !contentTable.renamingSelected;
+    }
+
+    void EndContentTable()
+    {
+        ImGui::EndTable();
+        currentContentTable = U32_MAX;
+    }
+
+    void CancelRenameContentSelected(ImGuiID id)
+    {
+        ContentTable& contentTable = CurrentTable(id);
+        contentTable.renamingSelected = false;
+        contentTable.renamedItem = U32_MAX;
+        contentTable.renamingId = U32_MAX;
+        contentTable.renamingStringCache.Clear();
+        contentTable.renamingSelected = false;
+        contentTable.renamingFocus = false;
+    }
+
+    bool ContentItemHovered(ImGuiID itemId)
+    {
+        return CurrentTable().hoveredItem == itemId;
+    }
+
+    bool ContentItemSelected(ImGuiID itemId)
+    {
+        return CurrentTable().selectedItem == itemId;
+    }
+
+    void SelectContentItem(ImGuiID itemId, ImGuiID tableId)
+    {
+        if (tableId == U32_MAX)
+        {
+            CurrentTable().selectedItem = itemId;
+        }
+        else
+        {
+            CurrentTable(tableId).selectedItem = itemId;
+        }
+    }
+
+    bool ContentItemFocused(ImGuiID itemId)
+    {
+        return ImGui::GetFocusID() == itemId;
+    }
+
+    void RenameContentSelected(ImGuiID id)
+    {
+        auto& contentTable = CurrentTable(id);
+        if (contentTable.selectedItem)
+        {
+            contentTable.renamingSelected = true;
+            contentTable.renamingId = contentTable.selectedItem;
+        }
+    }
+
+    bool ContentItemRenamed(ImGuiID itemId)
+    {
+        return CurrentTable().renamedItem == itemId;
+    }
+
+    bool ContentItemBeginPayload(ImGuiID itemId)
+    {
+        return CurrentTable().beginPayloadItem == itemId;
+    }
+
+    bool ContentItemAcceptPayload(ImGuiID itemId)
+    {
+        return CurrentTable().acceptPayloadItem == itemId;
+    }
+
+    bool RenamingSelected(ImGuiID itemId)
+    {
+        auto& ct = CurrentTable(itemId);
+        return ct.renamingSelected;
+    }
+
+    StringView ContentRenameString()
+    {
+        return CurrentTable().renamingStringCache;
     }
 
     void RegisterKeys()
     {
         keys[static_cast<u32>(Key::Space)] = ImGuiKey_Space;
-        keys[static_cast<u32>(Key::Apostrophe)] =ImGuiKey_Apostrophe;
+        keys[static_cast<u32>(Key::Apostrophe)] = ImGuiKey_Apostrophe;
         keys[static_cast<u32>(Key::Comma)] = ImGuiKey_Comma;
         keys[static_cast<u32>(Key::Minus)] = ImGuiKey_Minus;
         keys[static_cast<u32>(Key::Period)] = ImGuiKey_Period;
@@ -145,7 +743,6 @@ namespace ImGui
         keys[static_cast<u32>(Key::RightSuper)] = ImGuiKey_RightSuper;
         keys[static_cast<u32>(Key::Menu)] = ImGuiKey_Menu;
     }
-
 
     void ApplyDefaultStyle()
     {
@@ -375,7 +972,7 @@ namespace ImGui
 
     void ImGuiShutdown()
     {
-        //ImGui::DestroyExtraContext();
+        contentTables.Clear();
         ImGui::DestroyContext();
     }
 

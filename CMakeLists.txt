@@ -41,7 +41,9 @@ endif()
 
 enable_testing()
 
+add_subdirectory(Editor)
 add_subdirectory(Engine)
+add_subdirectory(Fyrion)
 add_subdirectory(Player)
 
 

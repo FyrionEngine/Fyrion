@@ -43,6 +43,12 @@ namespace Fyrion
         f64         lastTime{};
         f64         deltaTime{};
         u64         frame{0};
+
+        EventHandler<OnInit> onInitHandler{};
+        EventHandler<OnUpdate> onUpdateHandler{};
+        EventHandler<OnShutdown> onShutdownHandler{};
+        EventHandler<OnShutdownRequest> onShutdownRequest{};
+
     }
 
     void Engine::Init()
@@ -86,6 +92,8 @@ namespace Fyrion
         });
 
         ImGui::Init(window, swapchain);
+
+        onInitHandler.Invoke();
     }
 
     void Engine::Run()
@@ -102,7 +110,6 @@ namespace Fyrion
 
             ImGui::BeginFrame(window, deltaTime);
 
-
             if (Platform::UserRequestedClose(window))
             {
                 Engine::Shutdown();
@@ -112,7 +119,7 @@ namespace Fyrion
                 }
             }
 
-            ImGui::ShowDemoWindow(0);
+            onUpdateHandler.Invoke(deltaTime);
 
             Extent extent = Platform::GetWindowExtent(window);
 
@@ -154,7 +161,12 @@ namespace Fyrion
 
     void Engine::Shutdown()
     {
-        running = false;
+        bool canChose = true;
+        onShutdownRequest.Invoke(&canChose);
+        if (canChose)
+        {
+            running = false;
+        }
     }
 
     void Engine::Destroy()

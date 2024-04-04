@@ -9,6 +9,7 @@
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/IO/Path.hpp"
 #include "Fyrion/Resource/ResourceAssets.hpp"
+#include "Fyrion/Resource/AssetTree.hpp"
 
 using namespace Fyrion;
 
@@ -95,31 +96,31 @@ namespace
 		}
 
 		{
-//			AssetTree resourceTree{};
-//			resourceTree.AddAssetRoot(root);
-//			resourceTree.Update();
-//
-//			RID folder = Repository::GetByPath("Fyrion://Dir1/Dir1");
-//
-//			{
-//				Span<AssetNode*> items = resourceTree.GetNode(folder)->Nodes;
-//				CHECK(items.Size() == 2);
-//				CHECK(items[0]->Name == "TxtFile1");
-//				CHECK(items[0]->Parent->Rid == folder);
-//				CHECK(items[0]->Root == root);
-//				CHECK(items[1]->Name == "TxtFile3");
-//				CHECK(items[1]->Parent->Rid == folder);
-//				CHECK(items[1]->Root == root);
-//			}
-//
-//			resourceTree.SortNodes(AssetTreeSort_Name, false);
-//
-//			{
-//				Span<AssetNode*> items = resourceTree.GetNode(folder)->Nodes;
-//				CHECK(items.Size() == 2);
-//				CHECK(items[0]->Name == "TxtFile3");
-//				CHECK(items[1]->Name == "TxtFile1");
-//			}
+			AssetTree resourceTree{};
+			resourceTree.AddAssetRoot(root);
+			resourceTree.Update();
+
+			RID folder = Repository::GetByPath("Fyrion://Dir1/Dir1");
+
+			{
+				Span<AssetNode*> items = resourceTree.GetNode(folder)->nodes;
+				CHECK(items.Size() == 2);
+				CHECK(items[0]->name == "TxtFile1");
+				CHECK(items[0]->parent->rid == folder);
+				CHECK(items[0]->root == root);
+				CHECK(items[1]->name == "TxtFile3");
+				CHECK(items[1]->parent->rid == folder);
+				CHECK(items[1]->root == root);
+			}
+
+			resourceTree.SortNodes(AssetTreeSort::Name, false);
+
+			{
+				Span<AssetNode*> items = resourceTree.GetNode(folder)->nodes;
+				CHECK(items.Size() == 2);
+				CHECK(items[0]->name == "TxtFile3");
+				CHECK(items[1]->name == "TxtFile1");
+			}
 
 
 		}

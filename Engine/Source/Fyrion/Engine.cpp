@@ -152,6 +152,8 @@ namespace Fyrion
             frame++;
         }
 
+        onShutdownHandler.Invoke();
+
         Graphics::DestroySwapchain(swapchain);
         Platform::DestroyWindow(window);
 

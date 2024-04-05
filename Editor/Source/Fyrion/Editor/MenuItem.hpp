@@ -15,12 +15,12 @@ namespace Fyrion
 
 	struct MenuItemCreation
 	{
-		StringView       ItemName{};
-		StringView       Icon{};
-		i32              Priority{};
-		Shortcut         ItemShortcut{};
-		FnMenuItemAction Action{};
-		FnMenuItemEnable Enable{};
+		StringView       itemName{};
+		StringView       icon{};
+		i32              priority{};
+		Shortcut         itemShortcut{};
+		FnMenuItemAction action{};
+		FnMenuItemEnable enable{};
 	};
 
 

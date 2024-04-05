@@ -8,14 +8,14 @@ namespace Fyrion
     void MenuItemContext::AddMenuItem(const MenuItemCreation& menuItem)
     {
         Array<String> items = {};
-        Split(StringView{menuItem.ItemName}, StringView{"/"}, [&](const StringView& item)
+        Split(StringView{menuItem.itemName}, StringView{"/"}, [&](const StringView& item)
         {
             items.EmplaceBack(item);
         });
 
         if (items.Empty())
         {
-            items.EmplaceBack(menuItem.ItemName);
+            items.EmplaceBack(menuItem.itemName);
         }
 
         MenuItemContext* parent = nullptr;
@@ -36,18 +36,18 @@ namespace Fyrion
 
         if (storage && parent)
         {
-            storage->m_action = menuItem.Action;
-            storage->m_enable = menuItem.Enable;
-            storage->m_itemShortcut = menuItem.ItemShortcut;
+            storage->m_action = menuItem.action;
+            storage->m_enable = menuItem.enable;
+            storage->m_itemShortcut = menuItem.itemShortcut;
 
-            if (!menuItem.Icon.Empty())
+            if (!menuItem.icon.Empty())
             {
                 String label = storage->m_label;
-                storage->m_label = menuItem.Icon;
+                storage->m_label = menuItem.icon;
                 storage->m_label += " ";
                 storage->m_label += label;
             }
-            storage->m_priority = menuItem.Priority;
+            storage->m_priority = menuItem.priority;
 
             Sort(parent->m_children.begin(), parent->m_children.end(), [](MenuItemContext* a, MenuItemContext* b)
             {
@@ -86,7 +86,7 @@ namespace Fyrion
 
             if (context->m_itemShortcut.presKey != Key::None)
             {
-                //shortcut += ImGui::GetKeyName(GetImGuiKey(context->m_itemShortcut.presKey));
+                shortcut += ImGui::GetKeyName(ImGui::GetImGuiKey(context->m_itemShortcut.presKey));
             }
 
             if (ImGui::MenuItem(context->m_label.CStr(), shortcut.begin(), false, enabled))

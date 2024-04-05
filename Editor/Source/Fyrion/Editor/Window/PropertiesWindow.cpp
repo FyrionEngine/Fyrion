@@ -2,9 +2,23 @@
 
 #include "Fyrion/Editor/EditorTypes.hpp"
 #include "Fyrion/Core/Registry.hpp"
+#include "Fyrion/Editor/MenuItem.hpp"
+#include "Fyrion/Core/Event.hpp"
+#include "Fyrion/Engine.hpp"
 
 namespace Fyrion
 {
+
+    namespace
+    {
+        MenuItemContext menuItemContext{};
+
+        void Shutdown()
+        {
+            menuItemContext = MenuItemContext{};
+        }
+    }
+
     struct ProjectBrowserWindow : EditorWindow
     {
         EditorWindowProperties GetProperties() override
@@ -21,8 +35,11 @@ namespace Fyrion
         }
     };
 
+
+
     void InitProjectBrowser()
     {
+        Event::Bind<OnShutdown, Shutdown>();
         Registry::Type<ProjectBrowserWindow, EditorWindow>();
     }
 }

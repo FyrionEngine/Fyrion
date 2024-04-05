@@ -22,6 +22,7 @@ namespace Fyrion
 		HashMap();
 		HashMap(const HashMap& other);
 		HashMap(HashMap&& other) noexcept;
+        HashMap& operator=(const HashMap& other);
 
 		Iterator begin();
 		Iterator end();
@@ -53,6 +54,8 @@ namespace Fyrion
 
 		template<typename ParamKey>
 		bool Has(const ParamKey& key) const;
+
+        void Swap(HashMap& other);
 
 		~HashMap();
 
@@ -91,7 +94,14 @@ namespace Fyrion
 		other.m_size = 0;
 	}
 
-	template<typename Key, typename Value>
+    template<typename Key, typename Value>
+    HashMap<Key, Value>& HashMap<Key, Value>::operator=(const HashMap& other)
+    {
+        HashMap(other).Swap(*this);
+        return *this;
+    }
+
+    template<typename Key, typename Value>
 	FY_FINLINE void HashMap<Key, Value>::Clear()
 	{
 		if (m_buckets.Empty()) return;
@@ -289,7 +299,16 @@ namespace Fyrion
 		}
 	}
 
-	template<typename Key, typename Value>
+    template<typename Key, typename Value>
+    void HashMap<Key, Value>::Swap(HashMap& other)
+    {
+        m_buckets.Swap(other.m_buckets);
+        usize size = other.m_size;
+        other.m_size = this->m_size;
+        other.m_size = size;
+    }
+
+    template<typename Key, typename Value>
 	FY_FINLINE void HashMap<Key, Value>::ReHash()
 	{
 		if (m_size + 1 > 4 * m_buckets.Size())

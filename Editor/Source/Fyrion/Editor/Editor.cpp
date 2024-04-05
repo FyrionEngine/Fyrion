@@ -14,8 +14,8 @@ namespace Fyrion
 //        Array<EditorWindow>         EditorWindows;
 //        Array<OpenWindowStorage>    OpenWindows;
 //        EventHandler<OnEditorStart> OnEditorStartEvent{};
-//        MenuItemContext* MenuContext{};
 
+        MenuItemContext menuContext{};
         bool dockInitialized = false;
         u32  dockSpaceId{10000};
         u32  centerSpaceId{10000};
@@ -25,6 +25,44 @@ namespace Fyrion
         u32  leftDockId{};
         u32  idCounter{100000};
         bool showImGuiDemo = false;
+
+        void Shutdown()
+        {
+            menuContext = {};
+        }
+
+        void CloseEngine(VoidPtr userData)
+        {
+            Engine::Shutdown();
+        }
+
+        void NewProject(VoidPtr userData)
+        {
+
+        }
+
+        void SaveAll(VoidPtr userData)
+        {
+            //Project::SaveAll();
+        }
+
+        void ShowImGuiDemo(VoidPtr userData)
+        {
+            showImGuiDemo = true;
+        }
+
+        void CreateMenuItems()
+        {
+            Editor::AddMenuItem(MenuItemCreation{.itemName = "File", .priority = 0});
+            Editor::AddMenuItem(MenuItemCreation{.itemName = "File/New Project", .priority = 0, .action = NewProject});
+            Editor::AddMenuItem(MenuItemCreation{.itemName = "File/Save All", .priority = 1000, .itemShortcut{.ctrl=true, .presKey = Key::S}, .action = SaveAll});
+            Editor::AddMenuItem(MenuItemCreation{.itemName = "File/Exit", .priority = I32_MAX, .itemShortcut{.ctrl=true, .presKey = Key::Q}, .action = CloseEngine});
+            Editor::AddMenuItem(MenuItemCreation{.itemName = "Edit", .priority = 30});
+            Editor::AddMenuItem(MenuItemCreation{.itemName = "Build", .priority = 40});
+            Editor::AddMenuItem(MenuItemCreation{.itemName = "Window", .priority = 50});
+            Editor::AddMenuItem(MenuItemCreation{.itemName = "Help", .priority = 60});
+            Editor::AddMenuItem(MenuItemCreation{.itemName = "Window/Dear ImGui Demo", .priority = I32_MAX, .action=ShowImGuiDemo});
+        }
     }
 
     void InitProjectBrowser();
@@ -42,7 +80,12 @@ namespace Fyrion
 
     void DrawMenu()
     {
-
+        menuContext.ExecuteHotKeys();
+        if (ImGui::BeginMenuBar())
+        {
+            menuContext.Draw();
+            ImGui::EndMenuBar();
+        }
     }
 
     void EditorUpdate(f64 deltaTime)
@@ -87,6 +130,10 @@ namespace Fyrion
         }
     }
 
+    void Editor::AddMenuItem(const MenuItemCreation& menuItem)
+    {
+        menuContext.AddMenuItem(menuItem);
+    }
 
     void Editor::Init()
     {
@@ -95,5 +142,8 @@ namespace Fyrion
         InitProjectBrowser();
 
         Event::Bind<OnUpdate, &EditorUpdate>();
+        Event::Bind<OnShutdown, &Shutdown>();
+
+        CreateMenuItems();
     }
 }

@@ -5,14 +5,24 @@
 #include "Fyrion/ImGui/Lib/imgui_internal.h"
 #include "EditorTypes.hpp"
 #include "Fyrion/Core/Registry.hpp"
+#include "Fyrion/Resource/AssetTree.hpp"
+#include "Fyrion/Resource/ResourceAssets.hpp"
 
 namespace Fyrion
 {
+
+    void InitProjectBrowser();
+//    void InitProject();
+//    void InitWorldView();
+//    void InitEntityTreeWindow();
+//    void InitPropertiesWindow();
 
     struct EditorWindowStorage
     {
         TypeID typeId{};
         FnCast fnCast{};
+        DockPosition dockPosition{};
+        bool createOnInit{};
     };
 
     struct OpenWindowStorage
@@ -38,6 +48,8 @@ namespace Fyrion
         u32  idCounter{100000};
         bool showImGuiDemo = false;
 
+        AssetTree assetTree{};
+
         void Shutdown()
         {
             menuContext = {};
@@ -56,11 +68,28 @@ namespace Fyrion
             Span<DerivedType> derivedTypes = editorWindow->GetDerivedTypes();
             for(const DerivedType& derivedType : derivedTypes)
             {
+                EditorWindowProperties properties{};
+                TypeHandler* typeHandler = Registry::FindTypeById(derivedType.typeId);
+                if (typeHandler)
+                {
+                    const EditorWindowProperties* editorWindowProperties = typeHandler->GetAttribute<EditorWindowProperties>();
+                    if (editorWindowProperties)
+                    {
+                        properties.createOnInit = editorWindowProperties->createOnInit;
+                        properties.dockPosition = editorWindowProperties->dockPosition;
+                    }
+                }
+
                 editorWindowStorages.EmplaceBack(EditorWindowStorage{
                     .typeId = derivedType.typeId,
-                    .fnCast = derivedType.fnCast
+                    .fnCast = derivedType.fnCast,
+                    .dockPosition = properties.dockPosition,
+                    .createOnInit = properties.createOnInit
                 });
             }
+
+            //TODO: Create a setting for that.
+            Editor::OpenProject(ResourceAssets::GetAssetRootByName("Fyrion"));
 
         }
 
@@ -97,7 +126,22 @@ namespace Fyrion
             Editor::AddMenuItem(MenuItemCreation{.itemName = "Window/Dear ImGui Demo", .priority = I32_MAX, .action=ShowImGuiDemo});
         }
 
-        void CreateWindow(const EditorWindowStorage& editorWindowStorage, VoidPtr userData)
+
+        u32 GetDockId(DockPosition dockPosition)
+        {
+            switch (dockPosition)
+            {
+                case DockPosition::None: return U32_MAX;
+                case DockPosition::Center: return centerSpaceId;
+                case DockPosition::Left: return leftDockId;
+                case DockPosition::TopRight:return topRightDockId;
+                case DockPosition::BottomRight: return bottomRightDockId;
+                case DockPosition::Bottom: return bottomDockId;
+            }
+            return U32_MAX;
+        }
+
+        u32 CreateWindow(const EditorWindowStorage& editorWindowStorage, VoidPtr userData)
         {
             TypeHandler* typeHandler = Registry::FindTypeById(editorWindowStorage.typeId);
             u32 windowId = idCounter;
@@ -112,81 +156,84 @@ namespace Fyrion
 
             openWindows.EmplaceBack(openWindowStorage);
             idCounter = idCounter + 1000;
-        }
-    }
 
-    void InitProjectBrowser();
-    void InitDockSpace();
-    void InitProject();
-    void InitWorldView();
-    void InitEntityTreeWindow();
-    void InitPropertiesWindow();
-
-
-    void DrawOpenWindows()
-    {
-        for (u32 i = 0; i < openWindows.Size(); ++i)
-        {
-            OpenWindowStorage& openWindowStorage = openWindows[i];
-            bool open = true;
-            openWindowStorage.instance->Draw(openWindowStorage.id, open);
-            if (!open)
+            auto p = GetDockId(editorWindowStorage.dockPosition);
+            if (p != U32_MAX)
             {
-                openWindowStorage.typeHandler->Destroy(openWindowStorage.instance);
-                openWindows.Erase(openWindows.begin() + i, openWindows.begin() + i + 1);
+                ImGui::DockBuilderDockWindow(windowId, p);
+            }
+            return windowId;
+        }
+
+        void DrawOpenWindows()
+        {
+            for (u32 i = 0; i < openWindows.Size(); ++i)
+            {
+                OpenWindowStorage& openWindowStorage = openWindows[i];
+                bool open = true;
+                openWindowStorage.instance->Draw(openWindowStorage.id, open);
+                if (!open)
+                {
+                    openWindowStorage.typeHandler->Destroy(openWindowStorage.instance);
+                    openWindows.Erase(openWindows.begin() + i, openWindows.begin() + i + 1);
+                }
             }
         }
-    }
 
-    void DrawMenu()
-    {
-        menuContext.ExecuteHotKeys();
-        if (ImGui::BeginMenuBar())
+        void DrawMenu()
         {
-            menuContext.Draw();
-            ImGui::EndMenuBar();
-        }
-    }
-
-    void EditorUpdate(f64 deltaTime)
-    {
-        ImGuiStyle& style = ImGui::GetStyle();
-        ImGui::CreateDockSpace(dockSpaceId);
-        InitDockSpace();
-        DrawOpenWindows();
-
-        if (showImGuiDemo)
-        {
-            ImGui::ShowDemoWindow(&showImGuiDemo);
+            menuContext.ExecuteHotKeys();
+            if (ImGui::BeginMenuBar())
+            {
+                menuContext.Draw();
+                ImGui::EndMenuBar();
+            }
         }
 
-        DrawMenu();
-        ImGui::End();
-    }
 
-
-    void InitDockSpace()
-    {
-        if (!dockInitialized)
+        void InitDockSpace()
         {
-            dockInitialized = true;
-            ImGui::DockBuilderReset(dockSpaceId);
+            if (!dockInitialized)
+            {
+                dockInitialized = true;
+                ImGui::DockBuilderReset(dockSpaceId);
 
-            //create default windows
-            centerSpaceId     = dockSpaceId;
-            topRightDockId    = ImGui::DockBuilderSplitNode(centerSpaceId, ImGuiDir_Right, 0.15f, nullptr, &centerSpaceId);
-            bottomRightDockId = ImGui::DockBuilderSplitNode(topRightDockId, ImGuiDir_Down, 0.50f, nullptr, &topRightDockId);
-            bottomDockId      = ImGui::DockBuilderSplitNode(centerSpaceId, ImGuiDir_Down, 0.20f, nullptr, &centerSpaceId);
-            leftDockId        = ImGui::DockBuilderSplitNode(centerSpaceId, ImGuiDir_Left, 0.12f, nullptr, &centerSpaceId);
+                //create default windows
+                centerSpaceId     = dockSpaceId;
+                topRightDockId    = ImGui::DockBuilderSplitNode(centerSpaceId, ImGuiDir_Right, 0.15f, nullptr, &centerSpaceId);
+                bottomRightDockId = ImGui::DockBuilderSplitNode(topRightDockId, ImGuiDir_Down, 0.50f, nullptr, &topRightDockId);
+                bottomDockId      = ImGui::DockBuilderSplitNode(centerSpaceId, ImGuiDir_Down, 0.20f, nullptr, &centerSpaceId);
+                leftDockId        = ImGui::DockBuilderSplitNode(centerSpaceId, ImGuiDir_Left, 0.12f, nullptr, &centerSpaceId);
 
-//            for (const auto& windowType: EditorWindows)
-//            {
-//                auto p = GetDockId(windowType.InitialDockPosition);
-//                if (p != U32_MAX)
-//                {
-//                    ImGui::DockBuilderDockWindow(CreateWindow(windowType, nullptr), p);
-//                }
-//            }
+                for (const auto& windowType: editorWindowStorages)
+                {
+                    if (windowType.createOnInit)
+                    {
+                        CreateWindow(windowType, nullptr);
+                    }
+                }
+            }
+        }
+
+        void EditorUpdate(f64 deltaTime)
+        {
+            ImGuiStyle& style = ImGui::GetStyle();
+            ImGui::CreateDockSpace(dockSpaceId);
+            InitDockSpace();
+            DrawOpenWindows();
+
+            if (showImGuiDemo)
+            {
+                ImGui::ShowDemoWindow(&showImGuiDemo);
+            }
+
+            DrawMenu();
+            ImGui::End();
+        }
+
+        void EditorEndFrame()
+        {
+            assetTree.Update();
         }
     }
 
@@ -202,6 +249,11 @@ namespace Fyrion
         }
     }
 
+    void Editor::OpenProject(RID rid)
+    {
+        assetTree.AddAssetRoot(rid);
+    }
+
     void Editor::AddMenuItem(const MenuItemCreation& menuItem)
     {
         menuContext.AddMenuItem(menuItem);
@@ -215,8 +267,14 @@ namespace Fyrion
 
         Event::Bind<OnInit , &InitEditor>();
         Event::Bind<OnUpdate, &EditorUpdate>();
+        Event::Bind<OnEndFrame , &EditorEndFrame>();
         Event::Bind<OnShutdown, &Shutdown>();
 
         CreateMenuItems();
+    }
+
+    AssetTree& Editor::GetAssetTree()
+    {
+        return assetTree;
     }
 }

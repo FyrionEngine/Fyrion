@@ -7,6 +7,14 @@
 
 namespace Fyrion::Traits
 {
+    template<auto Value>
+    struct ConstantType
+    {
+        static constexpr decltype(Value) value = Value;
+    };
+
+    using TrueType = ConstantType<true>;
+    using FalseType = ConstantType<false>;
 
     template<typename... Types>
     using Void = void;

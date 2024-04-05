@@ -238,10 +238,11 @@ namespace Fyrion
 
     [[nodiscard]] constexpr usize operator ""_h (const char* str, usize size) noexcept
     {
-        usize hash = 0;
-        for (const char* c = str; *c != '\0'; ++c)
+        usize hash = 5381;
+        usize c = 0;
+        while (c = *str++)
         {
-            hash = *str + (hash << 6) + (hash << 16) - hash;
+            hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
         }
         return hash;
     }

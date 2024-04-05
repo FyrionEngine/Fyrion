@@ -13,6 +13,8 @@
 #include "Fyrion/ImGui/ImGuiPlatform.hpp"
 #include "Fyrion/ImGui/Lib/imgui_impl_glfw.h"
 
+#include <nfd.h>
+
 namespace Fyrion
 {
     namespace
@@ -45,10 +47,13 @@ namespace Fyrion
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
         Platform::InitStyle();
+
+        NFD_Init();
     }
 
     void PlatformDesktopShutdown()
     {
+        NFD_Quit();
         glfwTerminate();
     }
 
@@ -171,6 +176,73 @@ namespace Fyrion
     void Platform::ImGuiNewFrame()
     {
         ImGui_ImplGlfw_NewFrame();
+    }
+
+    //ndf
+    DialogResult Platform::SaveDialog(String& path, const Span<FileFilter>& filters, const StringView& defaultPath, const StringView& fileName)
+    {
+        nfdchar_t* outPath{};
+        auto nfdFilterItem = reinterpret_cast<const nfdfilteritem_t*>(filters.Data());
+        auto result = NFD_SaveDialog(&outPath, nfdFilterItem, filters.Size(), defaultPath.CStr(), fileName.CStr());
+        if (result == NFD_OKAY)
+        {
+            path = outPath;
+            NFD_FreePath(outPath);
+            return DialogResult::OK;
+        }
+        return DialogResult::Cancel;
+    }
+
+    DialogResult Platform::OpenDialog(String& path, const Span<FileFilter>& filters, const StringView& defaultPath)
+    {
+        nfdchar_t *outPath;
+        auto nfdFilterItem = reinterpret_cast<const nfdfilteritem_t*>(filters.Data());
+        nfdresult_t result = NFD_OpenDialog(&outPath, nfdFilterItem, filters.Size(), defaultPath.CStr());
+        if (result == NFD_OKAY)
+        {
+            path = outPath;
+            NFD_FreePath(outPath);
+            return DialogResult::OK;
+        }
+        return DialogResult::Cancel;
+    }
+
+    DialogResult Platform::OpenDialogMultiple(Array<String>& paths, const Span<FileFilter>& filters, const StringView& defaultPath)
+    {
+        const nfdpathset_t* outPaths;
+
+        auto nfdFilterItem = reinterpret_cast<const nfdfilteritem_t*>(filters.Data());
+        nfdresult_t result = NFD_OpenDialogMultiple(&outPaths, nfdFilterItem, filters.Size(), defaultPath.CStr());
+        if (result == NFD_OKAY)
+        {
+            nfdpathsetsize_t numPaths;
+            NFD_PathSet_GetCount(outPaths, &numPaths);
+
+            for (nfdpathsetsize_t i = 0; i < numPaths; ++i)
+            {
+                nfdchar_t* path;
+                NFD_PathSet_GetPath(outPaths, i, &path);
+                paths.EmplaceBack(path);
+                NFD_PathSet_FreePath(path);
+            }
+
+            NFD_PathSet_Free(outPaths);
+            return DialogResult::OK;
+        }
+        return DialogResult::Cancel;
+    }
+
+    DialogResult Platform::PickFolder(String& path, const StringView& defaultPath)
+    {
+        nfdchar_t* outPath;
+        nfdresult_t result = NFD_PickFolder(&outPath, defaultPath.CStr());
+        if (result == NFD_OKAY)
+        {
+            path = outPath;
+            NFD_FreePath(outPath);
+            return DialogResult::OK;
+        }
+        return DialogResult::Cancel;
     }
 
 }

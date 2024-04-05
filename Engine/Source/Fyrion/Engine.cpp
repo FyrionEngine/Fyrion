@@ -46,6 +46,7 @@ namespace Fyrion
 
         EventHandler<OnInit> onInitHandler{};
         EventHandler<OnUpdate> onUpdateHandler{};
+        EventHandler<OnEndFrame> onEndFrameHandler{};
         EventHandler<OnShutdown> onShutdownHandler{};
         EventHandler<OnShutdownRequest> onShutdownRequest{};
 
@@ -150,6 +151,9 @@ namespace Fyrion
             cmd.End();
 
             GraphicsEndFrame(swapchain);
+
+            onEndFrameHandler.Invoke();
+
             frame++;
         }
 

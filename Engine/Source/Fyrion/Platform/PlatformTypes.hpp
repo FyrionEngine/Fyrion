@@ -14,4 +14,17 @@ namespace Fyrion
     };
 
     ENUM_FLAGS(WindowFlags, i32)
+
+    enum class DialogResult
+    {
+        OK = 0,
+        Error = 1,
+        Cancel = 2
+    };
+
+    struct FileFilter
+    {
+        const char* name{};
+        const char* spec{};
+    };
 }

@@ -5,6 +5,8 @@
 namespace Fyrion
 {
 
+    class AssetTree;
+
     enum class DockPosition
     {
         None = 0,
@@ -24,10 +26,8 @@ namespace Fyrion
 
     struct EditorWindow
     {
-        virtual EditorWindowProperties  GetProperties() { return {}; }
-        virtual void                    Init(u32 id, VoidPtr userData) {}
-
-        virtual void                    Draw(u32 id, bool& open) = 0;
+        virtual void Init(u32 id, VoidPtr userData) {}
+        virtual void Draw(u32 id, bool& open) = 0;
     };
 
 }

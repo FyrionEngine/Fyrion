@@ -206,6 +206,7 @@ namespace Fyrion
         FnCast fnCast{};
     };
 
+
     class FY_API TypeHandler : public AttributeHandler
     {
     public:
@@ -818,6 +819,19 @@ namespace Fyrion
         }
     };
 
+    template<typename, typename = void>
+    struct HasRegisterTypeImpl : Traits::FalseType
+    {
+    };
+
+    template<typename T>
+    struct HasRegisterTypeImpl<T, Traits::VoidType<decltype(static_cast<void(*)(NativeTypeHandler<T>&)>(&T::RegisterType))>> : Traits::TrueType
+    {
+    };
+
+    template<typename T>
+    constexpr bool HasRegisterType = HasRegisterTypeImpl<T>::value;
+
     namespace Registry
     {
         FY_API TypeBuilder      NewType(const StringView& name, const TypeInfo& typeInfo);
@@ -835,7 +849,15 @@ namespace Fyrion
         {
             TypeBuilder typeBuilder = NewType(name, GetTypeInfo<T>());
             (typeBuilder.AddBaseType(GetTypeID<B>(), TypeCaster<B, T>::Cast),...);
-            return NativeTypeHandler<T>(NewType(name, GetTypeInfo<T>()));
+
+            NativeTypeHandler<T> handler = NativeTypeHandler<T>(NewType(name, GetTypeInfo<T>()));
+
+            if constexpr (HasRegisterType<T>)
+            {
+                T::RegisterType(handler);
+            }
+
+            return handler;
         }
 
         template<typename T, typename ...B>

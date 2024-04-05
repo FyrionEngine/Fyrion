@@ -890,14 +890,14 @@ namespace ImGui
 
         ImGuiIO& io = ImGui::GetIO();
         io.Fonts->Clear();
-        ResourceObject dejaVuSans = Repository::Read(Repository::GetByPath("Fyrion://Fonts/OpenSans-Regular.ttf"));
+        ResourceObject dejaVuSans = Repository::Read(Repository::GetByPath("Fyrion://Fonts/DejaVuSans.ttf"));
         if (dejaVuSans)
         {
             const Array<u8>& dejaVuSansBytes = dejaVuSans.GetValue<Array<u8>>(UIFont::FontBytes);
 
             auto font = ImFontConfig();
-            font.SizePixels = fontSize * scaleFactor * 1.1;
-            memcpy(font.Name, "DejaVuSans", 10);
+            font.SizePixels = fontSize * scaleFactor;
+            memcpy(font.Name, "NotoSans", 10);
             font.FontDataOwnedByAtlas = false;
             io.Fonts->AddFontFromMemoryTTF((void*) dejaVuSansBytes.Data(), dejaVuSansBytes.Size(), font.SizePixels, &font);
         }

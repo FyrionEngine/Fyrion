@@ -65,6 +65,16 @@ Files extracted from upstream source:
 - `include/*`
 - `src/*`
 
+## nativefiledialog-extended
+- Upstream: https://github.com/btzy/nativefiledialog-extended
+- Version: 1.1.1 (17b6e8ce219c0677f94b63636abb9296b28841ca, 2024)
+- License: Zlib
+
+Files extracted from upstream source:
+- `src/*`
+- `CMakeLists.txt`
+- `LICENSE`
+
 ## tinystl
 - Upstream: https://github.com/mendsley/tinystl
 - Version: git(77bfd2f32c373180ac01798a1faa95142d65288b, 2018) 

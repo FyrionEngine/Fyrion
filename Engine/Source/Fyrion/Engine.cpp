@@ -94,6 +94,7 @@ namespace Fyrion
         ImGui::Init(window, swapchain);
 
         onInitHandler.Invoke();
+
     }
 
     void Engine::Run()

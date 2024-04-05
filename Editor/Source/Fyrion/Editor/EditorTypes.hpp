@@ -24,12 +24,10 @@ namespace Fyrion
 
     struct EditorWindow
     {
-        virtual EditorWindowProperties GetProperties()
-        {
-            return {};
-        }
+        virtual EditorWindowProperties  GetProperties() { return {}; }
+        virtual void                    Init(u32 id, VoidPtr userData) {}
 
-        virtual void Draw(u32 id, bool& open) = 0;
+        virtual void                    Draw(u32 id, bool& open) = 0;
     };
 
 }

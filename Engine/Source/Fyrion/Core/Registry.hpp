@@ -17,8 +17,10 @@ namespace Fyrion
     class ConstructorBuilder;
     class FieldBuilder;
     class AttributeBuilder;
-
+    class TypeHandler;
     struct FieldInfo;
+
+    typedef VoidPtr (*FnCast)(const TypeHandler* typeHandler, VoidPtr derived);
 
     struct FunctionInfo
     {
@@ -197,6 +199,13 @@ namespace Fyrion
         void OnAttributeCreated(TypeID attributeId) override;
     };
 
+    struct DerivedType
+    {
+
+        TypeID typeId{};
+        FnCast fnCast{};
+    };
+
     class FY_API TypeHandler : public AttributeHandler
     {
     public:
@@ -204,7 +213,6 @@ namespace Fyrion
         typedef void (*FnDestructor)(const TypeHandler* typeHandler, VoidPtr instance);
         typedef void (*FnCopy)(const TypeHandler* typeHandler, ConstPtr source, VoidPtr dest);
         typedef void (*FnMove)(const TypeHandler* typeHandler, VoidPtr source, VoidPtr dest);
-        typedef VoidPtr (*FnCast)(const TypeHandler* typeHandler, VoidPtr derived);
 
         friend class TypeBuilder;
     private:
@@ -225,7 +233,7 @@ namespace Fyrion
         Array<FunctionHandler*>                       m_functionArray{};
 
         HashMap<TypeID, FnCast>                       m_baseTypes{};
-        HashMap<TypeID, FnCast>                       m_derivedTypes{};
+        Array<DerivedType>                            m_derivedTypes{};
     public:
         TypeHandler(const StringView& name, const TypeInfo& typeInfo, u32 version);
 
@@ -238,6 +246,8 @@ namespace Fyrion
         FunctionHandler*                FindFunction(const StringView& functionName) const;
         Span<FunctionHandler*>          GetFunctions() const;
 
+        Span<DerivedType>               GetDerivedTypes() const;
+
 
         StringView          GetName() const;
         const TypeInfo&     GetTypeInfo() const;
@@ -247,6 +257,7 @@ namespace Fyrion
         void                Destructor(VoidPtr instance) const;
         void                Copy(ConstPtr source, VoidPtr dest) const;
         void                Move(VoidPtr source, VoidPtr dest) const;
+        VoidPtr             Cast(TypeID  typeId, VoidPtr instance) const;
 
         VoidPtr NewInstance(Allocator& allocator = MemoryGlobals::GetDefaultAllocator()) const
         {
@@ -282,6 +293,12 @@ namespace Fyrion
             {
                 return constructor->Construct(memory, nullptr);
             }
+        }
+
+        template<typename T>
+        T* Cast(VoidPtr instance) const
+        {
+          return static_cast<T*>(Cast(GetTypeID<T>(), instance));
         }
     };
 
@@ -350,7 +367,7 @@ namespace Fyrion
         ConstructorBuilder      NewConstructor(TypeID* ids, FieldInfo* params, usize size);
         FieldBuilder            NewField(const StringView& fieldName);
         FunctionBuilder         NewFunction(const FunctionHandlerCreation& creation);
-        void                    AddBaseType(TypeID typeId, TypeHandler::FnCast fnCast);
+        void                    AddBaseType(TypeID typeId, FnCast fnCast);
 
         TypeHandler& GetTypeHandler() const;
 

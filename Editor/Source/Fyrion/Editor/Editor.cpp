@@ -9,11 +9,23 @@
 namespace Fyrion
 {
 
+    struct EditorWindowStorage
+    {
+        TypeID typeId{};
+        FnCast fnCast{};
+    };
+
+    struct OpenWindowStorage
+    {
+        u32 id{};
+        EditorWindow* instance{};
+        TypeHandler* typeHandler{};
+    };
+
     namespace
     {
-//        Array<EditorWindow>         EditorWindows;
-//        Array<OpenWindowStorage>    OpenWindows;
-//        EventHandler<OnEditorStart> OnEditorStartEvent{};
+        Array<EditorWindowStorage> editorWindowStorages{};
+        Array<OpenWindowStorage> openWindows{};
 
         MenuItemContext menuContext{};
         bool dockInitialized = false;
@@ -29,6 +41,27 @@ namespace Fyrion
         void Shutdown()
         {
             menuContext = {};
+            openWindows.Clear();
+            openWindows.ShrinkToFit();
+            editorWindowStorages.Clear();
+            editorWindowStorages.ShrinkToFit();
+            idCounter = 100000;
+        }
+
+        void InitEditor()
+        {
+            //TODO - this needs to be update on reload.
+
+            TypeHandler* editorWindow = Registry::FindType<EditorWindow>();
+            Span<DerivedType> derivedTypes = editorWindow->GetDerivedTypes();
+            for(const DerivedType& derivedType : derivedTypes)
+            {
+                editorWindowStorages.EmplaceBack(EditorWindowStorage{
+                    .typeId = derivedType.typeId,
+                    .fnCast = derivedType.fnCast
+                });
+            }
+
         }
 
         void CloseEngine(VoidPtr userData)
@@ -63,6 +96,23 @@ namespace Fyrion
             Editor::AddMenuItem(MenuItemCreation{.itemName = "Help", .priority = 60});
             Editor::AddMenuItem(MenuItemCreation{.itemName = "Window/Dear ImGui Demo", .priority = I32_MAX, .action=ShowImGuiDemo});
         }
+
+        void CreateWindow(const EditorWindowStorage& editorWindowStorage, VoidPtr userData)
+        {
+            TypeHandler* typeHandler = Registry::FindTypeById(editorWindowStorage.typeId);
+            u32 windowId = idCounter;
+
+            OpenWindowStorage openWindowStorage = OpenWindowStorage{
+                .id = windowId,
+                .instance = typeHandler->Cast<EditorWindow>(typeHandler->NewInstance()),
+                .typeHandler = typeHandler
+            };
+
+            openWindowStorage.instance->Init(openWindowStorage.id, userData);
+
+            openWindows.EmplaceBack(openWindowStorage);
+            idCounter = idCounter + 1000;
+        }
     }
 
     void InitProjectBrowser();
@@ -75,7 +125,17 @@ namespace Fyrion
 
     void DrawOpenWindows()
     {
-
+        for (u32 i = 0; i < openWindows.Size(); ++i)
+        {
+            OpenWindowStorage& openWindowStorage = openWindows[i];
+            bool open = true;
+            openWindowStorage.instance->Draw(openWindowStorage.id, open);
+            if (!open)
+            {
+                openWindowStorage.typeHandler->Destroy(openWindowStorage.instance);
+                openWindows.Erase(openWindows.begin() + i, openWindows.begin() + i + 1);
+            }
+        }
     }
 
     void DrawMenu()
@@ -130,6 +190,18 @@ namespace Fyrion
         }
     }
 
+    void Editor::OpenWindow(TypeID windowType, VoidPtr initUserData)
+    {
+        for (const EditorWindowStorage& window : editorWindowStorages)
+        {
+            if (window.typeId== windowType)
+            {
+                CreateWindow(window, initUserData);
+                break;
+            }
+        }
+    }
+
     void Editor::AddMenuItem(const MenuItemCreation& menuItem)
     {
         menuContext.AddMenuItem(menuItem);
@@ -141,6 +213,7 @@ namespace Fyrion
 
         InitProjectBrowser();
 
+        Event::Bind<OnInit , &InitEditor>();
         Event::Bind<OnUpdate, &EditorUpdate>();
         Event::Bind<OnShutdown, &Shutdown>();
 

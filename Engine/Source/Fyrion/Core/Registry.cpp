@@ -215,6 +215,11 @@ namespace Fyrion
         return m_functionArray;
     }
 
+    Span<DerivedType> TypeHandler::GetDerivedTypes() const
+    {
+        return m_derivedTypes;
+    }
+
     StringView TypeHandler::GetName() const
     {
         return m_name;
@@ -260,6 +265,19 @@ namespace Fyrion
         {
             m_fnMove(this, source, dest);
         }
+    }
+
+    VoidPtr TypeHandler::Cast(TypeID typeId, VoidPtr instance) const
+    {
+        if (typeId == m_typeInfo.typeId)
+        {
+            return instance;
+        }
+        if (auto it = m_baseTypes.Find(typeId))
+        {
+            return it->second(this, instance);
+        }
+        return instance;
     }
 
     ///builders
@@ -416,12 +434,12 @@ namespace Fyrion
         return builder;
     }
 
-    void TypeBuilder::AddBaseType(TypeID typeId, TypeHandler::FnCast fnCast)
+    void TypeBuilder::AddBaseType(TypeID typeId, FnCast fnCast)
     {
         TypeHandler* baseType = Registry::FindTypeById(typeId);
         FY_ASSERT(baseType, "Base Type not found");
 
-        baseType->m_derivedTypes.Insert(m_typeHandler.GetTypeInfo().typeId, fnCast);
+        baseType->m_derivedTypes.EmplaceBack(m_typeHandler.GetTypeInfo().typeId, fnCast);
         m_typeHandler.m_baseTypes.Insert(typeId, fnCast);
     }
 

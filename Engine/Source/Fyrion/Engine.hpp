@@ -31,5 +31,9 @@ namespace Fyrion
         static void Run();
         static void Shutdown();
         static void Destroy();
+
+        static StringView   GetArgByName(const StringView& name);
+        static StringView   GetArgByIndex(usize i);
+        static bool         HasArgByName(const StringView& name);
     };
 }

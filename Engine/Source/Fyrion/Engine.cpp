@@ -9,6 +9,8 @@
 #include "Fyrion/Resource/ResourceAssets.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
 #include "Fyrion/IO/Path.hpp"
+#include "Fyrion/Core/ArgParser.hpp"
+#include "Fyrion/Resource/Repository.hpp"
 
 namespace Fyrion
 {
@@ -43,6 +45,7 @@ namespace Fyrion
         f64         lastTime{};
         f64         deltaTime{};
         u64         frame{0};
+        ArgParser   args{};
 
         EventHandler<OnInit> onInitHandler{};
         EventHandler<OnUpdate> onUpdateHandler{};
@@ -63,6 +66,8 @@ namespace Fyrion
         TypeRegister();
         ResourceAssetsInit();
         RegisterAssets();
+
+        args.Parse(argc, argv);
     }
 
     void Engine::CreateContext(const EngineContextCreation& contextCreation)
@@ -150,7 +155,10 @@ namespace Fyrion
             cmd.EndRenderPass();
             cmd.End();
 
+
             GraphicsEndFrame(swapchain);
+
+            Repository::GarbageCollect();
 
             onEndFrameHandler.Invoke();
 
@@ -174,6 +182,21 @@ namespace Fyrion
         {
             running = false;
         }
+    }
+
+    StringView Engine::GetArgByName(const StringView& name)
+    {
+        return args.Get(name);
+    }
+
+    StringView Engine::GetArgByIndex(usize i)
+    {
+        return args.Get(i);
+    }
+
+    bool Engine::HasArgByName(const StringView& name)
+    {
+        return args.Has(name);
     }
 
     void Engine::Destroy()

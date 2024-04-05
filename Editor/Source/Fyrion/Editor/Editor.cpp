@@ -7,6 +7,7 @@
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Resource/AssetTree.hpp"
 #include "Fyrion/Resource/ResourceAssets.hpp"
+#include "Fyrion/IO/Path.hpp"
 
 namespace Fyrion
 {
@@ -36,6 +37,7 @@ namespace Fyrion
     {
         Array<EditorWindowStorage> editorWindowStorages{};
         Array<OpenWindowStorage> openWindows{};
+        Array<RID> updatedItems{};
 
         MenuItemContext menuContext{};
         bool dockInitialized = false;
@@ -48,7 +50,11 @@ namespace Fyrion
         u32  idCounter{100000};
         bool showImGuiDemo = false;
 
+        bool forceClose{};
+
         AssetTree assetTree{};
+
+        void SaveAll();
 
         void Shutdown()
         {
@@ -63,7 +69,6 @@ namespace Fyrion
         void InitEditor()
         {
             //TODO - this needs to be update on reload.
-
             TypeHandler* editorWindow = Registry::FindType<EditorWindow>();
             Span<DerivedType> derivedTypes = editorWindow->GetDerivedTypes();
             for(const DerivedType& derivedType : derivedTypes)
@@ -91,6 +96,11 @@ namespace Fyrion
             //TODO: Create a setting for that.
             Editor::OpenProject(ResourceAssets::GetAssetRootByName("Fyrion"));
 
+            if (Engine::HasArgByName("projectPath"))
+            {
+                String projectPath = Engine::GetArgByName("projectPath");
+                Editor::OpenProject(ResourceAssets::LoadAssetsFromDirectory(Path::Name(projectPath), Path::Join(projectPath, "Assets")));
+            }
         }
 
         void CloseEngine(VoidPtr userData)
@@ -105,7 +115,7 @@ namespace Fyrion
 
         void SaveAll(VoidPtr userData)
         {
-            //Project::SaveAll();
+            SaveAll();
         }
 
         void ShowImGuiDemo(VoidPtr userData)
@@ -215,6 +225,113 @@ namespace Fyrion
             }
         }
 
+        void ProjectUpdate()
+        {
+            if (!updatedItems.Empty())
+            {
+                bool open{true};
+                static ImGuiTableFlags flags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Resizable;
+                ImGuiStyle& style = ImGui::GetStyle();
+                ImGui::SetNextWindowSize({600 * style.ScaleFactor, 400 * style.ScaleFactor}, ImGuiCond_Once);
+                ImGui::StyleColor childBg(ImGuiCol_PopupBg, IM_COL32(28, 31, 33, 255));
+                if(ImGui::BeginPopupModal("Save Content", &open, ImGuiWindowFlags_NoScrollbar))
+                {
+                    ImGui::Text("Pending items to save");
+                    {
+                        ImGui::StyleColor tableBorderStyleColor(ImGuiCol_TableBorderLight, IM_COL32(0, 0, 0, 0));
+                        ImGui::StyleColor childBg(ImGuiCol_ChildBg, IM_COL32(22, 23, 25, 255));
+
+                        f32 width = ImGui::GetContentRegionAvail().x - 5;
+                        f32 height = ImGui::GetContentRegionAvail().y;
+                        f32 buttonHeight = 25 * style.ScaleFactor;
+
+                        if (ImGui::BeginChild(455343, ImVec2(width, height - buttonHeight), false))
+                        {
+                            if (ImGui::BeginTable("table-pending-to-save", 3, flags))
+                            {
+                                ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_None, 100.f * style.ScaleFactor);
+                                ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_None, 300.f * style.ScaleFactor);
+                                ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_None, 200.f * style.ScaleFactor);
+                                ImGui::TableHeadersRow();
+
+                                for(const RID& rid: updatedItems)
+                                {
+                                    AssetNode* node = assetTree.GetNode(rid);
+                                    if (node == nullptr) continue;
+
+                                    ImGui::TableNextRow();
+
+                                    ImVec4 color = style.Colors[ImGuiCol_Text];
+                                    if (!node->active)
+                                    {
+                                        color = ImVec4{180.f/255.f, 85.f/255.f, 85.f/255.f, 255};
+                                    }
+
+                                    ImGui::TableSetColumnIndex(0);
+                                    ImGui::TextColored(color, "%s", node->name.CStr());
+                                    ImGui::TableSetColumnIndex(1);
+                                    ImGui::TextColored(color, "%s", node->path.CStr());
+                                    ImGui::TableSetColumnIndex(2);
+
+                                    if (node->type == GetTypeID<AssetDirectory>())
+                                    {
+                                        ImGui::TextColored(color, "%s", "Directory");
+                                    }
+                                    else
+                                    {
+                                        ImGui::TextColored(color, "%s", "Not Defined");
+                                    }
+
+                                }
+                                ImGui::EndTable();
+                            }
+
+                            ImGui::EndChild();
+                        }
+
+                        ImGui::BeginHorizontal("#jitrjirt", ImVec2(width, buttonHeight));
+
+                        ImGui::Spring(1.0f);
+
+                        if (ImGui::Button("Save All"))
+                        {
+                            SaveAll();
+                            forceClose = true;
+                            Engine::Shutdown();
+                        }
+
+                        if (ImGui::Button("Don't Save"))
+                        {
+                            forceClose = true;
+                            Engine::Shutdown();
+                        }
+
+                        if (ImGui::Button("Cancel"))
+                        {
+                            ImGui::CloseCurrentPopup();
+                        }
+
+                        ImGui::EndHorizontal();
+
+                    }
+                    ImGui::EndPopup();
+                }
+                else if (!updatedItems.Empty())
+                {
+                    updatedItems.Clear();
+                }
+            }
+        }
+
+        void SaveAll()
+        {
+            for (RID assetRoot: assetTree.GetAssetRoots())
+            {
+                ResourceAssets::SaveAssetsToDirectory(assetRoot, ResourceAssets::GetAbsolutePath(assetRoot));
+            }
+            assetTree.MarkDirty();
+        }
+
         void EditorUpdate(f64 deltaTime)
         {
             ImGuiStyle& style = ImGui::GetStyle();
@@ -229,11 +346,25 @@ namespace Fyrion
 
             DrawMenu();
             ImGui::End();
+
+            ProjectUpdate();
         }
 
         void EditorEndFrame()
         {
             assetTree.Update();
+        }
+
+        void OnEditorShutdownRequest(bool* canClose)
+        {
+            if (forceClose) return;
+
+            assetTree.GetUpdated(updatedItems);
+            if (!updatedItems.Empty())
+            {
+                ImGui::OpenPopup("Save Content");
+                *canClose = false;
+            }
         }
     }
 
@@ -251,7 +382,10 @@ namespace Fyrion
 
     void Editor::OpenProject(RID rid)
     {
-        assetTree.AddAssetRoot(rid);
+        if (rid)
+        {
+            assetTree.AddAssetRoot(rid);
+        }
     }
 
     void Editor::AddMenuItem(const MenuItemCreation& menuItem)
@@ -269,6 +403,7 @@ namespace Fyrion
         Event::Bind<OnUpdate, &EditorUpdate>();
         Event::Bind<OnEndFrame , &EditorEndFrame>();
         Event::Bind<OnShutdown, &Shutdown>();
+        Event::Bind<OnShutdownRequest, &OnEditorShutdownRequest>();
 
         CreateMenuItems();
     }

@@ -416,10 +416,20 @@ namespace Fyrion
         return builder;
     }
 
+    void TypeBuilder::AddBaseType(TypeID typeId, TypeHandler::FnCast fnCast)
+    {
+        TypeHandler* baseType = Registry::FindTypeById(typeId);
+        FY_ASSERT(baseType, "Base Type not found");
+
+        baseType->m_derivedTypes.Insert(m_typeHandler.GetTypeInfo().typeId, fnCast);
+        m_typeHandler.m_baseTypes.Insert(typeId, fnCast);
+    }
+
     TypeHandler& TypeBuilder::GetTypeHandler() const
     {
         return m_typeHandler;
     }
+
 
     TypeBuilder Registry::NewType(const StringView& name, const TypeInfo& typeInfo)
     {

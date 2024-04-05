@@ -204,9 +204,11 @@ namespace Fyrion
         typedef void (*FnDestructor)(const TypeHandler* typeHandler, VoidPtr instance);
         typedef void (*FnCopy)(const TypeHandler* typeHandler, ConstPtr source, VoidPtr dest);
         typedef void (*FnMove)(const TypeHandler* typeHandler, VoidPtr source, VoidPtr dest);
+        typedef VoidPtr (*FnCast)(const TypeHandler* typeHandler, VoidPtr derived);
 
         friend class TypeBuilder;
     private:
+
         String       m_name{};
         TypeInfo     m_typeInfo{};
         u32          m_version{};
@@ -221,6 +223,9 @@ namespace Fyrion
         Array<FieldHandler*>                          m_fieldArray{};
         HashMap<String, SharedPtr<FunctionHandler>>   m_functions{};
         Array<FunctionHandler*>                       m_functionArray{};
+
+        HashMap<TypeID, FnCast>                       m_baseTypes{};
+        HashMap<TypeID, FnCast>                       m_derivedTypes{};
     public:
         TypeHandler(const StringView& name, const TypeInfo& typeInfo, u32 version);
 
@@ -345,6 +350,7 @@ namespace Fyrion
         ConstructorBuilder      NewConstructor(TypeID* ids, FieldInfo* params, usize size);
         FieldBuilder            NewField(const StringView& fieldName);
         FunctionBuilder         NewFunction(const FunctionHandlerCreation& creation);
+        void                    AddBaseType(TypeID typeId, TypeHandler::FnCast fnCast);
 
         TypeHandler& GetTypeHandler() const;
 
@@ -356,6 +362,15 @@ namespace Fyrion
     ///------------------------------------------------------------------------------Native Handlers----------------------------------------------------------------------------------------------------
     ///-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+
+    template<typename Base, typename Derived>
+    struct TypeCaster
+    {
+        static VoidPtr Cast(const TypeHandler* typeHandler, VoidPtr derived)
+        {
+            return static_cast<Base*>(static_cast<Derived*>(derived));
+        }
+    };
 
     template<typename Owner, typename Type>
     class NativeAttributeHandler
@@ -797,16 +812,19 @@ namespace Fyrion
         FY_API FunctionHandler*         FindFunctionByName(const StringView& name);
         FY_API Span<FunctionHandler*>   FindFunctionsByAttribute(TypeID typeId);
 
-        template<typename T>
-        inline decltype(auto) Type()
-        {
-            return NativeTypeHandler<T>(NewType(GetTypeName<T>(), GetTypeInfo<T>()));
-        }
 
-        template<typename T>
+        template<typename T, typename ...B>
         inline decltype(auto) Type(const StringView& name)
         {
+            TypeBuilder typeBuilder = NewType(name, GetTypeInfo<T>());
+            (typeBuilder.AddBaseType(GetTypeID<B>(), TypeCaster<B, T>::Cast),...);
             return NativeTypeHandler<T>(NewType(name, GetTypeInfo<T>()));
+        }
+
+        template<typename T, typename ...B>
+        inline decltype(auto) Type()
+        {
+            return Type<T, B...>(GetTypeName<T>());
         }
 
         template<typename T>

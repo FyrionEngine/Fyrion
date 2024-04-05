@@ -3,6 +3,8 @@
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/ImGui/ImGui.hpp"
 #include "Fyrion/ImGui/Lib/imgui_internal.h"
+#include "EditorTypes.hpp"
+#include "Fyrion/Core/Registry.hpp"
 
 namespace Fyrion
 {
@@ -32,19 +34,30 @@ namespace Fyrion
     void InitEntityTreeWindow();
     void InitPropertiesWindow();
 
+
+    void DrawOpenWindows()
+    {
+
+    }
+
+    void DrawMenu()
+    {
+
+    }
+
     void EditorUpdate(f64 deltaTime)
     {
         ImGuiStyle& style = ImGui::GetStyle();
         ImGui::CreateDockSpace(dockSpaceId);
         InitDockSpace();
-//        DrawOpenWindows();
-//
-//        if (ShowImGuiDemo)
-//        {
-//            ImGui::ShowDemoWindow(&ShowImGuiDemo);
-//        }
-//
-//        DrawMenu();
+        DrawOpenWindows();
+
+        if (showImGuiDemo)
+        {
+            ImGui::ShowDemoWindow(&showImGuiDemo);
+        }
+
+        DrawMenu();
         ImGui::End();
     }
 
@@ -77,6 +90,10 @@ namespace Fyrion
 
     void Editor::Init()
     {
+        Registry::Type<EditorWindow>();
+
+        InitProjectBrowser();
+
         Event::Bind<OnUpdate, &EditorUpdate>();
     }
 }

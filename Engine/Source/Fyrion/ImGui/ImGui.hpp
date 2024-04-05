@@ -5,6 +5,7 @@
 #include "Fyrion/Platform/PlatformTypes.hpp"
 #include "Fyrion/Graphics/GraphicsTypes.hpp"
 #include "Fyrion/Core/String.hpp"
+#include "Fyrion/IO/InputTypes.hpp"
 
 using namespace Fyrion;
 
@@ -66,9 +67,6 @@ namespace ImGui
         }
     };
 
-    FY_API void CreateExtraContext();
-    FY_API void DestroyExtraContext();
-
     FY_API void CreateDockSpace(ImGuiID dockSpaceId);
     FY_API bool Begin(u32 id, const char* name, bool* pOpen, ImGuiWindowFlags flags);
     FY_API void DockBuilderReset(ImGuiID dockSpaceId);
@@ -103,6 +101,8 @@ namespace ImGui
     FY_API StringView ContentRenameString();
     FY_API void EndContentTable();
 
+
+    FY_API ImGuiKey GetImGuiKey(Key key);
 
     //frame controlling
     void Init(Fyrion::Window window, Fyrion::Swapchain swapchain);

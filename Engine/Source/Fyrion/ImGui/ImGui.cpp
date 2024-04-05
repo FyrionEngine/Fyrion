@@ -976,6 +976,11 @@ namespace ImGui
         ImGui::DestroyContext();
     }
 
+    ImGuiKey GetImGuiKey(Key key)
+    {
+        return keys[static_cast<usize>(key)];
+    }
+
 }
 
 

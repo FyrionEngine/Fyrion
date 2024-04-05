@@ -127,4 +127,12 @@ namespace Fyrion
         Menu = 348,
         MAX = 512
     };
+
+    struct Shortcut
+    {
+        bool ctrl{};
+        bool shift{};
+        bool alt{};
+        Key  presKey{};
+    };
 }

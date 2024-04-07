@@ -13,9 +13,8 @@ namespace Fyrion
 {
 
     void InitProjectBrowser();
-//    void InitProject();
-//    void InitWorldView();
-//    void InitEntityTreeWindow();
+    //void InitSceneView();
+    void InitSceneTreeWindow();
 //    void InitPropertiesWindow();
 
     struct EditorWindowStorage
@@ -398,6 +397,7 @@ namespace Fyrion
         Registry::Type<EditorWindow>();
 
         InitProjectBrowser();
+        InitSceneTreeWindow();
 
         Event::Bind<OnInit , &InitEditor>();
         Event::Bind<OnUpdate, &EditorUpdate>();

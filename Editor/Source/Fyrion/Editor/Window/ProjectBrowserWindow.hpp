@@ -14,9 +14,9 @@ namespace Fyrion
     public:
         ProjectBrowserWindow();
 
-        void                        Init(u32 id, VoidPtr userData) override;
-        void                        Draw(u32 id, bool& open) override;
-        void                        SetOpenFolder(RID folder);
+        void Init(u32 id, VoidPtr userData) override;
+        void Draw(u32 id, bool& open) override;
+        void SetOpenFolder(RID folder);
 
         static void AddMenuItem(const MenuItemCreation& menuItem);
         static void RegisterType(NativeTypeHandler<ProjectBrowserWindow>& type);

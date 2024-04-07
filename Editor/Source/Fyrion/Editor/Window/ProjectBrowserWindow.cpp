@@ -1,4 +1,4 @@
-#include "PropertiesWindow.hpp"
+#include "ProjectBrowserWindow.hpp"
 
 #include "Fyrion/ImGui/ImGui.hpp"
 #include "Fyrion/ImGui/IconsFontAwesome6.h"
@@ -20,7 +20,6 @@ namespace Fyrion
 
     ProjectBrowserWindow::ProjectBrowserWindow() : m_assetTree(Editor::GetAssetTree())
     {
-
     }
 
     void ProjectBrowserWindow::Init(u32 id, VoidPtr userData)
@@ -479,7 +478,6 @@ namespace Fyrion
         {
             Platform::ShowInExplorer(path);
         }
-
     }
 
     void ProjectBrowserWindow::AddMenuItem(const MenuItemCreation& menuItem)

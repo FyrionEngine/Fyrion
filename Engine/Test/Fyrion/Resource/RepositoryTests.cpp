@@ -6,7 +6,9 @@
 //#include "Fyrion/EntryPoint.hpp"
 #include "Fyrion/Engine.hpp"
 
-namespace Fyrion::Tests
+using namespace Fyrion;
+
+namespace
 {
     namespace
     {

@@ -18,6 +18,7 @@ namespace Fyrion
 
     typedef void*               VoidPtr;
     typedef const void*         ConstPtr;
+    typedef char*               CharPtr;
     typedef u64                 TypeID;
     typedef decltype(sizeof(0)) usize;
 
@@ -53,13 +54,12 @@ inline void operator delete(void*, Fyrion::PlaceHolder, Fyrion::VoidPtr) noexcep
 #define FY_REPO_PAGE_SIZE 4096
 #define FY_ASSET_EXTENSION ".fy_asset"
 #define FY_DATA_EXTENSION ".fy_data"
-
+#define FY_CHUNK_SIZE (16*1024)
 
 //---platform defines
 #if _WIN64
     #define FY_API __declspec(dllexport)
     #define FY_PATH_SEPARATOR '\\'
-    #define FY_FINLINE __forceinline
     #define FY_SHARED_EXT ".dll"
     #define FY_WIN
     #define FY_DESKTOP
@@ -67,13 +67,11 @@ inline void operator delete(void*, Fyrion::PlaceHolder, Fyrion::VoidPtr) noexcep
     #define FY_API __attribute__ ((visibility ("default")))
     #define FY_PATH_SEPARATOR '/'
     #define FY_SHARED_EXT ".so"
-    #define FY_FINLINE inline
     #define FY_LINUX
     #define FY_DESKTOP  //TODO android?
 #elif __APPLE__
     #define FY_API
     #define FY_PATH_SEPARATOR '/'
-    #define FY_FINLINE static inline
     #define FY_SHARED_EXT ".dylib"
 
     #if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
@@ -99,6 +97,19 @@ inline void operator delete(void*, Fyrion::PlaceHolder, Fyrion::VoidPtr) noexcep
 #   define FY_PRETTY_FUNCTION_SUFFIX ']'
 #endif
 #endif
+
+#if defined _MSC_VER
+    #define FY_FINLINE __forceinline
+#elif defined __CLANG__
+#       define FY_FINLINE [[clang::always_inline]]
+#elif  defined__GNUC__
+#define FY_FINLINE inline __attribute__((always_inline))
+#else
+static_assert(false, "Compiler not supported");
+#endif
+
+
+
 
 #if defined _MSC_VER
 //unsigned int MAX

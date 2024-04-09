@@ -6,12 +6,13 @@
 
 namespace Fyrion
 {
-    class FY_API SceneTreeWindow : public EditorWindow
+    class FY_API EntityTreeWindow : public EditorWindow
     {
     public:
         void Draw(u32 id, bool& open) override;
 
-        static void RegisterType(NativeTypeHandler<SceneTreeWindow>& type);
+        static void RegisterType(NativeTypeHandler<EntityTreeWindow>& type);
     private:
+        static void OpenEntityTree(VoidPtr userData);
     };
 }

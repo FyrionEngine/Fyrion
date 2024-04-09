@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Fyrion/Common.hpp"
+#include <initializer_list>
 
 namespace Fyrion
 {

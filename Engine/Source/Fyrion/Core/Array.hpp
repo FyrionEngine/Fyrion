@@ -272,7 +272,7 @@ namespace Fyrion
 
         for (T* it = m_last; it < m_first + size; ++it)
         {
-            new(PlaceHolder(), it) T();
+            new(PlaceHolder(), it) T{};
         }
 
         for (T* it = m_first + size; it < m_last; ++it)

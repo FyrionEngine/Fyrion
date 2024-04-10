@@ -1,6 +1,8 @@
 #pragma once
 #include "WorldTypes.hpp"
 #include "Fyrion/Core/Array.hpp"
+#include "Fyrion/Core/Registry.hpp"
+#include "Fyrion/Core/UniquePtr.hpp"
 
 namespace Fyrion
 {
@@ -29,6 +31,15 @@ namespace Fyrion
     {
         u64 hashId{};
         ArchetypeChunk* activeChunk{};
+        Array<TypeHandler*> types{};
+        HashMap<TypeID, usize> typeIndex{};
+        Array<TypeID> typesIds{};
+        Array<UniquePtr<ArchetypeChunk>> chunks{};
+        Array<usize> typesSize{};
+        Array<usize> columnAllocationSize{};
+        usize stride{};
+        usize maxEntityChunkCount{};
+        Array<ComponentSparse*> sparses{};
     };
 
 

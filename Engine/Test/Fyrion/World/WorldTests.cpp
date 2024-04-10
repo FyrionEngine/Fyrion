@@ -17,6 +17,15 @@ namespace
 
     };
 
+    TEST_CASE("World::InternalFunctionTests")
+    {
+        World world("TestWorld");
+
+        EntityContainer& entityContainer = world.FindOrCreateEntityContainer(50);
+        CHECK(entityContainer.chunk == nullptr);
+        CHECK(entityContainer.chunkIndex == 0);
+    }
+
 
     TEST_CASE("World::Basics")
     {
@@ -25,10 +34,6 @@ namespace
         World world("TestWorld");
         CHECK(world.Spawn() == 1);
         CHECK(world.Spawn() == 2);
-
-
-        EntityContainer* entityContainer = world.FindOrCreateEntityContainer(50);
-        CHECK(entityContainer);
 
 
         Engine::Shutdown();

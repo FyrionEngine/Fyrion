@@ -42,6 +42,8 @@ namespace Fyrion
         {
             Entity entity = m_entityCounter++;
             Add(entity, types, components, size);
+
+            return entity;
         }
 
         template<typename ...Types>
@@ -49,7 +51,7 @@ namespace Fyrion
         {
             FixedArray<TypeID, sizeof...(Types)> ids{GetTypeID<Types>()...};
             FixedArray<VoidPtr,  sizeof...(Types)> components{&types...};
-            return Spawn({}, nullEntity, ids.begin(), components.begin(), sizeof...(Types));
+            return Spawn({}, NullEntity, ids.begin(), components.begin(), sizeof...(Types));
         }
 
         FY_FINLINE void Add(Entity entity, TypeID* types, VoidPtr* components, usize size)
@@ -57,11 +59,36 @@ namespace Fyrion
 
         }
 
+        FY_FINLINE EntityContainer* FindOrCreateEntityContainer(Entity entity)
+        {
+//            if (entity >= m_entityContainerSize)
+//            {
+//                m_entityContainerSize = entity + 1;
+//                if (m_entityContainerSize >= m_entityContainerCap)
+//                {
+//                    usize newCap = m_entityContainerSize;
+//                    EntityContainer* newContainer = (EntityContainer*) m_allocator.MemAlloc(newCap * sizeof(EntityContainer), 1);
+//                    MemCopy(newContainer, m_entityContainer, m_entityContainerCap);
+//                    m_entityContainerCap = newCap;
+//                    m_entityContainer = newContainer;
+//                }
+//                MemSet(&m_entityContainer[entity], 0, sizeof(EntityContainer));
+//            }
+//
+//            return &m_entityContainer[entity];
+        }
+
     private:
+        Allocator& m_allocator = MemoryGlobals::GetDefaultAllocator();
         String m_name{};
         std::atomic_uint64_t m_entityCounter{1};
         HashMap<TypeID, Array<UniquePtr<Archetype>>> m_archetypes{};
         Archetype* m_rootArchetype{};
+
+
+        EntityContainer* m_entityContainer = nullptr;
+        usize            m_entityContainerCap = 0;
+        usize            m_entityContainerSize = 0;
 
         FY_FINLINE Archetype* FindOrCreateArchetype(usize hash, TypeID* types, usize size)
         {

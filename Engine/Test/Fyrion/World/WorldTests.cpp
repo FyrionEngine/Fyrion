@@ -23,14 +23,12 @@ namespace
         Engine::Init();
 
         World world("TestWorld");
-        CHECK(world.Spawn() == 0);
         CHECK(world.Spawn() == 1);
+        CHECK(world.Spawn() == 2);
 
 
-
-
-        world.Spawn();
-
+        EntityContainer* entityContainer = world.FindOrCreateEntityContainer(50);
+        CHECK(entityContainer);
 
 
         Engine::Shutdown();

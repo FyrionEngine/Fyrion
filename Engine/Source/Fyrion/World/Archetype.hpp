@@ -12,15 +12,17 @@ namespace Fyrion
 
     struct ArchetypeChunkColumn
     {
-        Array<u8>               data{};
-        Array<ComponentState>   state{};
+        u8*                 data{};
+        ComponentState*     state{};
     };
 
     struct ArchetypeChunk
     {
-        Archetype* archetype;
-        Array<Entity> entities{};
-        usize entityCount{};
+        Archetype*              archetype{};
+        Entity*                 entities{};
+        ArchetypeChunkColumn*   columns{};
+        ComponentState*         chunkStates{};
+        usize                   entityCount{};
     };
 
     struct Archetype

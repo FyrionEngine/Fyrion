@@ -175,6 +175,12 @@ namespace
             CHECK(world.Get<ComponentTwo>(entity1).strValue == HUGE);
             CHECK(world.Get<ComponentThree>(entity1).otherValue == 444);
 
+            world.Destroy(entity2);
+
+            CHECK(!world.Has<ComponentOne>(entity2));
+            CHECK(!world.Has<ComponentTwo>(entity2));
+            CHECK(!world.Has<ComponentThree>(entity2));
+
         }
         Engine::Destroy();
     }

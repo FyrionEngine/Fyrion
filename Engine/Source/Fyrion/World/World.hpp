@@ -226,6 +226,24 @@ namespace Fyrion
             return Remove(entity, ids.begin(), sizeof...(Types));
         }
 
+        FY_FINLINE void Destroy(Entity entity)
+        {
+            EntityContainer& entityContainer = FindOrCreateEntityContainer(entity);
+
+            for (ArchetypeType& type : entityContainer.archetype->types)
+            {
+                if (!type.isTriviallyCopyable)
+                {
+                    type.typeHandler->Destructor(FY_CHUNK_COMPONENT_DATA(type, entityContainer.chunk, entityContainer.chunkIndex));
+                }
+            }
+
+            RemoveEntity(entity, entityContainer);
+            entityContainer.archetype = nullptr;
+            entityContainer.chunk = nullptr;
+            entityContainer.chunkIndex = 0;
+        }
+
         FY_FINLINE EntityContainer& FindOrCreateEntityContainer(Entity entity)
         {
             //TODO - improve it.

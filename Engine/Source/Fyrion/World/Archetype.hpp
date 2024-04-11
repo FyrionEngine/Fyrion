@@ -8,9 +8,8 @@
 namespace Fyrion
 {
 #define FY_CHUNK_ENTITY_COUNT(archetype, chunk) reinterpret_cast<u32&>(chunk[archetype->entityCountOffset])
-#define FY_CHUNK_ENTITY_SET(archetype, chunk, index, entity) reinterpret_cast<Entity&>(chunk[archetype->entityArrayOffset + (index * sizeof(Entity))]) = entity
-#define FY_CHUNK_ENTITY_GET(archetype, chunk, index) reinterpret_cast<Entity&>(chunk[archetype->entityArrayOffset + (index * sizeof(Entity))])
-#define FY_CHUNK_COMPONENT_DATA(type, chunk, index) &chunk[type.dataOffset + (index * type.typeHandler->GetTypeInfo().size)]
+#define FY_CHUNK_ENTITY(archetype, chunk, index) reinterpret_cast<Entity&>(chunk[archetype->entityArrayOffset + ((index) * sizeof(Entity))])
+#define FY_CHUNK_COMPONENT_DATA(type, chunk, index) &chunk[type.dataOffset + (index * type.typeSize)]
 #define FY_CHUNK_COMPONENT_STATE(type, chunk, index) *reinterpret_cast<ComponentState*>(&chunk[type.stateOffset + (index * sizeof(ComponentState))])
 #define FY_CHUNK_STATE(typeIndex, archetype, chunk) *reinterpret_cast<ComponentState*>(&chunk[archetype->chunkStateOffset + (typeIndex * sizeof(ComponentState))])
 
@@ -24,6 +23,7 @@ namespace Fyrion
     {
         TypeID typeId{};
         TypeHandler* typeHandler{};
+        usize        typeSize{};
         ComponentSparse* sparse{};
         u32 dataOffset{};
         u32 stateOffset{};
@@ -34,7 +34,6 @@ namespace Fyrion
     {
         u32 index{};
         u64 hashId{};
-        CharPtr activeChunk{};
         Array<ArchetypeType> types{};
         HashMap<TypeID, u16> typeIndex{};
         u32 maxEntityChunkCount{};

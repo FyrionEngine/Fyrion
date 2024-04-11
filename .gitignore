@@ -4,6 +4,7 @@
 cmake-build-*/
 .vs
 out
+build*/
 
 CMakeLists.txt.user
 CMakeCache.txt

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lib/imgui.h"
+#include "Lib/imgui.h"
 #include "Fyrion/Common.hpp"
 #include "Fyrion/Platform/PlatformTypes.hpp"
 #include "Fyrion/Graphics/GraphicsTypes.hpp"

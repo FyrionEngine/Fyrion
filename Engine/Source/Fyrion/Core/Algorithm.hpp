@@ -111,7 +111,7 @@ namespace Fyrion
         return res;
     }
 
-    inline void MemSet(VoidPtr desc, char value, usize size)
+    FY_FINLINE void MemSet(VoidPtr desc, char value, usize size)
     {
         for (usize i = 0; i < size; ++i)
         {
@@ -119,7 +119,7 @@ namespace Fyrion
         }
     }
 
-    inline void MemCopy(VoidPtr dest, ConstPtr src, usize size)
+    FY_FINLINE void MemCopy(VoidPtr dest, ConstPtr src, usize size)
     {
         char* c_src = (char*) src;
         char* c_dest = (char*) dest;

@@ -54,7 +54,33 @@ namespace Fyrion
             return Spawn({}, NullEntity, ids.begin(), components.begin(), sizeof...(Types));
         }
 
-        FY_FINLINE void Add(Entity entity, TypeID* types, VoidPtr* components, usize size)
+
+        ConstPtr Get(Entity entity, TypeID typeId)
+        {
+            if (m_entityContainers.Size() <= entity) return nullptr;
+            EntityContainer& entityContainer = m_entityContainers[entity];
+            if (entityContainer.chunk && entityContainer.archetype)
+            {
+                if (auto it = entityContainer.archetype->typeIndex.Find(typeId))
+                {
+                    return FY_CHUNK_COMPONENT_DATA(entityContainer.archetype->types[it->second], entityContainer.chunk, entityContainer.chunkIndex);
+                }
+            }
+
+            return nullptr;
+        }
+
+        template<typename T>
+        const T& Get(Entity entity)
+        {
+            return *static_cast<const T*>(Get(entity, GetTypeID<T>()));
+        }
+
+        void Remove(Entity entity, TypeID* types, usize size)
+        {
+        }
+
+        void Add(Entity entity, TypeID* types, VoidPtr* components, usize size)
         {
             EntityContainer& entityContainer = FindOrCreateEntityContainer(entity);
 
@@ -63,9 +89,9 @@ namespace Fyrion
 
                 entityContainer.archetype = FindOrCreateArchetype({types, size});
                 entityContainer.chunk = FindOrCreateChunk(entityContainer.archetype);
-
                 u32& entityCount = FY_CHUNK_ENTITY_COUNT(entityContainer.archetype, entityContainer.chunk);
                 entityContainer.chunkIndex = entityCount++;
+                FY_CHUNK_ENTITY_SET(entityContainer.archetype, entityContainer.chunk, entityContainer.chunkIndex, entity);
             }
             else
             {
@@ -78,33 +104,39 @@ namespace Fyrion
                 usize typeIndex = entityContainer.archetype->typeIndex.Find(typeId)->second;
                 ArchetypeType& type = entityContainer.archetype->types[typeIndex];
 
-                CharPtr data = FY_CHUNK_COMPONENT_DATA(type, entityContainer.chunk, entityContainer.chunkIndex);
                 ComponentState& state = FY_CHUNK_COMPONENT_STATE(type, entityContainer.chunk, entityContainer.chunkIndex);
-
-                type.typeHandler->Copy(components[i], data);
+                ComponentState& chunkState = FY_CHUNK_STATE(typeIndex, entityContainer.archetype, entityContainer.chunk);
 
                 state.lastChange = m_currentFrame;
                 state.lastCheck = 0;
+                chunkState.lastChange = m_currentFrame;
 
+                CharPtr data = FY_CHUNK_COMPONENT_DATA(type, entityContainer.chunk, entityContainer.chunkIndex);
+                if (!type.isTriviallyCopyable)
+                {
+                    if (components[i])
+                    {
+                        type.typeHandler->Copy(components[i], data);
+                    }
+                    else
+                    {
+                        type.typeHandler->Construct(data);
+                    }
+                }
+                else
+                {
+                    if (components[i])
+                    {
+                        MemCopy(data, components[i], type.typeHandler->GetTypeInfo().size);
+                    }
+                    else
+                    {
+                        MemSet(data, 0, type.typeHandler->GetTypeInfo().size);
+                    }
+                }
 
-               // auto memory = entityContainer.Chunk->Columns[typeIndex].Data + (entityData.ChunkIndex * typeHandler->GetTypeInfo().Size);
-//
-//                if (components[i])
-//                {
-//                    typeHandler->Copy(components[i], memory);
-//                }
-//                else
-//                {
-//                    typeHandler->Construct(memory);
-//                }
-//
-//                ComponentState& componentState = entityData.Chunk->Columns[typeIndex].States[entityData.ChunkIndex];
-//                componentState.LastChange = m_Context.CurrentFrame;
-//                componentState.LastCheck = 0;
-//                entityData.Chunk->ChunkStates[typeIndex].LastChange = m_Context.CurrentFrame;
-//                entityData.Chunk->Archetype->Sparses[typeIndex]->Emplace(entity, memory);
+                type.sparse->Emplace(entity, data);
             }
-
         }
 
         FY_FINLINE EntityContainer& FindOrCreateEntityContainer(Entity entity)
@@ -124,7 +156,7 @@ namespace Fyrion
                 return archetype->activeChunk;
             }
             CharPtr chunk = static_cast<CharPtr>(m_allocator.MemAlloc(archetype->chunkAllocSize, 1));
-            MemSet(chunk, 0, archetype->chunkAllocSize);
+            MemSet(chunk, 0, archetype->chunkDataSize);
             archetype->activeChunk = chunk;
             return chunk;
         }
@@ -158,7 +190,7 @@ namespace Fyrion
             return archetypePtr;
         }
 
-        FY_FINLINE Archetype* CreateArchetype(const Span<TypeID>& types)
+        Archetype* CreateArchetype(const Span<TypeID>& types)
         {
             FixedArray<TypeID, MaxComponentsOnChunk> arrSorted = types; //TODO remove dups
 
@@ -208,6 +240,7 @@ namespace Fyrion
                 archetype->chunkAllocSize += sizeof(u32);
                 archetype->chunkStateOffset = archetype->chunkAllocSize;
                 archetype->chunkAllocSize += (sorted.Size() * sizeof(ComponentState));
+                archetype->chunkDataSize = archetype->chunkAllocSize;
 
                 for (int i = 0; i < sorted.Size(); ++i)
                 {
@@ -219,7 +252,10 @@ namespace Fyrion
             }
             else
             {
-
+                archetype->maxEntityChunkCount = FY_CHUNK_COMPONENT_SIZE / sizeof(Entity);
+                archetype->chunkAllocSize = (archetype->maxEntityChunkCount * sizeof(Entity));
+                archetype->entityCountOffset = archetype->chunkAllocSize;
+                archetype->chunkAllocSize += sizeof(u32);
             }
 
             return archetype;
@@ -234,6 +270,17 @@ namespace Fyrion
         HashMap<TypeID, UniquePtr<ComponentSparse>> m_sparses{};
         Array<EntityContainer> m_entityContainers{};
         u64 m_currentFrame{};
+
+
+        void MoveEntity(EntityContainer& entityContainer, Archetype* newArchetype)
+        {
+            if (entityContainer.archetype == newArchetype) return;
+            CharPtr newChunk = FindOrCreateChunk(newArchetype);
+
+            u32& entityCount = FY_CHUNK_ENTITY_COUNT(newArchetype, newChunk);
+            u32 newIndex = entityCount++;
+
+        }
     };
 
 }

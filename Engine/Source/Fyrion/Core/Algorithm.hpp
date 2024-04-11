@@ -149,7 +149,7 @@ namespace Fyrion
     }
 
     template<typename Type>
-    inline Type Sum(Type* begin, Type* end)
+    constexpr inline Type Sum(Type* begin, Type* end)
     {
         Type ret{};
         ForEach(begin, end, [&](const Type& value)

@@ -8,6 +8,11 @@
 
 namespace Fyrion
 {
+    template<typename T>
+    class Span;
+
+    template<typename T, usize BufferSize>
+    class FixedArray;
 
     template<typename T>
     class Array
@@ -23,6 +28,9 @@ namespace Fyrion
         Array(usize size, const T& value);
         Array(const T* first, const T* last);
         Array(std::initializer_list<T> initializerList);
+        Array(const Span<T>& span);
+        template<usize size>
+        Array(const FixedArray<T, size>& arr);
 
         Iterator begin();
         Iterator end();
@@ -68,6 +76,21 @@ namespace Fyrion
 
         Allocator& m_allocator = MemoryGlobals::GetDefaultAllocator();
     };
+
+    template<typename T>
+    template<usize size>
+    Array<T>::Array(const FixedArray<T, size>& arr)
+    {
+        Reserve(size);
+        Insert(begin(), arr.begin(), arr.end());
+    }
+
+    template<typename T>
+    Array<T>::Array(const Span<T>& span)
+    {
+        Reserve(span.Size());
+        Insert(begin(), span.begin(), span.end());
+    }
 
     template<typename T>
     FY_FINLINE Array<T>::Array() : m_first(0), m_last(0), m_capacity(0)
@@ -347,6 +370,8 @@ namespace Fyrion
     template<typename T>
     FY_FINLINE void Array<T>::Insert(Array::Iterator where, const T* first, const T* last)
     {
+        if (first == last) return;
+
         const usize offset  = where - m_first;
         const usize count   = last - first;
         const usize newSize = ((m_last - m_first) + count);

@@ -4,8 +4,10 @@
 
 namespace Fyrion
 {
+    template<typename T>
+    class Span;
 
-	template<typename T, usize bufferSize>
+    template<typename T, usize bufferSize>
 	class FixedArray
 	{
 	public:
@@ -26,6 +28,12 @@ namespace Fyrion
 				*(dest++) = *it;
 			}
 		};
+
+        constexpr FixedArray(Span<T> span)
+        {
+            FY_ASSERT(span.Size() <= bufferSize, "Span larger than bufferSize");
+            Insert(m_array, span.begin(), span.end());
+        }
 
 		constexpr const T* Data() const
 		{

@@ -19,39 +19,34 @@ namespace Fyrion
         typedef T* Iterator;
         typedef const T* ConstIterator;
 
-        Span() : m_first(0), m_last(0)
+        constexpr Span() : m_first(0), m_last(0)
         {}
 
-        Span(Array<T>& vec) : m_first(vec.Data()), m_last(vec.Data() + vec.Size())
+        constexpr Span(Array<T>& arr) : m_first(arr.Data()), m_last(arr.Data() + arr.Size())
         {
         }
 
-        Span(const Array<T>& vec) : m_first((T*) vec.Data()), m_last((T*) vec.Data() + vec.Size())
+        constexpr Span(const Array<T>& arr) : m_first((T*) arr.Data()), m_last((T*) arr.Data() + arr.Size())
         {
         }
 
         template<usize size>
-        Span(const FixedArray<T, size>& vec) : m_first((T*) vec.Data()), m_last((T*) vec.Data() + vec.Size())
+        constexpr Span(const FixedArray<T, size>& vec) : m_first((T*) vec.Data()), m_last((T*) vec.Data() + vec.Size())
         {
         }
 
-        Span(T* t) : m_first(t), m_last(t + 1)
+        constexpr Span(T* t) : m_first(t), m_last(t + 1)
         {
         }
 
-        Span(T* first, T* last) : m_first(first), m_last(last)
+        constexpr Span(T* first, T* last) : m_first(first), m_last(last)
         {}
 
-        Span(T* first, usize size) : m_first(first), m_last(first + size)
+        constexpr Span(T* first, usize size) : m_first(first), m_last(first + size)
         {}
 
-//        Span(const std::initializer_list<T>& initializerList) : m_first(initializerList.begin()), m_last(initializerList.end())
-//        {
-//        };
-
-        Span(std::initializer_list<T> initializerList) : m_first((T*) initializerList.begin()), m_last((T*) initializerList.end())
+        constexpr Span(std::initializer_list<T> initializerList) : m_first((T*) initializerList.begin()), m_last((T*) initializerList.end())
         {
-
         };
 
         constexpr const T* Data() const
@@ -107,6 +102,24 @@ namespace Fyrion
         constexpr T& Back()
         {
             return begin()[Size() - 1];
+        }
+
+        constexpr bool operator==(const Span& other) const
+        {
+            if (this->Size() != other.Size()) return false;
+            for (int i = 0; i < this->Size(); ++i)
+            {
+                if (this->operator[](i) != other[i])
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        constexpr bool operator!=(const Span& other) const
+        {
+            return !((*this) == other);
         }
 
     private:

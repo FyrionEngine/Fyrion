@@ -76,9 +76,17 @@ namespace Fyrion
             return m_entityContainers[entity];
         }
 
-        FY_FINLINE ArchetypeChunk* FindOrCreateChunk(Archetype* archetype)
+        FY_FINLINE CharPtr FindOrCreateChunk(Archetype* archetype)
         {
-            return nullptr;
+            if (archetype->activeChunk && archetype->maxEntityChunkCount > (u32)archetype->activeChunk[archetype->entityCountOffset])
+            {
+                return archetype->activeChunk;
+            }
+            CharPtr chunk = static_cast<CharPtr>(m_allocator.MemAlloc(archetype->chunkAllocSize, 1));
+
+            archetype->activeChunk = chunk;
+
+            return chunk;
         }
 
         FY_FINLINE ComponentSparse* FindOrCreateEntitySparse(TypeID typeId)
@@ -126,13 +134,16 @@ namespace Fyrion
                 return archetype;
             }
 
+            usize index = m_archetypes.Size();
             Archetype* archetype = m_archetypes.Emplace(ArchetypeLookup{sorted}, MakeUnique<Archetype>()).first->second.Get();
+            archetype->hashId = Sum(sorted.begin(), sorted.end());
+            archetype->index = index;
 
             if (!sorted.Empty())
             {
                 archetype->types.Resize(sorted.Size());
 
-                usize stride = 0;
+                u32 stride = 0;
 
                 for (int i = 0; i < sorted.Size(); ++i)
                 {
@@ -147,15 +158,28 @@ namespace Fyrion
                     archetype->types[i].typeHandler = typeHandler;
                     archetype->types[i].sparse = FindOrCreateEntitySparse(typeId);
 
-                    stride += typeHandler->GetTypeInfo().size;
+                    stride += (i32) typeHandler->GetTypeInfo().size;
                 }
-                archetype->maxEntityChunkCount = Max(FY_CHUNK_SIZE / stride, (usize) 1);
+                archetype->maxEntityChunkCount = Max(FY_CHUNK_COMPONENT_SIZE / stride, 1u);
+
+                archetype->chunkAllocSize = (archetype->maxEntityChunkCount * sizeof(Entity));
+                archetype->entityCountOffset = archetype->chunkAllocSize;
+                archetype->chunkAllocSize += sizeof(u32);
+                archetype->chunkStateOffset = archetype->chunkAllocSize;
+                archetype->chunkAllocSize += (sorted.Size() * sizeof(ComponentState));
+
+                for (int i = 0; i < sorted.Size(); ++i)
+                {
+                    archetype->types[i].dataOffset = archetype->chunkAllocSize;
+                    archetype->chunkAllocSize += (archetype->maxEntityChunkCount * archetype->types[i].typeHandler->GetTypeInfo().size);
+                    archetype->types[i].stateOffset = archetype->chunkAllocSize;
+                    archetype->chunkAllocSize += (archetype->maxEntityChunkCount * sizeof(ComponentState));
+                }
             }
             else
             {
 
             }
-
 
             return archetype;
         }

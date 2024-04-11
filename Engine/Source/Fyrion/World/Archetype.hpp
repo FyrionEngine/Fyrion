@@ -13,35 +13,27 @@ namespace Fyrion
         u64 lastCheck{};
     };
 
-    struct ArchetypeChunkColumn
-    {
-        u8*                 data{};
-        ComponentState*     state{};
-    };
-
-    struct ArchetypeChunk
-    {
-        Archetype*              archetype{};
-        Entity*                 entities{};
-        ArchetypeChunkColumn*   columns{};
-        ComponentState*         chunkStates{};
-        usize                   entityCount{};
-    };
-
     struct ArchetypeType
     {
         TypeID typeId{};
         TypeHandler* typeHandler{};
         ComponentSparse* sparse{};
+        u32 dataOffset{};
+        u32 stateOffset{};
     };
 
     struct Archetype
     {
+        u32 index{};
         u64 hashId{};
-        ArchetypeChunk* activeChunk{};
+        CharPtr activeChunk{};
         Array<ArchetypeType> types{};
         HashMap<TypeID, u16> typeIndex{};
         u32 maxEntityChunkCount{};
+        u32 chunkAllocSize{};
+        u32 entityCountOffset{};
+        u32 chunkStateOffset{};
+        Array<CharPtr> chunks{};
     };
 
     struct ArchetypeLookup

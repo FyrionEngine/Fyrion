@@ -54,7 +54,7 @@ inline void operator delete(void*, Fyrion::PlaceHolder, Fyrion::VoidPtr) noexcep
 #define FY_REPO_PAGE_SIZE 4096
 #define FY_ASSET_EXTENSION ".fy_asset"
 #define FY_DATA_EXTENSION ".fy_data"
-#define FY_CHUNK_SIZE (16*1024)
+#define FY_CHUNK_COMPONENT_SIZE (16*1024)
 
 //---platform defines
 #if _WIN64

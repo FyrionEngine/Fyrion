@@ -6,7 +6,6 @@ namespace Fyrion
 {
     using Entity = u64;
     struct Archetype;
-    struct ArchetypeChunk;
 
     typedef Sparse<VoidPtr, nullptr> ComponentSparse;
 
@@ -15,7 +14,8 @@ namespace Fyrion
 
     struct EntityContainer
     {
-        ArchetypeChunk* chunk{};
-        u32 chunkIndex{};
+        Archetype*  archetype{};
+        CharPtr     chunk{};
+        u32         chunkIndex{};
     };
 }

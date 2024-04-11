@@ -50,19 +50,17 @@ namespace
 
             Archetype* archetypeOneComp = world.CreateArchetype({GetTypeID<ComponentOne>()});
             CHECK(archetypeOneComp->maxEntityChunkCount > 0);
-
+            CHECK(archetypeOneComp->chunkAllocSize > 0);
 
             Archetype* archetypeTwoComps = world.CreateArchetype({GetTypeID<ComponentOne>(), GetTypeID<ComponentTwo>()});
             CHECK(archetypeTwoComps != nullptr);
             CHECK(archetypeOneComp != archetypeTwoComps);
 
             CHECK(archetypeTwoComps->maxEntityChunkCount > 0);
+            CHECK(archetypeTwoComps->chunkAllocSize > 0);
 
             Archetype* archetypeSorted = world.CreateArchetype({GetTypeID<ComponentTwo>(), GetTypeID<ComponentOne>()});
             CHECK(archetypeTwoComps == archetypeSorted);
-
-
-
         }
 
 

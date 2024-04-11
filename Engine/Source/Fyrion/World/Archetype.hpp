@@ -7,6 +7,10 @@
 
 namespace Fyrion
 {
+#define FY_CHUNK_ENTITY_COUNT(archetype, chunk) reinterpret_cast<u32&>(chunk[archetype->entityCountOffset])
+#define FY_CHUNK_COMPONENT_DATA(type, chunk, index) &chunk[type.dataOffset + (index * type.typeHandler->GetTypeInfo().size)]
+#define FY_CHUNK_COMPONENT_STATE(type, chunk, index) *reinterpret_cast<ComponentState*>(&chunk[type.stateOffset + (index * sizeof(ComponentState))])
+
     struct ComponentState
     {
         u64 lastChange{};
@@ -20,6 +24,7 @@ namespace Fyrion
         ComponentSparse* sparse{};
         u32 dataOffset{};
         u32 stateOffset{};
+        bool isTriviallyCopyable{};
     };
 
     struct Archetype

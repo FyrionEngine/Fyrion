@@ -212,4 +212,19 @@ namespace Fyrion::Traits
     template<bool B, class T = void>
     using EnableIf = typename EnableIfImpl<B, T>::Type;
 
+    template<typename T, typename Enable = void>
+    struct IsTriviallyCopyableImpl
+    {
+        static constexpr bool value = std::is_trivially_copyable_v<T>;
+    };
+
+    template<typename T>
+    struct IsTriviallyCopyableImpl<T, EnableIf<!IsComplete<T>>>
+    {
+        static constexpr bool value = false;
+    };
+
+    template<typename Type>
+    constexpr bool IsTriviallyCopyable = IsTriviallyCopyableImpl<Type>::value;
+
 }

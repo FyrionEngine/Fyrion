@@ -12,14 +12,15 @@ namespace Fyrion
 
     struct TypeInfo
     {
-        TypeID       typeId{};
-        usize        size{};
-        usize        alignment{};
-        TypeID       apiId{};
-        FnExtractApi extractApi = nullptr;
-        FnStringSize stringSize = nullptr;
-        FnToString   toString   = nullptr;
-        FnFromString fromString = nullptr;
+        TypeID typeId;
+        usize size;
+        usize alignment;
+        bool isTriviallyCopyable;
+        TypeID apiId;
+        FnExtractApi extractApi;
+        FnStringSize stringSize;
+        FnToString toString;
+        FnFromString fromString;
     };
 
     template<typename Type>
@@ -92,6 +93,7 @@ namespace Fyrion
             .typeId = GetTypeID<Type>(),
             .size = GetTypeSize<Type>(),
             .alignment = GetTypeAlign<Type>(),
+            .isTriviallyCopyable = Traits::IsTriviallyCopyable<Type>,
             .apiId = TypeApiInfo<Traits::RemoveAll<Type>>::GetApiId(),
             .extractApi = TypeApiInfo<Traits::RemoveAll<Type>>::ExtractApi,
         };

@@ -63,16 +63,24 @@ namespace
             CHECK(archetypeTwoComps == archetypeSorted);
         }
 
-
+        {
+            World world("TestWorld");
+            Archetype* archetype = world.CreateArchetype({GetTypeID<ComponentOne>()});
+            CharPtr chunkData = world.FindOrCreateChunk(archetype);
+            CHECK(chunkData != nullptr);
+        }
 
         Engine::Shutdown();
     }
 
+    struct Imcomplete;
 
     TEST_CASE("World::Basics")
     {
-        CHECK(std::is_trivially_copyable_v<ComponentOne>);
-        CHECK(!std::is_trivially_copyable_v<ComponentTwo>);
+
+        CHECK(Traits::IsTriviallyCopyable<ComponentOne>);
+        CHECK(!Traits::IsTriviallyCopyable<ComponentTwo>);
+        CHECK(!Traits::IsTriviallyCopyable<Imcomplete>);
 
         Engine::Init();
 
@@ -80,11 +88,31 @@ namespace
         CHECK(world.Spawn() == 1);
         CHECK(world.Spawn() == 2);
 
-        Entity entity = world.Spawn(
+        Entity entity1 = world.Spawn(
             ComponentOne{.intValue = 10},
             ComponentTwo{.strValue = "Asd"}
         );
-        CHECK(entity > 0);
+        CHECK(entity1 > 0);
+        {
+            EntityContainer& container = world.FindOrCreateEntityContainer(entity1);
+            CHECK(container.archetype != nullptr);
+            CHECK(container.chunk != nullptr);
+            CHECK(container.chunkIndex == 0);
+        }
+
+        Entity entity2 = world.Spawn(
+            ComponentOne{.intValue = 10},
+            ComponentTwo{.strValue = "Asd"}
+        );
+        CHECK(entity2 > 0);
+
+        {
+            EntityContainer& container = world.FindOrCreateEntityContainer(entity2);
+            CHECK(container.archetype != nullptr);
+            CHECK(container.chunk != nullptr);
+            CHECK(container.chunkIndex == 1);
+        }
+
         Engine::Shutdown();
     }
 }

@@ -60,10 +60,51 @@ namespace Fyrion
 
             if (entityContainer.chunk == nullptr)
             {
-                Archetype* archetype = FindOrCreateArchetype({types, size});
-                entityContainer.chunk = FindOrCreateChunk(archetype);
-                //entityContainer.chunkIndex = entityContainer.chunk->entityCount++;
+
+                entityContainer.archetype = FindOrCreateArchetype({types, size});
+                entityContainer.chunk = FindOrCreateChunk(entityContainer.archetype);
+
+                u32& entityCount = FY_CHUNK_ENTITY_COUNT(entityContainer.archetype, entityContainer.chunk);
+                entityContainer.chunkIndex = entityCount++;
             }
+            else
+            {
+                //Move Entity.
+            }
+
+            for (int i = 0; i < size; ++i)
+            {
+                const TypeID typeId = types[i];
+                usize typeIndex = entityContainer.archetype->typeIndex.Find(typeId)->second;
+                ArchetypeType& type = entityContainer.archetype->types[typeIndex];
+
+                CharPtr data = FY_CHUNK_COMPONENT_DATA(type, entityContainer.chunk, entityContainer.chunkIndex);
+                ComponentState& state = FY_CHUNK_COMPONENT_STATE(type, entityContainer.chunk, entityContainer.chunkIndex);
+
+                type.typeHandler->Copy(components[i], data);
+
+                state.lastChange = m_currentFrame;
+                state.lastCheck = 0;
+
+
+               // auto memory = entityContainer.Chunk->Columns[typeIndex].Data + (entityData.ChunkIndex * typeHandler->GetTypeInfo().Size);
+//
+//                if (components[i])
+//                {
+//                    typeHandler->Copy(components[i], memory);
+//                }
+//                else
+//                {
+//                    typeHandler->Construct(memory);
+//                }
+//
+//                ComponentState& componentState = entityData.Chunk->Columns[typeIndex].States[entityData.ChunkIndex];
+//                componentState.LastChange = m_Context.CurrentFrame;
+//                componentState.LastCheck = 0;
+//                entityData.Chunk->ChunkStates[typeIndex].LastChange = m_Context.CurrentFrame;
+//                entityData.Chunk->Archetype->Sparses[typeIndex]->Emplace(entity, memory);
+            }
+
         }
 
         FY_FINLINE EntityContainer& FindOrCreateEntityContainer(Entity entity)
@@ -83,9 +124,8 @@ namespace Fyrion
                 return archetype->activeChunk;
             }
             CharPtr chunk = static_cast<CharPtr>(m_allocator.MemAlloc(archetype->chunkAllocSize, 1));
-
+            MemSet(chunk, 0, archetype->chunkAllocSize);
             archetype->activeChunk = chunk;
-
             return chunk;
         }
 
@@ -152,13 +192,14 @@ namespace Fyrion
                     TypeHandler* typeHandler = Registry::FindTypeById(typeId);
                     FY_ASSERT(typeHandler, "Component is not registered");
                     if (typeHandler == nullptr) continue;
+                    TypeInfo typeInfo = typeHandler->GetTypeInfo();
 
                     archetype->typeIndex[typeId] = i;
                     archetype->types[i].typeId = typeId;
                     archetype->types[i].typeHandler = typeHandler;
                     archetype->types[i].sparse = FindOrCreateEntitySparse(typeId);
-
-                    stride += (i32) typeHandler->GetTypeInfo().size;
+                    archetype->types[i].isTriviallyCopyable = typeInfo.isTriviallyCopyable;
+                    stride += (i32) typeInfo.size;
                 }
                 archetype->maxEntityChunkCount = Max(FY_CHUNK_COMPONENT_SIZE / stride, 1u);
 

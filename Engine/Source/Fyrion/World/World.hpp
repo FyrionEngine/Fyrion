@@ -88,7 +88,6 @@ namespace Fyrion
                     return FY_CHUNK_COMPONENT_DATA(entityContainer.archetype->types[it->second], entityContainer.chunk, entityContainer.chunkIndex);
                 }
             }
-
             return nullptr;
         }
 
@@ -98,8 +97,10 @@ namespace Fyrion
             return *static_cast<const T*>(Get(entity, GetTypeID<T>()));
         }
 
-        void Remove(Entity entity, TypeID* types, usize size)
+        template<typename T>
+        bool Has(Entity entity)
         {
+            return Get(entity, GetTypeID<T>()) != nullptr;
         }
 
         void Add(Entity entity, TypeID* types, VoidPtr* components, usize size)
@@ -179,6 +180,50 @@ namespace Fyrion
             FixedArray<VoidPtr,  sizeof...(Types)> components{&types...};
 
             Add(entity, ids.begin(), components.begin(), sizeof...(Types));
+        }
+
+        bool Remove(Entity entity, TypeID* types, usize size)
+        {
+            EntityContainer& entityContainer = FindOrCreateEntityContainer(entity);
+
+            usize newSize = 0;
+            FixedArray<TypeID, MaxComponentsOnChunk> ids{};
+
+            for(ArchetypeType& type : entityContainer.archetype->types)
+            {
+                bool found = false;
+                for (int i = 0; i < size; ++i)
+                {
+                    if (types[i] == type.typeId)
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+                //not found on list to remove. keep it
+                if (!found)
+                {
+                    ids[newSize++] = type.typeId;
+                }
+            }
+
+            //types to remove not found
+            if (newSize == entityContainer.archetype->types.Size())
+            {
+                return false;
+            }
+
+            Archetype* archetype = FindOrCreateArchetype({ids.begin(), ids.begin() + newSize});
+            MoveEntity(entity, entityContainer, archetype);
+
+            return true;
+        }
+
+        template<typename ...Types>
+        FY_FINLINE bool Remove(Entity entity)
+        {
+            FixedArray<TypeID, sizeof...(Types)> ids{GetTypeID<Types>()...};
+            return Remove(entity, ids.begin(), sizeof...(Types));
         }
 
         FY_FINLINE EntityContainer& FindOrCreateEntityContainer(Entity entity)

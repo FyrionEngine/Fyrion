@@ -153,11 +153,9 @@ namespace
 
             world.Add(entity2, ComponentThree{.otherValue = 555});
 
-
             CHECK(world.Get<ComponentOne>(entity2).intValue == 40);
             CHECK(world.Get<ComponentTwo>(entity2).strValue == "Asd");
             CHECK(world.Get<ComponentThree>(entity2).otherValue == 555);
-
 
             {
                 EntityContainer& container1 = world.FindOrCreateEntityContainer(entity1);
@@ -169,6 +167,14 @@ namespace
                 Archetype* archetype = world.FindArchetype({GetTypeID<ComponentTwo>(), GetTypeID<ComponentOne>()});
                 CHECK(archetype->chunks.Size() == 0);
             }
+
+            CHECK(!world.Remove<Imcomplete>(entity1));
+            CHECK(world.Remove<ComponentOne>(entity1));
+
+            CHECK(!world.Has<ComponentOne>(entity1));
+            CHECK(world.Get<ComponentTwo>(entity1).strValue == HUGE);
+            CHECK(world.Get<ComponentThree>(entity1).otherValue == 444);
+
         }
         Engine::Destroy();
     }

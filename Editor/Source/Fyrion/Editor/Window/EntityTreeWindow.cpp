@@ -59,9 +59,9 @@ namespace Fyrion
 
                     ImGui::EndTable();
                 }
-
-                ImGui::EndChild();
             }
+
+            ImGui::EndChild();
         }
 
         ImGui::End();

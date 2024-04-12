@@ -9,7 +9,7 @@ namespace Fyrion
     //foward declarations
 
     struct ResourceStorage;
-    struct ResourceObject;
+    class ResourceObject;
     struct ResourceData;
     struct ResourceType;
 
@@ -38,7 +38,7 @@ namespace Fyrion
 
         inline bool operator!=(const RID& rid) const
         {
-            return !((*this) == rid);
+            return !(*this == rid);
         }
     };
 
@@ -83,6 +83,7 @@ namespace Fyrion
     struct ResourceTypeCreation
     {
         StringView name{};
+        StringView simpleName{};
         TypeID typeId{};
         Span<ResourceFieldCreation> fields{};
     };

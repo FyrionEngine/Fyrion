@@ -27,7 +27,7 @@ namespace Fyrion
             if (asset.Has(Asset::Object))
             {
                 RID subobject = asset.GetSubObject(Asset::Object);
-                node->assetDesc = Repository::GetResourceTypeName(Repository::GetResourceType(subobject));
+                node->assetDesc = Repository::GetResourceTypeSimpleName(Repository::GetResourceType(subobject));
             }
         }
         return node;
@@ -224,10 +224,34 @@ namespace Fyrion
         return newDirectory;
     }
 
-    RID AssetTree::NewAsset(RID parent, const StringView& desiredName)
+    RID AssetTree::NewAsset(RID parent, RID object, const StringView& desiredName)
     {
-        FY_ASSERT(false, "Not implemented");
-        return RID();
+        AssetNode* node = GetNode(parent);
+        if (node == nullptr) return {};
+
+        RID newAsset = Repository::CreateResource<Asset>();
+        ResourceObject write = Repository::Write(newAsset);
+        write[Asset::Name] = CreateUniqueName(node, desiredName);
+        write[Asset::Directory] = parent;
+        write[Asset::Extension] = FY_ASSET_EXTENSION;
+        write.SetSubObject(Asset::Object, object);
+        write.Commit();
+
+        ResourceObject assetRoot = Repository::Write(node->root);
+        assetRoot.AddToSubObjectSet(AssetRoot::Assets, newAsset);
+        assetRoot.Commit();
+
+        ResourceObject asset = Repository::Write(object);
+        asset.Commit();
+
+        if (!Repository::GetUUID(object))
+        {
+            Repository::SetUUID(object, UUID::RandomUUID());
+        }
+
+        MarkDirty();
+
+        return newAsset;
     }
 
     void AssetTree::Move(RID newDirectory, RID rid)

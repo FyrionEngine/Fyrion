@@ -41,6 +41,7 @@ namespace Fyrion
         static void OpenProjectBrowser(VoidPtr userData);
 
         static void AssetNewFolder(VoidPtr userData);
+        static void AssetNewWorld(VoidPtr userData);
         static void AssetDelete(VoidPtr userData);
         static bool CheckSelectedAsset(VoidPtr userData);
         static void AssetRename(VoidPtr userData);

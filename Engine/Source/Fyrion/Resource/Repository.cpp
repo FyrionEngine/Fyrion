@@ -47,6 +47,7 @@ namespace Fyrion
     struct ResourceType
     {
         String name;
+        String simpleName;
         TypeID typeId;
         usize size;
         usize alignment;
@@ -266,6 +267,7 @@ namespace Fyrion
     {
         SharedPtr<ResourceType> resourceType = MakeShared<ResourceType>();
         resourceType->name        = resourceTypeCreation.name;
+        resourceType->simpleName  = resourceTypeCreation.simpleName;
         resourceType->typeHandler = nullptr;
         resourceType->typeId      = resourceTypeCreation.typeId;
         resourceType->fieldsByIndex.Resize(resourceTypeCreation.fields.Size());
@@ -327,6 +329,7 @@ namespace Fyrion
 
         SharedPtr<ResourceType> resourceType = MakeShared<ResourceType>();
         resourceType->name        = typeHandler->GetName();
+        resourceType->simpleName  = typeHandler->GetSimpleName();
         resourceType->typeId      = typeId;
         resourceType->size        = typeHandler->GetTypeInfo().size;
         resourceType->alignment   = typeHandler->GetTypeInfo().alignment;
@@ -452,6 +455,15 @@ namespace Fyrion
 
     StringView Repository::GetResourceTypeName(ResourceType* resourceType)
     {
+        return resourceType->name;
+    }
+
+    StringView Repository::GetResourceTypeSimpleName(ResourceType* resourceType)
+    {
+        if (!resourceType->simpleName.Empty())
+        {
+            return resourceType->simpleName;
+        }
         return resourceType->name;
     }
 

@@ -276,9 +276,9 @@ namespace Fyrion
                                     {
                                         ImGui::TextColored(color, "%s", "Directory");
                                     }
-                                    else
+                                    else if (!node->assetDesc.Empty())
                                     {
-                                        ImGui::TextColored(color, "%s", "Not Defined");
+                                        ImGui::TextColored(color, "%s", node->assetDesc.CStr());
                                     }
 
                                 }

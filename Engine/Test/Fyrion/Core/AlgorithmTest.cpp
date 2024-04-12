@@ -1,7 +1,6 @@
 
 #include <doctest.h>
 #include "Fyrion/Core/StringView.hpp"
-#include "Fyrion/Core/Algorithm.hpp"
 
 using namespace Fyrion;
 

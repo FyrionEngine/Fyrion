@@ -5,6 +5,7 @@
 #include "Fyrion/Core/Array.hpp"
 #include "Fyrion/Core/SharedPtr.hpp"
 #include "Fyrion/Core/HashMap.hpp"
+
 namespace Fyrion
 {
 	struct AssetNode
@@ -45,22 +46,22 @@ namespace Fyrion
 		bool                IsParentOf(AssetNode* node, AssetNode* parent);
 
 		RID                 NewDirectory(RID parent, const StringView& desiredName);
-		RID                 NewAsset(RID parent, const StringView& desiredName);
+		RID                 NewAsset(RID parent, RID object, const StringView& desiredName);
 		void                Move(RID newDirectory, RID rid);
 		void                Rename(RID rid, const StringView& desiredName);
 		void                Delete(RID rid);
 		void                MarkDirty();
 	private:
-		Array<RID>                         m_rootNodeIds{};
-		Array<AssetNode*>                  m_rootNodes{};
+		Array<RID> m_rootNodeIds{};
+		Array<AssetNode*> m_rootNodes{};
 		HashMap<RID, SharedPtr<AssetNode>> m_nodes{};
-		AssetTreeSort                   m_sort     = AssetTreeSort::Name;
-		bool                               m_sortDesc = true;
-		bool                               m_dirty    = false;
+		AssetTreeSort m_sort = AssetTreeSort::Name;
+		bool m_sortDesc = true;
+		bool m_dirty = false;
 
 		void                    SortNodes(AssetNode* nodes);
 		AssetNode*              GetOrCreateNode(RID root, RID rid);
-		SharedPtr<AssetNode>    MakeAssetNode(RID rid, RID root);
+		static SharedPtr<AssetNode>    MakeAssetNode(RID rid, RID root);
 		static String           CreateUniqueName(AssetNode* node, const StringView& desiredName);
 		void                    GetUpdated(AssetNode* node, Array<RID>& updatedItems);
         void                    UpdateChildren(AssetNode* node);

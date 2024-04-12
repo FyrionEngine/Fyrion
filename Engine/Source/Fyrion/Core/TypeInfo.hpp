@@ -3,6 +3,8 @@
 #include "Fyrion/Common.hpp"
 #include "StringView.hpp"
 #include "TypeApiInfo.hpp"
+#include "String.hpp"
+
 namespace Fyrion
 {
     typedef void(*FnExtractApi)(VoidPtr pointer);
@@ -84,6 +86,17 @@ namespace Fyrion
             return alignof(Traits::RemoveAll<Type>);
         }
         return 0;
+    }
+
+
+    constexpr StringView GetSimpleName(const StringView name)
+    {
+        StringView ret{};
+        Split(name, StringView{"::"}, [&](StringView str)
+        {
+            ret = str;
+        });
+        return ret;
     }
 
     template<typename Type>

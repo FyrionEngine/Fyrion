@@ -9,8 +9,11 @@ namespace Fyrion
     template<typename Type>
     class BasicStringView;
 
+    template<typename T, usize BufferSize>
+    class BasicString;
+
     template<typename Element, typename Func>
-    inline void Split(const BasicStringView<Element>& string, const BasicStringView<Element>& delimiter, Func&& func)
+    constexpr void Split(const BasicStringView<Element>& string, const BasicStringView<Element>& delimiter, Func&& func)
     {
         usize start = 0;
         for (int i = 0; i < string.Size(); ++i)
@@ -230,7 +233,7 @@ namespace Fyrion
     }
 
     template<typename Element>
-    inline bool Contains(BasicStringView<Element> text, BasicStringView<Element> pattern)
+    bool Contains(BasicStringView<Element> text, BasicStringView<Element> pattern)
     {
         return SearchSubString(text, pattern) != nPos;
     }

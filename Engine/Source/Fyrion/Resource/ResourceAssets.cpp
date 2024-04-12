@@ -270,7 +270,6 @@ namespace Fyrion
                     String dataPath = Path::Join(parentPath, Path::Name(newAbsolutePath), FY_DATA_EXTENSION);
 
                     String str = ResourceSerialization::WriteResourceInfo(objectRid);
-
                     FileHandler handler = FileSystem::OpenFile(newAbsolutePath, AccessMode::WriteOnly);
                     FileSystem::WriteFile(handler, str.begin(), str.Size());
                     FileSystem::CloseFile(handler);

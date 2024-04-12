@@ -170,6 +170,7 @@ namespace Fyrion
 
     TypeHandler::TypeHandler(const StringView& name, const TypeInfo& typeInfo, u32 version) : m_name(name), m_typeInfo(typeInfo), m_version(version)
     {
+        m_simpleName = Fyrion::GetSimpleName(name);
     }
 
     ConstructorHandler* TypeHandler::FindConstructor(TypeID* ids, usize size) const
@@ -223,6 +224,11 @@ namespace Fyrion
     StringView TypeHandler::GetName() const
     {
         return m_name;
+    }
+
+    StringView TypeHandler::GetSimpleName() const
+    {
+        return m_simpleName;
     }
 
     const TypeInfo& TypeHandler::GetTypeInfo() const

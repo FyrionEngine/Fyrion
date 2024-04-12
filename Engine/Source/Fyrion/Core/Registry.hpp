@@ -219,6 +219,7 @@ namespace Fyrion
     private:
 
         String       m_name{};
+        String       m_simpleName{};
         TypeInfo     m_typeInfo{};
         u32          m_version{};
         FnDestroy    m_fnDestroy{};
@@ -251,6 +252,7 @@ namespace Fyrion
 
 
         StringView          GetName() const;
+        StringView          GetSimpleName() const;
         const TypeInfo&     GetTypeInfo() const;
         u32                 GetVersion() const;
 

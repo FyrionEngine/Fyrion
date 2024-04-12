@@ -10,6 +10,7 @@
 #include "Fyrion/Resource/ResourceAssets.hpp"
 #include "Fyrion/Resource/Repository.hpp"
 #include "Fyrion/Engine.hpp"
+#include "Fyrion/World/WordAsset.hpp"
 
 #define CONTENT_TABLE_ID 500
 #define ASSET_PAYLOAD "ASSET-PAYLOAD"
@@ -367,7 +368,7 @@ namespace Fyrion
 
                                 if (ImGui::DrawContentItem(contentItem))
                                 {
-
+                                    int a = 0;
                                 }
 
                                 if (ImGui::ContentItemSelected(contentItem.ItemId))
@@ -450,6 +451,18 @@ namespace Fyrion
         ImGui::RenameContentSelected(CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
     }
 
+    void ProjectBrowserWindow::AssetNewWorld(VoidPtr userData)
+    {
+        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(userData);
+
+        RID newAsset = projectBrowserWindow->m_assetTree.NewAsset(projectBrowserWindow->m_openFolder,
+            Repository::CreateResource<WorldAsset>(),
+            "New World");
+
+        ImGui::SelectContentItem(Hash<RID>::Value(newAsset), CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
+        ImGui::RenameContentSelected(CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
+    }
+
     void ProjectBrowserWindow::AssetDelete(VoidPtr userData)
     {
         ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(userData);
@@ -495,10 +508,11 @@ namespace Fyrion
         Editor::AddMenuItem(MenuItemCreation{.itemName="Window/Project Browser", .action = OpenProjectBrowser});
         Event::Bind<OnShutdown, Shutdown>();
 
-        ProjectBrowserWindow::AddMenuItem(MenuItemCreation{.itemName="New Folder", .icon=ICON_FA_FOLDER, .priority = 0, .action = AssetNewFolder});
-        ProjectBrowserWindow::AddMenuItem(MenuItemCreation{.itemName="Delete", .icon=ICON_FA_TRASH, .priority = 10, .itemShortcut {.presKey = Key::Delete}, .action = AssetDelete, .enable= CheckSelectedAsset});
-        ProjectBrowserWindow::AddMenuItem(MenuItemCreation{.itemName="Rename", .icon=ICON_FA_PEN_TO_SQUARE, .priority = 20, .itemShortcut {.presKey = Key::F2}, .action = AssetRename, .enable= CheckSelectedAsset});
-        ProjectBrowserWindow::AddMenuItem(MenuItemCreation{.itemName="Show in Explorer", .icon=ICON_FA_FOLDER, .priority = 30, .action = AssetShowInExplorer});
+        AddMenuItem(MenuItemCreation{.itemName="New Folder", .icon=ICON_FA_FOLDER, .priority = 0, .action = AssetNewFolder});
+        AddMenuItem(MenuItemCreation{.itemName="New World", .icon=ICON_FA_GLOBE, .priority = 10, .action = AssetNewWorld});
+        AddMenuItem(MenuItemCreation{.itemName="Delete", .icon=ICON_FA_TRASH, .priority = 20, .itemShortcut {.presKey = Key::Delete}, .action = AssetDelete, .enable= CheckSelectedAsset});
+        AddMenuItem(MenuItemCreation{.itemName="Rename", .icon=ICON_FA_PEN_TO_SQUARE, .priority = 30, .itemShortcut {.presKey = Key::F2}, .action = AssetRename, .enable= CheckSelectedAsset});
+        AddMenuItem(MenuItemCreation{.itemName="Show in Explorer", .icon=ICON_FA_FOLDER, .priority = 40, .action = AssetShowInExplorer});
 
         type.Function<&ProjectBrowserWindow::SetOpenFolder>("SetOpenFolder");
         type.Attribute<EditorWindowProperties>(EditorWindowProperties{

@@ -62,13 +62,19 @@ namespace Fyrion
 
         static ResourceTypeBuilder Builder()
         {
-            return {};
+            return {GetTypeName<T>()};
+        }
+
+        static ResourceTypeBuilder Builder(const StringView& name)
+        {
+            return {name};
         }
 
         void Build()
         {
             Repository::CreateResourceType(ResourceTypeCreation{
-                .name = GetTypeName<T>(),
+                .name = m_name,
+                .simpleName = GetSimpleName(m_name),
                 .typeId = GetTypeID<T>(),
                 .fields = m_resourceFieldCreation
             });
@@ -81,6 +87,12 @@ namespace Fyrion
         }
 
     private:
+        ResourceTypeBuilder(const StringView& m_name)
+            : m_name(m_name)
+        {
+        }
+
+        String m_name;
         Array<ResourceFieldCreation> m_resourceFieldCreation{};
         bool m_built = false;
     };

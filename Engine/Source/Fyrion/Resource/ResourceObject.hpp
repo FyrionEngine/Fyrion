@@ -100,15 +100,15 @@ namespace Fyrion
     inline ResourceObjectValue::ResourceObjectValue(u32 index, ResourceObject* resourceObject) : m_index(index), m_resourceObject(resourceObject){}
 
     template<typename T>
-    inline const T& ResourceObjectValue::As()
+    const T& ResourceObjectValue::As()
     {
         return *static_cast<const T*>(m_resourceObject->GetValue(m_index));
     }
 
     template<typename T>
-    inline ResourceObjectValue& ResourceObjectValue::operator=(const T& value)
+    ResourceObjectValue& ResourceObjectValue::operator=(const T& value)
     {
-        m_resourceObject->SetValue(m_index, &value);
+        ObjectValueHandler<T>::SetValue(*m_resourceObject, m_index, value);
         return *this;
     }
 
@@ -120,6 +120,16 @@ namespace Fyrion
 
     template<>
     struct ObjectValueHandler<StringView>
+    {
+        static void SetValue(ResourceObject& resourceObject, u32 index, const StringView& value)
+        {
+            String valueStr{value};
+            resourceObject.SetValue(index, &valueStr);
+        }
+    };
+
+    template<usize T>
+    struct ObjectValueHandler<char[T]>
     {
         static void SetValue(ResourceObject& resourceObject, u32 index, const StringView& value)
         {

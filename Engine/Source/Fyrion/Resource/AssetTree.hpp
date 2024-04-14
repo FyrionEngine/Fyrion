@@ -16,6 +16,7 @@ namespace Fyrion
         String name;
         String path;
         String assetDesc;
+		TypeID objectType;
         bool updated;
         bool active;
         AssetNode* parent;

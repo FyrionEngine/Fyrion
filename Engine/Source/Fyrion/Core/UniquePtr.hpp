@@ -40,7 +40,7 @@ namespace Fyrion
 
         UniquePtr& operator=(UniquePtr&& other) noexcept
         {
-            other.Swap(*this);
+            this->Swap(other);
             return *this;
         }
 

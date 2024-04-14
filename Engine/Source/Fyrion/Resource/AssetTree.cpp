@@ -27,6 +27,7 @@ namespace Fyrion
             if (asset.Has(Asset::Object))
             {
                 RID subobject = asset.GetSubObject(Asset::Object);
+                node->objectType = Repository::GetResourceTypeID(subobject);
                 node->assetDesc = Repository::GetResourceTypeSimpleName(Repository::GetResourceType(subobject));
             }
         }

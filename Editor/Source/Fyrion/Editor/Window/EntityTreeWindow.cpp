@@ -3,16 +3,23 @@
 #include "Fyrion/ImGui/ImGui.hpp"
 #include "Fyrion/ImGui/IconsFontAwesome6.h"
 #include "Fyrion/Editor/Editor.hpp"
+#include "Fyrion/Resource/Repository.hpp"
+#include "Fyrion/World/WordAsset.hpp"
+#include "Fyrion/World/World.hpp"
 
 namespace Fyrion
 {
-    void EntityTreeWindow::DrawEntity(Entity entity)
+    class World;
+
+    void EntityTreeWindow::DrawEntity(RID rid)
     {
 
     }
 
     void EntityTreeWindow::Draw(u32 id, bool& open)
     {
+        World* world = Editor::GetWorld();
+
         auto& style = ImGui::GetStyle();
         auto originalWindowPadding = style.WindowPadding;
 
@@ -57,6 +64,50 @@ namespace Fyrion
                     ImGui::TableNextRow();
                     ImGui::TableNextColumn();
 
+
+                    if (world != nullptr)
+                    {
+                        ResourceObject asset = Repository::Read(world->GetAsset());
+                        const String& assetName    = asset[Asset::Name].As<String>();
+                        RID assetObject         = asset[Asset::Object].As<RID>();
+
+                        if (Repository::GetResourceTypeID(assetObject) == GetTypeID<WorldAsset>())
+                        {
+                            ResourceObject worldObject = Repository::Read(assetObject);
+
+                            m_NameCache.Clear();
+                            m_NameCache += ICON_FA_CUBES;
+                            m_NameCache += " ";
+                            m_NameCache += assetName;
+
+                            ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+
+                            bool treeOpen = ImGui::TreeNode(HashValue(world->GetAsset()), m_NameCache.CStr(), ImGuiTreeNodeFlags_SpanAllColumns);
+
+                            if (ImGui::BeginDragDropTarget())
+                            {
+                                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(EntityTreePayload))
+                                {
+                                    // moveEntitiesTo = FY_NULL_ENTITY;
+                                    // removeSelectionParent = true;
+                                }
+                                ImGui::EndDragDropTarget();
+                            }
+
+                            if (treeOpen)
+                            {
+                                ImGui::Indent();
+                                ImGui::BeginTreeNode();
+
+                                //TODO
+
+                                ImGui::EndTreeNode();
+                                ImGui::Unindent();
+                                ImGui::TreePop();
+                            }
+                        }
+                    }
+
                     ImGui::EndTable();
                 }
             }
@@ -69,7 +120,7 @@ namespace Fyrion
 
     void EntityTreeWindow::RegisterType(NativeTypeHandler<EntityTreeWindow>& type)
     {
-        Editor::AddMenuItem(MenuItemCreation{.itemName="Window/Entity Tree", .action = EntityTreeWindow::OpenEntityTree});
+        Editor::AddMenuItem(MenuItemCreation{.itemName="Window/Entity Tree", .action = OpenEntityTree});
 
         type.Attribute<EditorWindowProperties>(EditorWindowProperties{
             .dockPosition = DockPosition::TopRight,

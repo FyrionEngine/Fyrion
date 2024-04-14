@@ -48,14 +48,14 @@ namespace
         RegisterTypes();
 
         {
-            World world("TestWorld");
+            World world{};
             EntityContainer& entityContainer = world.FindOrCreateEntityContainer(50);
             CHECK(entityContainer.chunk == nullptr);
             CHECK(entityContainer.chunkIndex == 0);
         }
 
         {
-            World world("TestWorld");
+            World world{};
 
             Archetype* archetypeOneComp = world.CreateArchetype({GetTypeID<ComponentOne>()});
             CHECK(archetypeOneComp->maxEntityChunkCount > 0);
@@ -73,7 +73,7 @@ namespace
         }
 
         {
-            World world("TestWorld");
+            World world{};
             Archetype* archetype = world.CreateArchetype({GetTypeID<ComponentOne>()});
             CharPtr chunkData = world.FindOrCreateChunk(archetype);
             CHECK(chunkData != nullptr);
@@ -93,7 +93,7 @@ namespace
         Engine::Init();
         RegisterTypes();
         {
-            World world("TestWorld");
+            World world{};
             CHECK(world.Spawn() == 1);
             CHECK(world.Spawn() == 2);
 

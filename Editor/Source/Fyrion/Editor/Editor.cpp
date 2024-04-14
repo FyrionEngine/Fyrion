@@ -8,6 +8,7 @@
 #include "Fyrion/Resource/AssetTree.hpp"
 #include "Fyrion/Resource/ResourceAssets.hpp"
 #include "Fyrion/IO/Path.hpp"
+#include "Fyrion/World/World.hpp"
 
 namespace Fyrion
 {
@@ -52,6 +53,9 @@ namespace Fyrion
         bool forceClose{};
 
         AssetTree assetTree{};
+
+        UniquePtr<World> world{};
+
 
         void SaveAll();
 
@@ -390,6 +394,17 @@ namespace Fyrion
     void Editor::AddMenuItem(const MenuItemCreation& menuItem)
     {
         menuContext.AddMenuItem(menuItem);
+    }
+
+    World* Editor::GetWorld()
+    {
+        return world.Get();
+    }
+
+
+    void Editor::LoadWorld(RID rid)
+    {
+        world = MakeUnique<World>(rid);
     }
 
     void Editor::Init()

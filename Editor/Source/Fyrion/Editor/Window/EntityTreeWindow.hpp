@@ -3,6 +3,7 @@
 #include "Fyrion/Common.hpp"
 #include "Fyrion/Editor/EditorTypes.hpp"
 #include "Fyrion/Core/Registry.hpp"
+#include "Fyrion/Resource/ResourceTypes.hpp"
 #include "Fyrion/World/WorldTypes.hpp"
 
 namespace Fyrion
@@ -14,8 +15,9 @@ namespace Fyrion
         static void RegisterType(NativeTypeHandler<EntityTreeWindow>& type);
     private:
         static void     OpenEntityTree(VoidPtr userData);
-        void            DrawEntity(Entity entity);
+        void            DrawEntity(RID rid);
 
         String          m_searchEntity{};
+        String          m_NameCache{};
     };
 }

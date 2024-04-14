@@ -18,10 +18,13 @@ namespace Fyrion
     class FY_API World final
     {
     public:
-        FY_FINLINE World(const StringView& name)
+        FY_FINLINE World(RID worldAsset) :  m_asset(worldAsset)
         {
-            m_name = name;
             m_rootArchetype = CreateArchetype({});
+        }
+
+        FY_FINLINE World() : World(RID{})
+        {
         }
 
         FY_FINLINE virtual ~World()
@@ -50,7 +53,7 @@ namespace Fyrion
         World(const World&) = delete;
         World& operator=(const World& world) = delete;
 
-        FY_FINLINE StringView  GetName() const { return m_name; }
+        FY_FINLINE RID GetAsset() { return m_asset;};
 
         FY_FINLINE Entity Spawn()
         {
@@ -371,7 +374,7 @@ namespace Fyrion
 
     private:
         Allocator& m_allocator = MemoryGlobals::GetDefaultAllocator();
-        String m_name{};
+        RID m_asset{};
         std::atomic_uint64_t m_entityCounter{1};
         HashMap<ArchetypeLookup, UniquePtr<Archetype>> m_archetypes{};
         Archetype* m_rootArchetype{};

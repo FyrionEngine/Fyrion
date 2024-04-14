@@ -6,6 +6,7 @@ namespace Fyrion
 {
     using Entity = u64;
     struct Archetype;
+    class World;
 
     typedef Sparse<VoidPtr, nullptr> ComponentSparse;
 

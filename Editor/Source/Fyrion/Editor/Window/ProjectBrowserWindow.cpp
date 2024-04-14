@@ -11,6 +11,7 @@
 #include "Fyrion/Resource/Repository.hpp"
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/World/WordAsset.hpp"
+#include "Fyrion/World/World.hpp"
 
 #define CONTENT_TABLE_ID 500
 #define ASSET_PAYLOAD "ASSET-PAYLOAD"
@@ -368,7 +369,11 @@ namespace Fyrion
 
                                 if (ImGui::DrawContentItem(contentItem))
                                 {
-                                    int a = 0;
+                                    //TODO this needs to be generic
+                                    if (node->objectType == GetTypeID<WorldAsset>())
+                                    {
+                                        Editor::LoadWorld(node->rid);
+                                    }
                                 }
 
                                 if (ImGui::ContentItemSelected(contentItem.ItemId))

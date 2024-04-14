@@ -4,6 +4,7 @@
 
 namespace Fyrion
 {
+    constexpr const char* EntityTreePayload = "entity_tree_payload";
 
     class AssetTree;
 
@@ -15,6 +16,13 @@ namespace Fyrion
         TopRight = 3,
         BottomRight = 4,
         Bottom = 5
+    };
+
+    enum class PlayMode
+    {
+        Editing = 0,
+        Paused = 1,
+        Simulating = 2
     };
 
     struct EditorWindowProperties

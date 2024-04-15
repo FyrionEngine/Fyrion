@@ -81,7 +81,7 @@ namespace Fyrion
 
 		for (Node* it = *other.m_buckets.begin(); it != nullptr; it = it->next)
 		{
-			Node* newNode = new(PlaceHolder(), m_allocator.MemAlloc( sizeof(Node), alignof(Node))) Node{it->first, it->second};
+			Node* newNode = new(PlaceHolder(), m_allocator.MemAlloc(sizeof(Node), alignof(Node))) Node{it->first, it->second};
 			newNode->next = newNode->prev = nullptr;
 			HashNodeInsert(newNode, Hash<Key>::Value(it->first), m_buckets.Data(), m_buckets.Size() - 1);
 		}

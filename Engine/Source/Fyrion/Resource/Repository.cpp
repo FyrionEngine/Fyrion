@@ -155,7 +155,7 @@ namespace Fyrion
 
         void UpdateVersion(ResourceStorage* resourceStorage)
         {
-            resourceStorage->version++;
+            ++resourceStorage->version;
             if (resourceStorage->parent)
             {
                 UpdateVersion(resourceStorage->parent);

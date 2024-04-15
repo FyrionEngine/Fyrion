@@ -7,7 +7,7 @@
 
 namespace Fyrion
 {
-    class World;
+    class WorldEditor;
 }
 
 namespace Fyrion::Editor
@@ -17,9 +17,7 @@ namespace Fyrion::Editor
     FY_API void             OpenWindow(TypeID windowType, VoidPtr initUserData = nullptr);
     FY_API void             OpenProject(RID rid);
 
-    FY_API World*           GetWorld();
-    FY_API void             LoadWorld(RID rid);
-
+    FY_API WorldEditor&     GetWorldEditor();
     FY_API AssetTree&       GetAssetTree();
 
     template<typename T>

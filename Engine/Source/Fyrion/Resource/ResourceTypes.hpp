@@ -26,17 +26,17 @@ namespace Fyrion
             u64 id{};
         };
 
-        inline explicit operator bool() const noexcept
+        operator bool() const noexcept
         {
             return this->offset > 0 || this->page > 0;
         }
 
-        inline bool operator==(const RID& rid) const
+        bool operator==(const RID& rid) const
         {
             return this->id == rid.id;
         }
 
-        inline bool operator!=(const RID& rid) const
+        bool operator!=(const RID& rid) const
         {
             return !(*this == rid);
         }

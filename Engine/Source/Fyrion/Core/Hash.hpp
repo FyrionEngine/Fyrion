@@ -164,7 +164,7 @@ namespace Fyrion
     template<>                                      \
     struct Hash<_TYPE>                              \
     {                                               \
-        constexpr static bool HasHash = true;       \
+        constexpr static bool hasHash = true;       \
         constexpr static usize Value(_TYPE x)       \
         {                                           \
             x = (x ^ (x >> 30)) * FY_UINT64_C(0xbf58476d1ce4e5b9); \
@@ -178,7 +178,7 @@ namespace Fyrion
     template<>  \
     struct Hash<_TYPE>     \
     {                                \
-        constexpr static bool HasHash = true;           \
+        constexpr static bool hasHash = true;           \
         template<typename Type>                         \
         constexpr static usize Value(Type vl)           \
         {                                               \

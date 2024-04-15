@@ -118,9 +118,15 @@ namespace Fyrion
 
     void MenuItemContext::Draw(VoidPtr userData)
     {
+        i32 lastPriority = 0;
         for (MenuItemContext* menuItemStorage: this->m_children)
         {
+            if (lastPriority + 50 < menuItemStorage->m_priority)
+            {
+                ImGui::Separator();
+            }
             DrawMenuItemChildren(menuItemStorage, userData);
+            lastPriority = menuItemStorage->m_priority;
         }
     }
 

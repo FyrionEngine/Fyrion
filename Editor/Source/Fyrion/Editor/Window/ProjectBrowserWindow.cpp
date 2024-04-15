@@ -10,6 +10,7 @@
 #include "Fyrion/Resource/ResourceAssets.hpp"
 #include "Fyrion/Resource/Repository.hpp"
 #include "Fyrion/Engine.hpp"
+#include "Fyrion/Editor/WorldEditor.hpp"
 #include "Fyrion/World/WordAsset.hpp"
 #include "Fyrion/World/World.hpp"
 
@@ -372,7 +373,7 @@ namespace Fyrion
                                     //TODO this needs to be generic
                                     if (node->objectType == GetTypeID<WorldAsset>())
                                     {
-                                        Editor::LoadWorld(node->rid);
+                                        Editor::GetWorldEditor().LoadWorld(node->rid);
                                     }
                                 }
 

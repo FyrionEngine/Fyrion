@@ -1,8 +1,8 @@
 #pragma once
+
 #include "WorldTypes.hpp"
 #include "Fyrion/Core/Array.hpp"
 #include "Fyrion/Core/Registry.hpp"
-#include "Fyrion/Core/UniquePtr.hpp"
 #include "Fyrion/Core/Hash.hpp"
 
 namespace Fyrion

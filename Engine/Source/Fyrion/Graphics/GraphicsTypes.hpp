@@ -102,6 +102,7 @@ namespace Fyrion
 
     struct RenderCommands
     {
+        virtual ~RenderCommands() = default;
         virtual void Begin() = 0;
         virtual void End() = 0;
         virtual void BeginRenderPass(const BeginRenderPassInfo& beginRenderPassInfo) = 0;

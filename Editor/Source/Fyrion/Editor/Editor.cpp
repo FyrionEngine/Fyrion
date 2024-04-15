@@ -4,6 +4,7 @@
 #include "Fyrion/ImGui/ImGui.hpp"
 #include "Fyrion/ImGui/Lib/imgui_internal.h"
 #include "EditorTypes.hpp"
+#include "WorldEditor.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Resource/AssetTree.hpp"
 #include "Fyrion/Resource/ResourceAssets.hpp"
@@ -52,7 +53,8 @@ namespace Fyrion
 
         bool forceClose{};
 
-        AssetTree assetTree{};
+        AssetTree       assetTree{};
+        WorldEditor     worldEditor{};
 
         UniquePtr<World> world{};
 
@@ -195,12 +197,14 @@ namespace Fyrion
 
         void DrawMenu()
         {
+            ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(0.46f, 0.49f, 0.50f, 0.67f));
             menuContext.ExecuteHotKeys();
             if (ImGui::BeginMenuBar())
             {
                 menuContext.Draw();
                 ImGui::EndMenuBar();
             }
+            ImGui::PopStyleColor(1);
         }
 
 
@@ -356,6 +360,7 @@ namespace Fyrion
         void EditorEndFrame()
         {
             assetTree.Update();
+            worldEditor.Update();
         }
 
         void OnEditorShutdownRequest(bool* canClose)
@@ -396,15 +401,9 @@ namespace Fyrion
         menuContext.AddMenuItem(menuItem);
     }
 
-    World* Editor::GetWorld()
+    WorldEditor& Editor::GetWorldEditor()
     {
-        return world.Get();
-    }
-
-
-    void Editor::LoadWorld(RID rid)
-    {
-        world = MakeUnique<World>(rid);
+        return worldEditor;
     }
 
     void Editor::Init()

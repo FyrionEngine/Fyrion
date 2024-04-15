@@ -544,7 +544,7 @@ namespace Fyrion
 
         ResourceTypeBuilder<AssetDirectory>::Builder()
             .Value<AssetDirectory::Name, String>("Name")
-            .Value<AssetDirectory::Parent, String>("RID")
+            .Value<AssetDirectory::Parent, RID>("RID")
             .Value<AssetDirectory::Path, String>("Path")
             .Build();
 

@@ -4,8 +4,6 @@
 #include "Fyrion/ImGui/IconsFontAwesome6.h"
 #include "Fyrion/Editor/Editor.hpp"
 #include "Fyrion/Editor/WorldEditor.hpp"
-#include "Fyrion/Resource/Repository.hpp"
-#include "Fyrion/World/WordAsset.hpp"
 #include "Fyrion/World/World.hpp"
 
 
@@ -20,7 +18,7 @@ namespace Fyrion
 
     class World;
 
-    void EntityTreeWindow::DrawEntity(EditorEntity* editorEntity)
+    void EntityTreeWindow::DrawEntity(WorldEditor& worldEditor, EditorEntity* editorEntity)
     {
         if (editorEntity == nullptr) return;
 
@@ -32,12 +30,22 @@ namespace Fyrion
         m_NameCache += " ";
         m_NameCache += editorEntity->name;
 
-        bool isSelected = false;
+        bool isSelected = editorEntity->selected;
         auto treeFlags = isSelected ? ImGuiTreeNodeFlags_Selected | ImGuiTreeNodeFlags_SpanAllColumns : ImGuiTreeNodeFlags_SpanAllColumns;
 
-        ImGuiID treeId = 100000 + (ImGuiID) editorEntity->rid ? HashValue(editorEntity->rid) : HashValue(editorEntity->entity);
+        ImGuiID treeId = 100000 + (ImGuiID) editorEntity->editorId;
         ImGui::TreeLeaf(treeId, m_NameCache.CStr(), treeFlags);
 
+        bool isHovered = ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
+
+        if ((ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)) && isHovered)
+        {
+            if (!(ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_LeftCtrl)) || ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_RightCtrl))))
+            {
+                worldEditor.CleanSelection();
+            }
+            worldEditor.SelectEntity(editorEntity);
+        }
     }
 
     void EntityTreeWindow::Draw(u32 id, bool& open)
@@ -119,7 +127,7 @@ namespace Fyrion
                             Span<EditorEntity*> entities = worldEditor.GetRootEntities();
                             for(EditorEntity* entity: entities)
                             {
-                                DrawEntity(entity);
+                                DrawEntity(worldEditor, entity);
                             }
 
                             ImGui::EndTreeNode();

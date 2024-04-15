@@ -2,6 +2,7 @@
 
 #include "Fyrion/Common.hpp"
 #include "Fyrion/Core/HashMap.hpp"
+#include "Fyrion/Core/HashSet.hpp"
 #include "Fyrion/Core/String.hpp"
 #include "Fyrion/Core/UniquePtr.hpp"
 #include "Fyrion/Resource/ResourceTypes.hpp"
@@ -11,9 +12,11 @@ namespace Fyrion
 {
     struct EditorEntity
     {
+        u64                  editorId{};
         RID                  rid{};
         Entity               entity{};
         String               name{};
+        bool                 selected{};
         Array<EditorEntity*> children{};
     };
 
@@ -31,6 +34,9 @@ namespace Fyrion
         void       CreateEntity(EditorEntity* parent = nullptr);
         void       Update();
 
+        void       CleanSelection();
+        void       SelectEntity(EditorEntity* editorEntity);
+
         Span<EditorEntity*> GetRootEntities() const;
 
     private:
@@ -38,8 +44,11 @@ namespace Fyrion
         String m_worldName;
         RID    m_worldAsset;
         RID    m_worldObject;
+        u64    m_editorIdCount{};
 
-        HashMap<RID, UniquePtr<EditorEntity>> m_entities{};
-        Array<EditorEntity*> m_rootEntities{};
+        HashMap<RID, u64>                       m_ridIds{};
+        HashMap<u64, UniquePtr<EditorEntity>>   m_entities{};
+        Array<EditorEntity*>                    m_rootEntities{};
+        HashSet<u64>                            m_selectedEntities{};
     };
 }

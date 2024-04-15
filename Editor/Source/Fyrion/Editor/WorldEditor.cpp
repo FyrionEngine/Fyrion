@@ -49,8 +49,8 @@ namespace Fyrion
         world.AddToSubObjectSet(WorldAsset::Entities, entityRID);
         world.Commit();
 
-        Editor::GetAssetTree().MarkDirty(); //TODO make it automatically with events
-
+        //TODO make both dirty it automatically with events
+        Editor::GetAssetTree().MarkDirty();
         m_dirty = true;
     }
 
@@ -58,11 +58,26 @@ namespace Fyrion
     {
         if (m_dirty)
         {
+            m_entities.Clear();
+            m_rootEntities.Clear();
+
             ResourceObject world = Repository::Read(m_worldObject);
             Array<RID> entities = world.GetSubObjectSetAsArray(WorldAsset::Entities);
             for(RID entity: entities)
             {
-                EditorEntity* editorEntity = m_entities.Emplace(entity, MakeUnique<EditorEntity>(entity)).first->second.Get();
+                u64 id = 0;
+
+                if (auto it = m_ridIds.Find(entity))
+                {
+                    id = it->second;
+                }
+                else
+                {
+                    id = m_editorIdCount++;
+                    m_ridIds[entity] = id;
+                }
+
+                EditorEntity* editorEntity = m_entities.Emplace(id, MakeUnique<EditorEntity>(id, entity)).first->second.Get();
 
                 ResourceObject asset = Repository::Read(entity);
                 if (asset.Has(EntityAsset::Name))
@@ -83,5 +98,23 @@ namespace Fyrion
     Span<EditorEntity*> WorldEditor::GetRootEntities() const
     {
         return m_rootEntities;
+    }
+
+    void WorldEditor::CleanSelection()
+    {
+        for(auto& it : m_selectedEntities)
+        {
+            if (const auto& itEntity = m_entities.Find(it.first))
+            {
+                itEntity->second->selected = false;
+            }
+        }
+        m_selectedEntities.Clear();
+    }
+
+    void WorldEditor::SelectEntity(EditorEntity* editorEntity)
+    {
+        editorEntity->selected = true;
+        m_selectedEntities.Emplace(editorEntity->editorId);
     }
 }

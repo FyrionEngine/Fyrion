@@ -8,6 +8,7 @@
 namespace Fyrion
 {
     struct EditorEntity;
+    class WorldEditor;
 
     class FY_API EntityTreeWindow : public EditorWindow
     {
@@ -20,7 +21,7 @@ namespace Fyrion
         static void RegisterType(NativeTypeHandler<EntityTreeWindow>& type);
     private:
         static void     OpenEntityTree(VoidPtr userData);
-        void            DrawEntity(EditorEntity* editorEntity);
+        void            DrawEntity(WorldEditor& worldEditor, EditorEntity* editorEntity);
 
         String          m_searchEntity{};
         String          m_NameCache{};

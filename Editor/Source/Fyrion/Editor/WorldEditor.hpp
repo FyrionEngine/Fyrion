@@ -31,24 +31,26 @@ namespace Fyrion
         bool       IsLoaded() const;
         StringView GetWorldName() const;
         RID        GetWorldObject() const;
-        void       CreateEntity(EditorEntity* parent = nullptr);
+        void       CreateEntity();
+        void       DestroyEntity();
         void       Update();
 
         void       CleanSelection();
         void       SelectEntity(EditorEntity* editorEntity);
 
-        Span<EditorEntity*> GetRootEntities() const;
+        EditorEntity* GetRootEntity();
 
     private:
         bool   m_dirty = false;
-        String m_worldName;
         RID    m_worldAsset;
         RID    m_worldObject;
         u64    m_editorIdCount{};
 
+        EditorEntity                            m_rootEntity{};
         HashMap<RID, u64>                       m_ridIds{};
         HashMap<u64, UniquePtr<EditorEntity>>   m_entities{};
-        Array<EditorEntity*>                    m_rootEntities{};
         HashSet<u64>                            m_selectedEntities{};
+
+        void UpdateChildren(EditorEntity* editorEntity, Span<RID> children);
     };
 }

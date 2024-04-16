@@ -214,6 +214,7 @@ namespace Fyrion
 
         void DestroyStorage(ResourceStorage* resourceStorage)
         {
+            resourceStorage->markedToDestroy = true;
 
             for (auto itEvent: resourceStorage->resourceType->events)
             {

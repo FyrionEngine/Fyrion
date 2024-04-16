@@ -33,8 +33,18 @@ namespace Fyrion
         bool isSelected = editorEntity->selected;
         auto treeFlags = isSelected ? ImGuiTreeNodeFlags_Selected | ImGuiTreeNodeFlags_SpanAllColumns : ImGuiTreeNodeFlags_SpanAllColumns;
 
+        bool open = false;
+
         ImGuiID treeId = 100000 + (ImGuiID) editorEntity->editorId;
-        ImGui::TreeLeaf(treeId, m_NameCache.CStr(), treeFlags);
+
+        if (!editorEntity->children.Empty())
+        {
+            open = ImGui::TreeNode(treeId, m_NameCache.CStr(), treeFlags);
+        }
+        else
+        {
+            ImGui::TreeLeaf(treeId, m_NameCache.CStr(), treeFlags);
+        }
 
         bool isHovered = ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
 
@@ -45,6 +55,18 @@ namespace Fyrion
                 worldEditor.CleanSelection();
             }
             worldEditor.SelectEntity(editorEntity);
+        }
+
+        ImGui::TableNextColumn();
+        ImGui::Text("  " ICON_FA_EYE);
+
+        if (open)
+        {
+            for(EditorEntity* children : editorEntity->children)
+            {
+                DrawEntity(worldEditor, children);
+            }
+            ImGui::TreePop();
         }
     }
 
@@ -124,8 +146,8 @@ namespace Fyrion
                             ImGui::Indent();
                             ImGui::BeginTreeNode();
 
-                            Span<EditorEntity*> entities = worldEditor.GetRootEntities();
-                            for(EditorEntity* entity: entities)
+                            EditorEntity* rootEntity = worldEditor.GetRootEntity();
+                            for(EditorEntity* entity: rootEntity->children)
                             {
                                 DrawEntity(worldEditor, entity);
                             }
@@ -189,6 +211,7 @@ namespace Fyrion
 
     void EntityTreeWindow::AddEntityFromAsset(VoidPtr userData)
     {
+
     }
 
     void EntityTreeWindow::AddComponent(VoidPtr userData)
@@ -205,7 +228,7 @@ namespace Fyrion
 
     void EntityTreeWindow::DeleteEntity(VoidPtr userData)
     {
-
+        Editor::GetWorldEditor().DestroyEntity();
     }
 
     void EntityTreeWindow::RegisterType(NativeTypeHandler<EntityTreeWindow>& type)

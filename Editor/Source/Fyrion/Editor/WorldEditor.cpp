@@ -13,8 +13,8 @@ namespace Fyrion
         m_worldAsset = rid;
 
         ResourceObject asset = Repository::Read(m_worldAsset);
-        m_worldName     = asset[Asset::Name].As<String>();
-        m_worldObject   = asset.GetSubObject(Asset::Object);
+        m_rootEntity.name       = asset[Asset::Name].As<String>();
+        m_worldObject           = asset.GetSubObject(Asset::Object);
 
         // if (Repository::GetResourceTypeID(assetObject) == GetTypeID<WorldAsset>())
         // {
@@ -30,7 +30,7 @@ namespace Fyrion
 
     StringView WorldEditor::GetWorldName() const
     {
-        return m_worldName;
+        return m_rootEntity.name;
     }
 
     RID WorldEditor::GetWorldObject() const
@@ -38,18 +38,61 @@ namespace Fyrion
         return m_worldObject;
     }
 
-    void WorldEditor::CreateEntity(EditorEntity* parent)
+    void WorldEditor::CreateEntity()
     {
-        RID entityRID = Repository::CreateResource<EntityAsset>();
-        ResourceObject write = Repository::Write(entityRID);
-        write.Commit();
-        Repository::SetUUID(entityRID, UUID::RandomUUID());
+        if (m_selectedEntities.Empty())
+        {
+            RID entityRID = Repository::CreateResource<EntityAsset>();
+            ResourceObject write = Repository::Write(entityRID);
+            write.Commit();
+            Repository::SetUUID(entityRID, UUID::RandomUUID());
 
-        ResourceObject world = Repository::Write(m_worldObject);
-        world.AddToSubObjectSet(WorldAsset::Entities, entityRID);
-        world.Commit();
+            ResourceObject world = Repository::Write(m_worldObject);
+            world.AddToSubObjectSet(WorldAsset::Entities, entityRID);
+            world.Commit();
+        }
+        else
+        {
+            for (auto it: m_selectedEntities)
+            {
+                if (const auto& itEntity = m_entities.Find(it.first))
+                {
+                    EditorEntity* parent = itEntity->second.Get();
+
+                    RID entityRID = Repository::CreateResource<EntityAsset>();
+                    ResourceObject write = Repository::Write(entityRID);
+                    write[EntityAsset::Parent] = parent->rid;
+                    write.Commit();
+                    Repository::SetUUID(entityRID, UUID::RandomUUID());
+
+                    ResourceObject writeParent = Repository::Write(parent->rid);
+                    writeParent.AddToSubObjectSet(EntityAsset::Children, entityRID);
+                    writeParent.Commit();
+                }
+            }
+            m_selectedEntities.Clear();
+        }
 
         //TODO make both dirty it automatically with events
+        Editor::GetAssetTree().MarkDirty();
+        m_dirty = true;
+    }
+
+    void WorldEditor::DestroyEntity()
+    {
+        for (auto it: m_selectedEntities)
+        {
+            if (const auto& itEntity = m_entities.Find(it.first))
+            {
+                if (itEntity->second->rid)
+                {
+                    Repository::DestroyResource(itEntity->second->rid);
+                }
+            }
+        }
+
+        m_selectedEntities.Clear();
+
         Editor::GetAssetTree().MarkDirty();
         m_dirty = true;
     }
@@ -59,45 +102,53 @@ namespace Fyrion
         if (m_dirty)
         {
             m_entities.Clear();
-            m_rootEntities.Clear();
+            m_rootEntity.children.Clear();
 
             ResourceObject world = Repository::Read(m_worldObject);
-            Array<RID> entities = world.GetSubObjectSetAsArray(WorldAsset::Entities);
-            for(RID entity: entities)
-            {
-                u64 id = 0;
+            UpdateChildren(&m_rootEntity, world.GetSubObjectSetAsArray(WorldAsset::Entities));
 
-                if (auto it = m_ridIds.Find(entity))
-                {
-                    id = it->second;
-                }
-                else
-                {
-                    id = m_editorIdCount++;
-                    m_ridIds[entity] = id;
-                }
-
-                EditorEntity* editorEntity = m_entities.Emplace(id, MakeUnique<EditorEntity>(id, entity)).first->second.Get();
-
-                ResourceObject asset = Repository::Read(entity);
-                if (asset.Has(EntityAsset::Name))
-                {
-                    editorEntity->name = asset[EntityAsset::Name].As<String>();
-                }
-                else
-                {
-                    editorEntity->name = "Entity " + ToString(m_entities.Size() - 1);
-                }
-                m_rootEntities.EmplaceBack(editorEntity);
-
-            }
             m_dirty = false;
         }
     }
 
-    Span<EditorEntity*> WorldEditor::GetRootEntities() const
+    void WorldEditor::UpdateChildren(EditorEntity* parentEntity, Span<RID> children)
     {
-        return m_rootEntities;
+        for(RID entity: children)
+        {
+            u64 id = 0;
+
+            if (const auto it = m_ridIds.Find(entity))
+            {
+                id = it->second;
+            }
+            else
+            {
+                id = m_editorIdCount++;
+                m_ridIds[entity] = id;
+            }
+
+            EditorEntity* editorEntity = m_entities.Emplace(id, MakeUnique<EditorEntity>(id, entity)).first->second.Get();
+            editorEntity->selected  = m_selectedEntities.Has(id);
+
+            ResourceObject asset = Repository::Read(entity);
+            if (asset.Has(EntityAsset::Name))
+            {
+                editorEntity->name = asset[EntityAsset::Name].As<String>();
+            }
+            else
+            {
+                editorEntity->name = "Entity " + ToString(id);
+            }
+
+            parentEntity->children.EmplaceBack(editorEntity);
+
+            UpdateChildren(editorEntity, asset.GetSubObjectSetAsArray(EntityAsset::Children));
+        }
+    }
+
+    EditorEntity* WorldEditor::GetRootEntity()
+    {
+        return &m_rootEntity;
     }
 
     void WorldEditor::CleanSelection()
@@ -117,4 +168,6 @@ namespace Fyrion
         editorEntity->selected = true;
         m_selectedEntities.Emplace(editorEntity->editorId);
     }
+
+
 }

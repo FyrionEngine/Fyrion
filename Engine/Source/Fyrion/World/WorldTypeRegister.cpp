@@ -13,7 +13,7 @@ namespace Fyrion
         ResourceTypeBuilder<EntityAsset>::Builder()
             .Value<EntityAsset::Name, String>("Name")
             .SubObjectSet<EntityAsset::Components>("Components")
-            .Value<EntityAsset::Parent, String>("Parent")
+            .Value<EntityAsset::Parent, RID>("Parent")
             .SubObjectSet<EntityAsset::Children>("Entities")
             .Build();
     }

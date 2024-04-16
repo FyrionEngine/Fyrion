@@ -27,6 +27,7 @@ namespace Fyrion
         WorldEditor(const WorldEditor&) = delete;
         WorldEditor& operator=(const WorldEditor& world) = delete;
 
+        void       LoadDefaultWorld();
         void       LoadWorld(RID rid);
         bool       IsLoaded() const;
         StringView GetWorldName() const;

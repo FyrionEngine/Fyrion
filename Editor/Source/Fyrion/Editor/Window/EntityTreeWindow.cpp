@@ -6,12 +6,6 @@
 #include "Fyrion/Editor/WorldEditor.hpp"
 #include "Fyrion/World/World.hpp"
 
-
-/*
-    Create a class WorldEditor to interface with the editor, this will be responsable for all world changes.
-    it will sync both World and ResourceObjects.!
-*/
-
 namespace Fyrion
 {
     MenuItemContext EntityTreeWindow::s_menuItemContext = {};
@@ -220,10 +214,12 @@ namespace Fyrion
 
     void EntityTreeWindow::RenameEntity(VoidPtr userData)
     {
+
     }
 
     void EntityTreeWindow::DuplicateEntity(VoidPtr userData)
     {
+
     }
 
     void EntityTreeWindow::DeleteEntity(VoidPtr userData)
@@ -254,7 +250,7 @@ namespace Fyrion
         Editor::OpenWindow<EntityTreeWindow>();
     }
 
-    void InitSceneTreeWindow()
+    void InitEntityTreeWindow()
     {
         Registry::Type<EntityTreeWindow, EditorWindow>();
     }

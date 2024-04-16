@@ -8,11 +8,16 @@
 
 namespace Fyrion
 {
+    void WorldEditor::LoadDefaultWorld()
+    {
+
+    }
+
     void WorldEditor::LoadWorld(RID rid)
     {
         m_worldAsset = rid;
 
-        ResourceObject asset = Repository::Read(m_worldAsset);
+        ResourceObject asset    = Repository::Read(m_worldAsset);
         m_rootEntity.name       = asset[Asset::Name].As<String>();
         m_worldObject           = asset.GetSubObject(Asset::Object);
 
@@ -40,6 +45,8 @@ namespace Fyrion
 
     void WorldEditor::CreateEntity()
     {
+        if (!m_worldObject) return;
+
         if (m_selectedEntities.Empty())
         {
             RID entityRID = Repository::CreateResource<EntityAsset>();
@@ -73,13 +80,15 @@ namespace Fyrion
             m_selectedEntities.Clear();
         }
 
-        //TODO make both dirty it automatically with events
+        //TODO make both dirty automatically with events
         Editor::GetAssetTree().MarkDirty();
         m_dirty = true;
     }
 
     void WorldEditor::DestroyEntity()
     {
+        if (!m_worldObject) return;
+
         for (auto it: m_selectedEntities)
         {
             if (const auto& itEntity = m_entities.Find(it.first))

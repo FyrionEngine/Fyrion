@@ -4,6 +4,7 @@
 #define VMA_IMPLEMENTATION
 
 #include "vk_mem_alloc.h"
+#include "VulkanBindingSet.hpp"
 #include "VulkanPlatform.hpp"
 #include "VulkanUtils.hpp"
 #include "Fyrion/Platform/Platform.hpp"
@@ -131,21 +132,21 @@ namespace Fyrion
 
         for (int i = 0; i < deviceCount; ++i)
         {
-            adapters[i] = GPUAdapter{allocator.Alloc<VulkanAdapter>(devices[i], Vulkan::GetPhysicalDeviceScore(devices[i]))};
+            adapters[i] = Adapter{allocator.Alloc<VulkanAdapter>(devices[i], Vulkan::GetPhysicalDeviceScore(devices[i]))};
         }
 
-        Sort(adapters.begin(), adapters.end(), [](GPUAdapter left, GPUAdapter right)
+        Sort(adapters.begin(), adapters.end(), [](Adapter left, Adapter right)
         {
             return static_cast<VulkanAdapter*>(left.handler)->score > static_cast<VulkanAdapter*>(right.handler)->score;
         });
     }
 
-    Span<GPUAdapter> VulkanDevice::GetAdapters()
+    Span<Adapter> VulkanDevice::GetAdapters()
     {
         return adapters;
     }
 
-    void VulkanDevice::CreateDevice(GPUAdapter adapter)
+    void VulkanDevice::CreateDevice(Adapter adapter)
     {
 
         VulkanAdapter* vulkanAdapter = static_cast<VulkanAdapter*>(adapter.handler != nullptr ? adapter.handler : adapters[0].handler);
@@ -596,11 +597,75 @@ namespace Fyrion
         return CreateSwapchain(vulkanSwapchain) ? Swapchain{vulkanSwapchain} : Swapchain{};
     }
 
+    Buffer VulkanDevice::CreateBuffer(const BufferCreation& bufferCreation)
+    {
+        return {};
+    }
+
+    Texture VulkanDevice::CreateTexture(const TextureCreation& textureCreation)
+    {
+        return {};
+    }
+
+    TextureView VulkanDevice::CreateTextureView(const TextureViewCreation& textureViewCreation)
+    {
+        return {};
+    }
+
+    Sampler VulkanDevice::CreateSampler(const SamplerCreation& samplerCreation)
+    {
+        return {};
+    }
+
+    PipelineState VulkanDevice::CreateGraphicsPipelineState(const GraphicsPipelineCreation& graphicsPipelineCreation)
+    {
+        return {};
+    }
+
+    PipelineState VulkanDevice::CreateComputePipelineState(const ComputePipelineCreation& computePipelineCreation)
+    {
+        return {};
+    }
+
+    BindingSet& VulkanDevice::CreateBindingSet(RID shader)
+    {
+        return *allocator.Alloc<VulkanBindingSet>();
+    }
+
     void VulkanDevice::DestroySwapchain(const Swapchain& swapchain)
     {
         VulkanSwapchain* vulkanSwapchain = static_cast<VulkanSwapchain*>(swapchain.handler);
         DestroySwapchain(vulkanSwapchain);
         allocator.DestroyAndFree(vulkanSwapchain);
+    }
+
+    void VulkanDevice::DestroyBuffer(const Buffer& buffer)
+    {
+    }
+
+    void VulkanDevice::DestroyTexture(const Texture& texture)
+    {
+    }
+
+    void VulkanDevice::DestroyTextureView(const TextureView& textureView)
+    {
+    }
+
+    void VulkanDevice::DestroySampler(const Sampler& sampler)
+    {
+    }
+
+    void VulkanDevice::DestroyGraphicsPipelineState(const PipelineState& pipelineState)
+    {
+    }
+
+    void VulkanDevice::DestroyComputePipelineState(const PipelineState& pipelineState)
+    {
+    }
+
+    void VulkanDevice::DestroyBindingSet(BindingSet& bindingSet)
+    {
+        allocator.DestroyAndFree<VulkanBindingSet>(static_cast<VulkanBindingSet*>(&bindingSet));
     }
 
     RenderPass VulkanDevice::AcquireNextRenderPass(Swapchain swapchain)

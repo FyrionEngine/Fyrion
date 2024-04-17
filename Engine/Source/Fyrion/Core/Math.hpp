@@ -6,8 +6,29 @@ namespace Fyrion
 {
     struct Extent
     {
-        u32 width;
-        u32 height;
+        u32 width{};
+        u32 height{};
+    };
+
+    struct Extent3D
+    {
+        u32 width{};
+        u32 height{};
+        u32 depth{};
+    };
+
+
+    struct Rect
+    {
+        i32 x{};
+        i32 y{};
+        u32 width{};
+        u32 height{};
+    };
+
+    struct Vec3
+    {
+
     };
 
     struct Vec4
@@ -45,14 +66,6 @@ namespace Fyrion
     {
         return l.x == r.x && l.y == r.y && l.z == r.z && l.w == r.w;
     }
-
-    struct Rect
-    {
-        i32 x;
-        i32 y;
-        u32 width;
-        u32 height;
-    };
 
     namespace Math
     {

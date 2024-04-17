@@ -87,12 +87,12 @@ namespace Fyrion
     }
 
 
-    void VulkanCommands::BindVertexBuffer(const GPUBuffer& gpuBuffer)
+    void VulkanCommands::BindVertexBuffer(const Buffer& gpuBuffer)
     {
 
     }
 
-    void VulkanCommands::BindIndexBuffer(const GPUBuffer& gpuBuffer)
+    void VulkanCommands::BindIndexBuffer(const Buffer& gpuBuffer)
     {
 
     }
@@ -117,7 +117,7 @@ namespace Fyrion
 
     }
 
-    void VulkanCommands::DrawIndexedIndirect(const GPUBuffer& buffer, usize offset, u32 drawCount, u32 stride)
+    void VulkanCommands::DrawIndexedIndirect(const Buffer& buffer, usize offset, u32 drawCount, u32 stride)
     {
 
     }

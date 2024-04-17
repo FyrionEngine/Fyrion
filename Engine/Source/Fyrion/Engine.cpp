@@ -18,7 +18,7 @@ namespace Fyrion
     void PlatformShutdown();
 
     void            GraphicsInit();
-    void            GraphicsCreateDevice(GPUAdapter adapter);
+    void            GraphicsCreateDevice(Adapter adapter);
     RenderCommands& GraphicsBeginFrame();
     void            GraphicsEndFrame(Swapchain swapchain);
     void            GraphicsShutdown();
@@ -88,7 +88,7 @@ namespace Fyrion
         }
 
         GraphicsInit();
-        GraphicsCreateDevice(GPUAdapter{});
+        GraphicsCreateDevice(Adapter{});
 
         window = Platform::CreateWindow(contextCreation.title, contextCreation.resolution, windowFlags);
 

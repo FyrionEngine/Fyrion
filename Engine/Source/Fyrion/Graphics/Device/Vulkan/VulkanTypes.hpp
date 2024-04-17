@@ -4,6 +4,7 @@
 #include "vk_mem_alloc.h"
 #include "Fyrion/Core/Array.hpp"
 #include "Fyrion/Core/FixedArray.hpp"
+#include "Fyrion/Graphics/GraphicsTypes.hpp"
 #include "Fyrion/Platform/PlatformTypes.hpp"
 
 namespace Fyrion
@@ -51,5 +52,19 @@ namespace Fyrion
         VkBuffer          buffer{};
         VmaAllocation     allocation{};
         VmaAllocationInfo allocInfo{};
+    };
+
+    struct VulkanTextureView
+    {
+        Texture     texture{};
+        VkImageView imageView{};
+    };
+
+    struct VulkanTexture
+    {
+        TextureCreation creation{};
+        VkImage         image{};
+        VmaAllocation   allocation{};
+        TextureView     textureView{};
     };
 }

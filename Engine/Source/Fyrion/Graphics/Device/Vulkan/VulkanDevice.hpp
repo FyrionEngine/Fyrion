@@ -58,6 +58,7 @@ namespace Fyrion
         Span<Adapter>   GetAdapters() override;
         void            CreateDevice(Adapter adapter) override;
         Swapchain       CreateSwapchain(const SwapchainCreation& swapchainCreation) override;
+        RenderPass      CreateRenderPass(const RenderPassCreation& renderPassCreation) override;
         Buffer          CreateBuffer(const BufferCreation& bufferCreation) override;
         Texture         CreateTexture(const TextureCreation& textureCreation) override;
         TextureView     CreateTextureView(const TextureViewCreation& textureViewCreation) override;
@@ -66,6 +67,7 @@ namespace Fyrion
         PipelineState   CreateComputePipelineState(const ComputePipelineCreation& computePipelineCreation) override;
         BindingSet&     CreateBindingSet(RID shader) override;
         void            DestroySwapchain(const Swapchain& swapchain) override;
+        void            DestroyRenderPass(const RenderPass& renderPass) override;
         void            DestroyBuffer(const Buffer& buffer) override;
         void            DestroyTexture(const Texture& texture) override;
         void            DestroyTextureView(const TextureView& textureView) override;

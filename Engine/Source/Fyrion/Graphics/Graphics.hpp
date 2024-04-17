@@ -6,6 +6,7 @@ namespace Fyrion::Graphics
 {
     FY_API Span<Adapter> GetAdapters();
     FY_API Swapchain     CreateSwapchain(const SwapchainCreation& swapchainCreation);
+    FY_API RenderPass    CreateRenderPass(const RenderPassCreation& renderPassCreation);
     FY_API Buffer        CreateBuffer(const BufferCreation& bufferCreation);
     FY_API Texture       CreateTexture(const TextureCreation& textureCreation);
     FY_API TextureView   CreateTextureView(const TextureViewCreation& textureViewCreation);
@@ -14,6 +15,7 @@ namespace Fyrion::Graphics
     FY_API PipelineState CreateComputePipelineState(const ComputePipelineCreation& computePipelineCreation);
     FY_API BindingSet&   CreateBindingSet(RID shader);
     FY_API void          DestroySwapchain(const Swapchain& swapchain);
+    FY_API void          DestroyRenderPass(const RenderPass& renderPass);
     FY_API void          DestroyBuffer(const Buffer& buffer);
     FY_API void          DestroyTexture(const Texture& texture);
     FY_API void          DestroyTextureView(const TextureView& textureView);

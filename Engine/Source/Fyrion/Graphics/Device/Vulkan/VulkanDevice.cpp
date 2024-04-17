@@ -597,9 +597,43 @@ namespace Fyrion
         return CreateSwapchain(vulkanSwapchain) ? Swapchain{vulkanSwapchain} : Swapchain{};
     }
 
+    RenderPass VulkanDevice::CreateRenderPass(const RenderPassCreation& renderPassCreation)
+    {
+        VulkanRenderPass*              vulkanRenderPass = allocator.Alloc<VulkanRenderPass>();
+
+        Array<VkAttachmentDescription> attachmentDescriptions{};
+        Array<VkAttachmentReference>   colorAttachmentReference{};
+        Array<VkImageView>             imageViews{};
+        VkAttachmentReference          depthReference{};
+
+        vulkanRenderPass->clearValues.Resize(renderPassCreation.attachments.Size());
+
+        for (u32 i = 0; i < renderPassCreation.attachments.Size(); ++i)
+        {
+            const AttachmentCreation& attachment = renderPassCreation.attachments[i];
+            VulkanTexture* vulkanTexture = static_cast<VulkanTexture*>(attachment.texture.handler);
+            FY_ASSERT(vulkanTexture, "texture not provided");
+
+            //imageViews.EmplaceBack(static_cast<VulkanTextureView*>(vulkanTexture->textureView.handler)->imageView);
+
+            // VkFormat format = Vulkan::CastFormat(vulkanTexture->textureCreation.format);
+            // framebufferSize = vulkanTexture->textureCreation.extent;
+            // bool isDepthFormat = IsDepthFormat(format);
+        }
+
+        VkRenderPassCreateInfo renderPassInfo = {VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO};
+        renderPassInfo.attachmentCount = attachmentDescriptions.Size();
+        renderPassInfo.pAttachments = attachmentDescriptions.Data();
+        renderPassInfo.subpassCount = 1;
+      //  renderPassInfo.pSubpasses = &subPass;
+        renderPassInfo.dependencyCount = 0;
+        vkCreateRenderPass(device, &renderPassInfo, nullptr, &vulkanRenderPass->renderPass);
+
+        return {vulkanRenderPass};
+    }
+
     Buffer VulkanDevice::CreateBuffer(const BufferCreation& bufferCreation)
     {
-
         VulkanBuffer* vulkanBuffer = allocator.Alloc<VulkanBuffer>();
 
         VkBufferCreateInfo bufferInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
@@ -637,7 +671,49 @@ namespace Fyrion
 
     Texture VulkanDevice::CreateTexture(const TextureCreation& textureCreation)
     {
-        return {};
+        VulkanTexture* vulkanTexture = allocator.Alloc<VulkanTexture>(textureCreation);
+
+        VkImageCreateInfo imageCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
+        imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+        imageCreateInfo.format = Vulkan::CastFormat(textureCreation.format);
+        imageCreateInfo.extent = {textureCreation.extent.width, textureCreation.extent.height, std::max(textureCreation.extent.depth, 1u)};
+        imageCreateInfo.mipLevels = textureCreation.mipLevels;
+        imageCreateInfo.arrayLayers = textureCreation.arrayLayers;
+        imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+        imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+
+        TextureUsage usage = textureCreation.usage;
+        if (usage == TextureUsage::None)
+        {
+            usage |= TextureUsage::TransferDst;
+            usage |= TextureUsage::ShaderResource;
+        }
+        imageCreateInfo.usage = Vulkan::CastTextureUsage(usage);
+
+        VmaAllocationCreateInfo allocInfo = {};
+        allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+        allocInfo.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+        vmaCreateImage(vmaAllocator, &imageCreateInfo, &allocInfo, &vulkanTexture->image, &vulkanTexture->allocation, nullptr);
+
+        Texture texture = Texture{vulkanTexture};
+
+        TextureViewCreation textureViewCreation{
+            .texture = texture,
+            .viewType = textureCreation.defaultView != ViewType::Undefined ? textureCreation.defaultView : ViewType::Type2D,
+            .levelCount = textureCreation.mipLevels,
+            .layerCount = imageCreateInfo.arrayLayers
+        };
+
+        if (imageCreateInfo.arrayLayers % 6 == 0)
+        {
+            textureViewCreation.viewType = ViewType::TypeCube;
+            imageCreateInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+        }
+
+        vulkanTexture->textureView = CreateTextureView(textureViewCreation);
+
+        return texture;
     }
 
     TextureView VulkanDevice::CreateTextureView(const TextureViewCreation& textureViewCreation)
@@ -672,6 +748,12 @@ namespace Fyrion
         allocator.DestroyAndFree(vulkanSwapchain);
     }
 
+    void VulkanDevice::DestroyRenderPass(const RenderPass& renderPass)
+    {
+        VulkanRenderPass* vulkanRenderPass = static_cast<VulkanRenderPass*>(renderPass.handler);
+        allocator.DestroyAndFree(vulkanRenderPass);
+    }
+
     void VulkanDevice::DestroyBuffer(const Buffer& buffer)
     {
         VulkanBuffer* vulkanBuffer = static_cast<VulkanBuffer*>(buffer.handler);
@@ -684,6 +766,7 @@ namespace Fyrion
 
     void VulkanDevice::DestroyTexture(const Texture& texture)
     {
+
     }
 
     void VulkanDevice::DestroyTextureView(const TextureView& textureView)

@@ -9,6 +9,7 @@ namespace Fyrion
         virtual Span<Adapter>   GetAdapters() = 0;
         virtual void            CreateDevice(Adapter adapter) = 0;
         virtual Swapchain       CreateSwapchain(const SwapchainCreation& swapchainCreation) = 0;
+        virtual RenderPass      CreateRenderPass(const RenderPassCreation& renderPassCreation) = 0;
         virtual Buffer          CreateBuffer(const BufferCreation& bufferCreation) = 0;
         virtual Texture         CreateTexture(const TextureCreation& textureCreation) = 0;
         virtual TextureView     CreateTextureView(const TextureViewCreation& textureViewCreation) = 0;
@@ -17,6 +18,7 @@ namespace Fyrion
         virtual PipelineState   CreateComputePipelineState(const ComputePipelineCreation& computePipelineCreation) = 0;
         virtual BindingSet&     CreateBindingSet(RID shader) = 0;
         virtual void            DestroySwapchain(const Swapchain& swapchain) = 0;
+        virtual void            DestroyRenderPass(const RenderPass& renderPass) = 0;
         virtual void            DestroyBuffer(const Buffer& buffer) = 0;
         virtual void            DestroyTexture(const Texture& texture) = 0;
         virtual void            DestroyTextureView(const TextureView& textureView) = 0;

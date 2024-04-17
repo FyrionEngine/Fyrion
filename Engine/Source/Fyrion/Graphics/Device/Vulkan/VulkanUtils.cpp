@@ -210,5 +210,67 @@ namespace Fyrion::Vulkan
 		}
 		return flags;
 	}
+
+	VkFormat CastFormat(const ImageFormat& textureFormat)
+	{
+		switch (textureFormat)
+		{
+		case ImageFormat::R: return VK_FORMAT_R8_UNORM;
+		case ImageFormat::RG16F: return VK_FORMAT_R16G16_SFLOAT;
+		case ImageFormat::RGBA: return VK_FORMAT_R8G8B8A8_UNORM;
+		case ImageFormat::RGBA16F: return VK_FORMAT_R16G16B16A16_SFLOAT;
+		case ImageFormat::RGBA32F: return VK_FORMAT_R32G32B32A32_SFLOAT;
+		case ImageFormat::BGRA: return VK_FORMAT_B8G8R8A8_UNORM;
+		case ImageFormat::Depth: return VK_FORMAT_D32_SFLOAT;           //TODO should check if format is available
+		case ImageFormat::R16F: return VK_FORMAT_R16_SFLOAT;
+		case ImageFormat::R32F: return VK_FORMAT_R32_SFLOAT;
+		case ImageFormat::RG: return VK_FORMAT_R8G8_UNORM;
+		case ImageFormat::RG32F: return VK_FORMAT_R32G32_SFLOAT;
+		case ImageFormat::RGB: return VK_FORMAT_R8G8B8_UNORM;
+		case ImageFormat::RGB16F: return VK_FORMAT_R16G16B16_SFLOAT;
+		case ImageFormat::RGB32F: return VK_FORMAT_R32G32B32_SFLOAT;
+		case ImageFormat::Undefined:
+			break;
+		default:
+			FY_ASSERT(false, "[VulkanDevice] VkFormat not found");
+			return VK_FORMAT_UNDEFINED;
+		}
+		return {};
+	}
+
+	VkImageUsageFlags CastTextureUsage(TextureUsage textureUsage)
+	{
+		VkImageUsageFlags usage{};
+		if (textureUsage && TextureUsage::ShaderResource)
+		{
+			usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+		}
+
+		if (textureUsage && TextureUsage::DepthStencil)
+		{
+			usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		}
+
+		if (textureUsage && TextureUsage::RenderPass)
+		{
+			usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		}
+
+		if (textureUsage && TextureUsage::Storage)
+		{
+			usage |= VK_IMAGE_USAGE_STORAGE_BIT;
+		}
+
+		if (textureUsage && TextureUsage::TransferDst)
+		{
+			usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		}
+
+		if (textureUsage && TextureUsage::TransferSrc)
+		{
+			usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+		}
+		return usage;
+	}
 }
 

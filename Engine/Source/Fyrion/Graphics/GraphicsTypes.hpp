@@ -153,6 +153,19 @@ namespace Fyrion
         Always         = 7
     };
 
+    enum class LoadOp
+    {
+        Load = 0,
+        Clear = 1,
+        DontCare = 2
+    };
+
+    enum class StoreOp
+    {
+        Store = 0,
+        DontCare = 1
+    };
+
     enum class BorderColor
     {
         FloatTransparentBlack = 0,
@@ -168,6 +181,20 @@ namespace Fyrion
     {
         Window window{};
         bool vsync{true};
+    };
+
+    struct AttachmentCreation
+    {
+        Texture        texture{};
+        ResourceLayout initialLayout{ResourceLayout::Undefined};
+        ResourceLayout finalLayout{ResourceLayout::Undefined};
+        LoadOp         loadOp{LoadOp::Clear};
+        StoreOp        storeOp{StoreOp::Store};
+    };
+
+    struct RenderPassCreation
+    {
+        Span<AttachmentCreation> attachments{};
     };
 
     struct BufferCreation
@@ -190,11 +217,11 @@ namespace Fyrion
     struct TextureViewCreation
     {
         Texture  texture{};
-        ViewType    viewType{ViewType::Type2D};
-        u32         baseMipLevel = 0;
-        u32         levelCount = 1;
-        u32         baseArrayLayer = 0;
-        u32         layerCount = 1;
+        ViewType viewType{ViewType::Type2D};
+        u32      baseMipLevel = 0;
+        u32      levelCount = 1;
+        u32      baseArrayLayer = 0;
+        u32      layerCount = 1;
     };
 
     struct SamplerCreation

@@ -55,6 +55,11 @@ namespace Fyrion
         return renderDevice->CreateSwapchain(swapchainCreation);
     }
 
+    RenderPass Graphics::CreateRenderPass(const RenderPassCreation& renderPassCreation)
+    {
+        return renderDevice->CreateRenderPass(renderPassCreation);
+    }
+
     Buffer Graphics::CreateBuffer(const BufferCreation& bufferCreation)
     {
         return renderDevice->CreateBuffer(bufferCreation);
@@ -93,6 +98,11 @@ namespace Fyrion
     void Graphics::DestroySwapchain(const Swapchain& swapchain)
     {
         renderDevice->DestroySwapchain(swapchain);
+    }
+
+    void Graphics::DestroyRenderPass(const RenderPass& renderPass)
+    {
+        renderDevice->DestroyRenderPass(renderPass);
     }
 
     void Graphics::DestroyBuffer(const Buffer& buffer)

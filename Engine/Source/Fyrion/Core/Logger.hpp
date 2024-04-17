@@ -21,6 +21,7 @@ namespace Fyrion
 
     struct LogSink
     {
+        virtual ~LogSink() = default;
         virtual void SetLevel(LogLevel level) = 0;
         virtual bool CanLog(LogLevel level) = 0;
         virtual void DoLog(LogLevel level, const StringView& logName, const StringView& message) = 0;

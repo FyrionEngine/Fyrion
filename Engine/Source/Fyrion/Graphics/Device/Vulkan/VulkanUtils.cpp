@@ -174,5 +174,41 @@ namespace Fyrion::Vulkan
 			return actualExtent;
 		}
 	}
+
+	VkBufferUsageFlags CastBufferUsage(BufferUsage bufferUsage)
+	{
+		VkBufferUsageFlags flags{};
+		if (bufferUsage && BufferUsage::VertexBuffer)
+		{
+			flags |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		}
+		if (bufferUsage && BufferUsage::IndexBuffer)
+		{
+			flags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+		}
+
+		if (bufferUsage && BufferUsage::UniformBuffer)
+		{
+			flags |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+		}
+		if (bufferUsage && BufferUsage::StorageBuffer)
+		{
+			flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+		}
+		if (bufferUsage && BufferUsage::IndirectBuffer)
+		{
+			flags |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+		}
+		if (bufferUsage && BufferUsage::AccelerationStructureBuild)
+		{
+			flags |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+		}
+
+		if (bufferUsage && BufferUsage::AccelerationStructureStorage)
+		{
+			flags |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR;
+		}
+		return flags;
+	}
 }
 

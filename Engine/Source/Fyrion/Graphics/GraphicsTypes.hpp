@@ -104,6 +104,14 @@ namespace Fyrion
 
     ENUM_FLAGS(BufferUsage, u32)
 
+    enum class BufferMemory
+    {
+        GPUOnly       = 1,
+        TransferToGPU = 2,
+        TransferToCPU = 3,
+        Dynamic       = 4
+    };
+
     enum class TextureUsage : u32
     {
         None           = 0 << 0,
@@ -164,8 +172,9 @@ namespace Fyrion
 
     struct BufferCreation
     {
-        BufferUsage usage{};
-        usize       size{};
+        BufferUsage  usage{};
+        usize        size{};
+        BufferMemory memory{BufferMemory::Dynamic};
     };
 
     struct TextureCreation

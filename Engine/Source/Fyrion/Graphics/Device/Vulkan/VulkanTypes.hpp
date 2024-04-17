@@ -1,6 +1,7 @@
 #pragma once
 
 #include "volk.h"
+#include "vk_mem_alloc.h"
 #include "Fyrion/Core/Array.hpp"
 #include "Fyrion/Core/FixedArray.hpp"
 #include "Fyrion/Platform/PlatformTypes.hpp"
@@ -43,5 +44,12 @@ namespace Fyrion
         u32                     imageIndex{};
 
         FixedArray<VkSemaphore, FY_FRAMES_IN_FLIGHT> imageAvailableSemaphores{};
+    };
+
+    struct VulkanBuffer
+    {
+        VkBuffer          buffer{};
+        VmaAllocation     allocation{};
+        VmaAllocationInfo allocInfo{};
     };
 }

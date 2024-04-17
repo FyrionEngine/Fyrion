@@ -599,7 +599,40 @@ namespace Fyrion
 
     Buffer VulkanDevice::CreateBuffer(const BufferCreation& bufferCreation)
     {
-        return {};
+
+        VulkanBuffer* vulkanBuffer = allocator.Alloc<VulkanBuffer>();
+
+        VkBufferCreateInfo bufferInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+        bufferInfo.size = bufferCreation.size;
+        bufferInfo.usage = Vulkan::CastBufferUsage(bufferCreation.usage);
+
+        VmaAllocationCreateInfo vmaAllocInfo = {};
+        vmaAllocInfo.usage = VMA_MEMORY_USAGE_AUTO;
+
+        switch (bufferCreation.memory)
+        {
+        case BufferMemory::GPUOnly:
+            {
+                vmaAllocInfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
+                bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+                break;
+            }
+        case BufferMemory::Dynamic: //TODO dynamic buffer should be VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT with a stagging.
+        case BufferMemory::TransferToGPU:
+            {
+                vmaAllocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+                bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+                break;
+            }
+        case BufferMemory::TransferToCPU:
+            {
+                vmaAllocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+                bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+            }
+            break;
+        }
+        vmaCreateBuffer(vmaAllocator, &bufferInfo, &vmaAllocInfo, &vulkanBuffer->buffer, &vulkanBuffer->allocation, &vulkanBuffer->allocInfo);
+        return {vulkanBuffer};
     }
 
     Texture VulkanDevice::CreateTexture(const TextureCreation& textureCreation)
@@ -641,6 +674,12 @@ namespace Fyrion
 
     void VulkanDevice::DestroyBuffer(const Buffer& buffer)
     {
+        VulkanBuffer* vulkanBuffer = static_cast<VulkanBuffer*>(buffer.handler);
+        if (vulkanBuffer->buffer && vulkanBuffer->allocation)
+        {
+            vmaDestroyBuffer(vmaAllocator, vulkanBuffer->buffer, vulkanBuffer->allocation);
+        }
+        allocator.DestroyAndFree(vulkanBuffer);
     }
 
     void VulkanDevice::DestroyTexture(const Texture& texture)
@@ -665,7 +704,7 @@ namespace Fyrion
 
     void VulkanDevice::DestroyBindingSet(BindingSet& bindingSet)
     {
-        allocator.DestroyAndFree<VulkanBindingSet>(static_cast<VulkanBindingSet*>(&bindingSet));
+        allocator.DestroyAndFree(static_cast<VulkanBindingSet*>(&bindingSet));
     }
 
     RenderPass VulkanDevice::AcquireNextRenderPass(Swapchain swapchain)

@@ -1,23 +1,22 @@
 #include "Editor.hpp"
-#include "Fyrion/Core/Event.hpp"
+
+#include "EditorTypes.hpp"
 #include "Fyrion/Engine.hpp"
+#include "Fyrion/Core/Event.hpp"
+#include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/ImGui/ImGui.hpp"
 #include "Fyrion/ImGui/Lib/imgui_internal.h"
-#include "EditorTypes.hpp"
-#include "WorldEditor.hpp"
-#include "Fyrion/Core/Registry.hpp"
+#include "Fyrion/IO/Path.hpp"
 #include "Fyrion/Resource/AssetTree.hpp"
 #include "Fyrion/Resource/ResourceAssets.hpp"
-#include "Fyrion/IO/Path.hpp"
-#include "Fyrion/World/World.hpp"
 
 namespace Fyrion
 {
 
     void InitProjectBrowser();
-    void InitWorldViewWindow();
-    void InitEntityTreeWindow();
     void InitPropertiesWindow();
+    // void InitSceneViewWindow();
+    // void InitSceneTreeWindow();
 
     struct EditorWindowStorage
     {
@@ -54,10 +53,6 @@ namespace Fyrion
         bool forceClose{};
 
         AssetTree       assetTree{};
-        WorldEditor     worldEditor{};
-
-        UniquePtr<World> world{};
-
 
         void SaveAll();
 
@@ -360,7 +355,6 @@ namespace Fyrion
         void EditorEndFrame()
         {
             assetTree.Update();
-            worldEditor.Update();
         }
 
         void OnEditorShutdownRequest(bool* canClose)
@@ -401,18 +395,13 @@ namespace Fyrion
         menuContext.AddMenuItem(menuItem);
     }
 
-    WorldEditor& Editor::GetWorldEditor()
-    {
-        return worldEditor;
-    }
-
     void Editor::Init()
     {
         Registry::Type<EditorWindow>();
 
         InitProjectBrowser();
-        InitEntityTreeWindow();
-        InitWorldViewWindow();
+        // InitSceneTreeWindow();
+        // InitSceneViewWindow();
         InitPropertiesWindow();
 
         Event::Bind<OnInit , &InitEditor>();

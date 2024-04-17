@@ -458,6 +458,7 @@ namespace Fyrion::ResourceSerialization
     void ParseResource(ParserContext& context, RID rid)
     {
         ResourceType* resourceType = Repository::GetResourceType(rid);
+        if (resourceType == nullptr) return;
 
         if (!Repository::IsResourceTypeData(resourceType))
         {

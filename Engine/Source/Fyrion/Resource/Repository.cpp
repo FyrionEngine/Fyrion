@@ -216,13 +216,16 @@ namespace Fyrion
         {
             resourceStorage->markedToDestroy = true;
 
-            for (auto itEvent: resourceStorage->resourceType->events)
+            if (resourceStorage->resourceType)
             {
-                if ((itEvent.second.eventType && ResourceEventType::Destroy) != 0)
+                for (auto itEvent: resourceStorage->resourceType->events)
                 {
-                    ResourceObject oldObject{resourceStorage->data, true};
-                    ResourceObject newObject{nullptr, true};
-				    itEvent.second.event(itEvent.second.userData, ResourceEventType::Destroy, oldObject, newObject);
+                    if ((itEvent.second.eventType && ResourceEventType::Destroy) != 0)
+                    {
+                        ResourceObject oldObject{resourceStorage->data, true};
+                        ResourceObject newObject{nullptr, true};
+                        itEvent.second.event(itEvent.second.userData, ResourceEventType::Destroy, oldObject, newObject);
+                    }
                 }
             }
 
@@ -461,6 +464,8 @@ namespace Fyrion
 
     StringView Repository::GetResourceTypeSimpleName(ResourceType* resourceType)
     {
+        if (!resourceType) return "";
+
         if (!resourceType->simpleName.Empty())
         {
             return resourceType->simpleName;
@@ -582,7 +587,7 @@ namespace Fyrion
     TypeID Repository::GetResourceTypeID(const RID& rid)
     {
         ResourceStorage* storage = &pages[rid.page]->elements[rid.offset];
-        return storage->resourceType->typeId;
+        return storage->resourceType ? storage->resourceType->typeId : 0;
     }
 
     ResourceType* Repository::GetResourceType(const RID& rid)

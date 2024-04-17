@@ -5,11 +5,6 @@
 #include "MenuItem.hpp"
 #include "Fyrion/Resource/ResourceTypes.hpp"
 
-namespace Fyrion
-{
-    class WorldEditor;
-}
-
 namespace Fyrion::Editor
 {
     FY_API void             Init();
@@ -17,7 +12,6 @@ namespace Fyrion::Editor
     FY_API void             OpenWindow(TypeID windowType, VoidPtr initUserData = nullptr);
     FY_API void             OpenProject(RID rid);
 
-    FY_API WorldEditor&     GetWorldEditor();
     FY_API AssetTree&       GetAssetTree();
 
     template<typename T>

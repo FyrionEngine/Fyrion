@@ -20,7 +20,7 @@ namespace Fyrion
 
     void WorldViewWindow::RegisterType(NativeTypeHandler<WorldViewWindow>& type)
     {
-        Editor::AddMenuItem(MenuItemCreation{.itemName="Window/World View", .action = OpenWorldView});
+        Editor::AddMenuItem(MenuItemCreation{.itemName="Window/World Viewport", .action = OpenWorldView});
 
         type.Attribute<EditorWindowProperties>(EditorWindowProperties{
             .dockPosition = DockPosition::Center,

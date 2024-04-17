@@ -98,7 +98,7 @@ namespace Fyrion
             FY_ASSERT(false, "Required extensions not found");
         }
 
-#ifdef SK_MACOS
+#ifdef FY_MACOS
         if (QueryInstanceExtension(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME))
 		{
 			requiredExtensions.EmplaceBack(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);

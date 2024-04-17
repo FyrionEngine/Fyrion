@@ -2,6 +2,8 @@
 
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Editor/EditorTypes.hpp"
+#include "Fyrion/Graphics/ViewportRenderer.hpp"
+#include "Fyrion/ImGui/ImGui.hpp"
 
 namespace Fyrion
 {
@@ -12,6 +14,10 @@ namespace Fyrion
 
         static void RegisterType(NativeTypeHandler<WorldViewWindow>& type);
     private:
+        u32              m_guizmoOperation{ImGuizmo::TRANSLATE};
+        ViewportRenderer m_viewportRenderer{};
+        bool             m_movingScene{};
+
         static void OpenWorldView(VoidPtr userData);
     };
 }

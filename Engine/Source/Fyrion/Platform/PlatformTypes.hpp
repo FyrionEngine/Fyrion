@@ -6,7 +6,7 @@ namespace Fyrion
 {
     FY_HANDLER(Window);
 
-    enum WindowFlags : i32
+    enum class WindowFlags : i32
     {
         None          = 0,
         Maximized     = 1 << 0,

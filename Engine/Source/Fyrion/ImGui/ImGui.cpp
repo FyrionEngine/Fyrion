@@ -8,6 +8,7 @@
 #include "Fyrion/Assets/AssetTypes.hpp"
 #include "IconsFontAwesome6.h"
 #include "Fyrion/ImGui/Lib/imgui_internal.h"
+#include "Fyrion/ImGui/Lib/ImGuizmo.h"
 
 using namespace Fyrion;
 
@@ -843,18 +844,18 @@ namespace ImGui
         style.ScaleAllSizes(scaleFactor);
 
 //       guizmo
-//		f32 guizmoScaleFactor = scaleFactor * 1.1;
-//		auto& guizmoSize  = ImGuizmo::GetStyle();
-//		new (&guizmoSize)  ImGuizmo::Style{};
+		f32 guizmoScaleFactor = scaleFactor * 1.1;
+		auto& guizmoSize  = ImGuizmo::GetStyle();
+		new (&guizmoSize)  ImGuizmo::Style{};
 //
-//		guizmoSize.CenterCircleSize = guizmoSize.CenterCircleSize * guizmoScaleFactor;
-//		guizmoSize.HatchedAxisLineThickness = guizmoSize.HatchedAxisLineThickness * guizmoScaleFactor;
-//		guizmoSize.RotationLineThickness = guizmoSize.RotationLineThickness * guizmoScaleFactor;
-//		guizmoSize.RotationOuterLineThickness = guizmoSize.RotationOuterLineThickness * guizmoScaleFactor;
-//		guizmoSize.ScaleLineCircleSize = guizmoSize.ScaleLineCircleSize * guizmoScaleFactor;
-//		guizmoSize.ScaleLineThickness = guizmoSize.ScaleLineThickness * guizmoScaleFactor;
-//		guizmoSize.TranslationLineArrowSize = guizmoSize.TranslationLineArrowSize * guizmoScaleFactor;
-//		guizmoSize.TranslationLineThickness = guizmoSize.TranslationLineThickness * guizmoScaleFactor;
+		guizmoSize.CenterCircleSize = guizmoSize.CenterCircleSize * guizmoScaleFactor;
+		guizmoSize.HatchedAxisLineThickness = guizmoSize.HatchedAxisLineThickness * guizmoScaleFactor;
+		guizmoSize.RotationLineThickness = guizmoSize.RotationLineThickness * guizmoScaleFactor;
+		guizmoSize.RotationOuterLineThickness = guizmoSize.RotationOuterLineThickness * guizmoScaleFactor;
+		guizmoSize.ScaleLineCircleSize = guizmoSize.ScaleLineCircleSize * guizmoScaleFactor;
+		guizmoSize.ScaleLineThickness = guizmoSize.ScaleLineThickness * guizmoScaleFactor;
+		guizmoSize.TranslationLineArrowSize = guizmoSize.TranslationLineArrowSize * guizmoScaleFactor;
+		guizmoSize.TranslationLineThickness = guizmoSize.TranslationLineThickness * guizmoScaleFactor;
 
 //		ImNodesStyle& nodesStyle = ImNodes::GetStyle();
 //		nodesStyle.GridSpacing = nodesStyle.GridSpacing * scaleFactor;
@@ -961,7 +962,7 @@ namespace ImGui
         GetRenderDevice().ImGuiNewFrame();
         Platform::ImGuiNewFrame();
         ImGui::NewFrame();
-        //ImGuizmo::BeginFrame();
+        ImGuizmo::BeginFrame();
     }
 
     void ImGui::Render(RenderCommands& renderCommands)

@@ -6,6 +6,7 @@
 #include "Fyrion/Graphics/GraphicsTypes.hpp"
 #include "Fyrion/Core/String.hpp"
 #include "Fyrion/IO/InputTypes.hpp"
+#include "Fyrion/ImGui/Lib/ImGuizmo.h"
 
 using namespace Fyrion;
 

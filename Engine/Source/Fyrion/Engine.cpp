@@ -52,7 +52,7 @@ namespace Fyrion
         EventHandler<OnEndFrame> onEndFrameHandler{};
         EventHandler<OnShutdown> onShutdownHandler{};
         EventHandler<OnShutdownRequest> onShutdownRequest{};
-
+        EventHandler<OnSwapchainRender> onSwapchainRender{};
     }
 
     void Engine::Init()
@@ -119,7 +119,7 @@ namespace Fyrion
 
             if (Platform::UserRequestedClose(window))
             {
-                Engine::Shutdown();
+                Shutdown();
                 if (running)
                 {
                     Platform::SetWindowShouldClose(window, false);
@@ -132,6 +132,8 @@ namespace Fyrion
 
             RenderCommands& cmd = GraphicsBeginFrame();
             cmd.Begin();
+
+            //TODO - record commands.
 
             RenderPass renderPass = Graphics::AcquireNextRenderPass(swapchain);
 
@@ -152,9 +154,10 @@ namespace Fyrion
 
             ImGui::Render(cmd);
 
+            onSwapchainRender.Invoke(cmd);
+
             cmd.EndRenderPass();
             cmd.End();
-
 
             GraphicsEndFrame(swapchain);
 

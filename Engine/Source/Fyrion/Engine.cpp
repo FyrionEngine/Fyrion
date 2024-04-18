@@ -14,25 +14,22 @@
 
 namespace Fyrion
 {
-    void PlatformInit();
-    void PlatformShutdown();
-
+    void            PlatformInit();
+    void            PlatformShutdown();
     void            GraphicsInit();
     void            GraphicsCreateDevice(Adapter adapter);
     RenderCommands& GraphicsBeginFrame();
     void            GraphicsEndFrame(Swapchain swapchain);
     void            GraphicsShutdown();
-
-    void RegistryShutdown();
-    void EventShutdown();
-
-    void RepositoryInit();
-    void RepositoryShutdown();
-
-    void ResourceAssetsInit();
-    void ResourceAssetsShutdown();
-
-    void RegisterAssets();
+    void            RegistryShutdown();
+    void            EventShutdown();
+    void            RepositoryInit();
+    void            RepositoryShutdown();
+    void            ResourceAssetsInit();
+    void            ResourceAssetsShutdown();
+    void            RegisterAssets();
+    void            SceneManagerInit();
+    void            SceneManagerShutdown();
 
 
     namespace
@@ -62,12 +59,13 @@ namespace Fyrion
 
     void Engine::Init(i32 argc, char** argv)
     {
+        args.Parse(argc, argv);
+
         RepositoryInit();
         TypeRegister();
         ResourceAssetsInit();
         RegisterAssets();
-
-        args.Parse(argc, argv);
+        SceneManagerInit();
     }
 
     void Engine::CreateContext(const EngineContextCreation& contextCreation)
@@ -204,6 +202,7 @@ namespace Fyrion
 
     void Engine::Destroy()
     {
+        SceneManagerShutdown();
         ResourceAssetsShutdown();
         RepositoryShutdown();
         RegistryShutdown();

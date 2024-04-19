@@ -7,6 +7,20 @@
 
 namespace Fyrion
 {
+
+    class ComponentToRemove : public Component
+    {
+    public:
+        void OnDestroy() override;
+    };
+
+    class AnotherComponent : public Component
+    {
+    public:
+        inline static i32 onStartCall = 0;
+        void OnStart() override;
+    };
+
     class ComponentTest : public Component
     {
     public:
@@ -29,6 +43,10 @@ namespace Fyrion
             {
                 object->Destroy();
             }
+            else
+            {
+                object->AddComponent<AnotherComponent>();
+            }
         }
 
         void OnDestroy() override
@@ -42,6 +60,24 @@ namespace Fyrion
         };
     };
 
+
+    void AnotherComponent::OnStart()
+    {
+        ComponentTest* componentTest = object->GetComponent<ComponentTest>();
+        REQUIRE(componentTest);
+        CHECK(componentTest->testValue == 10);
+
+//        object->RemoveComponent<ComponentToRemove>();
+
+        onStartCall++;
+    }
+
+    void ComponentToRemove::OnDestroy()
+    {
+
+    }
+
+
     TEST_CASE("Scene::BasicObjects")
     {
         Engine::Init();
@@ -49,9 +85,12 @@ namespace Fyrion
             EventHandler<OnUpdate> updateHandler{};
 
             Registry::Type<ComponentTest, Component>();
+            Registry::Type<AnotherComponent, Component>();
+            Registry::Type<ComponentToRemove, Component>();
 
             SceneObject* object = SceneManager::CreateScene("TestScene");
             SceneManager::SetCurrenScene(object);
+            CHECK(object->GetParent() == nullptr);
 
             REQUIRE(object);
             CHECK(object->GetScene() == object);
@@ -60,13 +99,17 @@ namespace Fyrion
             REQUIRE(child);
             CHECK(child != object);
 
+            CHECK(child->GetParent() == object);
+
+            CHECK(object->GetChildren().Size() == 1);
+
             {
                 ComponentTest& componentTest = child->AddComponent<ComponentTest>();
                 componentTest.testValue = 10;
             }
 
             {
-                ComponentTest* componentTest =  child->GetComponent<ComponentTest>();
+                ComponentTest* componentTest = child->GetComponent<ComponentTest>();
                 REQUIRE(componentTest);
                 CHECK(componentTest->testValue == 10);
                 CHECK(componentTest->updateCount == 0);
@@ -74,10 +117,18 @@ namespace Fyrion
 
             updateHandler.Invoke(1.0);
 
+            child->AddComponent<ComponentToRemove>();
+            child->AddComponent<ComponentToRemove>();
+
+            CHECK(child->GetComponentCount() == 4);
+            CHECK(child->GetComponentTypeCount<ComponentToRemove>() == 2);
+            CHECK(child->GetComponentTypeCount<ComponentTest>() == 1);
+
+
             {
-                ComponentTest* componentTest =  child->GetComponent<ComponentTest>();
+                ComponentTest* componentTest = child->GetComponent<ComponentTest>();
                 REQUIRE(componentTest);
-                //CHECK(componentTest->startCount == 1);
+                CHECK(componentTest->startCount == 1);
                 CHECK(componentTest->updateCount == 1);
             }
 
@@ -85,6 +136,9 @@ namespace Fyrion
 
             CHECK(ComponentTest::onDestroyCall == 1);
             CHECK(ComponentTest::destructorCall == 1);
+            CHECK(AnotherComponent::onStartCall == 1);
+
+            CHECK(object->GetChildren().Empty());
         }
         Engine::Destroy();
     }

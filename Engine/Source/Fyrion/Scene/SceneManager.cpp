@@ -37,6 +37,7 @@ namespace Fyrion
     {
         if (currentScene)
         {
+            currentScene->DoStart();
             currentScene->DoUpdate(deltaTime);
         }
     }

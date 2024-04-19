@@ -14,10 +14,10 @@ namespace Fyrion
     {
         for (auto it : m_components)
         {
-            for (Component* instance : it.second.instances)
+            for (ComponentInstace& component : it.second.instances)
             {
-                instance->OnDestroy();
-                it.second.typeHandler->Destroy(instance);
+                component.instance->OnDestroy();
+                it.second.typeHandler->Destroy(component.instance);
             }
         }
 
@@ -40,6 +40,11 @@ namespace Fyrion
         return sceneObject;
     }
 
+    Span<SceneObject*> SceneObject::GetChildren() const
+    {
+        return m_children;
+    }
+
     SceneObject* SceneObject::GetScene()
     {
         if (m_parent)
@@ -47,6 +52,11 @@ namespace Fyrion
             return m_parent->GetScene();
         }
         return this;
+    }
+
+    SceneObject* SceneObject::GetParent() const
+    {
+        return m_parent;
     }
 
     Component& SceneObject::AddComponent(TypeID typeId)
@@ -61,10 +71,31 @@ namespace Fyrion
 
         ComponentStorage& storage = it->second;
         Component* component = storage.typeHandler->Cast<Component>(storage.typeHandler->NewInstance());
+
         component->object = this;
         storage.instances.EmplaceBack(component);
 
+        SetComponentDirty();
+
         return *component;
+    }
+
+    void SceneObject::RemoveComponent(TypeID typeId, u32 index)
+    {
+        if (auto it = m_components.Find(typeId))
+        {
+            if (index < it->second.instances.Size())
+            {
+                ComponentInstace& component = it->second.instances[index];
+                component.instance->OnDestroy();
+                it->second.typeHandler->Destroy(component.instance);
+
+                it->second.instances.Erase(
+                    it->second.instances.begin() + index,
+                    it->second.instances.begin() + index + 1
+                );
+            }
+        }
     }
 
     Component* SceneObject::GetComponent(TypeID typeId, u32 index)
@@ -73,10 +104,30 @@ namespace Fyrion
         {
             if (index < it->second.instances.Size())
             {
-                return it->second.instances[index];
+                return it->second.instances[index].instance;
             }
         }
         return nullptr;
+    }
+
+    u32 SceneObject::GetComponentTypeCount(TypeID typeId) const
+    {
+        if (const auto it = m_components.Find(typeId))
+        {
+            return it->second.instances.Size();
+        }
+
+        return 0;
+    }
+
+    u32 SceneObject::GetComponentCount() const
+    {
+        u32 total{};
+        for(const auto& it: m_components)
+        {
+            total += it.second.instances.Size();
+        }
+        return total;
     }
 
     void SceneObject::RemoveChild(const SceneObject* child)
@@ -87,15 +138,49 @@ namespace Fyrion
                          m_children.begin() + child->m_parentIndex + 1);
     }
 
+    void SceneObject::SetComponentDirty()
+    {
+        m_componentDirty = true;
+        if (m_parent && !m_parent->m_componentDirty)
+        {
+            m_parent->SetComponentDirty();
+        }
+    }
+
+    void SceneObject::DoStart()
+    {
+        if (m_componentDirty)
+        {
+            for (auto& it : m_components)
+            {
+                for (usize i = 0; i < it.second.instances.Size(); ++i)
+                {
+                    ComponentInstace& component = it.second.instances[i];
+                    if (!component.startCalled)
+                    {
+                        component.startCalled = true;
+                        component.instance->OnStart();
+                    }
+                }
+            }
+
+            for (SceneObject* child : m_children)
+            {
+                child->DoStart();
+            }
+            m_componentDirty = false;
+        }
+    }
+
     void SceneObject::DoUpdate(f64 deltaTime)
     {
         m_updating = true;
 
-        for(const auto& it: m_components)
+        for (auto& it : m_components)
         {
-            for(Component* component : it.second.instances)
+            for (usize i = 0; i < it.second.instances.Size(); ++i)
             {
-                component->OnUpdate(deltaTime);
+                it.second.instances[i].instance->OnUpdate(deltaTime);
             }
         }
 
@@ -126,6 +211,5 @@ namespace Fyrion
 
     void SceneObject::RegisterType(NativeTypeHandler<SceneObject>& type)
     {
-
     }
 }

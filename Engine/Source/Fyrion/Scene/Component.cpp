@@ -2,7 +2,7 @@
 
 namespace Fyrion
 {
-    void Component::SetUpdateEnabled(bool updateEnabled)
+    void Component::RegisterType(NativeTypeHandler<Component>& type)
     {
 
     }

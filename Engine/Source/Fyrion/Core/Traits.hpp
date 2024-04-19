@@ -227,4 +227,7 @@ namespace Fyrion::Traits
     template<typename Type>
     constexpr bool IsTriviallyCopyable = IsTriviallyCopyableImpl<Type>::value;
 
+    template<typename Base, typename Derived>
+    constexpr bool IsBaseOf = std::is_base_of_v<Base, Derived>;
+
 }

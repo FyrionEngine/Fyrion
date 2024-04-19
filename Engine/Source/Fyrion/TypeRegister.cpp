@@ -6,6 +6,7 @@
 namespace Fyrion
 {
     void RegisterResourceTypes();
+    void RegisterSceneType();
 
     void TypeRegister()
     {
@@ -33,5 +34,6 @@ namespace Fyrion
         extent.Field<&Extent::height>("height");
 
         RegisterResourceTypes();
+        RegisterSceneType();
     }
 }

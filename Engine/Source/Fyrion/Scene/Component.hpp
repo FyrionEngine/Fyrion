@@ -1,23 +1,22 @@
 #pragma once
 #include "Fyrion/Common.hpp"
+#include "Fyrion/Core/Registry.hpp"
 
 namespace Fyrion
 {
-    class GameObject;
+    class SceneObject;
 
     class FY_API Component
     {
     public:
-        GameObject* object = nullptr;
+        SceneObject* object = nullptr;
 
         virtual ~Component() = default;
 
-        virtual void OnStart() = 0;
-        virtual void OnDestroy() = 0;
-        virtual void OnUpdate(f64 deltaTime) = 0;
+        virtual void OnStart(){}
+        virtual void OnDestroy(){}
+        virtual void OnUpdate(f64 deltaTime){}
 
-        void SetUpdateEnabled(bool updateEnabled);
-    private:
-        u64 m_updatableIndex = U64_MAX;
+        static void RegisterType(NativeTypeHandler<Component>& type);
     };
 }

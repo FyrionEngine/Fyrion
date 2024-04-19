@@ -40,6 +40,20 @@ namespace Fyrion
         return sceneObject;
     }
 
+    SceneObject* SceneObject::Duplicate() const
+    {
+        if(m_parent)
+        {
+            SceneObject* sceneObject = m_parent->NewChild(m_asset, m_name);
+
+            //TODO;
+
+            return sceneObject;
+        }
+        FY_ASSERT(false, "Root entity cannot be duplicated");
+        return nullptr;
+    }
+
     Span<SceneObject*> SceneObject::GetChildren() const
     {
         return m_children;
@@ -164,10 +178,11 @@ namespace Fyrion
                 }
             }
 
-            for (SceneObject* child : m_children)
+            for (usize i = 0; i < m_children.Size(); ++i)
             {
-                child->DoStart();
+                m_children[i]->DoStart();
             }
+
             m_componentDirty = false;
         }
     }
@@ -184,9 +199,9 @@ namespace Fyrion
             }
         }
 
-        for (SceneObject* child : m_children)
+        for (usize i = 0; i < m_children.Size(); ++i)
         {
-            child->DoUpdate(deltaTime);
+            m_children[i]->DoUpdate(deltaTime);
         }
 
         m_updating = false;

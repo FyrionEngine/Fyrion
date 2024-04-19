@@ -11,6 +11,7 @@ namespace Fyrion
     class ComponentToRemove : public Component
     {
     public:
+        inline static i32 removed = 0;
         void OnDestroy() override;
     };
 
@@ -67,14 +68,16 @@ namespace Fyrion
         REQUIRE(componentTest);
         CHECK(componentTest->testValue == 10);
 
-//        object->RemoveComponent<ComponentToRemove>();
+        CHECK(ComponentToRemove::removed == 0);
+        object->RemoveComponent<ComponentToRemove>();
+        CHECK(ComponentToRemove::removed == 1);
 
         onStartCall++;
     }
 
     void ComponentToRemove::OnDestroy()
     {
-
+        removed++;
     }
 
 
@@ -132,13 +135,19 @@ namespace Fyrion
                 CHECK(componentTest->updateCount == 1);
             }
 
+            SceneObject* anotherChild = child->Duplicate();
+            CHECK(anotherChild);
+
+            CHECK(object->GetChildren().Size() == 2);
+
             updateHandler.Invoke(1.0);
 
             CHECK(ComponentTest::onDestroyCall == 1);
             CHECK(ComponentTest::destructorCall == 1);
             CHECK(AnotherComponent::onStartCall == 1);
+            CHECK(ComponentToRemove::removed == 2);
 
-            CHECK(object->GetChildren().Empty());
+            CHECK(object->GetChildren().Size() == 1);
         }
         Engine::Destroy();
     }

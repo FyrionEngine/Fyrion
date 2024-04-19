@@ -33,20 +33,19 @@ namespace Fyrion
 
         ~SceneObject();
 
-        SceneObject* GetScene();
-        SceneObject* GetParent() const;
-        SceneObject* NewChild(const StringView& name);
-        SceneObject* NewChild(const RID& asset, const StringView& name);
-
+        SceneObject*       GetScene();
+        SceneObject*       GetParent() const;
+        SceneObject*       NewChild(const StringView& name);
+        SceneObject*       NewChild(const RID& asset, const StringView& name);
+        SceneObject*       Duplicate() const;
         Span<SceneObject*> GetChildren() const;
-
-        Component& AddComponent(TypeID typeId);
-        Component* GetComponent(TypeID typeId, u32 index);
-        u32 GetComponentTypeCount(TypeID typeId) const;
-        u32 GetComponentCount() const;
-        void RemoveComponent(TypeID typeId, u32 index);
-        void RemoveChild(const SceneObject* child);
-        void Destroy();
+        Component&         AddComponent(TypeID typeId);
+        Component*         GetComponent(TypeID typeId, u32 index);
+        u32                GetComponentTypeCount(TypeID typeId) const;
+        u32                GetComponentCount() const;
+        void               RemoveComponent(TypeID typeId, u32 index);
+        void               RemoveChild(const SceneObject* child);
+        void               Destroy();
 
         template <typename T, Traits::EnableIf<Traits::IsBaseOf<Component, T>>* = nullptr>
         T& AddComponent()

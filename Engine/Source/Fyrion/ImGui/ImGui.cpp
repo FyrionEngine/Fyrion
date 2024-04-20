@@ -249,6 +249,12 @@ namespace ImGui
         ImGui::PopStyleColor(3);
     }
 
+    bool SelectionButton(const char* label, bool selected, const ImVec2& sizeArg)
+    {
+        //TODO make select
+        return Button(label, sizeArg);
+    }
+
     ImU32 TextToColor(const char* str)
     {
         auto color = ImHashStr(str, strlen(str));

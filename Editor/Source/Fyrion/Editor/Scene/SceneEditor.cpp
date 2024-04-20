@@ -21,6 +21,7 @@ namespace Fyrion
     {
         m_nodes.Clear();
         m_rootNode = nullptr;
+        m_count = 0;
 
         ResourceObject asset = Repository::Read(rid);
         if (asset.Has(Asset::Object))
@@ -73,7 +74,7 @@ namespace Fyrion
         else
         {
             HashSet<RID> selected = m_selectedObjects;
-            CleanSelection();
+            ClearSelection();
 
             for (auto it: selected)
             {
@@ -122,7 +123,7 @@ namespace Fyrion
         Editor::GetAssetTree().MarkDirty();
     }
 
-    void SceneEditor::CleanSelection()
+    void SceneEditor::ClearSelection()
     {
         for (auto& it : m_selectedObjects)
         {
@@ -141,6 +142,21 @@ namespace Fyrion
     }
 
     bool SceneEditor::IsParentOfSelected(SceneObjectNode* node) const
+    {
+        for (auto& it : m_selectedObjects)
+        {
+            if (const auto& itObject = m_nodes.Find(it.first))
+            {
+                if (itObject->second->parent == node)
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    bool SceneEditor::IsSimulating()
     {
         return false;
     }

@@ -30,7 +30,7 @@ namespace Fyrion
         auto treeFlags = isSelected ? ImGuiTreeNodeFlags_Selected | ImGuiTreeNodeFlags_SpanAllColumns : ImGuiTreeNodeFlags_SpanAllColumns;
         bool open = false;
 
-        ImGuiID treeId = 100000 + static_cast<ImGuiID>(HashValue(sceneObjectNode->rid));
+        ImGuiID treeId = static_cast<ImGuiID>(HashValue(sceneObjectNode->rid));
 
         if (root)
         {
@@ -71,18 +71,21 @@ namespace Fyrion
         {
             if (!(ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_LeftCtrl)) || ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_RightCtrl))))
             {
-                m_sceneEditor.CleanSelection();
+                m_sceneEditor.ClearSelection();
             }
             m_sceneEditor.SelectObject(sceneObjectNode);
         }
 
+        if (ImGui::IsMouseReleased(ImGuiMouseButton_Right) && isHovered)
+        {
+            m_entityIsSelected = true;
+        }
 
         ImGui::TableNextColumn();
         if (!root)
         {
             ImGui::Text("  " ICON_FA_EYE);
         }
-
 
         if (open)
         {
@@ -96,6 +99,9 @@ namespace Fyrion
 
     void SceneTreeWindow::Draw(u32 id, bool& open)
     {
+
+        m_entityIsSelected = false;
+
         auto& style = ImGui::GetStyle();
         auto originalWindowPadding = style.WindowPadding;
 
@@ -164,6 +170,11 @@ namespace Fyrion
 
             if (ImGui::IsMouseReleased(ImGuiMouseButton_Right))
             {
+                if (!m_entityIsSelected)
+                {
+                    m_sceneEditor.ClearSelection();
+                    m_renamingSelected = false;
+                }
                 openPopup = true;
             }
         }

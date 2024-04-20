@@ -34,9 +34,10 @@ namespace Fyrion
         SceneObjectNode* FindNodeByRID(RID rid) const;
         void             CreateObject();
         void             DestroySelectedObjects();
-        void             CleanSelection();
+        void             ClearSelection();
         void             SelectObject(SceneObjectNode* node);
         bool             IsParentOfSelected(SceneObjectNode* node) const;
+        bool             IsSimulating();
     private:
         SceneObjectNode*                         m_rootNode{};
         HashMap<RID, UniquePtr<SceneObjectNode>> m_nodes{};

@@ -42,7 +42,7 @@ namespace Fyrion
 
     SceneObject* SceneObject::Duplicate() const
     {
-        if(m_parent)
+        if (m_parent)
         {
             SceneObject* sceneObject = m_parent->NewChild(m_asset, m_name);
 

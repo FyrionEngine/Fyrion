@@ -37,7 +37,16 @@ namespace Fyrion
             ImGui::SetNextItemOpen(true, ImGuiCond_Once);
         }
 
-        if (!sceneObjectNode->children.Empty())
+        if (m_sceneEditor.IsParentOfSelected(sceneObjectNode))
+        {
+            ImGui::SetNextItemOpen(true, ImGuiCond_Always);
+        }
+
+        if (isSelected && m_renamingSelected)
+        {
+
+        }
+        else if (!sceneObjectNode->children.Empty())
         {
             open = ImGui::TreeNode(treeId, m_nameCache.CStr(), treeFlags);
         }

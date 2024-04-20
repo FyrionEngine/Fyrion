@@ -67,13 +67,15 @@ namespace Fyrion
 
             Repository::SetUUID(entityRID, UUID::RandomUUID());
 
-
             root.AddToSubObjectSet(SceneObjectAsset::Children, entityRID);
             root.Commit();
         }
         else
         {
-            for (auto it: m_selectedObjects)
+            HashSet<RID> selected = m_selectedObjects;
+            CleanSelection();
+
+            for (auto it: selected)
             {
                 if (const auto& itNode = m_nodes.Find(it.first))
                 {
@@ -81,21 +83,21 @@ namespace Fyrion
                     ResourceObject writeParent = Repository::Write(parent->rid);
                     u64 size = writeParent.GetSubObjectSetCount(SceneObjectAsset::Children);
 
-                    RID entityRID = Repository::CreateResource<SceneObjectAsset>();
+                    RID objectRid = Repository::CreateResource<SceneObjectAsset>();
+                    m_selectedObjects.Emplace(objectRid);
 
-                    ResourceObject write = Repository::Write(entityRID);
+                    ResourceObject write = Repository::Write(objectRid);
                     write[SceneObjectAsset::Name] = "Object " + ToString(m_count);
                     write[SceneObjectAsset::Order] = size;
                     write[SceneObjectAsset::Parent] = parent->rid;
                     write.Commit();
 
-                    Repository::SetUUID(entityRID, UUID::RandomUUID());
+                    Repository::SetUUID(objectRid, UUID::RandomUUID());
 
-                    writeParent.AddToSubObjectSet(SceneObjectAsset::Children, entityRID);
+                    writeParent.AddToSubObjectSet(SceneObjectAsset::Children, objectRid);
                     writeParent.Commit();
                 }
             }
-            m_selectedObjects.Clear();
         }
 
         Editor::GetAssetTree().MarkDirty();
@@ -124,9 +126,9 @@ namespace Fyrion
     {
         for (auto& it : m_selectedObjects)
         {
-            if (const auto& itEntity = m_nodes.Find(it.first))
+            if (const auto& itObject = m_nodes.Find(it.first))
             {
-                itEntity->second->selected = false;
+                itObject->second->selected = false;
             }
         }
         m_selectedObjects.Clear();
@@ -136,6 +138,11 @@ namespace Fyrion
     {
         node->selected = true;
         m_selectedObjects.Emplace(node->rid);
+    }
+
+    bool SceneEditor::IsParentOfSelected(SceneObjectNode* node) const
+    {
+        return false;
     }
 
     SceneObjectNode* SceneEditor::LoadSceneObjectAsset(RID rid)
@@ -158,6 +165,11 @@ namespace Fyrion
         if (object.Has(SceneObjectAsset::Order))
         {
             node.order = object[SceneObjectAsset::Order].As<u64>();
+        }
+
+        if (m_selectedObjects.Has(node.rid) && !node.selected)
+        {
+            node.selected = true;
         }
 
         Array<RID> children = object.GetSubObjectSetAsArray(SceneObjectAsset::Children);

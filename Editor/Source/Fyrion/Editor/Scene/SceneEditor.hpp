@@ -36,6 +36,7 @@ namespace Fyrion
         void             DestroySelectedObjects();
         void             CleanSelection();
         void             SelectObject(SceneObjectNode* node);
+        bool             IsParentOfSelected(SceneObjectNode* node) const;
     private:
         SceneObjectNode*                         m_rootNode{};
         HashMap<RID, UniquePtr<SceneObjectNode>> m_nodes{};

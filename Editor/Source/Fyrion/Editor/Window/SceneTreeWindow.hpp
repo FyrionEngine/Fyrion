@@ -21,6 +21,7 @@ namespace Fyrion
         SceneEditor& m_sceneEditor;
         String       m_searchEntity{};
         String       m_nameCache{};
+        bool         m_renamingSelected{};
 
         void        DrawSceneObject(SceneObjectNode* sceneObjectNode);
         static void OpenSceneTree(VoidPtr userData);

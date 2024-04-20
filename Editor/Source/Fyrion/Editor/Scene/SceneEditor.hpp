@@ -6,6 +6,7 @@
 #include "Fyrion/Core/HashSet.hpp"
 #include "Fyrion/Core/String.hpp"
 #include "Fyrion/Core/UniquePtr.hpp"
+#include "Fyrion/Core/UUID.hpp"
 #include "Fyrion/Resource/ResourceTypes.hpp"
 
 namespace Fyrion
@@ -13,6 +14,7 @@ namespace Fyrion
     struct SceneObjectNode
     {
         RID                     rid{};
+        UUID                    uuid{};
         String                  name{};
         SceneObjectNode*        parent{};
         Array<SceneObjectNode*> children{};
@@ -38,10 +40,12 @@ namespace Fyrion
         void             SelectObject(SceneObjectNode* node);
         bool             IsParentOfSelected(SceneObjectNode* node) const;
         bool             IsSimulating();
+        SceneObjectNode* GetLastSelectedObject() const;
     private:
         SceneObjectNode*                         m_rootNode{};
         HashMap<RID, UniquePtr<SceneObjectNode>> m_nodes{};
         HashSet<RID>                             m_selectedObjects{};
+        SceneObjectNode*                         m_lastSelectedObject{};
         u64                                      m_count{};
 
         SceneObjectNode* LoadSceneObjectAsset(RID rid);

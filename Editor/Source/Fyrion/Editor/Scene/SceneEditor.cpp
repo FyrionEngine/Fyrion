@@ -133,12 +133,14 @@ namespace Fyrion
             }
         }
         m_selectedObjects.Clear();
+        m_lastSelectedObject = nullptr;
     }
 
     void SceneEditor::SelectObject(SceneObjectNode* node)
     {
         node->selected = true;
         m_selectedObjects.Emplace(node->rid);
+        m_lastSelectedObject = node;
     }
 
     bool SceneEditor::IsParentOfSelected(SceneObjectNode* node) const
@@ -159,6 +161,11 @@ namespace Fyrion
     bool SceneEditor::IsSimulating()
     {
         return false;
+    }
+
+    SceneObjectNode* SceneEditor::GetLastSelectedObject() const
+    {
+        return m_lastSelectedObject;
     }
 
     SceneObjectNode* SceneEditor::LoadSceneObjectAsset(RID rid)
@@ -187,6 +194,8 @@ namespace Fyrion
         {
             node.selected = true;
         }
+
+        node.uuid = Repository::GetUUID(object.GetRID());
 
         Array<RID> children = object.GetSubObjectSetAsArray(SceneObjectAsset::Children);
         for (RID child : children)

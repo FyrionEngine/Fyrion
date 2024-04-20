@@ -9,6 +9,7 @@ namespace Fyrion
     class FY_API SceneManager
     {
     public:
+        static SceneObject* LoadScene(RID rid);
         static SceneObject* CreateScene(const StringView& sceneName);
         static SceneObject* GetCurrentScene();
         static void         SetCurrenScene(SceneObject* newCurrentScene);

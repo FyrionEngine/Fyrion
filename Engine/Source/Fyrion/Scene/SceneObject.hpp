@@ -9,6 +9,12 @@
 
 namespace Fyrion
 {
+    class SceneStorage
+    {
+    public:
+    private:
+    };
+
     class Component;
     struct SceneManager;
 
@@ -27,16 +33,20 @@ namespace Fyrion
     class FY_API SceneObject
     {
     public:
-        SceneObject(StringView name, SceneObject* parent, RID asset);
+        SceneObject(StringView name, SceneObject* parent);
+        SceneObject(StringView name, RID asset, SceneObject* parent);
         SceneObject(const SceneObject& other) = delete;
         SceneObject& operator=(const SceneObject& other) = delete;
 
         ~SceneObject();
 
-        SceneObject*       GetScene();
+        StringView         GetName() const;
+        void               SetName(const StringView& newName);
+        RID                GetAsset() const;
+        SceneObject*       GetScene() const;
         SceneObject*       GetParent() const;
         SceneObject*       NewChild(const StringView& name);
-        SceneObject*       NewChild(const RID& asset, const StringView& name);
+        SceneObject*       NewChild(const RID& asset);
         SceneObject*       Duplicate() const;
         Span<SceneObject*> GetChildren() const;
         Component&         AddComponent(TypeID typeId);
@@ -88,9 +98,9 @@ namespace Fyrion
 
     private:
         String       m_name{};
+        RID          m_asset{};
         SceneObject* m_parent{};
         usize        m_parentIndex{};
-        RID          m_asset{};
         bool         m_updating{};
         bool         m_markedToDestroy{};
         bool         m_componentDirty{};

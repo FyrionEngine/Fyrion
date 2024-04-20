@@ -12,25 +12,25 @@ namespace Fyrion
     {
     }
 
-    void SceneTreeWindow::DrawSceneObject(SceneObjectNode* sceneObjectNode)
+    void SceneTreeWindow::DrawSceneObject(SceneObject* sceneObjectNode)
     {
         if (sceneObjectNode == nullptr) return;
 
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
 
-        bool root = sceneObjectNode->parent == nullptr;
+        bool root = sceneObjectNode->GetParent() == nullptr;
 
         m_nameCache.Clear();
         m_nameCache += root ? ICON_FA_CUBES : ICON_FA_CUBE;
         m_nameCache += " ";
-        m_nameCache += sceneObjectNode->name;
+        m_nameCache += sceneObjectNode->GetName();
 
-        bool isSelected = sceneObjectNode->selected;
+        bool isSelected =  m_sceneEditor.IsSelected(sceneObjectNode);
         auto treeFlags = isSelected ? ImGuiTreeNodeFlags_Selected | ImGuiTreeNodeFlags_SpanAllColumns : ImGuiTreeNodeFlags_SpanAllColumns;
         bool open = false;
 
-        ImGuiID treeId = static_cast<ImGuiID>(HashValue(sceneObjectNode->rid));
+        ImGuiID treeId = static_cast<ImGuiID>(HashValue(sceneObjectNode->GetAsset()));
 
         if (root)
         {
@@ -46,7 +46,7 @@ namespace Fyrion
         {
 
         }
-        else if (!sceneObjectNode->children.Empty())
+        else if (!sceneObjectNode->GetChildren().Empty())
         {
             open = ImGui::TreeNode(treeId, m_nameCache.CStr(), treeFlags);
         }
@@ -89,7 +89,7 @@ namespace Fyrion
 
         if (open)
         {
-            for(SceneObjectNode* child: sceneObjectNode->children)
+            for(SceneObject* child: sceneObjectNode->GetChildren())
             {
                 DrawSceneObject(child);
             }
@@ -147,7 +147,7 @@ namespace Fyrion
                     if (m_sceneEditor.IsLoaded())
                     {
                         ImGui::BeginTreeNode();
-                        DrawSceneObject(m_sceneEditor.GetRootNode());
+                        DrawSceneObject(m_sceneEditor.GetRootObject());
                         ImGui::EndTreeNode();
                     }
 

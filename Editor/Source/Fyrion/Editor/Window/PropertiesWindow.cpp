@@ -4,6 +4,7 @@
 #include "Fyrion/Editor/Scene/SceneEditor.hpp"
 #include "Fyrion/ImGui/IconsFontAwesome6.h"
 #include "Fyrion/ImGui/ImGui.hpp"
+#include "Fyrion/Resource/Repository.hpp"
 
 namespace Fyrion
 {
@@ -11,7 +12,7 @@ namespace Fyrion
     {
         ImGui::Begin(id, ICON_FA_CIRCLE_INFO " Properties", &open, ImGuiWindowFlags_NoScrollbar);
 
-        SceneObjectNode* object = Editor::GetSceneEditor().GetLastSelectedObject();
+        SceneObject* object = Editor::GetSceneEditor().GetLastSelectedObject();
         if (object)
         {
             DrawSceneObject(object);
@@ -25,7 +26,7 @@ namespace Fyrion
         Editor::OpenWindow<PropertiesWindow>();
     }
 
-    void PropertiesWindow::DrawSceneObject(SceneObjectNode* sceneObjectNode)
+    void PropertiesWindow::DrawSceneObject(SceneObject* sceneObject)
     {
         ImGuiStyle& style = ImGui::GetStyle();
         bool readOnly = false;
@@ -44,11 +45,12 @@ namespace Fyrion
             ImGui::TableNextColumn();
             ImGui::SetNextItemWidth(-1);
 
-            u32 hash = HashValue(sceneObjectNode->rid);
+            m_StringCache = sceneObject->GetName();
+            u32 hash = HashValue(sceneObject->GetAsset());
 
-            if (ImGui::InputText(hash, sceneObjectNode->name))
+            if (ImGui::InputText(hash, m_StringCache))
             {
-                m_renamingCache = sceneObjectNode->name;
+                m_renamingCache = sceneObject->GetName();
                 m_renamingFocus = true;
                //propertiesWindow->renamingEntity = entity;
             }
@@ -65,7 +67,7 @@ namespace Fyrion
             ImGui::Text("UUID");
             ImGui::TableNextColumn();
             ImGui::SetNextItemWidth(-1);
-            String uuid = ToString(sceneObjectNode->uuid);
+            String uuid = ToString(Repository::GetUUID(sceneObject->GetAsset()));
             ImGui::InputText(hash + 10, uuid, ImGuiInputTextFlags_ReadOnly);
             ImGui::EndDisabled();
             ImGui::EndTable();

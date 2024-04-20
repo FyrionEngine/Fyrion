@@ -5,7 +5,7 @@
 
 namespace Fyrion
 {
-    struct SceneObjectNode;
+    struct SceneObject;
     class SceneEditor;
 
     class SceneTreeWindow : public EditorWindow
@@ -24,7 +24,7 @@ namespace Fyrion
         bool         m_renamingSelected{};
         bool         m_entityIsSelected{};
 
-        void        DrawSceneObject(SceneObjectNode* sceneObjectNode);
+        void        DrawSceneObject(SceneObject* sceneObjectNode);
         static void OpenSceneTree(VoidPtr userData);
         static void AddSceneObject(VoidPtr userData);
         static void AddSceneObjectFromAsset(VoidPtr userData);

@@ -1,9 +1,12 @@
 #include "SceneManager.hpp"
 
+#include "SceneTypes.hpp"
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Core/Event.hpp"
 #include "Fyrion/Core/HashMap.hpp"
 #include "Fyrion/Core/UniquePtr.hpp"
+#include "Fyrion/Resource/Repository.hpp"
+#include "Fyrion/Resource/ResourceObject.hpp"
 
 namespace Fyrion
 {
@@ -13,12 +16,24 @@ namespace Fyrion
         HashMap<String, UniquePtr<SceneObject>> scenes{};
     }
 
+    SceneObject* SceneManager::LoadScene(RID rid)
+    {
+        ResourceObject asset = Repository::Read(rid);
+        const String&  name = asset[Asset::Name].As<String>();
+        auto it = scenes.Find(name);
+        if (it == scenes.end())
+        {
+            it = scenes.Emplace(name, MakeUnique<SceneObject>(name, asset[Asset::Object].As<RID>(), nullptr)).first;
+        }
+        return it->second.Get();
+    }
+
     SceneObject* SceneManager::CreateScene(const StringView& sceneName)
     {
         auto it = scenes.Find(sceneName);
         if (it == scenes.end())
         {
-            it = scenes.Emplace(sceneName, MakeUnique<SceneObject>(sceneName, nullptr, RID{})).first;
+            it = scenes.Emplace(sceneName, MakeUnique<SceneObject>(sceneName, nullptr)).first;
         }
         return it->second.Get();
     }

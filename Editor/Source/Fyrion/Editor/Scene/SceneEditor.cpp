@@ -3,6 +3,7 @@
 #include "Fyrion/Editor/Editor.hpp"
 #include "Fyrion/Resource/AssetTree.hpp"
 #include "Fyrion/Resource/Repository.hpp"
+#include "Fyrion/Scene/SceneManager.hpp"
 #include "Fyrion/Scene/SceneTypes.hpp"
 
 namespace Fyrion
@@ -19,46 +20,46 @@ namespace Fyrion
 
     void SceneEditor::LoadScene(RID rid)
     {
-        m_nodes.Clear();
-        m_rootNode = nullptr;
+        //m_objects.Clear();
+        m_rootObject = nullptr;
         m_count = 0;
 
         ResourceObject asset = Repository::Read(rid);
         if (asset.Has(Asset::Object))
         {
-            m_rootNode = LoadSceneObjectAsset(asset.GetSubObject(Asset::Object));
-            m_rootNode->name = asset[Asset::Name].As<String>();
+            m_rootObject = LoadSceneObjectAsset(asset.GetSubObject(Asset::Object));
+            m_rootObject->SetName(asset[Asset::Name].As<String>());
         }
     }
 
-    SceneObjectNode* SceneEditor::GetRootNode() const
+    SceneObject* SceneEditor::GetRootObject() const
     {
-        return m_rootNode;
+        return m_rootObject;
     }
 
-    SceneObjectNode* SceneEditor::FindNodeByRID(RID rid) const
+    SceneObject* SceneEditor::FindObjectByRID(RID rid) const
     {
-        if (auto it = m_nodes.Find(rid))
-        {
-            return it->second.Get();
-        }
+        // if (auto it = m_objects.Find(rid))
+        // {
+        //     return it->second.Get();
+        // }
         return nullptr;
     }
 
     bool SceneEditor::IsLoaded() const
     {
-        return m_rootNode != nullptr;
+        return m_rootObject != nullptr;
     }
 
     void SceneEditor::CreateObject()
     {
-        if (m_rootNode == nullptr) return;
+        if (m_rootObject == nullptr) return;
 
         if (m_selectedObjects.Empty())
         {
             RID entityRID = Repository::CreateResource<SceneObjectAsset>();
 
-            ResourceObject root = Repository::Write(m_rootNode->rid);
+            ResourceObject root = Repository::Write(m_rootObject->GetAsset());
             u64 size = root.GetSubObjectSetCount(SceneObjectAsset::Children);
 
             ResourceObject write = Repository::Write(entityRID);
@@ -78,26 +79,26 @@ namespace Fyrion
 
             for (auto it: selected)
             {
-                if (const auto& itNode = m_nodes.Find(it.first))
-                {
-                    SceneObjectNode* parent = itNode->second.Get();
-                    ResourceObject writeParent = Repository::Write(parent->rid);
-                    u64 size = writeParent.GetSubObjectSetCount(SceneObjectAsset::Children);
-
-                    RID objectRid = Repository::CreateResource<SceneObjectAsset>();
-                    m_selectedObjects.Emplace(objectRid);
-
-                    ResourceObject write = Repository::Write(objectRid);
-                    write[SceneObjectAsset::Name] = "Object " + ToString(m_count);
-                    write[SceneObjectAsset::Order] = size;
-                    write[SceneObjectAsset::Parent] = parent->rid;
-                    write.Commit();
-
-                    Repository::SetUUID(objectRid, UUID::RandomUUID());
-
-                    writeParent.AddToSubObjectSet(SceneObjectAsset::Children, objectRid);
-                    writeParent.Commit();
-                }
+                // if (const auto& itObject = m_objects.Find(it.first))
+                // {
+                //     SceneObject* parent = itObject->second.Get();
+                //     ResourceObject writeParent = Repository::Write(parent->rid);
+                //     u64 size = writeParent.GetSubObjectSetCount(SceneObjectAsset::Children);
+                //
+                //     RID objectRid = Repository::CreateResource<SceneObjectAsset>();
+                //     m_selectedObjects.Emplace(objectRid);
+                //
+                //     ResourceObject write = Repository::Write(objectRid);
+                //     write[SceneObjectAsset::Name] = "Object " + ToString(m_count);
+                //     write[SceneObjectAsset::Order] = size;
+                //     write[SceneObjectAsset::Parent] = parent->GetAsset();
+                //     write.Commit();
+                //
+                //     Repository::SetUUID(objectRid, UUID::RandomUUID());
+                //
+                //     writeParent.AddToSubObjectSet(SceneObjectAsset::Children, objectRid);
+                //     writeParent.Commit();
+                // }
             }
         }
 
@@ -106,17 +107,17 @@ namespace Fyrion
 
     void SceneEditor::DestroySelectedObjects()
     {
-        if (m_rootNode == nullptr) return;
+        if (m_rootObject == nullptr) return;
 
         for (auto it: m_selectedObjects)
         {
-            if (const auto& itObject = m_nodes.Find(it.first))
-            {
-                if (itObject->second->rid)
-                {
-                    Repository::DestroyResource(itObject->second->rid);
-                }
-            }
+            // if (const auto& itObject = m_objects.Find(it.first))
+            // {
+            //     if (itObject->second->rid)
+            //     {
+            //         Repository::DestroyResource(itObject->second->rid);
+            //     }
+            // }
         }
 
         m_selectedObjects.Clear();
@@ -127,34 +128,39 @@ namespace Fyrion
     {
         for (auto& it : m_selectedObjects)
         {
-            if (const auto& itObject = m_nodes.Find(it.first))
-            {
-                itObject->second->selected = false;
-            }
+            // if (const auto& itObject = m_objects.Find(it.first))
+            // {
+            //     itObject->second->selected = false;
+            // }
         }
         m_selectedObjects.Clear();
         m_lastSelectedObject = nullptr;
     }
 
-    void SceneEditor::SelectObject(SceneObjectNode* node)
+    void SceneEditor::SelectObject(SceneObject* object)
     {
-        node->selected = true;
-        m_selectedObjects.Emplace(node->rid);
-        m_lastSelectedObject = node;
+        // object->selected = true;
+        // m_selectedObjects.Emplace(object->GetAsset());
+        // m_lastSelectedObject = object;
     }
 
-    bool SceneEditor::IsParentOfSelected(SceneObjectNode* node) const
+    bool SceneEditor::IsSelected(SceneObject* object)
     {
-        for (auto& it : m_selectedObjects)
-        {
-            if (const auto& itObject = m_nodes.Find(it.first))
-            {
-                if (itObject->second->parent == node)
-                {
-                    return true;
-                }
-            }
-        }
+        return false;
+    }
+
+    bool SceneEditor::IsParentOfSelected(SceneObject* object) const
+    {
+        // for (auto& it : m_selectedObjects)
+        // {
+        //     if (const auto& itObject = m_objects.Find(it.first))
+        //     {
+        //         if (itObject->second->parent == object)
+        //         {
+        //             return true;
+        //         }
+        //     }
+        // }
         return false;
     }
 
@@ -163,65 +169,70 @@ namespace Fyrion
         return false;
     }
 
-    SceneObjectNode* SceneEditor::GetLastSelectedObject() const
+    SceneObject* SceneEditor::GetLastSelectedObject() const
     {
         return m_lastSelectedObject;
     }
 
-    SceneObjectNode* SceneEditor::LoadSceneObjectAsset(RID rid)
+    SceneObject* SceneEditor::LoadSceneObjectAsset(RID rid)
     {
-        SceneObjectNode* node = m_nodes.Emplace(rid, MakeUnique<SceneObjectNode>(rid)).first->second.Get();
-        ResourceObject scene = Repository::Read(rid);
-        UpdateSceneObjectNode(*node, scene);
-        m_count++;
-        return node;
+
+
+        // SceneObject* object = m_objects.Emplace(rid, MakeUnique<SceneObject>(rid)).first->second.Get();
+        // ResourceObject scene = Repository::Read(rid);
+        // UpdateSceneObject(*object, scene);
+        // m_count++;
+        // return object;
+
+        return nullptr;
     }
 
-    void SceneEditor::UpdateSceneObjectNode(SceneObjectNode& node, ResourceObject& object, bool updateChildren)
+
+    void SceneEditor::UpdateSceneObject(SceneObject& object, ResourceObject& resource, bool updateChildren)
     {
-        node.children.Clear();
-        if (object.Has(SceneObjectAsset::Name))
-        {
-            node.name = object[SceneObjectAsset::Name].As<String>();
-        }
-
-        if (object.Has(SceneObjectAsset::Order))
-        {
-            node.order = object[SceneObjectAsset::Order].As<u64>();
-        }
-
-        if (m_selectedObjects.Has(node.rid) && !node.selected)
-        {
-            node.selected = true;
-        }
-
-        node.uuid = Repository::GetUUID(object.GetRID());
-
-        Array<RID> children = object.GetSubObjectSetAsArray(SceneObjectAsset::Children);
-        for (RID child : children)
-        {
-            SceneObjectNode* childNode = FindNodeByRID(child);
-            if (!childNode || updateChildren)
-            {
-                childNode = LoadSceneObjectAsset(child);
-            }
-            childNode->parent = &node;
-            node.children.EmplaceBack(childNode);
-        }
-
-        Sort(node.children.begin(), node.children.end(), [](SceneObjectNode* left, SceneObjectNode* right)
-        {
-            return left->order < right->order;
-        });
+        // object.children.Clear();
+        // if (object.Has(SceneObjectAsset::Name))
+        // {
+        //     object.name = object[SceneObjectAsset::Name].As<String>();
+        // }
+        //
+        // if (object.Has(SceneObjectAsset::Order))
+        // {
+        //     object.order = object[SceneObjectAsset::Order].As<u64>();
+        // }
+        //
+        // if (m_selectedObjects.Has(object.rid) && !object.selected)
+        // {
+        //     object.selected = true;
+        // }
+        //
+        // object.uuid = Repository::GetUUID(object.GetRID());
+        //
+        // Array<RID> children = object.GetSubObjectSetAsArray(SceneObjectAsset::Children);
+        // for (RID child : children)
+        // {
+        //     SceneObject* childObject = FindObjectByRID(child);
+        //     if (!childObject || updateChildren)
+        //     {
+        //         childObject = LoadSceneObjectAsset(child);
+        //     }
+        //     childObject->parent = &object;
+        //     object.children.EmplaceBack(childObject);
+        // }
+        //
+        // Sort(object.children.begin(), object.children.end(), [](SceneObject* left, SceneObject* right)
+        // {
+        //     return left->order < right->order;
+        // });
     }
 
     void SceneEditor::SceneObjectAssetChanged(VoidPtr userData, ResourceEventType eventType, ResourceObject& oldObject, ResourceObject& newObject)
     {
         SceneEditor* sceneEditor = static_cast<SceneEditor*>(userData);
-        SceneObjectNode* node = sceneEditor->FindNodeByRID(newObject.GetRID());
-        if (node)
+        SceneObject* object = sceneEditor->FindObjectByRID(newObject.GetRID());
+        if (object)
         {
-            sceneEditor->UpdateSceneObjectNode(*node, newObject, false);
+            sceneEditor->UpdateSceneObject(*object, newObject, false);
         }
     }
 }

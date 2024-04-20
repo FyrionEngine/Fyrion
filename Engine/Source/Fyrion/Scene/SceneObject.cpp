@@ -1,12 +1,15 @@
 #include "SceneObject.hpp"
 
 #include "Component.hpp"
-#include "Component.hpp"
 #include "Fyrion/Core/Registry.hpp"
 
 namespace Fyrion
 {
-    SceneObject::SceneObject(StringView name, SceneObject* parent, RID asset) : m_name(name), m_parent(parent), m_asset(asset)
+    SceneObject::SceneObject(StringView name, SceneObject* parent) : m_name(name), m_parent(parent)
+    {
+    }
+
+    SceneObject::SceneObject(StringView name, RID asset, SceneObject* parent) : m_name(name), m_asset(asset), m_parent(parent)
     {
     }
 
@@ -29,25 +32,23 @@ namespace Fyrion
 
     SceneObject* SceneObject::NewChild(const StringView& name)
     {
-        return NewChild(RID{}, name);
-    }
-
-    SceneObject* SceneObject::NewChild(const RID& asset, const StringView& name)
-    {
-        SceneObject* sceneObject = MemoryGlobals::GetDefaultAllocator().Alloc<SceneObject>(name, this, asset);
+        SceneObject* sceneObject = MemoryGlobals::GetDefaultAllocator().Alloc<SceneObject>(name, this);
         sceneObject->m_parentIndex = m_children.Size();
         m_children.EmplaceBack(sceneObject);
         return sceneObject;
+    }
+
+    SceneObject* SceneObject::NewChild(const RID& asset)
+    {
+        return nullptr;
     }
 
     SceneObject* SceneObject::Duplicate() const
     {
         if (m_parent)
         {
-            SceneObject* sceneObject = m_parent->NewChild(m_asset, m_name);
-
+            SceneObject* sceneObject = m_parent->NewChild(m_name);
             //TODO;
-
             return sceneObject;
         }
         FY_ASSERT(false, "Root entity cannot be duplicated");
@@ -59,18 +60,29 @@ namespace Fyrion
         return m_children;
     }
 
-    SceneObject* SceneObject::GetScene()
+    SceneObject* SceneObject::GetScene() const
     {
-        if (m_parent)
-        {
-            return m_parent->GetScene();
-        }
-        return this;
+        return nullptr;
     }
 
     SceneObject* SceneObject::GetParent() const
     {
         return m_parent;
+    }
+
+    StringView SceneObject::GetName() const
+    {
+        return m_name;
+    }
+
+    void SceneObject::SetName(const StringView& newName)
+    {
+        m_name = newName;
+    }
+
+    RID SceneObject::GetAsset() const
+    {
+        return m_asset;
     }
 
     Component& SceneObject::AddComponent(TypeID typeId)

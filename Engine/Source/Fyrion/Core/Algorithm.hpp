@@ -237,5 +237,21 @@ namespace Fyrion
     {
         return SearchSubString(text, pattern) != nPos;
     }
+
+    constexpr usize AppendBytes(usize val, const u8* const first, usize count)
+    {
+        for (usize i = 0; i < count; ++i)
+        {
+            val ^= static_cast<usize>(first[i]);
+            val *= Prime;
+        }
+        return val;
+    }
+
+    template <typename Type>
+    constexpr usize AppendValue(const Type& value)
+    {
+        return AppendBytes(OffsetBias, &reinterpret_cast<const u8&>(value), sizeof(Type));
+    }
 }
 

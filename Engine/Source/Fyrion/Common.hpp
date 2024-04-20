@@ -36,6 +36,9 @@ namespace Fyrion
      bool operator==(const StructName& b) const { return this->handler == b.handler; }  \
      bool operator!=(const StructName& b) const { return this->handler != b.handler; }  \
     }
+
+    constexpr u64 Prime = 1099511628211ULL;
+    constexpr u64 OffsetBias = 14695981039346656037ULL;
 }
 
 inline void* operator new(Fyrion::usize, Fyrion::PlaceHolder, Fyrion::VoidPtr ptr)

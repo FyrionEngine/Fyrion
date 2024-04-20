@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Algorithm.hpp"
 #include "Fyrion/Common.hpp"
 
 namespace Fyrion
@@ -230,7 +231,7 @@ namespace Fyrion
 	};
 
 	template<typename TValue>
-	constexpr inline usize HashValue(const TValue& value)
+	constexpr usize HashValue(const TValue& value)
 	{
 		static_assert(Hash<TValue>::hasHash, "type has no hash implementation");
 		return Hash<TValue>::Value(value);
@@ -246,6 +247,16 @@ namespace Fyrion
         }
         return hash;
     }
+
+	template<>
+	struct Hash<f32>
+	{
+		constexpr static bool hasHash = true;
+		constexpr static usize Value(f32 v)
+		{
+			return AppendValue(v);
+		}
+	};
 
 	template <typename ... Rest>
 	constexpr void HashCombine(usize& seed, usize hash, Rest&&... rest)

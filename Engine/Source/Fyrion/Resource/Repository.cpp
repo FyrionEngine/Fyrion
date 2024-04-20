@@ -22,6 +22,35 @@
 
 namespace Fyrion
 {
+    struct ResourceTypeEventLookup
+    {
+        usize pointer{};
+        usize userData{};
+
+        bool operator==(const ResourceTypeEventLookup& other) const
+        {
+            return this->pointer == other.pointer && this->userData == other.userData;
+        }
+
+        bool operator!=(const ResourceTypeEventLookup& other) const
+        {
+            return !((*this) == other);
+        }
+    };
+
+    template<>
+    struct Hash<ResourceTypeEventLookup>
+    {
+        constexpr static bool hasHash = true;
+
+        constexpr static usize Value(const ResourceTypeEventLookup& value)
+        {
+            usize hash = 0;
+            HashCombine(hash, value.pointer, value.userData);
+            return hash;
+        }
+    };
+
     struct SubObjectSetData
     {
         HashSet<RID> subObjects{};
@@ -54,7 +83,7 @@ namespace Fyrion
         HashMap<String, SharedPtr<ResourceField>> fieldsByName;
         Array<ResourceField*> fieldsByIndex;
         TypeHandler* typeHandler;
-        HashMap<usize, ResourceTypeEvent> events;
+        HashMap<ResourceTypeEventLookup, ResourceTypeEvent> events;
         bool dataType = false;
     };
 
@@ -477,18 +506,28 @@ namespace Fyrion
     {
         if (auto it = resourceTypes.Find(typeId))
         {
-            usize eventPtr = reinterpret_cast<usize>(event);
-            it->second->events.Emplace(eventPtr, ResourceTypeEvent{
-                .userData = userData,
-                .eventType = eventType,
-                .event = event
-            });
+            it->second->events.Emplace(
+                ResourceTypeEventLookup{
+                    .pointer = reinterpret_cast<usize>(event),
+                    .userData = reinterpret_cast<usize>(userData)
+                },
+                ResourceTypeEvent{
+                    .userData = userData,
+                    .eventType = eventType,
+                    .event = event
+                });
         }
     }
 
-    void Repository::RemoveResourceTypeEvent(TypeID typeId, FnResourceEvent event)
+    void Repository::RemoveResourceTypeEvent(TypeID typeId, VoidPtr userData, FnResourceEvent event)
     {
-        //TODO
+        if (auto it = resourceTypes.Find(typeId))
+        {
+            it->second->events.Erase(ResourceTypeEventLookup{
+                .pointer = reinterpret_cast<usize>(event),
+                .userData = reinterpret_cast<usize>(userData)
+            });
+        }
     }
 
     bool Repository::IsResourceTypeData(ResourceType* resourceTyp)

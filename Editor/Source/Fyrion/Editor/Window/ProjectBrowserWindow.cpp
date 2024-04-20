@@ -10,13 +10,13 @@
 #include "Fyrion/Resource/ResourceAssets.hpp"
 #include "Fyrion/Resource/Repository.hpp"
 #include "Fyrion/Engine.hpp"
+#include "Fyrion/Scene/SceneTypes.hpp"
 
 #define CONTENT_TABLE_ID 500
 #define ASSET_PAYLOAD "ASSET-PAYLOAD"
 
 namespace Fyrion
 {
-    struct SceneAsset;
     MenuItemContext ProjectBrowserWindow::s_menuItemContext = {};
 
     ProjectBrowserWindow::ProjectBrowserWindow() : m_assetTree(Editor::GetAssetTree())
@@ -368,7 +368,10 @@ namespace Fyrion
 
                                 if (ImGui::DrawContentItem(contentItem))
                                 {
-
+                                    if (node->objectType == GetTypeID<SceneObjectAsset>())
+                                    {
+                                        Editor::GetSceneEditor().LoadScene(node->rid);
+                                    }
                                 }
 
                                 if (ImGui::ContentItemSelected(contentItem.ItemId))
@@ -454,8 +457,7 @@ namespace Fyrion
     void ProjectBrowserWindow::AssetNewScene(VoidPtr userData)
     {
         ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(userData);
-
-        RID newAsset = projectBrowserWindow->m_assetTree.NewAsset(projectBrowserWindow->m_openFolder, Repository::CreateResource<SceneAsset>(), "New Scene");
+        RID newAsset = projectBrowserWindow->m_assetTree.NewAsset(projectBrowserWindow->m_openFolder, Repository::CreateResource<SceneObjectAsset>(), "New Scene");
 
         ImGui::SelectContentItem(Hash<RID>::Value(newAsset), CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
         ImGui::RenameContentSelected(CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);

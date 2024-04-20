@@ -4,6 +4,7 @@
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Core/Event.hpp"
 #include "Fyrion/Core/Registry.hpp"
+#include "Fyrion/Core/UniquePtr.hpp"
 #include "Fyrion/ImGui/ImGui.hpp"
 #include "Fyrion/ImGui/Lib/imgui_internal.h"
 #include "Fyrion/IO/Path.hpp"
@@ -51,13 +52,15 @@ namespace Fyrion
 
         bool forceClose{};
 
-        AssetTree       assetTree{};
+        AssetTree assetTree{};
+        UniquePtr<SceneEditor> sceneEditor{};
 
         void SaveAll();
 
         void Shutdown()
         {
             menuContext = {};
+            sceneEditor = {};
             openWindows.Clear();
             openWindows.ShrinkToFit();
             editorWindowStorages.Clear();
@@ -396,6 +399,8 @@ namespace Fyrion
 
     void Editor::Init()
     {
+        sceneEditor = MakeUnique<SceneEditor>();
+
         Registry::Type<EditorWindow>();
 
         InitProjectBrowser();
@@ -415,5 +420,10 @@ namespace Fyrion
     AssetTree& Editor::GetAssetTree()
     {
         return assetTree;
+    }
+
+    SceneEditor& Editor::GetSceneEditor()
+    {
+        return *sceneEditor.Get();
     }
 }

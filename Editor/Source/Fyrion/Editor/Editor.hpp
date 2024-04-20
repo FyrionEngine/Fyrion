@@ -4,17 +4,18 @@
 #include "EditorTypes.hpp"
 #include "MenuItem.hpp"
 #include "Fyrion/Resource/ResourceTypes.hpp"
+#include "Scene/SceneEditor.hpp"
 
 namespace Fyrion::Editor
 {
-    FY_API void             Init();
-    FY_API void             AddMenuItem(const MenuItemCreation& menuItem);
-    FY_API void             OpenWindow(TypeID windowType, VoidPtr initUserData = nullptr);
-    FY_API void             OpenProject(RID rid);
+    FY_API void         Init();
+    FY_API void         AddMenuItem(const MenuItemCreation& menuItem);
+    FY_API void         OpenWindow(TypeID windowType, VoidPtr initUserData = nullptr);
+    FY_API void         OpenProject(RID rid);
+    FY_API AssetTree&   GetAssetTree();
+    FY_API SceneEditor& GetSceneEditor(); //TODO temporary, each workspaces will have one SceneTree.
 
-    FY_API AssetTree&       GetAssetTree();
-
-    template<typename T>
+    template <typename T>
     FY_API void OpenWindow(VoidPtr initUserData = nullptr)
     {
         OpenWindow(GetTypeID<T>(), initUserData);

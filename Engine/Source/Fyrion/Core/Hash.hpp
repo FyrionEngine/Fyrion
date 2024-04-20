@@ -247,4 +247,11 @@ namespace Fyrion
         return hash;
     }
 
+	template <typename ... Rest>
+	constexpr void HashCombine(usize& seed, usize hash, Rest&&... rest)
+	{
+		seed ^= hash + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+		(HashCombine(seed, rest), ...);
+	}
+
 }

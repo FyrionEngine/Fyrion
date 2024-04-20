@@ -56,19 +56,46 @@ namespace Fyrion
         if (m_selectedObjects.Empty())
         {
             RID entityRID = Repository::CreateResource<SceneObjectAsset>();
+
             ResourceObject root = Repository::Write(m_rootNode->rid);
             u64 size = root.GetSubObjectSetCount(SceneObjectAsset::Children);
 
             ResourceObject write = Repository::Write(entityRID);
             write[SceneObjectAsset::Name] = "Object " + ToString(m_count);
             write[SceneObjectAsset::Order] = size;
-
             write.Commit();
+
             Repository::SetUUID(entityRID, UUID::RandomUUID());
 
 
             root.AddToSubObjectSet(SceneObjectAsset::Children, entityRID);
             root.Commit();
+        }
+        else
+        {
+            for (auto it: m_selectedObjects)
+            {
+                if (const auto& itNode = m_nodes.Find(it.first))
+                {
+                    SceneObjectNode* parent = itNode->second.Get();
+                    ResourceObject writeParent = Repository::Write(parent->rid);
+                    u64 size = writeParent.GetSubObjectSetCount(SceneObjectAsset::Children);
+
+                    RID entityRID = Repository::CreateResource<SceneObjectAsset>();
+
+                    ResourceObject write = Repository::Write(entityRID);
+                    write[SceneObjectAsset::Name] = "Object " + ToString(m_count);
+                    write[SceneObjectAsset::Order] = size;
+                    write[SceneObjectAsset::Parent] = parent->rid;
+                    write.Commit();
+
+                    Repository::SetUUID(entityRID, UUID::RandomUUID());
+
+                    writeParent.AddToSubObjectSet(SceneObjectAsset::Children, entityRID);
+                    writeParent.Commit();
+                }
+            }
+            m_selectedObjects.Clear();
         }
 
         Editor::GetAssetTree().MarkDirty();
@@ -76,14 +103,39 @@ namespace Fyrion
 
     void SceneEditor::DestroySelectedObjects()
     {
+        if (m_rootNode == nullptr) return;
+
+        for (auto it: m_selectedObjects)
+        {
+            if (const auto& itObject = m_nodes.Find(it.first))
+            {
+                if (itObject->second->rid)
+                {
+                    Repository::DestroyResource(itObject->second->rid);
+                }
+            }
+        }
+
+        m_selectedObjects.Clear();
+        Editor::GetAssetTree().MarkDirty();
     }
 
     void SceneEditor::CleanSelection()
     {
+        for (auto& it : m_selectedObjects)
+        {
+            if (const auto& itEntity = m_nodes.Find(it.first))
+            {
+                itEntity->second->selected = false;
+            }
+        }
+        m_selectedObjects.Clear();
     }
 
     void SceneEditor::SelectObject(SceneObjectNode* node)
     {
+        node->selected = true;
+        m_selectedObjects.Emplace(node->rid);
     }
 
     SceneObjectNode* SceneEditor::LoadSceneObjectAsset(RID rid)

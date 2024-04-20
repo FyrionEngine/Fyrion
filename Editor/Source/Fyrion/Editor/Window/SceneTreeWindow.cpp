@@ -16,14 +16,35 @@ namespace Fyrion
     {
         if (sceneObjectNode == nullptr) return;
 
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+
+        bool root = sceneObjectNode->parent == nullptr;
+
         m_nameCache.Clear();
-        m_nameCache += sceneObjectNode->parent == nullptr ? ICON_FA_CUBES : ICON_FA_CUBE;
+        m_nameCache += root ? ICON_FA_CUBES : ICON_FA_CUBE;
         m_nameCache += " ";
         m_nameCache += sceneObjectNode->name;
 
-        ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+        bool isSelected = sceneObjectNode->selected;
+        auto treeFlags = isSelected ? ImGuiTreeNodeFlags_Selected | ImGuiTreeNodeFlags_SpanAllColumns : ImGuiTreeNodeFlags_SpanAllColumns;
+        bool open = false;
 
-        bool treeOpen = ImGui::TreeNode(HashValue(sceneObjectNode->rid), m_nameCache.CStr(), ImGuiTreeNodeFlags_SpanAllColumns);
+        ImGuiID treeId = 100000 + static_cast<ImGuiID>(HashValue(sceneObjectNode->rid));
+
+        if (root)
+        {
+            ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+        }
+
+        if (!sceneObjectNode->children.Empty())
+        {
+            open = ImGui::TreeNode(treeId, m_nameCache.CStr(), treeFlags);
+        }
+        else
+        {
+            ImGui::TreeLeaf(treeId, m_nameCache.CStr(), treeFlags);
+        }
 
         if (ImGui::BeginDragDropTarget())
         {
@@ -35,18 +56,31 @@ namespace Fyrion
             ImGui::EndDragDropTarget();
         }
 
-        if (treeOpen)
-        {
-            ImGui::Indent();
-            ImGui::BeginTreeNode();
+        bool isHovered = ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
 
+        if ((ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)) && isHovered)
+        {
+            if (!(ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_LeftCtrl)) || ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_RightCtrl))))
+            {
+                m_sceneEditor.CleanSelection();
+            }
+            m_sceneEditor.SelectObject(sceneObjectNode);
+        }
+
+
+        ImGui::TableNextColumn();
+        if (!root)
+        {
+            ImGui::Text("  " ICON_FA_EYE);
+        }
+
+
+        if (open)
+        {
             for(SceneObjectNode* child: sceneObjectNode->children)
             {
                 DrawSceneObject(child);
             }
-
-            ImGui::EndTreeNode();
-            ImGui::Unindent();
             ImGui::TreePop();
         }
     }
@@ -95,12 +129,11 @@ namespace Fyrion
                     ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 35 * style.ScaleFactor);
                     ImGui::TableHeadersRow();
 
-                    ImGui::TableNextRow();
-                    ImGui::TableNextColumn();
-
                     if (m_sceneEditor.IsLoaded())
                     {
+                        ImGui::BeginTreeNode();
                         DrawSceneObject(m_sceneEditor.GetRootNode());
+                        ImGui::EndTreeNode();
                     }
 
                     ImGui::EndTable();

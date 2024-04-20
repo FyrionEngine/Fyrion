@@ -157,6 +157,7 @@ namespace Fyrion
 
     void SceneTreeWindow::AddSceneObject(VoidPtr userData)
     {
+        static_cast<SceneTreeWindow*>(userData)->m_sceneEditor.CreateObject();
     }
 
     void SceneTreeWindow::AddSceneObjectFromAsset(VoidPtr userData)
@@ -177,6 +178,7 @@ namespace Fyrion
 
     void SceneTreeWindow::DeleteSceneObject(VoidPtr userData)
     {
+        static_cast<SceneTreeWindow*>(userData)->m_sceneEditor.DestroySelectedObjects();
     }
 
     void SceneTreeWindow::RegisterType(NativeTypeHandler<SceneTreeWindow>& type)

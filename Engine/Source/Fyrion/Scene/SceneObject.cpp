@@ -1,16 +1,89 @@
 #include "SceneObject.hpp"
 
 #include "Component.hpp"
+#include "SceneManager.hpp"
+#include "SceneTypes.hpp"
 #include "Fyrion/Core/Registry.hpp"
+#include "Fyrion/Resource/Repository.hpp"
 
 namespace Fyrion
 {
+    SceneObjectIterator::SceneObjectIterator(SceneObject* object) : m_object(object)
+    {
+    }
+
+    SceneObjectIterator::SceneObjectIterator(SceneObject* object, SceneObject* next) : m_object(object), m_next(next)
+    {
+    }
+
+    SceneObjectIterator SceneObjectIterator::begin() const
+    {
+        return {m_object->m_head, m_object->m_head ? m_object->m_head->m_next : nullptr};
+    }
+
+    SceneObjectIterator SceneObjectIterator::end() const
+    {
+        return {nullptr};
+    }
+
+    SceneObject& SceneObjectIterator::operator*() const
+    {
+        return *m_object;
+    }
+
+    SceneObject* SceneObjectIterator::operator->() const
+    {
+        return m_object;
+    }
+
+    bool operator==(const SceneObjectIterator& a, const SceneObjectIterator& b)
+    {
+        return a.m_object == b.m_object;
+    }
+
+    bool operator!=(const SceneObjectIterator& a, const SceneObjectIterator& b)
+    {
+        return !(a == b);
+    }
+
+    SceneObjectIterator& SceneObjectIterator::operator++()
+    {
+        m_object = m_next;
+        if (m_object)
+        {
+            m_next = m_object->m_next;
+        }
+        else
+        {
+            m_next = nullptr;
+        }
+        return *this;
+    }
+
     SceneObject::SceneObject(StringView name, SceneObject* parent) : m_name(name), m_parent(parent)
     {
     }
 
     SceneObject::SceneObject(StringView name, RID asset, SceneObject* parent) : m_name(name), m_asset(asset), m_parent(parent)
     {
+        // ResourceObject resource = Repository::Read(asset);
+        // if (name.Empty() && resource.Has(SceneObjectAsset::Name))
+        // {
+        //     m_name = resource[SceneObjectAsset::Name].As<String>();
+        // }
+        //
+        // if (resource.Has(SceneObjectAsset::Order))
+        // {
+        //     m_order = resource[SceneObjectAsset::Order].As<u64>();
+        // }
+        //
+        // Array<RID> children = resource.GetSubObjectSetAsArray(SceneObjectAsset::Children);
+        // m_children.Resize(children.Size());
+        // for (RID child : children)
+        // {
+        //     SceneObject* childObject = MemoryGlobals::GetDefaultAllocator().Alloc<SceneObject>("", child, this);
+        //     m_children[childObject->m_order] = childObject;
+        // }
     }
 
     SceneObject::~SceneObject()
@@ -24,17 +97,16 @@ namespace Fyrion
             }
         }
 
-        for (SceneObject* sceneObject : m_children)
+        for (SceneObject& sceneObject : GetChildren())
         {
-            MemoryGlobals::GetDefaultAllocator().DestroyAndFree(sceneObject);
+            MemoryGlobals::GetDefaultAllocator().DestroyAndFree(&sceneObject);
         }
     }
 
     SceneObject* SceneObject::NewChild(const StringView& name)
     {
         SceneObject* sceneObject = MemoryGlobals::GetDefaultAllocator().Alloc<SceneObject>(name, this);
-        sceneObject->m_parentIndex = m_children.Size();
-        m_children.EmplaceBack(sceneObject);
+        AddChild(sceneObject);
         return sceneObject;
     }
 
@@ -55,9 +127,14 @@ namespace Fyrion
         return nullptr;
     }
 
-    Span<SceneObject*> SceneObject::GetChildren() const
+    u64 SceneObject::GetChildrenCount() const
     {
-        return m_children;
+        return m_count;
+    }
+
+    SceneObjectIterator SceneObject::GetChildren()
+    {
+        return {this};
     }
 
     SceneObject* SceneObject::GetScene() const
@@ -158,10 +235,26 @@ namespace Fyrion
 
     void SceneObject::RemoveChild(const SceneObject* child)
     {
-        if (child == nullptr) return;
+        if (m_head == child)
+        {
+            m_head = child->m_next;
+        }
 
-        m_children.Erase(m_children.begin() + child->m_parentIndex,
-                         m_children.begin() + child->m_parentIndex + 1);
+        if (m_tail == child)
+        {
+            m_tail = child->m_prev;
+        }
+
+        if (child->m_prev)
+        {
+            child->m_prev->m_next = child->m_next;
+        }
+
+        if (child->m_next)
+        {
+            child->m_next->m_prev = child->m_prev;
+        }
+        m_count--;
     }
 
     void SceneObject::SetComponentDirty()
@@ -190,19 +283,16 @@ namespace Fyrion
                 }
             }
 
-            for (usize i = 0; i < m_children.Size(); ++i)
+            for (SceneObject& sceneObject : GetChildren())
             {
-                m_children[i]->DoStart();
+                sceneObject.DoStart();
             }
-
             m_componentDirty = false;
         }
     }
 
     void SceneObject::DoUpdate(f64 deltaTime)
     {
-        m_updating = true;
-
         for (auto& it : m_components)
         {
             for (usize i = 0; i < it.second.instances.Size(); ++i)
@@ -211,29 +301,43 @@ namespace Fyrion
             }
         }
 
-        for (usize i = 0; i < m_children.Size(); ++i)
+        for (SceneObject& sceneObject : GetChildren())
         {
-            m_children[i]->DoUpdate(deltaTime);
-        }
-
-        m_updating = false;
-        if (m_markedToDestroy)
-        {
-            Destroy();
+            sceneObject.DoUpdate(deltaTime);
         }
     }
 
     void SceneObject::Destroy()
     {
-        m_markedToDestroy = true;
-        if (!m_updating)
+        if (!m_markedToDestroy)
         {
-            if (m_parent)
-            {
-                m_parent->RemoveChild(this);
-            }
-            MemoryGlobals::GetDefaultAllocator().DestroyAndFree(this);
+            m_markedToDestroy = true;
+            SceneManager::EnqueueDestroy(this);
         }
+    }
+
+    void SceneObject::AddChild(SceneObject* object)
+    {
+        if (!m_head)
+        {
+            m_head = object;
+        }
+        if (m_tail)
+        {
+            object->m_prev = m_tail;
+            m_tail->m_next = object;
+        }
+        m_tail = object;
+        m_count++;
+    }
+
+    void SceneObject::DestroyImmediate()
+    {
+        if (m_parent)
+        {
+            m_parent->RemoveChild(this);
+        }
+        MemoryGlobals::GetDefaultAllocator().DestroyAndFree(this);
     }
 
     void SceneObject::RegisterType(NativeTypeHandler<SceneObject>& type)

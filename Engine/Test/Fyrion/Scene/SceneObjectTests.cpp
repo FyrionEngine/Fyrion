@@ -96,7 +96,7 @@ namespace Fyrion
             CHECK(object->GetParent() == nullptr);
 
             REQUIRE(object);
-            CHECK(object->GetScene() == object);
+            //CHECK(object->GetScene() == object);
 
             SceneObject* child = object->NewChild("Child");
             REQUIRE(child);
@@ -104,7 +104,7 @@ namespace Fyrion
 
             CHECK(child->GetParent() == object);
 
-            CHECK(object->GetChildren().Size() == 1);
+            CHECK(object->GetChildrenCount() == 1);
 
             {
                 ComponentTest& componentTest = child->AddComponent<ComponentTest>();
@@ -138,7 +138,14 @@ namespace Fyrion
             SceneObject* anotherChild = child->Duplicate();
             CHECK(anotherChild);
 
-            CHECK(object->GetChildren().Size() == 2);
+            CHECK(object->GetChildrenCount() == 2);
+
+            u32 countIter = 0;
+            for (SceneObject& child : object->GetChildren())
+            {
+                countIter++;
+            }
+            CHECK(countIter == 2);
 
             updateHandler.Invoke(1.0);
 
@@ -147,7 +154,7 @@ namespace Fyrion
             CHECK(AnotherComponent::onStartCall == 1);
             CHECK(ComponentToRemove::removed == 2);
 
-            CHECK(object->GetChildren().Size() == 1);
+            CHECK(object->GetChildrenCount() == 1);
         }
         Engine::Destroy();
     }

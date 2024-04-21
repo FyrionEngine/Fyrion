@@ -9,14 +9,30 @@
 
 namespace Fyrion
 {
-    class SceneStorage
+    class Component;
+    class SceneObject;
+    struct SceneManager;
+
+    class FY_API SceneObjectIterator
     {
     public:
+        SceneObjectIterator(SceneObject* object);
+        SceneObjectIterator(SceneObject* object, SceneObject* next);
+        SceneObjectIterator begin() const;
+        SceneObjectIterator end() const;
+
+        SceneObject& operator*() const;
+        SceneObject* operator->() const;
+
+        FY_API friend bool operator==(const SceneObjectIterator& a, const SceneObjectIterator& b);
+        FY_API friend bool operator!=(const SceneObjectIterator& a, const SceneObjectIterator& b);
+        SceneObjectIterator& operator++();
+
     private:
+        SceneObject* m_object;
+        SceneObject* m_next;
     };
 
-    class Component;
-    struct SceneManager;
 
     struct ComponentInstace
     {
@@ -40,22 +56,23 @@ namespace Fyrion
 
         ~SceneObject();
 
-        StringView         GetName() const;
-        void               SetName(const StringView& newName);
-        RID                GetAsset() const;
-        SceneObject*       GetScene() const;
-        SceneObject*       GetParent() const;
-        SceneObject*       NewChild(const StringView& name);
-        SceneObject*       NewChild(const RID& asset);
-        SceneObject*       Duplicate() const;
-        Span<SceneObject*> GetChildren() const;
-        Component&         AddComponent(TypeID typeId);
-        Component*         GetComponent(TypeID typeId, u32 index);
-        u32                GetComponentTypeCount(TypeID typeId) const;
-        u32                GetComponentCount() const;
-        void               RemoveComponent(TypeID typeId, u32 index);
-        void               RemoveChild(const SceneObject* child);
-        void               Destroy();
+        StringView          GetName() const;
+        void                SetName(const StringView& newName);
+        RID                 GetAsset() const;
+        SceneObject*        GetScene() const;
+        SceneObject*        GetParent() const;
+        SceneObject*        NewChild(const StringView& name);
+        SceneObject*        NewChild(const RID& asset);
+        SceneObject*        Duplicate() const;
+        SceneObjectIterator GetChildren();
+        u64                 GetChildrenCount() const;
+        Component&          AddComponent(TypeID typeId);
+        Component*          GetComponent(TypeID typeId, u32 index);
+        u32                 GetComponentTypeCount(TypeID typeId) const;
+        u32                 GetComponentCount() const;
+        void                RemoveComponent(TypeID typeId, u32 index);
+        void                RemoveChild(const SceneObject* child);
+        void                Destroy();
 
         template <typename T, Traits::EnableIf<Traits::IsBaseOf<Component, T>>* = nullptr>
         T& AddComponent()
@@ -94,22 +111,30 @@ namespace Fyrion
         }
 
         static void RegisterType(NativeTypeHandler<SceneObject>& type);
+
         friend struct SceneManager;
+        friend class SceneObjectIterator;
 
     private:
         String       m_name{};
         RID          m_asset{};
         SceneObject* m_parent{};
-        usize        m_parentIndex{};
-        bool         m_updating{};
         bool         m_markedToDestroy{};
         bool         m_componentDirty{};
 
-        Array<SceneObject*>               m_children{};
+        SceneObject* m_prev{};
+        SceneObject* m_next{};
+
+        usize        m_count{};
+        SceneObject* m_head{};
+        SceneObject* m_tail{};
+
         HashMap<TypeID, ComponentStorage> m_components{};
 
         void DoUpdate(f64 deltaTime);
         void DoStart();
         void SetComponentDirty();
+        void AddChild(SceneObject* object);
+        void DestroyImmediate();
     };
 }

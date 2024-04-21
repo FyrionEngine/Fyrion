@@ -1,5 +1,7 @@
 #include "SceneManager.hpp"
 
+#include <queue>
+
 #include "SceneTypes.hpp"
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Core/Event.hpp"
@@ -13,27 +15,28 @@ namespace Fyrion
     namespace
     {
         SceneObject*                            currentScene{};
-        HashMap<String, UniquePtr<SceneObject>> scenes{};
+        HashMap<String, UniquePtr<SceneObject>> scenesByName{};
+        HashMap<RID, UniquePtr<SceneObject>>    scenesByAsset{};
+        std::queue<SceneObject*>                objectsToDestroy{};
     }
 
     SceneObject* SceneManager::LoadScene(RID rid)
     {
-        ResourceObject asset = Repository::Read(rid);
-        const String&  name = asset[Asset::Name].As<String>();
-        auto it = scenes.Find(name);
-        if (it == scenes.end())
+        auto it = scenesByAsset.Find(rid);
+        if (it == scenesByAsset.end())
         {
-            it = scenes.Emplace(name, MakeUnique<SceneObject>(name, asset[Asset::Object].As<RID>(), nullptr)).first;
+            ResourceObject asset = Repository::Read(rid);
+            it = scenesByAsset.Emplace(rid, MakeUnique<SceneObject>(asset[Asset::Name].As<String>(), asset[Asset::Object].As<RID>(), nullptr)).first;
         }
         return it->second.Get();
     }
 
     SceneObject* SceneManager::CreateScene(const StringView& sceneName)
     {
-        auto it = scenes.Find(sceneName);
-        if (it == scenes.end())
+        auto it = scenesByName.Find(sceneName);
+        if (it == scenesByName.end())
         {
-            it = scenes.Emplace(sceneName, MakeUnique<SceneObject>(sceneName, nullptr)).first;
+            it = scenesByName.Emplace(sceneName, MakeUnique<SceneObject>(sceneName, nullptr)).first;
         }
         return it->second.Get();
     }
@@ -55,6 +58,17 @@ namespace Fyrion
             currentScene->DoStart();
             currentScene->DoUpdate(deltaTime);
         }
+
+        while (!objectsToDestroy.empty())
+        {
+            objectsToDestroy.front()->DestroyImmediate();
+            objectsToDestroy.pop();
+        }
+    }
+
+    void SceneManager::EnqueueDestroy(SceneObject* sceneObject)
+    {
+        objectsToDestroy.emplace(sceneObject);
     }
 
     void SceneManager::RegisterType(NativeTypeHandler<SceneManager>& type)
@@ -69,7 +83,8 @@ namespace Fyrion
 
     void SceneManagerShutdown()
     {
-        scenes.Clear();
+        scenesByName.Clear();
+        scenesByAsset.Clear();
         currentScene = nullptr;
     }
 }

@@ -46,7 +46,7 @@ namespace Fyrion
         {
 
         }
-        else if (!sceneObjectNode->GetChildren().Empty())
+        else if (sceneObjectNode->GetChildrenCount() > 0)
         {
             open = ImGui::TreeNode(treeId, m_nameCache.CStr(), treeFlags);
         }
@@ -89,10 +89,10 @@ namespace Fyrion
 
         if (open)
         {
-            for(SceneObject* child: sceneObjectNode->GetChildren())
-            {
-                DrawSceneObject(child);
-            }
+            // for(SceneObject* child: sceneObjectNode->GetChildren())
+            // {
+            //     DrawSceneObject(child);
+            // }
             ImGui::TreePop();
         }
     }

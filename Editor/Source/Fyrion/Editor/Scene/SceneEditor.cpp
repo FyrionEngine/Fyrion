@@ -21,15 +21,8 @@ namespace Fyrion
     void SceneEditor::LoadScene(RID rid)
     {
         //m_objects.Clear();
-        m_rootObject = nullptr;
         m_count = 0;
-
-        ResourceObject asset = Repository::Read(rid);
-        if (asset.Has(Asset::Object))
-        {
-            m_rootObject = LoadSceneObjectAsset(asset.GetSubObject(Asset::Object));
-            m_rootObject->SetName(asset[Asset::Name].As<String>());
-        }
+        m_rootObject = SceneManager::LoadScene(rid);
     }
 
     SceneObject* SceneEditor::GetRootObject() const

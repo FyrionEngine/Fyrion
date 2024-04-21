@@ -15,7 +15,10 @@ namespace Fyrion
         static void         SetCurrenScene(SceneObject* newCurrentScene);
 
         static void RegisterType(NativeTypeHandler<SceneManager>& type);
+
+        friend class SceneObject;
     private:
         static void ExecuteUpdate(f64 deltaTime);
+        static void EnqueueDestroy(SceneObject* sceneObject);
     };
 }

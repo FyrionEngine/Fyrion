@@ -20,6 +20,11 @@ namespace Fyrion
     public:
         inline static i32 onStartCall = 0;
         void OnStart() override;
+
+        void OnUpdate(f64 deltaTime) override
+        {
+            CHECK(false); // this should never execute because SetUpdateEnabled is not Enabled;
+        }
     };
 
     class ComponentTest : public Component
@@ -34,6 +39,7 @@ namespace Fyrion
 
         void OnStart() override
         {
+            SetUpdateEnabled(true);
             startCount++;
         }
 
@@ -58,7 +64,7 @@ namespace Fyrion
         ~ComponentTest() override
         {
             destructorCall++;
-        };
+        }
     };
 
 
@@ -157,7 +163,14 @@ namespace Fyrion
             CHECK(ComponentToRemove::removed == 2);
 
             CHECK(object->GetChildrenCount() == 1);
+
+            updateHandler.Invoke(1.0);
         }
         Engine::Destroy();
+    }
+
+    TEST_CASE("Scene::TestObjectResource")
+    {
+
     }
 }

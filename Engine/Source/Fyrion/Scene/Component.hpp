@@ -11,6 +11,8 @@ namespace Fyrion
     public:
         SceneObject* object = nullptr;
 
+        void SetUpdateEnabled(bool enabled);
+
         virtual ~Component() = default;
 
         virtual void OnStart(){}
@@ -18,5 +20,9 @@ namespace Fyrion
         virtual void OnUpdate(f64 deltaTime){}
 
         static void RegisterType(NativeTypeHandler<Component>& type);
+
+        friend class SceneGlobals;
+    private:
+        u64 m_updateIndex{U64_MAX};
     };
 }

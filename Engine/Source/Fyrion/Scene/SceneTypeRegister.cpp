@@ -1,6 +1,6 @@
 #include "Component.hpp"
 #include "SceneObject.hpp"
-#include "SceneTypes.hpp"
+#include "SceneAssets.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Resource/Repository.hpp"
 

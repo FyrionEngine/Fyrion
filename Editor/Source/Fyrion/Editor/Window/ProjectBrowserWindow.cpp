@@ -10,7 +10,7 @@
 #include "Fyrion/Resource/ResourceAssets.hpp"
 #include "Fyrion/Resource/Repository.hpp"
 #include "Fyrion/Engine.hpp"
-#include "Fyrion/Scene/SceneTypes.hpp"
+#include "Fyrion/Scene/SceneAssets.hpp"
 
 #define CONTENT_TABLE_ID 500
 #define ASSET_PAYLOAD "ASSET-PAYLOAD"

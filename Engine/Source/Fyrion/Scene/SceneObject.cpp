@@ -2,7 +2,7 @@
 
 #include "Component.hpp"
 #include "SceneManager.hpp"
-#include "SceneTypes.hpp"
+#include "SceneAssets.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Resource/Repository.hpp"
 
@@ -85,6 +85,7 @@ namespace Fyrion
             for (ComponentInstace& component : it.second.instances)
             {
                 component.instance->OnDestroy();
+                component.instance->SetUpdateEnabled(false);
                 it.second.typeHandler->Destroy(component.instance);
             }
         }

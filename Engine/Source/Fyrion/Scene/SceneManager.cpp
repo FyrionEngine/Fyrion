@@ -1,6 +1,7 @@
 #include "SceneManager.hpp"
 
-#include "SceneTypes.hpp"
+#include "Component.hpp"
+#include "SceneAssets.hpp"
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Core/Event.hpp"
 #include "Fyrion/Core/HashMap.hpp"
@@ -25,10 +26,29 @@ namespace Fyrion
         m_objectsToDestroy.emplace(sceneObject);
     }
 
+    void SceneGlobals::AddUpdatableComponent(Component* component)
+    {
+        component->m_updateIndex = m_updatables.Size();
+        m_updatables.EmplaceBack(component);
+    }
+
+    void SceneGlobals::RemoveUpdatableComponent(Component* component)
+    {
+        Component* lastComponent = m_updatables.Back();
+        lastComponent->m_updateIndex = component->m_updateIndex;
+        m_updatables[lastComponent->m_updateIndex] = lastComponent;
+        component->m_updateIndex = U64_MAX;
+        m_updatables.PopBack();
+    }
+
     void SceneGlobals::DoUpdate(f64 deltaTime)
     {
         m_rootObject.DoStart();
-        m_rootObject.DoUpdate(deltaTime);
+
+        for (Component* component : m_updatables)
+        {
+            component->OnUpdate(deltaTime);
+        }
 
         while (!m_objectsToDestroy.empty())
         {

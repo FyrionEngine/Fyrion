@@ -4,7 +4,7 @@
 #include "Fyrion/Resource/AssetTree.hpp"
 #include "Fyrion/Resource/Repository.hpp"
 #include "Fyrion/Scene/SceneManager.hpp"
-#include "Fyrion/Scene/SceneTypes.hpp"
+#include "Fyrion/Scene/SceneAssets.hpp"
 
 namespace Fyrion
 {

@@ -16,6 +16,22 @@ namespace Fyrion
     {
     }
 
+    void SceneGlobals::SceneObjectAdded(SceneObject* sceneObject)
+    {
+        if (sceneObject->m_asset)
+        {
+            m_objectsByRID.Insert(sceneObject->m_asset, sceneObject);
+        }
+    }
+
+    void SceneGlobals::SceneObjectRemoved(SceneObject* sceneObject)
+    {
+        if (sceneObject->m_asset)
+        {
+            m_objectsByRID.Erase(sceneObject->m_asset);
+        }
+    }
+
     SceneObject* SceneGlobals::GetRootObject()
     {
         return &m_rootObject;

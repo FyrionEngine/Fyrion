@@ -86,7 +86,6 @@ namespace Fyrion
         removed++;
     }
 
-
     TEST_CASE("Scene::BasicObjects")
     {
         Engine::Init();
@@ -171,6 +170,9 @@ namespace Fyrion
 
     TEST_CASE("Scene::TestObjectResource")
     {
-
+        Engine::Init();
+        {
+        }
+        Engine::Destroy();
     }
 }

@@ -87,8 +87,6 @@ namespace
         serializationBasics.Field<&SerializationBasics::structArray>("structArray");
         serializationBasics.Field<&SerializationBasics::arrayOfArray>("arrayOfArray");
         serializationBasics.Field<&SerializationBasics::emptyArray>("emptyArray");
-        //serializationBasics.Attribute<Resource>();
-        Repository::CreateResourceType(GetTypeID<SerializationBasics>());
 
         ResourceTypeBuilder<SerializationResourceBasics>::Builder()
             .Value<SerializationResourceBasics::StringValue, String>("StringValue")

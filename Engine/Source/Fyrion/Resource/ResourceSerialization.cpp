@@ -457,10 +457,7 @@ namespace Fyrion::ResourceSerialization
 
     void ParseResource(ParserContext& context, RID rid)
     {
-        ResourceType* resourceType = Repository::GetResourceType(rid);
-        if (resourceType == nullptr) return;
-
-        if (!Repository::IsResourceTypeData(resourceType))
+        if (ResourceType* resourceType = Repository::GetResourceType(rid))
         {
             ResourceObject object = Repository::Write(rid);
             while (context.Pos < context.buffer.Size())
@@ -477,7 +474,6 @@ namespace Fyrion::ResourceSerialization
                 {
                     RemoveSpaces(context);
                     context.value.Clear();
-
 
                     u32 index = object.GetIndex(context.identifier);
                     ResourceFieldType type = ResourceFieldType::Undefined;
@@ -551,18 +547,13 @@ namespace Fyrion::ResourceSerialization
             }
             object.Commit();
         }
-        else
+        else if (TypeHandler* typeHandler = Repository::GetResourceTypeHandler(rid))
         {
-            TypeHandler* typeHandler = Repository::GetResourceTypeHandler(resourceType);
-            if (typeHandler)
-            {
-                VoidPtr instance = typeHandler->NewInstance();
-                ParseObject(context, instance, typeHandler);
-                Repository::Commit(rid, instance);
-                typeHandler->Destroy(instance);
-            }
+            VoidPtr instance = typeHandler->NewInstance();
+            ParseObject(context, instance, typeHandler);
+            Repository::Commit(rid, instance);
+            typeHandler->Destroy(instance);
         }
-
     }
 
 

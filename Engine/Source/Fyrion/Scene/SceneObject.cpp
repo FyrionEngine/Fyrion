@@ -50,10 +50,13 @@ namespace Fyrion
 
     SceneObject::SceneObject(StringView name, SceneObject* parent) : m_name(name), m_parent(parent), m_sceneGlobals(m_parent->m_sceneGlobals)
     {
+        m_sceneGlobals->SceneObjectAdded(this);
     }
 
     SceneObject::SceneObject(RID asset, SceneObject* parent) : m_asset(asset), m_parent(parent), m_sceneGlobals(m_parent->m_sceneGlobals)
     {
+        m_sceneGlobals->SceneObjectAdded(this);
+
         // ResourceObject resource = Repository::Read(asset);
         // if (name.Empty() && resource.Has(SceneObjectAsset::Name))
         // {
@@ -76,6 +79,7 @@ namespace Fyrion
 
     SceneObject::SceneObject(StringView name, RID asset, SceneGlobals* sceneGlobals) : m_name(name), m_asset(asset), m_sceneGlobals(sceneGlobals)
     {
+        m_sceneGlobals->SceneObjectAdded(this);
     }
 
     SceneObject::~SceneObject()
@@ -89,6 +93,8 @@ namespace Fyrion
                 it.second.typeHandler->Destroy(instance);
             }
         }
+
+        m_sceneGlobals->SceneObjectRemoved(this);
 
         SceneObject* current = m_head;
         while(current != nullptr)

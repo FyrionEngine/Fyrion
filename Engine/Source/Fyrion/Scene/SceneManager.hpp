@@ -19,13 +19,16 @@ namespace Fyrion
         friend class Component;
 
     private:
-        HashMap<RID, SceneObject*> objectsByRID{};
+        HashMap<RID, SceneObject*> m_objectsByRID{};
         SceneObject                m_rootObject;
         Array<Component*>          m_updatables{};
         std::queue<SceneObject*>   m_objectsToDestroy{};
         std::queue<Component*>     m_componentsToStart{};
 
         std::queue<Pair<Component*, TypeHandler*>> m_enqueedToDestroy{};
+
+        void SceneObjectAdded(SceneObject* sceneObject);
+        void SceneObjectRemoved(SceneObject* sceneObject);
 
         void AddUpdatableComponent(Component* component);
         void RemoveUpdatableComponent(Component* component);

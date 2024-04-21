@@ -82,9 +82,7 @@ namespace Fyrion
         usize alignment;
         HashMap<String, SharedPtr<ResourceField>> fieldsByName;
         Array<ResourceField*> fieldsByIndex;
-        TypeHandler* typeHandler;
         HashMap<ResourceTypeEventLookup, ResourceTypeEvent> events;
-        bool dataType = false;
     };
 
     struct ResourceData
@@ -107,6 +105,7 @@ namespace Fyrion
         usize parentIndex = U32_MAX;
         bool markedToDestroy{};
         bool active = true;
+        TypeHandler* typeHandler = nullptr;
         std::atomic<u32> version = 1;
     };
 
@@ -148,7 +147,7 @@ namespace Fyrion
         {
             if (pages[rid.page] == nullptr)
             {
-                std::unique_lock<std::mutex> lock(pageMutex);
+                std::unique_lock lock(pageMutex);
                 if (pages[rid.page] == nullptr)
                 {
                     pages[rid.page] = static_cast<ResourcePage*>(allocator.MemAlloc(sizeof(ResourcePage), alignof(ResourcePage)));
@@ -168,7 +167,7 @@ namespace Fyrion
         {
             if (uuid)
             {
-                std::unique_lock<std::mutex> lock(byUUIDMutex);
+                std::unique_lock lock(byUUIDMutex);
                 if (auto it = byUUID.Find(uuid))
                 {
                     return it->second;
@@ -176,7 +175,7 @@ namespace Fyrion
             }
             RID rid = GetID();
             {
-                std::unique_lock<std::mutex> lock(byUUIDMutex);
+                std::unique_lock lock(byUUIDMutex);
                 byUUID.Insert(uuid, rid);
             }
             return rid;
@@ -229,9 +228,9 @@ namespace Fyrion
                         }
                     }
 
-                    if (data->storage->resourceType->typeHandler)
+                    if (data->storage->typeHandler)
                     {
-                        data->storage->resourceType->typeHandler->Destructor(data->memory);
+                        data->storage->typeHandler->Destructor(data->memory);
                     }
 
                     allocator.MemFree(data->memory);
@@ -301,7 +300,6 @@ namespace Fyrion
         SharedPtr<ResourceType> resourceType = MakeShared<ResourceType>();
         resourceType->name        = resourceTypeCreation.name;
         resourceType->simpleName  = resourceTypeCreation.simpleName;
-        resourceType->typeHandler = nullptr;
         resourceType->typeId      = resourceTypeCreation.typeId;
         resourceType->fieldsByIndex.Resize(resourceTypeCreation.fields.Size());
 
@@ -355,25 +353,6 @@ namespace Fyrion
         logger.Debug("Resource Type {} Created", resourceTypeCreation.name);
     }
 
-    void Repository::CreateResourceType(TypeID typeId)
-    {
-        TypeHandler* typeHandler = Registry::FindTypeById(typeId);
-        FY_ASSERT(typeHandler, "Type not found");
-
-        SharedPtr<ResourceType> resourceType = MakeShared<ResourceType>();
-        resourceType->name        = typeHandler->GetName();
-        resourceType->simpleName  = typeHandler->GetSimpleName();
-        resourceType->typeId      = typeId;
-        resourceType->size        = typeHandler->GetTypeInfo().size;
-        resourceType->alignment   = typeHandler->GetTypeInfo().alignment;
-        resourceType->typeHandler = typeHandler;
-        resourceType->dataType    = true;
-
-        logger.Debug("Resource Type {} Created", resourceType->name);
-
-        resourceTypesByName.Insert(resourceType->name, resourceType);
-        resourceTypes.Emplace(resourceType->typeId, Traits::Move(resourceType));
-    }
 
     RID Repository::CreateResource(TypeID typeId)
     {
@@ -384,19 +363,21 @@ namespace Fyrion
     {
         RID rid = GetID(uuid);
         ResourceStorage* resourceStorage = GetOrAllocate(rid);
-        ResourceType* resourceType = nullptr;
-
-        if (auto it = resourceTypes.Find(typeId))
-        {
-            resourceType = it->second.Get();
-        }
 
         new(PlaceHolder(), resourceStorage) ResourceStorage{
             .rid = rid,
             .uuid = uuid,
-            .resourceType = resourceType,
             .data = {}
         };
+
+        if (const auto it = resourceTypes.Find(typeId))
+        {
+            resourceStorage->resourceType = it->second.Get();
+        }
+        else if (TypeHandler* typeHandler = Registry::FindTypeById(typeId))
+        {
+            resourceStorage->typeHandler = typeHandler;
+        }
 
         return rid;
     }
@@ -481,11 +462,6 @@ namespace Fyrion
         return 0;
     }
 
-    TypeHandler* Repository::GetResourceTypeHandler(ResourceType* resourceType)
-    {
-        return resourceType->typeHandler;
-    }
-
     StringView Repository::GetResourceTypeName(ResourceType* resourceType)
     {
         return resourceType->name;
@@ -530,11 +506,6 @@ namespace Fyrion
         }
     }
 
-    bool Repository::IsResourceTypeData(ResourceType* resourceTyp)
-    {
-        return resourceTyp->dataType;
-    }
-
     RID Repository::CreateFromPrototype(RID prototype)
     {
         return CreateFromPrototype(prototype, {});
@@ -567,21 +538,21 @@ namespace Fyrion
         ResourceStorage* storage = &pages[rid.page]->elements[rid.offset];
         storage->uuid = uuid;
         {
-            std::unique_lock<std::mutex> lock(byUUIDMutex);
+            std::unique_lock lock(byUUIDMutex);
             byUUID.Insert(uuid, rid);
         }
     }
 
     void Repository::SetPath(const RID& rid, const StringView& path)
     {
-        std::unique_lock<std::mutex> lockByPath(byPathMutex);
+        std::unique_lock lockByPath(byPathMutex);
         byPath.Erase(path);
         byPath.Insert(path, rid);
     }
 
     void Repository::RemovePath(const StringView& path)
     {
-        std::unique_lock<std::mutex> lockByPath(byPathMutex);
+        std::unique_lock lockByPath(byPathMutex);
         byPath.Erase(path);
     }
 
@@ -603,7 +574,7 @@ namespace Fyrion
 
     RID Repository::GetByUUID(const UUID& uuid)
     {
-        std::unique_lock<std::mutex> lock(byUUIDMutex);
+        std::unique_lock lock(byUUIDMutex);
 
         if (auto it = byUUID.Find(uuid))
         {
@@ -614,7 +585,7 @@ namespace Fyrion
 
     RID Repository::GetByPath(const StringView& path)
     {
-        std::unique_lock<std::mutex> lock(byPathMutex);
+        std::unique_lock lock(byPathMutex);
 
         if (auto it = byPath.Find(path))
         {
@@ -635,6 +606,12 @@ namespace Fyrion
         return storage->resourceType;
     }
 
+    TypeHandler* Repository::GetResourceTypeHandler(const RID& rid)
+    {
+        ResourceStorage* storage = &pages[rid.page]->elements[rid.offset];
+        return storage->typeHandler;
+    }
+
     RID Repository::GetOrCreateByUUID(const UUID& uuid)
     {
         return GetOrCreateByUUID(uuid, 0);
@@ -643,7 +620,7 @@ namespace Fyrion
     RID Repository::GetOrCreateByUUID(const UUID& uuid, TypeID typeId)
     {
         {
-            std::unique_lock<std::mutex> lock(byUUIDMutex);
+            std::unique_lock lock(byUUIDMutex);
 
             auto it = byUUID.Find(uuid);
             if (it != byUUID.end())
@@ -654,7 +631,7 @@ namespace Fyrion
 
         RID rid = GetID();
         {
-            std::unique_lock<std::mutex> lock(byUUIDMutex);
+            std::unique_lock lock(byUUIDMutex);
             byUUID.Insert(uuid, rid);
         }
 
@@ -707,12 +684,7 @@ namespace Fyrion
     ConstPtr Repository::Read(RID rid, TypeID typeId)
     {
         ResourceStorage* storage = &pages[rid.page]->elements[rid.offset];
-        if (storage->resourceType->typeId == typeId)
-        {
-            return storage->data.load()->memory;
-        }
-        FY_ASSERT(false, "Mapping field is not implemented");
-        return nullptr;
+        return storage->data.load()->memory;
     }
 
     void Repository::InactiveResource(RID rid)
@@ -759,8 +731,8 @@ namespace Fyrion
         }
         ResourceData* data = allocator.Alloc<ResourceData>();
         data->storage = storage;
-        data->memory  = allocator.MemAlloc(storage->resourceType->size, storage->resourceType->alignment);
-        storage->resourceType->typeHandler->Copy(pointer, data->memory);
+        data->memory = storage->typeHandler->NewInstance(allocator);
+        storage->typeHandler->Copy(pointer, data->memory);
         storage->data.store(data);
 
         UpdateVersion(storage);

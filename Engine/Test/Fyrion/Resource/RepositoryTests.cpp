@@ -45,9 +45,6 @@ namespace
                 testStructResource.Field<&TestStructResource::strTest>("strTest");
                 testStructResource.Field<&TestStructResource::vecTest1>("vecTest1");
                 testStructResource.Field<&TestStructResource::vecTest2>("vecTest2");
-                //testStructResource.Attribute<Resource>();
-
-                Repository::CreateResourceType<TestStructResource>();
             }
 
             ResourceTypeBuilder<TestResource>::Builder()

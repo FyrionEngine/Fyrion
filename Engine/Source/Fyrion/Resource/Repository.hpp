@@ -13,14 +13,11 @@ namespace Fyrion
     namespace Repository
     {
         FY_API void             CreateResourceType(const ResourceTypeCreation& resourceTypeCreation);
-        FY_API void             CreateResourceType(TypeID typeId);
         FY_API TypeID           GetResourceTypeID(const StringView& typeName);
-        FY_API TypeHandler*     GetResourceTypeHandler(ResourceType* resourceType);
         FY_API StringView       GetResourceTypeName(ResourceType* resourceType);
         FY_API StringView       GetResourceTypeSimpleName(ResourceType* resourceType);
         FY_API void             AddResourceTypeEvent(TypeID typeId, VoidPtr userData, ResourceEventType eventType, FnResourceEvent event);
         FY_API void             RemoveResourceTypeEvent(TypeID typeId, VoidPtr userData, FnResourceEvent event);
-        FY_API bool             IsResourceTypeData(ResourceType* resourceTyp);
 
         FY_API RID              CreateResource(TypeID typeId);
         FY_API RID              CreateResource(TypeID typeId, const UUID& uuid);
@@ -35,6 +32,7 @@ namespace Fyrion
         FY_API RID              GetByPath(const StringView& path);
         FY_API TypeID           GetResourceTypeID(const RID& rid);
         FY_API ResourceType*    GetResourceType(const RID& rid);
+        FY_API TypeHandler*     GetResourceTypeHandler(const RID& rid);
         FY_API RID              GetOrCreateByUUID(const UUID& uuid);
         FY_API RID              GetOrCreateByUUID(const UUID& uuid, TypeID typeId);
         FY_API void             ClearValues(RID rid);
@@ -52,14 +50,6 @@ namespace Fyrion
         FY_API u32              GetVersion(RID rid);
 
         FY_API void             GarbageCollect();
-
-
-        template<typename T>
-        void CreateResourceType()
-        {
-            return CreateResourceType(GetTypeID<T>());
-        }
-
 
         template<typename T>
         RID CreateResource()

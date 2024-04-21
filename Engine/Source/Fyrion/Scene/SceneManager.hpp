@@ -29,6 +29,7 @@ namespace Fyrion
         std::queue<SceneObject*>   m_objectsToDestroy{};
         std::queue<Component*>     m_componentsToStart{};
         usize                      m_count{};
+        bool                       m_updating{};
 
         std::queue<Pair<Component*, TypeHandler*>> m_enqueedToDestroy{};
 

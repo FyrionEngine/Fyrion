@@ -15,6 +15,7 @@ namespace Fyrion
             .Value<SceneObjectAsset::Name, String>("Name")
             .SubObjectSet<SceneObjectAsset::Components>("Components")
             .Value<SceneObjectAsset::Order, u64>("Order")
+            .Value<SceneObjectAsset::Parent, RID>("Parent")
             .SubObjectSet<SceneObjectAsset::Children>("Children")
             .Build();
     }

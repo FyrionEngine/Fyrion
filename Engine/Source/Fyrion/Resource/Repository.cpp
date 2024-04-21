@@ -1020,7 +1020,7 @@ namespace Fyrion
                     {
                         ResourceObject oldObject{m_data->dataOnWrite, true};
                         ResourceObject newObject{m_data, true};
-                        itEvent.second.event(itEvent.second.userData, ResourceEventType::Destroy, oldObject, newObject);
+                        itEvent.second.event(itEvent.second.userData, ResourceEventType::Update, oldObject, newObject);
                     }
                 }
 
@@ -1036,17 +1036,17 @@ namespace Fyrion
         }
         else
         {
+            m_data->storage->data = m_data;
+
             for (auto itEvent: m_data->storage->resourceType->events)
             {
                 if ((itEvent.second.eventType && ResourceEventType::Insert) != 0)
                 {
                     ResourceObject oldObject{nullptr, true};
                     ResourceObject newObject{m_data, true};
-                    itEvent.second.event(itEvent.second.userData, ResourceEventType::Destroy, oldObject, newObject);
+                    itEvent.second.event(itEvent.second.userData, ResourceEventType::Insert, oldObject, newObject);
                 }
             }
-
-            m_data->storage->data = m_data;
             UpdateVersion(m_data->storage);
         }
     }

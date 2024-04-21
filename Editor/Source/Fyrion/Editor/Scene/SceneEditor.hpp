@@ -32,8 +32,9 @@ namespace Fyrion
         SceneObject* m_rootObject{};
         HashSet<RID> m_selectedObjects{};
         SceneObject* m_lastSelectedObject{};
+        bool         m_loading{};
+        u64          m_count{};
 
-        void         UpdateSceneObject(SceneObject& object, ResourceObject& resource, bool updateChildren = true);
         static void  SceneObjectAssetChanged(VoidPtr userData, ResourceEventType eventType, ResourceObject& oldObject, ResourceObject& newObject);
     };
 }

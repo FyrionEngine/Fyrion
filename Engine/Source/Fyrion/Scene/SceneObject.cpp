@@ -256,7 +256,14 @@ namespace Fyrion
         if (!m_markedToDestroy)
         {
             m_markedToDestroy = true;
-            GetSceneGlobals()->EnqueueDestroy(this);
+            if (GetSceneGlobals()->m_updating)
+            {
+                GetSceneGlobals()->EnqueueDestroy(this);
+            }
+            else
+            {
+                DestroyImmediate();
+            }
         }
     }
 
@@ -286,6 +293,8 @@ namespace Fyrion
 
     void SceneObject::LoadAsset(RID asset)
     {
+        if (!asset) return;
+
         ResourceObject resource = Repository::Read(asset);
         if (m_name.Empty() && resource.Has(SceneObjectAsset::Name))
         {

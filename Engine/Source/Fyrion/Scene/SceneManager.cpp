@@ -1,7 +1,6 @@
 #include "SceneManager.hpp"
 
 #include "Component.hpp"
-#include "SceneAssets.hpp"
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Core/Event.hpp"
 #include "Fyrion/Core/HashMap.hpp"
@@ -80,6 +79,7 @@ namespace Fyrion
 
     void SceneGlobals::DoUpdate(f64 deltaTime)
     {
+        m_updating = true;
         while (!m_componentsToStart.empty())
         {
             Component* component = m_componentsToStart.front();
@@ -105,6 +105,7 @@ namespace Fyrion
             m_objectsToDestroy.front()->DestroyImmediate();
             m_objectsToDestroy.pop();
         }
+        m_updating = false;
     }
 
     namespace

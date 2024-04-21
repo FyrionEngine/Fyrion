@@ -82,11 +82,11 @@ namespace Fyrion
     {
         for (auto it : m_components)
         {
-            for (ComponentInstace& component : it.second.instances)
+            for (Component* instance : it.second.instances)
             {
-                component.instance->OnDestroy();
-                component.instance->SetUpdateEnabled(false);
-                it.second.typeHandler->Destroy(component.instance);
+                instance->OnDestroy();
+                instance->DisableComponentUpdate();
+                it.second.typeHandler->Destroy(instance);
             }
         }
 
@@ -176,7 +176,7 @@ namespace Fyrion
         component->object = this;
         storage.instances.EmplaceBack(component);
 
-        SetComponentDirty();
+        m_sceneGlobals->EnqueueStart(component);
 
         return *component;
     }
@@ -187,10 +187,17 @@ namespace Fyrion
         {
             if (index < it->second.instances.Size())
             {
-                ComponentInstace& component = it->second.instances[index];
-                component.instance->OnDestroy();
-                it->second.typeHandler->Destroy(component.instance);
+                Component* instance = it->second.instances[index];
+                instance->OnDestroy();
 
+                if (instance->m_started)
+                {
+                    it->second.typeHandler->Destroy(instance);
+                }
+                else
+                {
+                    m_sceneGlobals->EnqueueDestroy(instance, it->second.typeHandler);
+                }
                 it->second.instances.Erase(
                     it->second.instances.begin() + index,
                     it->second.instances.begin() + index + 1
@@ -205,7 +212,7 @@ namespace Fyrion
         {
             if (index < it->second.instances.Size())
             {
-                return it->second.instances[index].instance;
+                return it->second.instances[index];
             }
         }
         return nullptr;
@@ -253,56 +260,6 @@ namespace Fyrion
             child->m_next->m_prev = child->m_prev;
         }
         m_count--;
-    }
-
-    void SceneObject::SetComponentDirty()
-    {
-        m_componentDirty = true;
-        if (m_parent && !m_parent->m_componentDirty)
-        {
-            m_parent->SetComponentDirty();
-        }
-    }
-
-    void SceneObject::DoStart()
-    {
-        if (m_componentDirty)
-        {
-            for (auto& it : m_components)
-            {
-                for (usize i = 0; i < it.second.instances.Size(); ++i)
-                {
-                    ComponentInstace& component = it.second.instances[i];
-                    if (!component.startCalled)
-                    {
-                        component.startCalled = true;
-                        component.instance->OnStart();
-                    }
-                }
-            }
-
-            for (SceneObject& sceneObject : GetChildren())
-            {
-                sceneObject.DoStart();
-            }
-            m_componentDirty = false;
-        }
-    }
-
-    void SceneObject::DoUpdate(f64 deltaTime)
-    {
-        for (auto& it : m_components)
-        {
-            for (usize i = 0; i < it.second.instances.Size(); ++i)
-            {
-                it.second.instances[i].instance->OnUpdate(deltaTime);
-            }
-        }
-
-        for (SceneObject& sceneObject : GetChildren())
-        {
-            sceneObject.DoUpdate(deltaTime);
-        }
     }
 
     void SceneObject::Destroy()

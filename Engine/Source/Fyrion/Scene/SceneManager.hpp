@@ -21,12 +21,17 @@ namespace Fyrion
     private:
         HashMap<RID, SceneObject*> objectsByRID{};
         SceneObject                m_rootObject;
-        std::queue<SceneObject*>   m_objectsToDestroy{};
         Array<Component*>          m_updatables{};
+        std::queue<SceneObject*>   m_objectsToDestroy{};
+        std::queue<Component*>     m_componentsToStart{};
+
+        std::queue<Pair<Component*, TypeHandler*>> m_enqueedToDestroy{};
 
         void AddUpdatableComponent(Component* component);
         void RemoveUpdatableComponent(Component* component);
         void EnqueueDestroy(SceneObject* sceneObject);
+        void EnqueueDestroy(Component* component, TypeHandler* typeHandler);
+        void EnqueueStart(Component* component);
         void DoUpdate(f64 deltaTime);
     };
 

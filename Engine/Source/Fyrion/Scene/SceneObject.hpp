@@ -34,16 +34,10 @@ namespace Fyrion
     };
 
 
-    struct ComponentInstace
-    {
-        Component* instance{};
-        bool       startCalled{};
-    };
-
     struct ComponentStorage
     {
-        TypeHandler*            typeHandler = nullptr;
-        Array<ComponentInstace> instances = {};
+        TypeHandler*      typeHandler = nullptr;
+        Array<Component*> instances = {};
     };
 
     class FY_API SceneObject
@@ -122,7 +116,6 @@ namespace Fyrion
         SceneObject*  m_parent{};
         SceneGlobals* m_sceneGlobals{};
         bool          m_markedToDestroy{};
-        bool          m_componentDirty{};
 
         SceneObject* m_prev{};
         SceneObject* m_next{};
@@ -135,9 +128,6 @@ namespace Fyrion
 
         SceneObject(StringView name, RID asset, SceneGlobals* sceneGlobals);
 
-        void DoUpdate(f64 deltaTime);
-        void DoStart();
-        void SetComponentDirty();
         void AddChild(SceneObject* object);
         void DestroyImmediate();
     };

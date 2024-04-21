@@ -39,7 +39,7 @@ namespace Fyrion
 
         void OnStart() override
         {
-            SetUpdateEnabled(true);
+            EnableComponentUpdate();
             startCount++;
         }
 

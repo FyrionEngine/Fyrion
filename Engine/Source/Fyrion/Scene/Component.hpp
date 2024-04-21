@@ -11,7 +11,8 @@ namespace Fyrion
     public:
         SceneObject* object = nullptr;
 
-        void SetUpdateEnabled(bool enabled);
+        void EnableComponentUpdate();
+        void DisableComponentUpdate();
 
         virtual ~Component() = default;
 
@@ -22,7 +23,9 @@ namespace Fyrion
         static void RegisterType(NativeTypeHandler<Component>& type);
 
         friend class SceneGlobals;
+        friend class SceneObject;
     private:
-        u64 m_updateIndex{U64_MAX};
+        u64     m_updateIndex{U64_MAX};
+        bool    m_started{};
     };
 }

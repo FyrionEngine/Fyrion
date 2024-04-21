@@ -5,13 +5,17 @@
 
 namespace Fyrion
 {
-    void Component::SetUpdateEnabled(bool enabled)
+    void Component::EnableComponentUpdate()
     {
-        if (enabled)
+        if (m_updateIndex == U64_MAX)
         {
             object->GetSceneGlobals()->AddUpdatableComponent(this);
         }
-        else if (m_updateIndex != U64_MAX)
+    }
+
+    void Component::DisableComponentUpdate()
+    {
+        if (m_updateIndex != U64_MAX)
         {
             object->GetSceneGlobals()->RemoveUpdatableComponent(this);
         }

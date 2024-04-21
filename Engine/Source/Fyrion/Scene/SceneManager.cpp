@@ -26,10 +26,20 @@ namespace Fyrion
         m_objectsToDestroy.emplace(sceneObject);
     }
 
+    void SceneGlobals::EnqueueStart(Component* component)
+    {
+        m_componentsToStart.emplace(component);
+    }
+
     void SceneGlobals::AddUpdatableComponent(Component* component)
     {
         component->m_updateIndex = m_updatables.Size();
         m_updatables.EmplaceBack(component);
+    }
+
+    void SceneGlobals::EnqueueDestroy(Component* component, TypeHandler* typeHandler)
+    {
+        m_enqueedToDestroy.emplace(component, typeHandler);
     }
 
     void SceneGlobals::RemoveUpdatableComponent(Component* component)
@@ -43,11 +53,24 @@ namespace Fyrion
 
     void SceneGlobals::DoUpdate(f64 deltaTime)
     {
-        m_rootObject.DoStart();
+        while (!m_componentsToStart.empty())
+        {
+            Component* component = m_componentsToStart.front();
+            component->OnStart();
+            component->m_started = true;
+            m_componentsToStart.pop();
+        }
 
         for (Component* component : m_updatables)
         {
             component->OnUpdate(deltaTime);
+        }
+
+        while (!m_enqueedToDestroy.empty())
+        {
+            Pair<Component*, TypeHandler*> component = m_enqueedToDestroy.front();
+            component.second->Destroy(component.first);
+            m_enqueedToDestroy.pop();
         }
 
         while (!m_objectsToDestroy.empty())

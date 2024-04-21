@@ -1,11 +1,31 @@
 #pragma once
 
+#include <queue>
+
 #include "SceneObject.hpp"
 #include "Fyrion/Common.hpp"
 #include "Fyrion/Core/StringView.hpp"
 
 namespace Fyrion
 {
+
+    class FY_API SceneGlobals
+    {
+    public:
+        SceneGlobals(StringView name, RID asset);
+        SceneObject* GetRootObject();
+
+        void EnqueueDestroy(SceneObject* sceneObject);
+
+        friend class SceneManager;
+    private:
+        HashMap<RID, SceneObject*> objectsByRID{};
+        SceneObject                m_rootObject;
+        std::queue<SceneObject*>   m_objectsToDestroy{};
+
+        void DoUpdate(f64 deltaTime);
+    };
+
     class FY_API SceneManager
     {
     public:
@@ -19,6 +39,5 @@ namespace Fyrion
         friend class SceneObject;
     private:
         static void ExecuteUpdate(f64 deltaTime);
-        static void EnqueueDestroy(SceneObject* sceneObject);
     };
 }

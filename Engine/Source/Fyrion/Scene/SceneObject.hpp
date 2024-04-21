@@ -11,13 +11,14 @@ namespace Fyrion
 {
     class Component;
     class SceneObject;
-    struct SceneManager;
+    class SceneGlobals;
+    class SceneManager;
+
 
     class FY_API SceneObjectIterator
     {
     public:
         SceneObjectIterator(SceneObject* object);
-        SceneObjectIterator(SceneObject* object, SceneObject* next);
         SceneObjectIterator begin() const;
         SceneObjectIterator end() const;
 
@@ -30,7 +31,6 @@ namespace Fyrion
 
     private:
         SceneObject* m_object;
-        SceneObject* m_next;
     };
 
 
@@ -50,7 +50,7 @@ namespace Fyrion
     {
     public:
         SceneObject(StringView name, SceneObject* parent);
-        SceneObject(StringView name, RID asset, SceneObject* parent);
+        SceneObject(RID asset, SceneObject* parent);
         SceneObject(const SceneObject& other) = delete;
         SceneObject& operator=(const SceneObject& other) = delete;
 
@@ -59,7 +59,7 @@ namespace Fyrion
         StringView          GetName() const;
         void                SetName(const StringView& newName);
         RID                 GetAsset() const;
-        SceneObject*        GetScene() const;
+        SceneGlobals*       GetSceneGlobals() const;
         SceneObject*        GetParent() const;
         SceneObject*        NewChild(const StringView& name);
         SceneObject*        NewChild(const RID& asset);
@@ -112,15 +112,17 @@ namespace Fyrion
 
         static void RegisterType(NativeTypeHandler<SceneObject>& type);
 
-        friend struct SceneManager;
+        friend class SceneManager;
         friend class SceneObjectIterator;
+        friend class SceneGlobals;
 
     private:
-        String       m_name{};
-        RID          m_asset{};
-        SceneObject* m_parent{};
-        bool         m_markedToDestroy{};
-        bool         m_componentDirty{};
+        String        m_name{};
+        RID           m_asset{};
+        SceneObject*  m_parent{};
+        SceneGlobals* m_sceneGlobals{};
+        bool          m_markedToDestroy{};
+        bool          m_componentDirty{};
 
         SceneObject* m_prev{};
         SceneObject* m_next{};
@@ -130,6 +132,8 @@ namespace Fyrion
         SceneObject* m_tail{};
 
         HashMap<TypeID, ComponentStorage> m_components{};
+
+        SceneObject(StringView name, RID asset, SceneGlobals* sceneGlobals);
 
         void DoUpdate(f64 deltaTime);
         void DoStart();

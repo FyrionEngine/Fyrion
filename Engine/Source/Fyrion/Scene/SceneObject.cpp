@@ -12,13 +12,9 @@ namespace Fyrion
     {
     }
 
-    SceneObjectIterator::SceneObjectIterator(SceneObject* object, SceneObject* next) : m_object(object), m_next(next)
-    {
-    }
-
     SceneObjectIterator SceneObjectIterator::begin() const
     {
-        return {m_object->m_head, m_object->m_head ? m_object->m_head->m_next : nullptr};
+        return {m_object->m_head};
     }
 
     SceneObjectIterator SceneObjectIterator::end() const
@@ -48,23 +44,15 @@ namespace Fyrion
 
     SceneObjectIterator& SceneObjectIterator::operator++()
     {
-        m_object = m_next;
-        if (m_object)
-        {
-            m_next = m_object->m_next;
-        }
-        else
-        {
-            m_next = nullptr;
-        }
+        m_object = m_object->m_next;
         return *this;
     }
 
-    SceneObject::SceneObject(StringView name, SceneObject* parent) : m_name(name), m_parent(parent)
+    SceneObject::SceneObject(StringView name, SceneObject* parent) : m_name(name), m_parent(parent), m_sceneGlobals(m_parent->m_sceneGlobals)
     {
     }
 
-    SceneObject::SceneObject(StringView name, RID asset, SceneObject* parent) : m_name(name), m_asset(asset), m_parent(parent)
+    SceneObject::SceneObject(RID asset, SceneObject* parent) : m_asset(asset), m_parent(parent), m_sceneGlobals(m_parent->m_sceneGlobals)
     {
         // ResourceObject resource = Repository::Read(asset);
         // if (name.Empty() && resource.Has(SceneObjectAsset::Name))
@@ -86,6 +74,10 @@ namespace Fyrion
         // }
     }
 
+    SceneObject::SceneObject(StringView name, RID asset, SceneGlobals* sceneGlobals) : m_name(name), m_asset(asset), m_sceneGlobals(sceneGlobals)
+    {
+    }
+
     SceneObject::~SceneObject()
     {
         for (auto it : m_components)
@@ -97,9 +89,12 @@ namespace Fyrion
             }
         }
 
-        for (SceneObject& sceneObject : GetChildren())
+        SceneObject* current = m_head;
+        while(current != nullptr)
         {
-            MemoryGlobals::GetDefaultAllocator().DestroyAndFree(&sceneObject);
+            SceneObject* next = current->m_next;
+            MemoryGlobals::GetDefaultAllocator().DestroyAndFree(current);
+            current = next;
         }
     }
 
@@ -112,7 +107,9 @@ namespace Fyrion
 
     SceneObject* SceneObject::NewChild(const RID& asset)
     {
-        return nullptr;
+        SceneObject* sceneObject = MemoryGlobals::GetDefaultAllocator().Alloc<SceneObject>(asset, this);
+        AddChild(sceneObject);
+        return sceneObject;
     }
 
     SceneObject* SceneObject::Duplicate() const
@@ -137,9 +134,9 @@ namespace Fyrion
         return {this};
     }
 
-    SceneObject* SceneObject::GetScene() const
+    SceneGlobals* SceneObject::GetSceneGlobals() const
     {
-        return nullptr;
+        return m_sceneGlobals;
     }
 
     SceneObject* SceneObject::GetParent() const
@@ -312,7 +309,7 @@ namespace Fyrion
         if (!m_markedToDestroy)
         {
             m_markedToDestroy = true;
-            SceneManager::EnqueueDestroy(this);
+            GetSceneGlobals()->EnqueueDestroy(this);
         }
     }
 

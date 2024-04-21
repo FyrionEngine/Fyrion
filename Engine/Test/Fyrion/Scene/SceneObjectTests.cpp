@@ -92,11 +92,13 @@ namespace Fyrion
             Registry::Type<ComponentToRemove, Component>();
 
             SceneObject* object = SceneManager::CreateScene("TestScene");
+            REQUIRE(object);
+
             SceneManager::SetCurrenScene(object);
             CHECK(object->GetParent() == nullptr);
 
-            REQUIRE(object);
-            //CHECK(object->GetScene() == object);
+            SceneGlobals* sceneGlobals = object->GetSceneGlobals();
+            CHECK(sceneGlobals != nullptr);
 
             SceneObject* child = object->NewChild("Child");
             REQUIRE(child);

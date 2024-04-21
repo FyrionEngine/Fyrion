@@ -89,10 +89,10 @@ namespace Fyrion
 
         if (open)
         {
-            // for(SceneObject* child: sceneObjectNode->GetChildren())
-            // {
-            //     DrawSceneObject(child);
-            // }
+            for(SceneObject& child: sceneObjectNode->GetChildren())
+            {
+                DrawSceneObject(&child);
+            }
             ImGui::TreePop();
         }
     }

@@ -14,6 +14,10 @@ namespace Fyrion
         SceneGlobals(StringView name, RID asset);
         SceneObject* GetRootObject();
 
+        SceneObject* FindByRID(const RID& rid) const;
+
+        usize GetObjectCount() { return m_count; }
+
         friend class SceneManager;
         friend class SceneObject;
         friend class Component;
@@ -24,6 +28,7 @@ namespace Fyrion
         Array<Component*>          m_updatables{};
         std::queue<SceneObject*>   m_objectsToDestroy{};
         std::queue<Component*>     m_componentsToStart{};
+        usize                      m_count{};
 
         std::queue<Pair<Component*, TypeHandler*>> m_enqueedToDestroy{};
 

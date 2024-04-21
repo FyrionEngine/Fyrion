@@ -17,7 +17,7 @@ namespace Fyrion
     {
         String currentDir = CurrentDir();
         String assetDir = Path::Join(currentDir, "Assets");
-        while (!FileSystem::GetFileStatus(assetDir).exists)
+        while (!GetFileStatus(assetDir).exists)
         {
             currentDir = Path::Parent(currentDir);
             if (!GetFileStatus(currentDir).exists)
@@ -31,7 +31,7 @@ namespace Fyrion
 
     String FileSystem::TempFolder()
     {
-        return Fyrion::String();
+        return {};
     }
 
     bool FileSystem::CreateDirectory(const StringView& path)

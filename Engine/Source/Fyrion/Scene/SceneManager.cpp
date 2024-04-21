@@ -18,6 +18,7 @@ namespace Fyrion
 
     void SceneGlobals::SceneObjectAdded(SceneObject* sceneObject)
     {
+        m_count++;
         if (sceneObject->m_asset)
         {
             m_objectsByRID.Insert(sceneObject->m_asset, sceneObject);
@@ -26,6 +27,7 @@ namespace Fyrion
 
     void SceneGlobals::SceneObjectRemoved(SceneObject* sceneObject)
     {
+        m_count--;
         if (sceneObject->m_asset)
         {
             m_objectsByRID.Erase(sceneObject->m_asset);
@@ -35,6 +37,15 @@ namespace Fyrion
     SceneObject* SceneGlobals::GetRootObject()
     {
         return &m_rootObject;
+    }
+
+    SceneObject* SceneGlobals::FindByRID(const RID& rid) const
+    {
+        if (const auto& it = m_objectsByRID.Find(rid))
+        {
+            return it->second;
+        }
+        return nullptr;
     }
 
     void SceneGlobals::EnqueueDestroy(SceneObject* sceneObject)

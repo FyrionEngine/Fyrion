@@ -1,7 +1,6 @@
 #include <doctest.h>
 
 #include "Fyrion/Common.hpp"
-#include "Fyrion/Core/TypeInfo.hpp"
 #include "Fyrion/Resource/ResourceTypes.hpp"
 #include "Fyrion/Core/String.hpp"
 #include "Fyrion/Resource/Repository.hpp"

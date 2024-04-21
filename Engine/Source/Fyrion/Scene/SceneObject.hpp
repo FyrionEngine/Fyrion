@@ -117,6 +117,7 @@ namespace Fyrion
         SceneGlobals* m_sceneGlobals{};
         bool          m_markedToDestroy{};
 
+        usize        m_order{};
         SceneObject* m_prev{};
         SceneObject* m_next{};
 
@@ -130,5 +131,6 @@ namespace Fyrion
 
         void AddChild(SceneObject* object);
         void DestroyImmediate();
+        void LoadAsset(RID asset);
     };
 }

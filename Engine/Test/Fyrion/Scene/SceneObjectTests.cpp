@@ -23,7 +23,7 @@ namespace Fyrion
 
         void OnUpdate(f64 deltaTime) override
         {
-            CHECK(false); // this should never execute because SetUpdateEnabled is not Enabled;
+            CHECK(false); // this should never execute because EnableComponentUpdate is not Enabled;
         }
     };
 
@@ -172,6 +172,7 @@ namespace Fyrion
     {
         Engine::Init();
         {
+
         }
         Engine::Destroy();
     }

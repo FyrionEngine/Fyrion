@@ -2,6 +2,7 @@
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Editor/EditorTypes.hpp"
 #include "Fyrion/Editor/MenuItem.hpp"
+#include "Fyrion/Resource/ResourceTypes.hpp"
 
 namespace Fyrion
 {
@@ -24,7 +25,7 @@ namespace Fyrion
         bool         m_renamingSelected{};
         bool         m_entityIsSelected{};
 
-        void        DrawSceneObject(SceneObject* sceneObjectNode);
+        void        DrawSceneObject(RID object);
         static void OpenSceneTree(VoidPtr userData);
         static void AddSceneObject(VoidPtr userData);
         static void AddSceneObjectFromAsset(VoidPtr userData);

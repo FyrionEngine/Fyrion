@@ -8,60 +8,46 @@
 
 namespace Fyrion
 {
-    SceneEditor::SceneEditor()
-    {
-        Repository::AddResourceTypeEvent(GetTypeID<SceneObjectAsset>(), this,
-                                         ResourceEventType::Insert | ResourceEventType::Update | ResourceEventType::Destroy
-                                         , SceneObjectAssetChanged);
-    }
-
-    SceneEditor::~SceneEditor()
-    {
-        Repository::RemoveResourceTypeEvent(GetTypeID<SceneObjectAsset>(), this, SceneObjectAssetChanged);
-    }
-
     void SceneEditor::LoadScene(const RID rid)
     {
-        m_loading = true;
-        m_rootObject = SceneManager::LoadScene(rid);
-        m_loading = false;
+        m_count = 0;
+
+        ResourceObject asset = Repository::Read(rid);
+        m_rootObject = asset[Asset::Object].As<RID>();
     }
 
-    SceneObject* SceneEditor::GetRootObject() const
+    RID SceneEditor::GetRootObject() const
     {
+        //return m_rootObject;
         return m_rootObject;
-    }
-
-    SceneObject* SceneEditor::FindObjectByRID(const RID rid) const
-    {
-        return m_rootObject->GetSceneGlobals()->FindByRID(rid);
     }
 
     bool SceneEditor::IsLoaded() const
     {
-        return m_rootObject != nullptr;
+        return m_rootObject;
     }
 
     void SceneEditor::CreateObject()
     {
-        if (m_rootObject == nullptr) return;
+        if (!m_rootObject) return;
 
         if (m_selectedObjects.Empty())
         {
-            RID entityRID = Repository::CreateResource<SceneObjectAsset>();
+            RID object = Repository::CreateResource<SceneObjectAsset>();
 
-            ResourceObject root = Repository::Write(m_rootObject->GetAsset());
-            u64            size = root.GetSubObjectSetCount(SceneObjectAsset::Children);
+            ResourceObject root = Repository::Write(m_rootObject);
 
-            ResourceObject write = Repository::Write(entityRID);
-            write[SceneObjectAsset::Name] = "Object " + ToString(m_count);
-            write[SceneObjectAsset::Order] = size;
-            write[SceneObjectAsset::Parent] = m_rootObject->GetAsset();
+            ResourceObject write = Repository::Write(object);
+            write[SceneObjectAsset::Name] = "Object " + ToString(m_count++);
             write.Commit();
 
-            Repository::SetUUID(entityRID, UUID::RandomUUID());
+            Repository::SetUUID(object, UUID::RandomUUID());
 
-            root.AddToSubObjectSet(SceneObjectAsset::Children, entityRID);
+            Array<RID> children = root[SceneObjectAsset::ChildrenSort].Value<Array<RID>>();
+            children.EmplaceBack(object);
+            root[SceneObjectAsset::ChildrenSort] = children;
+
+            root.AddToSubObjectSet(SceneObjectAsset::Children, object);
             root.Commit();
         }
         else
@@ -71,25 +57,22 @@ namespace Fyrion
 
             for (const auto& it : selected)
             {
-                if (SceneObject* parent = FindObjectByRID(it.first))
-                {
-                    ResourceObject writeParent = Repository::Write(parent->GetAsset());
-                    u64            size = writeParent.GetSubObjectSetCount(SceneObjectAsset::Children);
+                ResourceObject writeParent = Repository::Write(it.first);
 
-                    RID objectRid = Repository::CreateResource<SceneObjectAsset>();
-                    m_selectedObjects.Emplace(objectRid);
+                RID object = Repository::CreateResource<SceneObjectAsset>();
+                m_selectedObjects.Emplace(object);
 
-                    ResourceObject write = Repository::Write(objectRid);
-                    write[SceneObjectAsset::Name] = "Object " + ToString(m_count);
-                    write[SceneObjectAsset::Order] = size;
-                    write[SceneObjectAsset::Parent] = parent->GetAsset();
-                    write.Commit();
+                ResourceObject write = Repository::Write(object);
+                write[SceneObjectAsset::Name] = "Object " + ToString(m_count++);
+                write.Commit();
 
-                    Repository::SetUUID(objectRid, UUID::RandomUUID());
+                Repository::SetUUID(object, UUID::RandomUUID());
 
-                    writeParent.AddToSubObjectSet(SceneObjectAsset::Children, objectRid);
-                    writeParent.Commit();
-                }
+                Array<RID> children = writeParent[SceneObjectAsset::ChildrenSort].Value<Array<RID>>();
+                children.EmplaceBack(object);
+                writeParent[SceneObjectAsset::ChildrenSort] = children;
+                writeParent.AddToSubObjectSet(SceneObjectAsset::Children, object);
+                writeParent.Commit();
             }
         }
         Editor::GetAssetTree().MarkDirty();
@@ -97,52 +80,47 @@ namespace Fyrion
 
     void SceneEditor::DestroySelectedObjects()
     {
-        if (m_rootObject == nullptr) return;
+        if (!m_rootObject) return;
 
         for (auto it : m_selectedObjects)
         {
-            if (SceneObject* object = FindObjectByRID(it.first))
-            {
-                if (m_rootObject != object && object->GetAsset())
-                {
-                    Repository::DestroyResource(object->GetAsset());
-                }
-            }
+            Repository::DestroyResource(it.first);
         }
 
         m_selectedObjects.Clear();
-        m_lastSelectedObject = nullptr;
+        m_lastSelectedRid = {};
+
         Editor::GetAssetTree().MarkDirty();
     }
 
     void SceneEditor::ClearSelection()
     {
         m_selectedObjects.Clear();
-        m_lastSelectedObject = nullptr;
+        m_lastSelectedRid = {};
     }
 
-    void SceneEditor::SelectObject(SceneObject* object)
+    void SceneEditor::SelectObject(RID object)
     {
-        m_selectedObjects.Emplace(object->GetAsset());
-        m_lastSelectedObject = object;
+        m_selectedObjects.Emplace(object);
+        m_lastSelectedRid = object;
     }
 
-    bool SceneEditor::IsSelected(SceneObject* object)
+    bool SceneEditor::IsSelected(RID object)
     {
-        return m_selectedObjects.Has(object->GetAsset());
+        return m_selectedObjects.Has(object);
     }
 
-    bool SceneEditor::IsParentOfSelected(SceneObject* object) const
+    bool SceneEditor::IsParentOfSelected(RID object) const
     {
         for (const auto& it : m_selectedObjects)
         {
-            if (SceneObject* selectedObj = FindObjectByRID(it.first))
-            {
-                if (selectedObj->GetParent() == object)
-                {
-                    return true;
-                }
-            }
+            // if (SceneObject* selectedObj = FindObjectByRID(it.first))
+            // {
+            //     if (selectedObj->GetParent() == object)
+            //     {
+            //         return true;
+            //     }
+            // }
         }
         return false;
     }
@@ -154,38 +132,18 @@ namespace Fyrion
 
     SceneObject* SceneEditor::GetLastSelectedObject() const
     {
-        return m_lastSelectedObject;
+        return nullptr;
     }
 
-    //TODO - this is a bit strange, needs to be refactored
-    void SceneEditor::SceneObjectAssetChanged(VoidPtr userData, ResourceEventType eventType, ResourceObject& oldObject, ResourceObject& newObject)
+    void SceneEditor::AddComponent(SceneObject* object, TypeHandler* typeHandler)
     {
-        SceneEditor* sceneEditor = static_cast<SceneEditor*>(userData);
+        RID component = Repository::CreateResource(typeHandler->GetTypeInfo().typeId);
+        VoidPtr instance = typeHandler->NewInstance();
+        Repository::Commit(component, instance);
+        typeHandler->Destroy(instance);
 
-        if (eventType == ResourceEventType::Insert)
-        {
-            sceneEditor->m_count++;
-        }
-
-        if (sceneEditor->m_rootObject)
-        {
-            if (!sceneEditor->m_loading)
-            {
-                if (eventType == ResourceEventType::Insert)
-                {
-                    if (SceneObject* object = sceneEditor->FindObjectByRID(newObject[SceneObjectAsset::Parent].As<RID>()))
-                    {
-                        object->NewChild(newObject.GetRID());
-                    }
-                }
-                else if (eventType == ResourceEventType::Destroy)
-                {
-                    if (SceneObject* object = sceneEditor->FindObjectByRID(oldObject.GetRID()))
-                    {
-                        object->Destroy();
-                    }
-                }
-            }
-        }
+        ResourceObject write = Repository::Write(object->GetAsset());
+        write.AddToSubObjectSet(SceneObjectAsset::Components, component);
+        write.Commit();
     }
 }

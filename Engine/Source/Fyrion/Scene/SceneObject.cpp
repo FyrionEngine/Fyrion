@@ -67,7 +67,7 @@ namespace Fyrion
 
     SceneObject::~SceneObject()
     {
-        for (auto it : m_components)
+        for (const auto& it : m_components)
         {
             for (Component* instance : it.second.instances)
             {
@@ -293,39 +293,42 @@ namespace Fyrion
 
     void SceneObject::LoadAsset(RID asset)
     {
-        if (!asset) return;
-
-        ResourceObject resource = Repository::Read(asset);
-        if (m_name.Empty() && resource.Has(SceneObjectAsset::Name))
-        {
-            m_name = resource[SceneObjectAsset::Name].As<String>();
-        }
-
-        if (resource.Has(SceneObjectAsset::Order))
-        {
-            m_order = resource[SceneObjectAsset::Order].As<u64>();
-        }
-
-        //TODO find a better way to sort entities, since GetSubObjectSetAsArray is not sorted.
-        Array<RID> children = resource.GetSubObjectSetAsArray(SceneObjectAsset::Children);
-
-        Array<SceneObject*> childrenObj{};
-        childrenObj.Reserve(children.Size());
-
-        for (RID child : children)
-        {
-            childrenObj.EmplaceBack(MemoryGlobals::GetDefaultAllocator().Alloc<SceneObject>(child, this));
-        }
-
-        Sort(childrenObj.begin(), childrenObj.end(), [](const SceneObject* a, const SceneObject* b)
-        {
-            return a->m_order < b->m_order;
-        });
-
-        for(SceneObject* child: childrenObj)
-        {
-            AddChild(child);
-        }
+        // if (!asset) return;
+        //
+        // ResourceObject resource = Repository::Read(asset);
+        // if (m_name.Empty() && resource.Has(SceneObjectAsset::Name))
+        // {
+        //     m_name = resource[SceneObjectAsset::Name].As<String>();
+        // }
+        //
+        //
+        //
+        // //TODO find a better way to sort entities, since GetSubObjectSetAsArray is not sorted.
+        //
+        // Array<RID> children = resource.GetSubObjectSetAsArray(SceneObjectAsset::Children);
+        //
+        // Array<SceneObject*> childrenObj{};
+        // childrenObj.Reserve(children.Size());
+        //
+        // for (RID child : children)
+        // {
+        //     SceneObject* childObject = GetSceneGlobals()->FindByRID(child);
+        //     if (childObject == nullptr)
+        //     {
+        //         childObject = MemoryGlobals::GetDefaultAllocator().Alloc<SceneObject>(child, this);
+        //     }
+        //     childrenObj.EmplaceBack(childObject);
+        // }
+        //
+        // Sort(childrenObj.begin(), childrenObj.end(), [](const SceneObject* a, const SceneObject* b)
+        // {
+        //     return a->m_order < b->m_order;
+        // });
+        //
+        // for(SceneObject* child: childrenObj)
+        // {
+        //     AddChild(child);
+        // }
     }
 
     void SceneObject::RegisterType(NativeTypeHandler<SceneObject>& type)

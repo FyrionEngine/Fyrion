@@ -16,7 +16,7 @@ namespace Fyrion
 
         SceneObject* FindByRID(const RID& rid) const;
 
-        usize GetObjectCount() { return m_count; }
+        usize GetObjectCount() const { return m_count; }
 
         friend class SceneManager;
         friend class SceneObject;

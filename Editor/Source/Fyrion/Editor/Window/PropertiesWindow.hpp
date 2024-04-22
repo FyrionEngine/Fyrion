@@ -16,9 +16,10 @@ namespace Fyrion
         String              m_StringCache{};
         bool				m_renamingFocus{};
         String				m_renamingCache{};
+        String              m_searchComponentString{};
 
         static void OpenProperties(VoidPtr userData);
 
-        void DrawSceneObject(SceneObject* sceneObject);
+        void DrawSceneObject(u32 id, SceneObject* sceneObject);
     };
 }

@@ -10,31 +10,27 @@ namespace Fyrion
     class FY_API SceneEditor final
     {
     public:
-        SceneEditor();
-        ~SceneEditor();
+        SceneEditor() = default;
         SceneEditor(const SceneEditor& other) = delete;
         SceneEditor(SceneEditor&& other) noexcept = default;
 
         void         LoadScene(RID rid);
         bool         IsLoaded() const;
-        SceneObject* GetRootObject() const;
-        SceneObject* FindObjectByRID(RID rid) const;
+        RID          GetRootObject() const;
         void         CreateObject();
         void         DestroySelectedObjects();
         void         ClearSelection();
-        void         SelectObject(SceneObject* object);
-        bool         IsSelected(SceneObject* object);
-        bool         IsParentOfSelected(SceneObject* object) const;
+        void         SelectObject(RID object);
+        bool         IsSelected(RID object);
+        bool         IsParentOfSelected(RID object) const;
         bool         IsSimulating();
         SceneObject* GetLastSelectedObject() const;
+        void         AddComponent(SceneObject* object, TypeHandler* typeHandler);
 
     private:
-        SceneObject* m_rootObject{};
+        RID          m_rootObject{};
         HashSet<RID> m_selectedObjects{};
-        SceneObject* m_lastSelectedObject{};
-        bool         m_loading{};
-        u64          m_count{};
-
-        static void  SceneObjectAssetChanged(VoidPtr userData, ResourceEventType eventType, ResourceObject& oldObject, ResourceObject& newObject);
+        RID          m_lastSelectedRid{};
+        u64          m_count{}; //TODO this count is just for creating the object names, but it doesn't work correct.
     };
 }

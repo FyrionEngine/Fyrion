@@ -19,6 +19,7 @@ namespace Fyrion
         virtual void OnStart(){}
         virtual void OnDestroy(){}
         virtual void OnUpdate(f64 deltaTime){}
+        virtual void OnNotify(i64 type) {}
 
         static void RegisterType(NativeTypeHandler<Component>& type);
 

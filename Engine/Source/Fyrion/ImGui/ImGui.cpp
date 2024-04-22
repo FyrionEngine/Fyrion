@@ -255,6 +255,14 @@ namespace ImGui
         return Button(label, sizeArg);
     }
 
+
+    bool BorderedButton(const char* label, const ImVec2& size)
+    {
+        ImGui::StyleColor border(ImGuiCol_Border,  ImVec4(0.46f, 0.49f, 0.50f, 0.67f));
+        return ImGui::Button(label, size);
+    }
+
+
     ImU32 TextToColor(const char* str)
     {
         auto color = ImHashStr(str, strlen(str));

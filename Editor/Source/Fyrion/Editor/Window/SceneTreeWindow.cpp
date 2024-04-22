@@ -3,6 +3,8 @@
 #include "Fyrion/Editor/Editor.hpp"
 #include "Fyrion/ImGui/IconsFontAwesome6.h"
 #include "Fyrion/ImGui/ImGui.hpp"
+#include "Fyrion/Resource/Repository.hpp"
+#include "Fyrion/Scene/SceneAssets.hpp"
 
 namespace Fyrion
 {
@@ -12,32 +14,34 @@ namespace Fyrion
     {
     }
 
-    void SceneTreeWindow::DrawSceneObject(SceneObject* sceneObjectNode)
+    void SceneTreeWindow::DrawSceneObject(RID object)
     {
-        if (sceneObjectNode == nullptr) return;
+        ResourceObject read = Repository::Read(object);
+        Array<RID> children = read[SceneObjectAsset::ChildrenSort].Value<Array<RID>>();
+
 
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
 
-        bool root = sceneObjectNode->GetParent() == nullptr;
+        bool root = false; // sceneObjectNode->GetParent() == nullptr;
 
         m_nameCache.Clear();
         m_nameCache += root ? ICON_FA_CUBES : ICON_FA_CUBE;
         m_nameCache += " ";
-        m_nameCache += sceneObjectNode->GetName();
+        m_nameCache += read[SceneObjectAsset::Name].Value<String>();
 
-        bool isSelected =  m_sceneEditor.IsSelected(sceneObjectNode);
+        bool isSelected =  m_sceneEditor.IsSelected(object);
         auto treeFlags = isSelected ? ImGuiTreeNodeFlags_Selected | ImGuiTreeNodeFlags_SpanAllColumns : ImGuiTreeNodeFlags_SpanAllColumns;
         bool open = false;
 
-        ImGuiID treeId = static_cast<ImGuiID>(HashValue(sceneObjectNode->GetAsset()));
+        ImGuiID treeId = static_cast<ImGuiID>(HashValue(object));
 
         if (root)
         {
             ImGui::SetNextItemOpen(true, ImGuiCond_Once);
         }
 
-        if (m_sceneEditor.IsParentOfSelected(sceneObjectNode))
+        if (m_sceneEditor.IsParentOfSelected(object))
         {
             ImGui::SetNextItemOpen(true, ImGuiCond_Always);
         }
@@ -46,7 +50,7 @@ namespace Fyrion
         {
 
         }
-        else if (sceneObjectNode->GetChildrenCount() > 0)
+        else if (children.Size() > 0)
         {
             open = ImGui::TreeNode(treeId, m_nameCache.CStr(), treeFlags);
         }
@@ -73,7 +77,7 @@ namespace Fyrion
             {
                 m_sceneEditor.ClearSelection();
             }
-            m_sceneEditor.SelectObject(sceneObjectNode);
+            m_sceneEditor.SelectObject(object);
         }
 
         if (ImGui::IsMouseReleased(ImGuiMouseButton_Right) && isHovered)
@@ -89,9 +93,9 @@ namespace Fyrion
 
         if (open)
         {
-            for(SceneObject& child: sceneObjectNode->GetChildren())
+            for(RID child: children)
             {
-                DrawSceneObject(&child);
+                DrawSceneObject(child);
             }
             ImGui::TreePop();
         }

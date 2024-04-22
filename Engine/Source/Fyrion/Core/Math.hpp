@@ -3,6 +3,8 @@
 #include "Fyrion/Common.hpp"
 #include "Hash.hpp"
 
+#include <cmath>
+
 namespace Fyrion
 {
     template <typename T>

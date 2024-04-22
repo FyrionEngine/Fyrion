@@ -15,7 +15,7 @@ namespace Fyrion
         SceneObject* object = Editor::GetSceneEditor().GetLastSelectedObject();
         if (object)
         {
-            DrawSceneObject(object);
+            DrawSceneObject(id, object);
         }
 
         ImGui::End();
@@ -26,7 +26,7 @@ namespace Fyrion
         Editor::OpenWindow<PropertiesWindow>();
     }
 
-    void PropertiesWindow::DrawSceneObject(SceneObject* sceneObject)
+    void PropertiesWindow::DrawSceneObject(u32 id, SceneObject* sceneObject)
     {
         ImGuiStyle& style = ImGui::GetStyle();
         bool readOnly = false;
@@ -74,6 +74,85 @@ namespace Fyrion
 
         }
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5 * style.ScaleFactor);
+
+        f32 width = ImGui::GetContentRegionAvail().x;
+        auto size = ImGui::GetFontSize() + style.FramePadding.y * 2.0f;
+
+        ImGui::BeginHorizontal(9999, ImVec2(width, size));
+
+        ImGui::Spring(1.f);
+        bool addComponent = false;
+
+        ImGui::BeginDisabled(readOnly);
+
+        if (ImGui::BorderedButton("Add Component", ImVec2(width * 2 / 3, size)))
+        {
+            addComponent = true;
+        }
+
+        ImGui::EndDisabled();
+
+        ImVec2 max = ImGui::GetItemRectMax();
+        ImVec2 min = ImGui::GetItemRectMin();
+
+        ImGui::Spring(1.f);
+
+        ImGui::EndHorizontal();
+
+        RID openAsset{};
+
+        // if (entityData.rid)
+        // {
+        //
+        //     ImGui::BeginHorizontal(9999, ImVec2(width, size));
+        //     ImGui::Spring(1.f);
+        //
+        //     if (ImGui::BorderedButton("Open Asset", ImVec2((width * 2) / 3, size)))
+        //     {
+        //         openAsset = entityData.rid;
+        //     }
+        //
+        //     ImGui::Spring(1.f);
+        //     ImGui::EndHorizontal();
+        // }
+
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5 * style.ScaleFactor);
+
+        // draw components
+
+        if (addComponent)
+        {
+            ImGui::OpenPopup("add-component-popup");
+        }
+
+        ImGui::SetNextWindowPos(ImVec2(min.x, max.y + 5));
+        auto sizePopup = max.x - min.x;
+        ImGui::SetNextWindowSize(ImVec2(sizePopup, 0), ImGuiCond_Appearing);
+
+        auto popupRes = ImGui::BeginPopupMenu("add-component-popup", 0, false);
+        if (popupRes)
+        {
+            ImGui::SetNextItemWidth(sizePopup - style.WindowPadding.x * 2);
+            ImGui::SearchInputText(id + 100, m_searchComponentString);
+            ImGui::Separator();
+
+            TypeHandler* componentHandler = Registry::FindType<Component>();
+            if (componentHandler)
+            {
+                for (DerivedType& derivedType : componentHandler->GetDerivedTypes())
+                {
+                    TypeHandler* typeHandler = Registry::FindTypeById(derivedType.typeId);
+                    if (typeHandler)
+                    {
+                        if (ImGui::Selectable(typeHandler->GetSimpleName().CStr()))
+                        {
+                            Editor::GetSceneEditor().AddComponent(sceneObject, typeHandler);
+                        }
+                    }
+                }
+            }
+        }
+        ImGui::EndPopupMenu(popupRes);
 
     }
 

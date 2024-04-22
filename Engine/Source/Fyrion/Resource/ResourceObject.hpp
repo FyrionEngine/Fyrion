@@ -24,6 +24,9 @@ namespace Fyrion
         const T& As();
 
         template<typename T>
+        T Value();
+
+        template<typename T>
         ResourceObjectValue& operator=(const T& value);
     private:
         u32 m_index;
@@ -103,6 +106,17 @@ namespace Fyrion
     const T& ResourceObjectValue::As()
     {
         return *static_cast<const T*>(m_resourceObject->GetValue(m_index));
+    }
+
+    template <typename T>
+    T ResourceObjectValue::Value()
+    {
+        ConstPtr value = m_resourceObject->GetValue(m_index);
+        if (value)
+        {
+            return *static_cast<const T*>(m_resourceObject->GetValue(m_index));
+        }
+        return {};
     }
 
     template<typename T>

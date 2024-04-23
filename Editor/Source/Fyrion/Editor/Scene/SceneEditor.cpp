@@ -3,23 +3,48 @@
 #include "Fyrion/Editor/Editor.hpp"
 #include "Fyrion/Resource/AssetTree.hpp"
 #include "Fyrion/Resource/Repository.hpp"
-#include "Fyrion/Scene/SceneManager.hpp"
 #include "Fyrion/Scene/SceneAssets.hpp"
 
 namespace Fyrion
 {
     void SceneEditor::LoadScene(const RID rid)
     {
-        m_count = 0;
+        m_asset = rid;
 
         ResourceObject asset = Repository::Read(rid);
-        m_rootObject = asset[Asset::Object].As<RID>();
+        m_rootObject = asset[Asset::Object].Value<RID>();
+        m_rootName = asset[Asset::Name].Value<String>();
+
+        m_count = SubObjectCount(m_rootObject); //TODO(Fyrion) : maybe m_count storing it will be better.
+    }
+
+    u64 SceneEditor::SubObjectCount(RID rid)
+    {
+        u64 count{};
+
+        ResourceObject object = Repository::Read(rid);
+        if (object.Has(SceneObjectAsset::Children))
+        {
+            Array<RID> children = object.GetSubObjectSetAsArray(SceneObjectAsset::Children);
+            count = children.Size();
+
+            for (RID child : children)
+            {
+                count += SubObjectCount(child);
+            }
+        }
+        return count;
     }
 
     RID SceneEditor::GetRootObject() const
     {
-        //return m_rootObject;
         return m_rootObject;
+    }
+
+    StringView SceneEditor::GetRootName() const
+    {
+        ResourceObject asset = Repository::Read(m_asset);
+        return asset[Asset::Name].Value<StringView>();
     }
 
     bool SceneEditor::IsLoaded() const
@@ -61,6 +86,7 @@ namespace Fyrion
 
                 RID object = Repository::CreateResource<SceneObjectAsset>();
                 m_selectedObjects.Emplace(object);
+                m_lastSelectedRid = object;
 
                 ResourceObject write = Repository::Write(object);
                 write[SceneObjectAsset::Name] = "Object " + ToString(m_count++);
@@ -82,8 +108,22 @@ namespace Fyrion
     {
         if (!m_rootObject) return;
 
-        for (auto it : m_selectedObjects)
+        for (const auto& it : m_selectedObjects)
         {
+            if (m_rootObject == it.first) continue;
+
+            if (RID parent = Repository::GetParent(it.first))
+            {
+                ResourceObject writeParent = Repository::Write(parent);
+                Array<RID> children = writeParent[SceneObjectAsset::ChildrenSort].Value<Array<RID>>();
+                auto itArr = FindFirst(children.begin(), children.end(), it.first);
+                if (itArr)
+                {
+                    children.Erase(itArr, itArr + 1);
+                }
+                writeParent[SceneObjectAsset::ChildrenSort] = children;
+                writeParent.Commit();
+            }
             Repository::DestroyResource(it.first);
         }
 
@@ -105,7 +145,7 @@ namespace Fyrion
         m_lastSelectedRid = object;
     }
 
-    bool SceneEditor::IsSelected(RID object)
+    bool SceneEditor::IsSelected(RID object) const
     {
         return m_selectedObjects.Has(object);
     }
@@ -114,13 +154,10 @@ namespace Fyrion
     {
         for (const auto& it : m_selectedObjects)
         {
-            // if (SceneObject* selectedObj = FindObjectByRID(it.first))
-            // {
-            //     if (selectedObj->GetParent() == object)
-            //     {
-            //         return true;
-            //     }
-            // }
+            if (Repository::GetParent(it.first) == object)
+            {
+                return true;
+            }
         }
         return false;
     }
@@ -130,19 +167,24 @@ namespace Fyrion
         return false;
     }
 
-    SceneObject* SceneEditor::GetLastSelectedObject() const
+    void SceneEditor::RenameObject(RID rid, const StringView& newName)
     {
-        return nullptr;
+
     }
 
-    void SceneEditor::AddComponent(SceneObject* object, TypeHandler* typeHandler)
+    RID SceneEditor::GetLastSelectedObject() const
+    {
+        return m_lastSelectedRid;
+    }
+
+    void SceneEditor::AddComponent(RID object, TypeHandler* typeHandler)
     {
         RID component = Repository::CreateResource(typeHandler->GetTypeInfo().typeId);
         VoidPtr instance = typeHandler->NewInstance();
         Repository::Commit(component, instance);
         typeHandler->Destroy(instance);
 
-        ResourceObject write = Repository::Write(object->GetAsset());
+        ResourceObject write = Repository::Write(object);
         write.AddToSubObjectSet(SceneObjectAsset::Components, component);
         write.Commit();
     }

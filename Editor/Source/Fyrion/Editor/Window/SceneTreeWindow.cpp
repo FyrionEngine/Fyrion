@@ -17,18 +17,18 @@ namespace Fyrion
     void SceneTreeWindow::DrawSceneObject(RID object)
     {
         ResourceObject read = Repository::Read(object);
-        Array<RID> children = read[SceneObjectAsset::ChildrenSort].Value<Array<RID>>();
+        Span<RID> children = read[SceneObjectAsset::ChildrenSort].Value<Span<RID>>();
 
 
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
 
-        bool root = false; // sceneObjectNode->GetParent() == nullptr;
+        bool root = m_sceneEditor.GetRootObject() == object;
 
         m_nameCache.Clear();
         m_nameCache += root ? ICON_FA_CUBES : ICON_FA_CUBE;
         m_nameCache += " ";
-        m_nameCache += read[SceneObjectAsset::Name].Value<String>();
+        m_nameCache += root ? m_sceneEditor.GetRootName() : read[SceneObjectAsset::Name].Value<StringView>();
 
         bool isSelected =  m_sceneEditor.IsSelected(object);
         auto treeFlags = isSelected ? ImGuiTreeNodeFlags_Selected | ImGuiTreeNodeFlags_SpanAllColumns : ImGuiTreeNodeFlags_SpanAllColumns;
@@ -242,7 +242,7 @@ namespace Fyrion
     {
         Editor::AddMenuItem(MenuItemCreation{.itemName = "Window/Scene Tree", .action = OpenSceneTree});
 
-        AddMenuItem(MenuItemCreation{.itemName = "Add Object", .priority = 0, .action = AddSceneObject});
+        AddMenuItem(MenuItemCreation{.itemName = "Add Empty Object", .priority = 0, .action = AddSceneObject});
         AddMenuItem(MenuItemCreation{.itemName = "Add Object From Asset", .priority = 10, .action = AddSceneObjectFromAsset});
         AddMenuItem(MenuItemCreation{.itemName = "Add Component", .priority = 20, .action = AddComponent});
         AddMenuItem(MenuItemCreation{.itemName = "Rename", .priority = 200, .itemShortcut = {.presKey = Key::F2}, .action = RenameSceneObject});

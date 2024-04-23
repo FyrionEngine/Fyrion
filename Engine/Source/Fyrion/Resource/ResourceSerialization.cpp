@@ -715,7 +715,7 @@ namespace Fyrion::ResourceSerialization
         context.buffer.Append("\"");
         context.buffer.Append("\n");
 
-        RID prototype = Repository::GetPrototypeRID(rid);
+        RID prototype = Repository::GetPrototype(rid);
         if (prototype)
         {
             context.Indent();

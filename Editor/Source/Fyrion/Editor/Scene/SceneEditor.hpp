@@ -14,23 +14,29 @@ namespace Fyrion
         SceneEditor(const SceneEditor& other) = delete;
         SceneEditor(SceneEditor&& other) noexcept = default;
 
-        void         LoadScene(RID rid);
-        bool         IsLoaded() const;
-        RID          GetRootObject() const;
-        void         CreateObject();
-        void         DestroySelectedObjects();
-        void         ClearSelection();
-        void         SelectObject(RID object);
-        bool         IsSelected(RID object);
-        bool         IsParentOfSelected(RID object) const;
-        bool         IsSimulating();
-        SceneObject* GetLastSelectedObject() const;
-        void         AddComponent(SceneObject* object, TypeHandler* typeHandler);
+        void          LoadScene(RID rid);
+        bool          IsLoaded() const;
+        RID           GetRootObject() const;
+        StringView    GetRootName() const;
+        void          CreateObject();
+        void          DestroySelectedObjects();
+        void          ClearSelection();
+        void          SelectObject(RID object);
+        bool          IsSelected(RID object) const;
+        bool          IsParentOfSelected(RID object) const;
+        bool          IsSimulating();
+        RID           GetLastSelectedObject() const;
+        void          RenameObject(RID rid, const StringView& newName);
+        void          AddComponent(RID object, TypeHandler* typeHandler);
 
     private:
         RID          m_rootObject{};
+        RID          m_asset{};
+        String       m_rootName{};
         HashSet<RID> m_selectedObjects{};
         RID          m_lastSelectedRid{};
         u64          m_count{}; //TODO this count is just for creating the object names, but it doesn't work correct.
+
+        static u64 SubObjectCount(RID rid);
     };
 }

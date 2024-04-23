@@ -11,6 +11,7 @@ namespace Fyrion
     struct ObjectValueHandler
     {
         static void SetValue(ResourceObject& resourceObject, u32 index, const T& value);
+        static T GetValue(ResourceObject& resourceObject, u32 index);
     };
 
 
@@ -111,12 +112,7 @@ namespace Fyrion
     template <typename T>
     T ResourceObjectValue::Value()
     {
-        ConstPtr value = m_resourceObject->GetValue(m_index);
-        if (value)
-        {
-            return *static_cast<const T*>(m_resourceObject->GetValue(m_index));
-        }
-        return {};
+        return ObjectValueHandler<T>::GetValue(*m_resourceObject, m_index);
     }
 
     template<typename T>
@@ -124,6 +120,16 @@ namespace Fyrion
     {
         ObjectValueHandler<T>::SetValue(*m_resourceObject, m_index, value);
         return *this;
+    }
+
+    template <typename T>
+    T ObjectValueHandler<T>::GetValue(ResourceObject& resourceObject, u32 index)
+    {
+        if (ConstPtr value = resourceObject.GetValue(index))
+        {
+            return *static_cast<const T*>(resourceObject.GetValue(index));
+        }
+        return {};
     }
 
     template<typename T>
@@ -139,6 +145,37 @@ namespace Fyrion
         {
             String valueStr{value};
             resourceObject.SetValue(index, &valueStr);
+        }
+
+        static StringView GetValue(ResourceObject& resourceObject, u32 index)
+        {
+            if (ConstPtr value = resourceObject.GetValue(index))
+            {
+                const String& strValue = *static_cast<const String*>(resourceObject.GetValue(index));
+                return {strValue};
+            }
+            return {};
+        }
+    };
+
+    template<typename T>
+    struct ObjectValueHandler<Span<T>>
+    {
+        static void SetValue(ResourceObject& resourceObject, u32 index, const Span<T>& value)
+        {
+            FY_ASSERT(false, "TODO");
+            // String valueStr{value};
+            // resourceObject.SetValue(index, &valueStr);
+        }
+
+        static Span<T> GetValue(ResourceObject& resourceObject, u32 index)
+        {
+            if (ConstPtr value = resourceObject.GetValue(index))
+            {
+                const Array<T>& arrValue = *static_cast<const Array<T>*>(resourceObject.GetValue(index));
+                return {arrValue};
+            }
+            return {};
         }
     };
 

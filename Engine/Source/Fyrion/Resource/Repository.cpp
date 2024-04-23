@@ -562,12 +562,22 @@ namespace Fyrion
         return storage->uuid;
     }
 
-    RID Repository::GetPrototypeRID(const RID& rid)
+    RID Repository::GetPrototype(const RID& rid)
     {
         ResourceStorage* storage = &pages[rid.page]->elements[rid.offset];
         if (storage->prototype)
         {
             return storage->prototype->rid;
+        }
+        return {};
+    }
+
+    RID Repository::GetParent(const RID& rid)
+    {
+        ResourceStorage* storage = &pages[rid.page]->elements[rid.offset];
+        if (storage->parent)
+        {
+            return storage->parent->rid;
         }
         return {};
     }

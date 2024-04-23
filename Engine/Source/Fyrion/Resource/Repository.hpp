@@ -27,7 +27,8 @@ namespace Fyrion
         FY_API void             SetPath(const RID& rid, const StringView& path);
         FY_API void             RemovePath(const StringView& path);
         FY_API UUID             GetUUID(const RID& rid);
-        FY_API RID              GetPrototypeRID(const RID& rid);
+        FY_API RID              GetPrototype(const RID& rid);
+        FY_API RID              GetParent(const RID& rid);
         FY_API RID              GetByUUID(const UUID& uuid);
         FY_API RID              GetByPath(const StringView& path);
         FY_API TypeID           GetResourceTypeID(const RID& rid);

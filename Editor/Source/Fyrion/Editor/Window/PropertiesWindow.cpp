@@ -5,6 +5,7 @@
 #include "Fyrion/ImGui/IconsFontAwesome6.h"
 #include "Fyrion/ImGui/ImGui.hpp"
 #include "Fyrion/Resource/Repository.hpp"
+#include "Fyrion/Scene/SceneAssets.hpp"
 
 namespace Fyrion
 {
@@ -12,8 +13,7 @@ namespace Fyrion
     {
         ImGui::Begin(id, ICON_FA_CIRCLE_INFO " Properties", &open, ImGuiWindowFlags_NoScrollbar);
 
-        SceneObject* object = Editor::GetSceneEditor().GetLastSelectedObject();
-        if (object)
+        if (RID object = Editor::GetSceneEditor().GetLastSelectedObject())
         {
             DrawSceneObject(id, object);
         }
@@ -26,8 +26,13 @@ namespace Fyrion
         Editor::OpenWindow<PropertiesWindow>();
     }
 
-    void PropertiesWindow::DrawSceneObject(u32 id, SceneObject* sceneObject)
+    void PropertiesWindow::DrawSceneObject(u32 id, RID rid)
     {
+        SceneEditor& sceneEditor = Editor::GetSceneEditor();
+
+        bool root = sceneEditor.GetRootObject() == rid;
+        ResourceObject read = Repository::Read(rid);
+
         ImGuiStyle& style = ImGui::GetStyle();
         bool readOnly = false;
 
@@ -45,19 +50,27 @@ namespace Fyrion
             ImGui::TableNextColumn();
             ImGui::SetNextItemWidth(-1);
 
-            m_StringCache = sceneObject->GetName();
-            u32 hash = HashValue(sceneObject->GetAsset());
-
-            if (ImGui::InputText(hash, m_StringCache))
+            ImGuiInputTextFlags nameFlags = 0;
+            if (readOnly || root)
             {
-                m_renamingCache = sceneObject->GetName();
+                nameFlags |= ImGuiInputTextFlags_ReadOnly;
+            }
+
+            StringView objectName = root ? sceneEditor.GetRootName() : read[SceneObjectAsset::Name].Value<StringView>();
+            m_StringCache = objectName;
+            u32 hash = HashValue(rid);
+
+            if (ImGui::InputText(hash, m_StringCache, nameFlags))
+            {
+                m_renamingCache = objectName;
                 m_renamingFocus = true;
-               //propertiesWindow->renamingEntity = entity;
+                m_renamingObject = rid;
             }
 
             if (!ImGui::IsItemActive() && m_renamingFocus)
             {
-                //WorldController::RenameEntity(propertiesWindow->renamingEntity, propertiesWindow->renamingCache);
+                Editor::GetSceneEditor().RenameObject(m_renamingObject, m_renamingCache);
+                m_renamingObject = {};
                 m_renamingFocus = false;
                 m_renamingCache.Clear();
             }
@@ -67,7 +80,7 @@ namespace Fyrion
             ImGui::Text("UUID");
             ImGui::TableNextColumn();
             ImGui::SetNextItemWidth(-1);
-            String uuid = ToString(Repository::GetUUID(sceneObject->GetAsset()));
+            String uuid = ToString(Repository::GetUUID(rid));
             ImGui::InputText(hash + 10, uuid, ImGuiInputTextFlags_ReadOnly);
             ImGui::EndDisabled();
             ImGui::EndTable();
@@ -78,7 +91,7 @@ namespace Fyrion
         f32 width = ImGui::GetContentRegionAvail().x;
         auto size = ImGui::GetFontSize() + style.FramePadding.y * 2.0f;
 
-        ImGui::BeginHorizontal(9999, ImVec2(width, size));
+        ImGui::BeginHorizontal("horizontal-01", ImVec2(width, size));
 
         ImGui::Spring(1.f);
         bool addComponent = false;
@@ -99,26 +112,32 @@ namespace Fyrion
 
         ImGui::EndHorizontal();
 
-        RID openAsset{};
+        RID prototype = Repository::GetPrototype(rid);
+        if (prototype)
+        {
+            ImGui::BeginHorizontal(9999, ImVec2(width, size));
+            ImGui::Spring(1.f);
 
-        // if (entityData.rid)
-        // {
-        //
-        //     ImGui::BeginHorizontal(9999, ImVec2(width, size));
-        //     ImGui::Spring(1.f);
-        //
-        //     if (ImGui::BorderedButton("Open Asset", ImVec2((width * 2) / 3, size)))
-        //     {
-        //         openAsset = entityData.rid;
-        //     }
-        //
-        //     ImGui::Spring(1.f);
-        //     ImGui::EndHorizontal();
-        // }
+            if (ImGui::BorderedButton("horizontal-01-02", ImVec2((width * 2) / 3, size)))
+            {
+                int a = 0;
+                //openAsset = entityData.rid;
+            }
+
+            ImGui::Spring(1.f);
+            ImGui::EndHorizontal();
+        }
 
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5 * style.ScaleFactor);
 
         // draw components
+
+
+        Array<RID> components = read.GetSubObjectSetAsArray(SceneObjectAsset::Components);
+        for (RID component : components)
+        {
+
+        }
 
         if (addComponent)
         {
@@ -146,7 +165,7 @@ namespace Fyrion
                     {
                         if (ImGui::Selectable(typeHandler->GetSimpleName().CStr()))
                         {
-                            Editor::GetSceneEditor().AddComponent(sceneObject, typeHandler);
+                            Editor::GetSceneEditor().AddComponent(rid, typeHandler);
                         }
                     }
                 }

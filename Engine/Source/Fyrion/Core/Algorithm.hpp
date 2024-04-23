@@ -253,5 +253,33 @@ namespace Fyrion
     {
         return AppendBytes(OffsetBias, &reinterpret_cast<const u8&>(value), sizeof(Type));
     }
+
+    template <typename Type>
+    constexpr usize FindFirstIndex(Type* begin, Type* end, Type value)
+    {
+        usize index = 0;
+        for (Type* it = begin; it != end; ++it)
+        {
+            if (*it == value)
+            {
+                return index;
+            }
+            index++;
+        }
+        return nPos;
+    }
+
+    template <typename Type>
+    constexpr Type* FindFirst(Type* begin, Type* end, Type value)
+    {
+        for (Type* it = begin; it != end; ++it)
+        {
+            if (*it == value)
+            {
+                return it;
+            }
+        }
+        return nullptr;
+    }
 }
 

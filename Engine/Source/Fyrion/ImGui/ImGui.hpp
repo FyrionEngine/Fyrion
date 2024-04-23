@@ -10,6 +10,11 @@
 
 using namespace Fyrion;
 
+namespace Fyrion
+{
+    class TypeHandler;
+}
+
 namespace ImGui
 {
     enum ImGuiContentTableFlags_
@@ -104,6 +109,7 @@ namespace ImGui
     FY_API StringView ContentRenameString();
     FY_API void EndContentTable();
 
+    FY_API void DrawType(ImGuiID itemId, TypeHandler* typeHandler, VoidPtr instance, bool* hasChanged);
 
     FY_API ImGuiKey GetImGuiKey(Key key);
 

@@ -130,13 +130,58 @@ namespace Fyrion
 
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5 * style.ScaleFactor);
 
-        // draw components
-
-
         Array<RID> components = read.GetSubObjectSetAsArray(SceneObjectAsset::Components);
+
+        bool openComponentSettings = false;
+
         for (RID component : components)
         {
+            TypeHandler* typeHandler = Repository::GetResourceTypeHandler(component);
+            if (typeHandler)
+            {
+                ImGui::PushID(HashValue(component));
 
+                ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_AllowItemOverlap;
+                bool open = ImGui::CollapsingHeader(typeHandler->GetSimpleName().CStr(), flags);
+                bool rightClicked = ImGui::IsItemClicked(ImGuiMouseButton_Right);
+                bool hovered = ImGui::IsItemHovered();
+                ImVec2 size = ImGui::GetItemRectSize();
+
+                ImGui::SameLine(ImGui::GetContentRegionAvail().x - 20 *  style.ScaleFactor);
+                ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 2 * style.ScaleFactor);
+                {
+                    ImGui::StyleColor colBorder(ImGuiCol_Border, IM_COL32(0, 0, 0, 0));
+                    if (hovered)
+                    {
+                        ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_HeaderHovered));
+                    }
+                    if (ImGui::Button(ICON_FA_ELLIPSIS_VERTICAL, ImVec2{size.y, size.y - 4 * style.ScaleFactor}) || rightClicked)
+                    {
+                        openComponentSettings = true;
+                    }
+                    if (hovered)
+                    {
+                        ImGui::PopStyleColor(1);
+                    }
+                }
+
+                ImGui::PopID();
+
+                if (open)
+                {
+                    ConstPtr ptr = Repository::Read(component, typeHandler->GetTypeInfo().typeId);
+                    VoidPtr newInstance = typeHandler->NewInstance(); //TODO(Fyrion) is it possible to cache this heap allocator?
+                    typeHandler->Copy(ptr, newInstance);
+
+                    bool hasChanged = false;
+                    ImGui::DrawType(HashValue(component) + 10, typeHandler, newInstance, &hasChanged);
+                    if (hasChanged)
+                    {
+                        //TODO
+                    }
+                    typeHandler->Destroy(newInstance);
+                }
+            }
         }
 
         if (addComponent)
@@ -172,6 +217,28 @@ namespace Fyrion
             }
         }
         ImGui::EndPopupMenu(popupRes);
+
+        if (openComponentSettings)
+        {
+            ImGui::OpenPopup("open-component-settings");
+        }
+
+        bool popupOpenSettings = ImGui::BeginPopupMenu("open-component-settings", 0, false);
+        if (popupOpenSettings)
+        {
+            if (ImGui::MenuItem("Reset"))
+            {
+                //TODO
+                ImGui::CloseCurrentPopup();
+            }
+
+            if (ImGui::MenuItem("Remove"))
+            {
+                //TODO
+                ImGui::CloseCurrentPopup();
+            }
+        }
+        ImGui::EndPopupMenu(popupOpenSettings);
 
     }
 

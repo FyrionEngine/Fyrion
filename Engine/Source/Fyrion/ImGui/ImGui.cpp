@@ -996,6 +996,10 @@ namespace ImGui
         return keys[static_cast<usize>(key)];
     }
 
+    void DrawType(ImGuiID itemId, TypeHandler* typeHandler, VoidPtr instance, bool* hasChanged)
+    {
+        //TODO
+    }
 }
 
 

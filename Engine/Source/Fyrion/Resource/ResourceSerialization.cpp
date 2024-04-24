@@ -323,16 +323,19 @@ namespace Fyrion::ResourceSerialization
         //uuid
         context.identifier.Clear();
         CheckIdentifier(context);
-        FY_ASSERT(context.identifier == "_uuid", "for subobjects, first item should be _uuid");
-        RemoveSpaces(context);
-        context.value.Clear();
-        CheckString(context);
-        objectUUID = UUID::FromString(context.value);
 
-        context.identifier.Clear();
-        RemoveSpaces(context);
-        CheckIdentifier(context);
-        FY_ASSERT(context.identifier == "_type", "for subobjects, second item should be _type");
+        if (context.identifier == "_uuid")
+        {
+            RemoveSpaces(context);
+            context.value.Clear();
+            CheckString(context);
+            objectUUID = UUID::FromString(context.value);
+            context.identifier.Clear();
+            RemoveSpaces(context);
+            CheckIdentifier(context);
+        }
+
+        FY_ASSERT(context.identifier == "_type", "missing _type");
         RemoveSpaces(context);
         context.value.Clear();
         CheckString(context);
@@ -713,14 +716,18 @@ namespace Fyrion::ResourceSerialization
     void WriteResourceInfo(WriterContext& context, RID rid)
     {
         context.Indent();
-        context.buffer.Append("_uuid: ");
-        char buffer[StringConverter<UUID>::bufferCount + 1] = {};
-        StringConverter<UUID>::ToString(buffer, 0, Repository::GetUUID(rid));
-        context.buffer.Append("\"");
-        context.buffer.Append(buffer);
-        context.buffer.Append("\"");
-        context.buffer.Append("\n");
-        context.Indent();
+        if (UUID uuid = Repository::GetUUID(rid))
+        {
+            context.buffer.Append("_uuid: ");
+            char buffer[StringConverter<UUID>::bufferCount + 1] = {};
+            StringConverter<UUID>::ToString(buffer, 0, Repository::GetUUID(rid));
+            context.buffer.Append("\"");
+            context.buffer.Append(buffer);
+            context.buffer.Append("\"");
+            context.buffer.Append("\n");
+            context.Indent();
+        }
+
         context.buffer.Append("_type: ");
         context.buffer.Append("\"");
         if (ResourceType* resourceType = Repository::GetResourceType(rid))
@@ -739,6 +746,7 @@ namespace Fyrion::ResourceSerialization
         {
             context.Indent();
             context.buffer.Append("_prototype: ");
+            char buffer[StringConverter<UUID>::bufferCount + 1] = {};
             StringConverter<UUID>::ToString(buffer, 0, Repository::GetUUID(prototype));
             context.buffer.Append("\"");
             context.buffer.Append(buffer);

@@ -233,6 +233,20 @@ namespace
 
                     write.AddToSubObjectSet(SerializationResourceBasics::SubobjectSet, subobject);
                 }
+
+                {
+                    RID subobject = Repository::CreateResource<NestedStruct>(UUID::FromString("e1655559-7c1e-4afb-a931-8257694705f1"));
+
+                    NestedStruct nestedStruct = NestedStruct{
+                        .value = 123,
+                        .string = "Str",
+                    };
+                    Repository::Commit(subobject, &nestedStruct);
+
+                    write.AddToSubObjectSet(SerializationResourceBasics::SubobjectSet, subobject);
+
+                }
+
                 write.Commit();
                 str = ResourceSerialization::WriteResource(rid);
                 CHECK(!str.Empty());
@@ -335,6 +349,13 @@ namespace
                     CHECK(subobject.GetValue<i32>(SerializationSubObjectBasics::IntValue) == 222);
                     count++;
                 }
+                else if (Repository::GetUUID(subobjectRid) == UUID::FromString("e1655559-7c1e-4afb-a931-8257694705f1"))
+                {
+                    const NestedStruct& nestedStruct = Repository::ReadData<NestedStruct>(subobjectRid);
+                    CHECK(nestedStruct.string == "Str");
+                    CHECK(nestedStruct.value == 123);
+                    count++;
+                }
             }
             CHECK(subobjectSetCount == count);
 
@@ -365,7 +386,7 @@ namespace
                     u32 countSubObjects = subobject.GetSubObjectSetCount(SerializationResourceBasics::SubobjectSet);
                     Array<RID> subObjects(countSubObjects);
                     subobject.GetSubObjectSet(SerializationResourceBasics::SubobjectSet, subObjects);
-                    CHECK(subObjects.Size() == 2);
+                    CHECK(subObjects.Size() == 3);
                     u32 checks = 0;
                     for (int i = 0; i < countSubObjects; ++i)
                     {
@@ -382,6 +403,13 @@ namespace
                             ResourceObject subObjectResource = Repository::Read(subobjectItem);
                             CHECK(subObjectResource.GetValue<String>(SerializationSubObjectBasics::StringValue) == "SubobjectSetString2");
                             CHECK(subObjectResource.GetValue<i32>(SerializationSubObjectBasics::IntValue) == 222);
+                            checks++;
+                        }
+                        else if (Repository::GetUUID(subobjectItem) == UUID::FromString("e1655559-7c1e-4afb-a931-8257694705f1"))
+                        {
+                            const NestedStruct& nestedStruct = Repository::ReadData<NestedStruct>(subobjectItem);
+                            CHECK(nestedStruct.string == "Str");
+                            CHECK(nestedStruct.value == 123);
                             checks++;
                         }
                     }

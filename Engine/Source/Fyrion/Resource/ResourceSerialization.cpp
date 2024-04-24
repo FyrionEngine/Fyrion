@@ -319,6 +319,7 @@ namespace Fyrion::ResourceSerialization
         UUID objectUUID = {};
         TypeID typeId = {};
 
+
         //uuid
         context.identifier.Clear();
         CheckIdentifier(context);
@@ -335,7 +336,17 @@ namespace Fyrion::ResourceSerialization
         RemoveSpaces(context);
         context.value.Clear();
         CheckString(context);
-        typeId = Repository::GetResourceTypeID(context.value);
+
+        if (ResourceType* resourceType = Repository::GetResourceTypeByName(context.value))
+        {
+            typeId = Repository::GetResourceTypeId(resourceType);
+        }
+        else if (TypeHandler* typeHandler = Registry::FindTypeByName(context.value))
+        {
+            typeId = typeHandler->GetTypeInfo().typeId;
+        }
+
+        FY_ASSERT(typeId != 0, "type id not found");
 
         context.identifier.Clear();
         RemoveSpaces(context);
@@ -374,7 +385,8 @@ namespace Fyrion::ResourceSerialization
 
             return rid;
         }
-        else if (CheckObject(context))
+
+        if (CheckObject(context))
         {
             RID rid = Repository::CreateResource(typeId, objectUUID);
             ParseResource(context, rid);
@@ -711,7 +723,14 @@ namespace Fyrion::ResourceSerialization
         context.Indent();
         context.buffer.Append("_type: ");
         context.buffer.Append("\"");
-        context.buffer.Append(Repository::GetResourceTypeName(Repository::GetResourceType(rid)));
+        if (ResourceType* resourceType = Repository::GetResourceType(rid))
+        {
+            context.buffer.Append(Repository::GetResourceTypeName(resourceType));
+        }
+        else if (TypeHandler* typeHandler = Repository::GetResourceTypeHandler(rid))
+        {
+            context.buffer.Append(typeHandler->GetName());
+        }
         context.buffer.Append("\"");
         context.buffer.Append("\n");
 
@@ -744,136 +763,137 @@ namespace Fyrion::ResourceSerialization
 
     void WriteResource(WriterContext& context, RID rid)
     {
-        ResourceObject object = Repository::ReadNoPrototypes(rid);
-        u32 valueCount = object.GetValueCount();
-        for (int i = 0; i < valueCount; ++i)
+        ResourceType* resourceType = Repository::GetResourceType(rid);
+        if (resourceType)
         {
-
-            ResourceFieldType type = object.GetResourceType(i);
-            StringView name = object.GetName(i);
-
-            if (type == ResourceFieldType::Value)
+            ResourceObject object = Repository::ReadNoPrototypes(rid);
+            u32            valueCount = object.GetValueCount();
+            for (int i = 0; i < valueCount; ++i)
             {
-                ConstPtr value = object.GetValue(i);
-                if (!value) continue;
+                ResourceFieldType type = object.GetResourceType(i);
+                StringView        name = object.GetName(i);
 
-                context.Indent();
-                context.buffer.Append(name);
-                context.buffer.Append(": ");
-
-                TypeHandler* handler = object.GetFieldType(i);
-                TypeInfo typeInfo = handler->GetTypeInfo();
-                WriteField(context, (VoidPtr) value, typeInfo, nullptr);
-                context.buffer.Append("\n");
-            }
-            else if (type == ResourceFieldType::SubObject && object.Has(i))
-            {
-                RID subObject = object.GetSubObject(i);
-                if (!subObject) continue;
-
-                context.Indent();
-                context.buffer.Append(name);
-                context.buffer.Append(": ");
-                context.buffer.Append("{\n");
-                context.AddIndentation();
-                WriteResourceInfo(context, subObject);
-                context.RemoveIndentation();
-                context.Indent();
-                context.buffer.Append("}");
-                context.buffer.Append("\n");
-            }
-            else if (type == ResourceFieldType::Stream && object.Has(i))
-            {
-                StreamObject* streamObject = object.GetStream(i);
-                char strBuffer[17]{};
-                usize bufSize = U64ToHex(streamObject->GetBufferId(), strBuffer);
-
-                context.Indent();
-                context.buffer.Append(name);
-                context.buffer.Append(": ");
-                context.buffer.Append("\"");
-                context.buffer.Append(StringView{strBuffer, bufSize});
-                context.buffer.Append("\"");
-                context.buffer.Append("\n");
-            }
-            else if (type == ResourceFieldType::SubObjectSet)
-            {
-                u32 subObjectSetCount = object.GetSubObjectSetCount(i);
-                u32 removedCount = object.GetRemoveFromPrototypeSubObjectSetCount(i);
-                if (subObjectSetCount == 0 && removedCount == 0) continue;
-
-                context.Indent();
-                context.buffer.Append(name);
-                context.buffer.Append(": ");
-                context.buffer.Append("{\n");
-                context.AddIndentation();
-
-                if (removedCount > 0)
+                if (type == ResourceFieldType::Value)
                 {
+                    ConstPtr value = object.GetValue(i);
+                    if (!value) continue;
+
                     context.Indent();
-                    context.buffer.Append("_exclude");
+                    context.buffer.Append(name);
                     context.buffer.Append(": ");
-                    context.buffer.Append("[");
-                    context.AddIndentation();
 
-                    Array<RID> removedRids(removedCount);
-                    object.GetRemoveFromPrototypeSubObjectSet(i, removedRids);
-
-                    char buffer[StringConverter<UUID>::bufferCount + 1] = {};
-
-                    for (RID removed: removedRids)
-                    {
-                        context.buffer.Append("\"");
-                        StringConverter<UUID>::ToString(buffer, 0, Repository::GetUUID(removed));
-                        context.buffer.Append(buffer);
-                        context.buffer.Append("\",");
-                    }
-                    context.buffer.Erase(context.buffer.end() - 1, context.buffer.end());
-                    context.RemoveIndentation();
-                    context.buffer.Append("]\n");
+                    TypeHandler* handler = object.GetFieldType(i);
+                    TypeInfo     typeInfo = handler->GetTypeInfo();
+                    WriteField(context, (VoidPtr)value, typeInfo, nullptr);
+                    context.buffer.Append("\n");
                 }
-
-                if (subObjectSetCount > 0)
+                else if (type == ResourceFieldType::SubObject && object.Has(i))
                 {
-                    Array<RID> subObjects(subObjectSetCount);
-                    object.GetSubObjectSet(i, subObjects);
+                    RID subObject = object.GetSubObject(i);
+                    if (!subObject) continue;
 
                     context.Indent();
-                    context.buffer.Append("_values");
+                    context.buffer.Append(name);
                     context.buffer.Append(": ");
-                    context.buffer.Append("[");
+                    context.buffer.Append("{\n");
+                    context.AddIndentation();
+                    WriteResourceInfo(context, subObject);
+                    context.RemoveIndentation();
+                    context.Indent();
+                    context.buffer.Append("}");
+                    context.buffer.Append("\n");
+                }
+                else if (type == ResourceFieldType::Stream && object.Has(i))
+                {
+                    StreamObject* streamObject = object.GetStream(i);
+                    char          strBuffer[17]{};
+                    usize         bufSize = U64ToHex(streamObject->GetBufferId(), strBuffer);
+
+                    context.Indent();
+                    context.buffer.Append(name);
+                    context.buffer.Append(": ");
+                    context.buffer.Append("\"");
+                    context.buffer.Append(StringView{strBuffer, bufSize});
+                    context.buffer.Append("\"");
+                    context.buffer.Append("\n");
+                }
+                else if (type == ResourceFieldType::SubObjectSet)
+                {
+                    u32 subObjectSetCount = object.GetSubObjectSetCount(i);
+                    u32 removedCount = object.GetRemoveFromPrototypeSubObjectSetCount(i);
+                    if (subObjectSetCount == 0 && removedCount == 0) continue;
+
+                    context.Indent();
+                    context.buffer.Append(name);
+                    context.buffer.Append(": ");
+                    context.buffer.Append("{\n");
                     context.AddIndentation();
 
-                    for(RID subobject: subObjects)
+                    if (removedCount > 0)
                     {
-                        context.buffer.Append("\n");
                         context.Indent();
-                        context.buffer.Append("{\n");
+                        context.buffer.Append("_exclude");
+                        context.buffer.Append(": ");
+                        context.buffer.Append("[");
                         context.AddIndentation();
-                        WriteResourceInfo(context, subobject);
+
+                        Array<RID> removedRids(removedCount);
+                        object.GetRemoveFromPrototypeSubObjectSet(i, removedRids);
+
+                        char buffer[StringConverter<UUID>::bufferCount + 1] = {};
+
+                        for (RID removed : removedRids)
+                        {
+                            context.buffer.Append("\"");
+                            StringConverter<UUID>::ToString(buffer, 0, Repository::GetUUID(removed));
+                            context.buffer.Append(buffer);
+                            context.buffer.Append("\",");
+                        }
+                        context.buffer.Erase(context.buffer.end() - 1, context.buffer.end());
+                        context.RemoveIndentation();
+                        context.buffer.Append("]\n");
+                    }
+
+                    if (subObjectSetCount > 0)
+                    {
+                        Array<RID> subObjects(subObjectSetCount);
+                        object.GetSubObjectSet(i, subObjects);
+
+                        context.Indent();
+                        context.buffer.Append("_values");
+                        context.buffer.Append(": ");
+                        context.buffer.Append("[");
+                        context.AddIndentation();
+
+                        for (RID subobject : subObjects)
+                        {
+                            context.buffer.Append("\n");
+                            context.Indent();
+                            context.buffer.Append("{\n");
+                            context.AddIndentation();
+                            WriteResourceInfo(context, subobject);
+                            context.RemoveIndentation();
+                            context.Indent();
+                            context.buffer.Append("},");
+                        }
+
+                        context.buffer.Erase(context.buffer.end() - 1, context.buffer.end());
+                        context.buffer.Append("\n");
                         context.RemoveIndentation();
                         context.Indent();
-                        context.buffer.Append("},");
+                        context.buffer.Append("]\n");
                     }
 
-                    context.buffer.Erase(context.buffer.end() - 1, context.buffer.end());
-                    context.buffer.Append("\n");
                     context.RemoveIndentation();
                     context.Indent();
-                    context.buffer.Append("]\n");
+                    context.buffer.Append("}");
+                    context.buffer.Append("\n");
                 }
-
-                context.RemoveIndentation();
-                context.Indent();
-                context.buffer.Append("}");
-                context.buffer.Append("\n");
             }
         }
-        if (valueCount == 0)
+        else if (TypeHandler* typeHandler = Repository::GetResourceTypeHandler(rid))
         {
-            TypeID resourceType = Repository::GetResourceTypeID(rid);
-            TypeHandler* typeHandler = Registry::FindTypeById(resourceType);
-            ConstPtr obj = Repository::Read(rid, resourceType);
+            ConstPtr obj = Repository::ReadData(rid);
             if (typeHandler && obj)
             {
                 WriteObject(context, (VoidPtr)obj, typeHandler);

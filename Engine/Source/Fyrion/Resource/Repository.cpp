@@ -174,6 +174,8 @@ namespace Fyrion
                 }
             }
             RID rid = GetID();
+
+            if (uuid)
             {
                 std::unique_lock lock(byUUIDMutex);
                 byUUID.Insert(uuid, rid);
@@ -453,13 +455,18 @@ namespace Fyrion
         }
     }
 
-    TypeID Repository::GetResourceTypeID(const StringView& typeName)
+    ResourceType* Repository::GetResourceTypeByName(const StringView& typeName)
     {
         if (auto it = resourceTypesByName.Find(typeName))
         {
-            return it->second->typeId;
+            return it->second.Get();
         }
-        return 0;
+        return nullptr;
+    }
+
+    TypeID Repository::GetResourceTypeId(ResourceType* resourceType)
+    {
+        return resourceType->typeId;
     }
 
     StringView Repository::GetResourceTypeName(ResourceType* resourceType)
@@ -691,7 +698,7 @@ namespace Fyrion
         return RID();
     }
 
-    ConstPtr Repository::Read(RID rid, TypeID typeId)
+    ConstPtr Repository::ReadData(RID rid)
     {
         ResourceStorage* storage = &pages[rid.page]->elements[rid.offset];
         return storage->data.load()->memory;

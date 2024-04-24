@@ -13,7 +13,8 @@ namespace Fyrion
     namespace Repository
     {
         FY_API void             CreateResourceType(const ResourceTypeCreation& resourceTypeCreation);
-        FY_API TypeID           GetResourceTypeID(const StringView& typeName);
+        FY_API ResourceType*    GetResourceTypeByName(const StringView& typeName);
+        FY_API TypeID           GetResourceTypeId(ResourceType* resourceType);
         FY_API StringView       GetResourceTypeName(ResourceType* resourceType);
         FY_API StringView       GetResourceTypeSimpleName(ResourceType* resourceType);
         FY_API void             AddResourceTypeEvent(TypeID typeId, VoidPtr userData, ResourceEventType eventType, FnResourceEvent event);
@@ -41,7 +42,7 @@ namespace Fyrion
         FY_API RID              CloneResource(RID rid);
         FY_API ResourceObject   Read(RID rid);
         FY_API ResourceObject   ReadNoPrototypes(RID rid);
-        FY_API ConstPtr         Read(RID rid, TypeID typeId);
+        FY_API ConstPtr         ReadData(RID rid);
         FY_API ResourceObject   Write(RID rid);
         FY_API void             Commit(RID rid, ConstPtr pointer);
         FY_API void             InactiveResource(RID rid);
@@ -65,9 +66,9 @@ namespace Fyrion
         }
 
         template<typename T>
-        const T& Read(RID rid)
+        const T& ReadData(RID rid)
         {
-            return *static_cast<const T*>(Read(rid, GetTypeID<T>()));
+            return *static_cast<const T*>(ReadData(rid));
         }
 
     }

@@ -171,7 +171,7 @@ namespace Fyrion
 
                 if (open)
                 {
-                    ConstPtr ptr = Repository::Read(component, typeHandler->GetTypeInfo().typeId);
+                    ConstPtr ptr = Repository::ReadData(component);
                     if (VoidPtr newValue = ImGui::DrawType(HashValue(component) + 10, typeHandler, ptr, ImGuiDrawTypeFlags_ReadOnly))
                     {
                         m_sceneEditor.UpdateComponent(rid, newValue);

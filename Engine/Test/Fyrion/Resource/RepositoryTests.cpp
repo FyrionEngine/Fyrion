@@ -511,7 +511,7 @@ namespace
                 Repository::Commit(rid, &testStructResource);
             }
             {
-                const TestStructResource& testStructResource = Repository::Read<TestStructResource>(rid);
+                const TestStructResource& testStructResource = Repository::ReadData<TestStructResource>(rid);
                 CHECK(testStructResource.strTest == "StrTest");
                 CHECK(testStructResource.vecTest1 == Vec4{1.0, 2.0, 3.0, 4.0});
                 CHECK(testStructResource.vecTest2 == Vec4{5.0, 6.0, 7.0, 8.0});

@@ -792,13 +792,13 @@ namespace Fyrion
             typeBuilder.SetFnMove(&NativeTypeHandlerFuncs<Type>::MoveImpl);
         }
 
-        inline auto Constructor()
+        auto Constructor()
         {
             return NativeConstructorHandler<Type>(m_typeBuilder.NewConstructor(nullptr, nullptr, 0));
         }
 
         template<typename ...Args>
-        inline auto Constructor()
+        auto Constructor()
         {
             FieldInfo params[] = {MakeFieldInfo<void, Args>()...};
             TypeID ids[] = {GetTypeID<Args>()...,};
@@ -806,14 +806,14 @@ namespace Fyrion
         }
 
         template<auto mfp>
-        inline auto Field(const StringView& name)
+        auto Field(const StringView& name)
         {
             using FieldDecomp = FieldTemplateDecomposer<mfp, decltype(mfp)>;
             return FieldDecomp::CreateHandler(m_typeBuilder.NewField(name));
         }
 
         template<auto mfp>
-        inline auto Function(const StringView& name)
+        auto Function(const StringView& name)
         {
             using FuncType = Traits::RemoveConstFunc<decltype(mfp)>;
             using DecompType = MemberFunctionTemplateDecomposer<mfp, FuncType>;

@@ -18,11 +18,11 @@ namespace Fyrion
 
     struct EngineContextCreation
     {
-        StringView  title{};
-        Extent      resolution{};
-        bool        maximize{false};
-        bool        fullscreen{false};
-        bool        headless = false;
+        StringView title{};
+        Extent     resolution{};
+        bool       maximize{false};
+        bool       fullscreen{false};
+        bool       headless = false;
     };
 
 
@@ -34,6 +34,7 @@ namespace Fyrion
         static void Run();
         static void Shutdown();
         static void Destroy();
+        static u64  GetFrame();
 
         static StringView   GetArgByName(const StringView& name);
         static StringView   GetArgByIndex(usize i);

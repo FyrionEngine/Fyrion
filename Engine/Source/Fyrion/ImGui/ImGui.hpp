@@ -15,16 +15,23 @@ namespace Fyrion
     class TypeHandler;
 }
 
+enum ImGuiContentTableFlags_
+{
+    ImGuiContentTableFlags_None             = 0,
+    ImGuiContentTableFlags_SelectionNoFocus = 1 << 0,
+};
+
+enum ImGuiDrawTypeFlags_
+{
+    ImGuiDrawTypeFlags_None     = 0,
+    ImGuiDrawTypeFlags_ReadOnly = 1 << 0,
+};
+
+typedef u32 ImGuiContentTableFlags;
+typedef u32 ImGuiDrawTypeFlags;
+
 namespace ImGui
 {
-    enum ImGuiContentTableFlags_
-    {
-        ImGuiContentTableFlags_None             = 0,
-        ImGuiContentTableFlags_SelectionNoFocus = 1 << 0,
-    };
-
-    typedef u32 ImGuiContentTableFlags;
-
     struct ContentItemDesc
     {
         u32             ItemId{};
@@ -109,7 +116,7 @@ namespace ImGui
     FY_API StringView ContentRenameString();
     FY_API void EndContentTable();
 
-    FY_API void DrawType(ImGuiID itemId, TypeHandler* typeHandler, VoidPtr instance, bool* hasChanged);
+    FY_API VoidPtr DrawType(u64 itemId, TypeHandler* typeHandler, ConstPtr instance, ImGuiDrawTypeFlags flags = 0);
 
     FY_API ImGuiKey GetImGuiKey(Key key);
 

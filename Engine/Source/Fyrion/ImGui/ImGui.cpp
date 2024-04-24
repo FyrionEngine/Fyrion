@@ -7,6 +7,7 @@
 #include "Fyrion/Resource/Repository.hpp"
 #include "Fyrion/Assets/AssetTypes.hpp"
 #include "IconsFontAwesome6.h"
+#include "Fyrion/Engine.hpp"
 #include "Fyrion/ImGui/Lib/imgui_internal.h"
 #include "Fyrion/ImGui/Lib/ImGuizmo.h"
 
@@ -19,7 +20,6 @@ namespace Fyrion
 
 namespace ImGui
 {
-
     struct ContentTable
     {
         f32 thumbnailSize{};
@@ -36,6 +36,14 @@ namespace ImGui
         u32 beginPayloadItem{U32_MAX};
     };
 
+    struct DrawTypeContent
+    {
+        TypeHandler* typeHandler{};
+        VoidPtr      instance{};
+        u64          lastFrameUsage{};
+        bool         readOnly{};
+    };
+
     namespace
     {
         f32 scaleFactor = 1.0;
@@ -43,6 +51,7 @@ namespace ImGui
 
         HashMap<ImGuiID, ContentTable> contentTables{};
         ImGuiID currentContentTable{U32_MAX};
+        HashMap<u64, DrawTypeContent> drawTypes{};
     }
 
     struct InputTextCallback_UserData
@@ -55,8 +64,8 @@ namespace ImGui
         auto userData = (InputTextCallback_UserData*) data->UserData;
         if (data->BufTextLen >= (userData->str.Capacity() - 1))
         {
-            auto new_size = userData->str.Capacity() + (userData->str.Capacity() * 2) / 3;
-            userData->str.Reserve(new_size);
+            auto newSize = userData->str.Capacity() + (userData->str.Capacity() * 2) / 3;
+            userData->str.Reserve(newSize);
             data->Buf = userData->str.begin();
         }
         userData->str.SetSize(data->BufTextLen);
@@ -977,18 +986,38 @@ namespace ImGui
         Platform::ImGuiNewFrame();
         ImGui::NewFrame();
         ImGuizmo::BeginFrame();
+
+        u64 frame = Engine::GetFrame();
+
+        Array<u64> toErase{};
+        for (auto& it : drawTypes)
+        {
+            if (it.second.lastFrameUsage + 60 < frame)
+            {
+                if (!it.second.readOnly)
+                {
+                    it.second.typeHandler->Destroy(it.second.instance);
+                }
+                toErase.EmplaceBack(it.first);
+            }
+        }
+        for (u64 id : toErase)
+        {
+            drawTypes.Erase(id);
+        }
     }
 
     void ImGui::Render(RenderCommands& renderCommands)
     {
-        ImGui::Render();
+        Render();
         GetRenderDevice().ImGuiRender(renderCommands);
     }
 
     void ImGuiShutdown()
     {
+        drawTypes.Clear();
         contentTables.Clear();
-        ImGui::DestroyContext();
+        DestroyContext();
     }
 
     ImGuiKey GetImGuiKey(Key key)
@@ -996,9 +1025,28 @@ namespace ImGui
         return keys[static_cast<usize>(key)];
     }
 
-    void DrawType(ImGuiID itemId, TypeHandler* typeHandler, VoidPtr instance, bool* hasChanged)
+    VoidPtr DrawType(u64 itemId, TypeHandler* typeHandler, ConstPtr instance, ImGuiDrawTypeFlags flags)
     {
-        //TODO
+        bool readOnly = flags & ImGuiDrawTypeFlags_ReadOnly;
+
+        auto it = drawTypes.Find(itemId);
+        if (it == drawTypes.end())
+        {
+            it = drawTypes.Emplace(
+                itemId,
+                DrawTypeContent{
+                    .typeHandler = typeHandler,
+                    .instance = !readOnly ? typeHandler->NewInstance() : (VoidPtr)instance,
+                    .readOnly = readOnly
+                }).first;
+        }
+
+        DrawTypeContent& content = it->second;
+        FY_ASSERT(readOnly == content.readOnly, "Item flags is different from the registered use a different itemId");
+        content.lastFrameUsage = Engine::GetFrame();
+        bool hasChanged = false;
+
+        return !hasChanged ? nullptr : content.instance;
     }
 }
 

@@ -188,4 +188,9 @@ namespace Fyrion
         write.AddToSubObjectSet(SceneObjectAsset::Components, component);
         write.Commit();
     }
+
+    void SceneEditor::UpdateComponent(RID component, VoidPtr value)
+    {
+
+    }
 }

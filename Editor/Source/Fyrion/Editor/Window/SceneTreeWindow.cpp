@@ -61,7 +61,7 @@ namespace Fyrion
 
         if (ImGui::BeginDragDropTarget())
         {
-            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(EntityTreePayload))
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(SceneTreePayload))
             {
                 // moveEntitiesTo = FY_NULL_ENTITY;
                 // removeSelectionParent = true;

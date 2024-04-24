@@ -4,7 +4,7 @@
 
 namespace Fyrion
 {
-    constexpr const char* EntityTreePayload = "entity_tree_payload";
+    constexpr const char* SceneTreePayload = "scene-tree-payload";
 
     class AssetTree;
 

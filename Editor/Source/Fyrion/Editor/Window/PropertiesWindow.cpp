@@ -9,11 +9,15 @@
 
 namespace Fyrion
 {
+    PropertiesWindow::PropertiesWindow() : m_sceneEditor(Editor::GetSceneEditor())
+    {
+    }
+
     void PropertiesWindow::Draw(u32 id, bool& open)
     {
         ImGui::Begin(id, ICON_FA_CIRCLE_INFO " Properties", &open, ImGuiWindowFlags_NoScrollbar);
 
-        if (RID object = Editor::GetSceneEditor().GetLastSelectedObject())
+        if (RID object = m_sceneEditor.GetLastSelectedObject())
         {
             DrawSceneObject(id, object);
         }
@@ -28,9 +32,7 @@ namespace Fyrion
 
     void PropertiesWindow::DrawSceneObject(u32 id, RID rid)
     {
-        SceneEditor& sceneEditor = Editor::GetSceneEditor();
-
-        bool root = sceneEditor.GetRootObject() == rid;
+        bool root = m_sceneEditor.GetRootObject() == rid;
         ResourceObject read = Repository::Read(rid);
 
         ImGuiStyle& style = ImGui::GetStyle();
@@ -56,11 +58,11 @@ namespace Fyrion
                 nameFlags |= ImGuiInputTextFlags_ReadOnly;
             }
 
-            StringView objectName = root ? sceneEditor.GetRootName() : read[SceneObjectAsset::Name].Value<StringView>();
-            m_StringCache = objectName;
+            StringView objectName = root ? m_sceneEditor.GetRootName() : read[SceneObjectAsset::Name].Value<StringView>();
+            m_stringCache = objectName;
             u32 hash = HashValue(rid);
 
-            if (ImGui::InputText(hash, m_StringCache, nameFlags))
+            if (ImGui::InputText(hash, m_stringCache, nameFlags))
             {
                 m_renamingCache = objectName;
                 m_renamingFocus = true;
@@ -69,7 +71,7 @@ namespace Fyrion
 
             if (!ImGui::IsItemActive() && m_renamingFocus)
             {
-                Editor::GetSceneEditor().RenameObject(m_renamingObject, m_renamingCache);
+                m_sceneEditor.RenameObject(m_renamingObject, m_renamingCache);
                 m_renamingObject = {};
                 m_renamingFocus = false;
                 m_renamingCache.Clear();
@@ -170,16 +172,10 @@ namespace Fyrion
                 if (open)
                 {
                     ConstPtr ptr = Repository::Read(component, typeHandler->GetTypeInfo().typeId);
-                    VoidPtr newInstance = typeHandler->NewInstance(); //TODO(Fyrion) is it possible to cache this heap allocator?
-                    typeHandler->Copy(ptr, newInstance);
-
-                    bool hasChanged = false;
-                    ImGui::DrawType(HashValue(component) + 10, typeHandler, newInstance, &hasChanged);
-                    if (hasChanged)
+                    if (VoidPtr newValue = ImGui::DrawType(HashValue(component) + 10, typeHandler, ptr, ImGuiDrawTypeFlags_ReadOnly))
                     {
-                        //TODO
+                        m_sceneEditor.UpdateComponent(rid, newValue);
                     }
-                    typeHandler->Destroy(newInstance);
                 }
             }
         }
@@ -210,7 +206,7 @@ namespace Fyrion
                     {
                         if (ImGui::Selectable(typeHandler->GetSimpleName().CStr()))
                         {
-                            Editor::GetSceneEditor().AddComponent(rid, typeHandler);
+                            m_sceneEditor.AddComponent(rid, typeHandler);
                         }
                     }
                 }

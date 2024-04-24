@@ -24,7 +24,7 @@ namespace Fyrion
         ImGui::Begin(id, ICON_FA_BORDER_ALL " Scene Viewport", &open, flags);
         {
 	        bool   moving = ImGui::IsMouseDown(ImGuiMouseButton_Right);
-	        bool   canChangeGuizmo = !moving && ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows);
+	        bool   canChangeGuizmo = !moving && !ImGui::GetIO().WantCaptureKeyboard;
 	        bool   hovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows);
 	        bool   openPopup = false;
 	        ImVec2 size = ImGui::GetWindowSize();

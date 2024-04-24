@@ -200,6 +200,11 @@ namespace Fyrion
         return args.Has(name);
     }
 
+    u64 Engine::GetFrame()
+    {
+        return frame;
+    }
+
     void Engine::Destroy()
     {
         SceneManagerShutdown();

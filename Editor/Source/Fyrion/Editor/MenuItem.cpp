@@ -132,7 +132,10 @@ namespace Fyrion
 
     bool MenuItemContext::ExecuteHotKeys(MenuItemContext* context, VoidPtr userData)
     {
+        if (ImGui::GetIO().WantCaptureKeyboard) return false;
+
         bool executed = false;
+
         if (context->m_itemShortcut.presKey != Key::None && context->m_action)
         {
             bool ctrlHolding = ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_LeftCtrl)) || ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_RightCtrl));

@@ -5,16 +5,19 @@
 
 namespace Fyrion
 {
+    class SceneEditor;
     struct SceneObject;
 
     class PropertiesWindow : public EditorWindow
     {
     public:
+        PropertiesWindow();
         void Draw(u32 id, bool& open) override;
 
         static void RegisterType(NativeTypeHandler<PropertiesWindow>& type);
     private:
-        String              m_StringCache{};
+        SceneEditor&        m_sceneEditor;
+        String              m_stringCache{};
         bool				m_renamingFocus{};
         String				m_renamingCache{};
         RID                 m_renamingObject{};

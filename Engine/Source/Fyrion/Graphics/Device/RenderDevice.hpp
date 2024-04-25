@@ -31,9 +31,10 @@ namespace Fyrion
         virtual void            EndFrame(Swapchain swapchain) = 0;
 
 
-        virtual void ImGuiInit(Swapchain renderSwapchain) = 0;
-        virtual void ImGuiNewFrame() = 0;
-        virtual void ImGuiRender(RenderCommands& renderCommands) = 0;
+        virtual void    ImGuiInit(Swapchain renderSwapchain) = 0;
+        virtual void    ImGuiNewFrame() = 0;
+        virtual void    ImGuiRender(RenderCommands& renderCommands) = 0;
+        virtual VoidPtr GetImGuiTexture(const Texture& texture) = 0;
 
         virtual ~RenderDevice()
         {

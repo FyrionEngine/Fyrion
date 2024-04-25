@@ -6,7 +6,6 @@
 #include "Fyrion/Graphics/GraphicsTypes.hpp"
 #include "Fyrion/Core/String.hpp"
 #include "Fyrion/IO/InputTypes.hpp"
-#include "Fyrion/ImGui/Lib/ImGuizmo.h"
 
 using namespace Fyrion;
 
@@ -91,6 +90,7 @@ namespace ImGui
     FY_API bool TreeNode(u32 id, const char* label, ImGuiTreeNodeFlags flags = 0);
     FY_API bool TreeLeaf(u32 id, const char* label, ImGuiTreeNodeFlags flags = 0);
     FY_API void DrawImage(Texture texture, const Rect& rect, const ImVec4& tintCol = ImVec4(1, 1, 1, 1));
+
     FY_API bool BeginPopupMenu(const char* str, ImGuiWindowFlags popupFlags = 0, bool setSize = true);
     FY_API void EndPopupMenu(bool closePopup = true);
     FY_API bool SelectionButton(const char* label, bool selected, const ImVec2& sizeArg = ImVec2(0, 0));

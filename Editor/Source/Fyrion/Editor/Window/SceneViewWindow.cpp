@@ -4,6 +4,7 @@
 #include "Fyrion/Editor/Scene/SceneEditor.hpp"
 #include "Fyrion/ImGui/IconsFontAwesome6.h"
 #include "Fyrion/ImGui/ImGui.hpp"
+#include "Fyrion/ImGui/Lib/ImGuizmo.h"
 
 namespace Fyrion
 {
@@ -135,6 +136,28 @@ namespace Fyrion
 				ImGui::EndChild();
 				cursor.x = ImGui::GetCursorScreenPos().x;
             }
+
+        	if (m_movingScene)
+        	{
+        		ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouse;
+        	}
+        	else
+        	{
+        		ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
+        	}
+
+        	m_movingScene = !m_windowStartedSimulation && ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) && ImGui::IsMouseDown(ImGuiMouseButton_Right);
+
+        	auto diffCursor = cursor - initCursor;
+        	size -= diffCursor;
+        	Rect bb{(i32)cursor.x, (i32)cursor.y, u32(cursor.x + size.x), u32(cursor.y + size.y)};
+	        m_viewportRenderer.SetSize(Extent{(u32)size.x, (u32)size.y});
+
+        	if (open)
+        	{
+        		//ImGui::DrawImage(m_viewportRenderer.GetColorAttachmentOutput(), bb);
+        	}
+
         }
         ImGui::End();
     }

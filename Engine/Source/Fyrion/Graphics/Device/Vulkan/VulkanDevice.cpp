@@ -913,6 +913,12 @@ namespace Fyrion
         ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), static_cast<VulkanCommands&>(renderCommands).commandBuffer);
     }
 
+    VoidPtr VulkanDevice::GetImGuiTexture(const Texture& texture)
+    {
+        return nullptr;
+    }
+
+
     SharedPtr<RenderDevice> CreateVulkanDevice()
     {
         return MakeShared<VulkanDevice>();

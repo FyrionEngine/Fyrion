@@ -1,6 +1,7 @@
 #pragma once
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Editor/EditorTypes.hpp"
+#include "Fyrion/Graphics/ViewportRenderer.hpp"
 
 namespace Fyrion
 {
@@ -15,9 +16,11 @@ namespace Fyrion
 
         static void RegisterType(NativeTypeHandler<SceneViewWindow>& type);
     private:
-        SceneEditor& m_sceneEditor;
-        u32 m_guizmoOperation{};
-        bool m_windowStartedSimulation{};
+        SceneEditor&     m_sceneEditor;
+        u32              m_guizmoOperation{};
+        bool             m_windowStartedSimulation{};
+        bool             m_movingScene{};
+        ViewportRenderer m_viewportRenderer{};
 
         static void OpenSceneView(VoidPtr userData);
     };

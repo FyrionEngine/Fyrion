@@ -214,20 +214,15 @@ namespace ImGui
 
     void DrawImage(Texture texture, const Rect& rect, const ImVec4& tintCol)
     {
-        ImDrawList* drawList = ImGui::GetWindowDrawList();
+        ImDrawList* drawList = GetWindowDrawList();
 
-//      TODO - keep the aspect ratio of the texture?
-//      auto& container = *static_cast<TextureContainer*>(texture);
-//      auto ratio = container.size.width / container.size.height;
-//      ImVec2(rect.width / , rect.height / ),
-
-//        drawList->AddImage(
-//            RenderDevice::GetTextureHandler(texture),
-//            ImVec2(rect.X, rect.Y),
-//            ImVec2(rect.Width, rect.Height),
-//            ImVec2(0, 0),
-//            ImVec2(1, 1),
-//            ImGui::ColorConvertFloat4ToU32(tintCol));
+        drawList->AddImage(
+            GetRenderDevice().GetImGuiTexture(texture),
+            ImVec2(rect.x, rect.y),
+            ImVec2(rect.width, rect.height),
+            ImVec2(0, 0),
+            ImVec2(1, 1),
+            ImGui::ColorConvertFloat4ToU32(tintCol));
     }
 
     bool BeginPopupMenu(const char* str, ImGuiWindowFlags popupFlags, bool setSize)

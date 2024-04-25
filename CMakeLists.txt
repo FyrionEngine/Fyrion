@@ -3,6 +3,8 @@ project(Fyrion)
 
 set(CMAKE_CXX_STANDARD 20)
 
+include(CMake/CMakeFunctions.cmake)
+
 string(TIMESTAMP TODAY "%Y%m%d")
 add_compile_definitions(FY_VERSION="0.0.1-${TODAY}-pre-alpha")
 

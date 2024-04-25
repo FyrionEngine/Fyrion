@@ -19,7 +19,6 @@ namespace Fyrion::Platform
     FY_API f32          GetWindowScale(Window window);
     FY_API void         SetWindowShouldClose(Window window, bool shouldClose);
 
-
     FY_API f64          GetTime();
     FY_API f64          GetElapsedTime();
 
@@ -29,5 +28,8 @@ namespace Fyrion::Platform
     FY_API DialogResult OpenDialog(String& path, const Span<FileFilter>& filters, const StringView& defaultPath);
     FY_API DialogResult OpenDialogMultiple(Array<String>& paths, const Span<FileFilter>& filters, const StringView& defaultPath);
     FY_API DialogResult PickFolder(String& path, const StringView& defaultPath);
+
+    FY_API VoidPtr LoadDynamicLib(const StringView& library);
+    FY_API VoidPtr GetFunctionAddress(VoidPtr library, const StringView& functionName);
 
 }

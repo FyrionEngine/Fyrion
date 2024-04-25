@@ -46,6 +46,21 @@ namespace Fyrion
             ShellExecute(NULL, "open", parentPath.CStr(), NULL, NULL, SW_SHOWMAXIMIZED);
         }
     }
+
+    VoidPtr Platform::LoadDynamicLib(const StringView& library)
+    {
+        if (Path::Extension(library).Empty())
+        {
+            String libName = String{library} + ".dll";
+            return LoadLibrary(libName.CStr());
+        }
+        return LoadLibrary(library.CStr());
+    }
+
+    VoidPtr Platform::GetFunctionAddress(VoidPtr library, const StringView& functionName)
+    {
+        return (VoidPtr)GetProcAddress(static_cast<HMODULE>(library), functionName.CStr());
+    }
 }
 
 #endif

@@ -74,20 +74,24 @@ namespace Fyrion
 
     enum class ShaderStage : u32
     {
-        Vertex         = 1 << 0,
-        TessControl    = 1 << 1,
-        TessEvaluation = 1 << 2,
-        Geometry       = 1 << 3,
-        Fragment       = 1 << 4,
-        Compute        = 1 << 5,
-        Raygen         = 1 << 6,
-        Intersect      = 1 << 7,
-        AnyHit         = 1 << 8,
-        ClosestHit     = 1 << 9,
-        Miss           = 1 << 10,
-        Callable       = 1 << 11,
-        All            = 1 << 12,
+        Unknown         = 0,
+        Vertex          = 1 << 0,
+        Hull            = 1 << 1,
+        Domain          = 1 << 2,
+        Geometry        = 1 << 3,
+        Pixel           = 1 << 4,
+        Compute         = 1 << 5,
+        Amplification   = 1 << 6,
+        Mesh            = 1 << 7,
+        RayGen          = 1 << 8,
+        RayMiss         = 1 << 9,
+        RayClosestHit   = 1 << 10,
+        RayAnyHit       = 1 << 11,
+        RayIntersection = 1 << 12,
+        Callable        = 1 << 13,
+        All             = 1 << 14
     };
+
     ENUM_FLAGS(ShaderStage, u32)
 
     enum class BufferUsage : u32
@@ -232,6 +236,14 @@ namespace Fyrion
         f32                minLod{};
         f32                maxLod{};
         BorderColor        borderColor{BorderColor::IntOpaqueBlack};
+    };
+
+    struct ShaderCreation
+    {
+        StringView    source{};
+        StringView    entryPoint{};
+        ShaderStage   shaderStage{};
+        RenderApiType renderApi{};
     };
 
     //TODO add other fields.

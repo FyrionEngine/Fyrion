@@ -19,7 +19,7 @@ namespace Fyrion::Vulkan
     VkPresentModeKHR              ChooseSwapPresentMode(const VulkanSwapChainSupportDetails& supportDetails, VkPresentModeKHR desiredPresentMode);
     VkExtent2D                    ChooseSwapExtent(const VulkanSwapChainSupportDetails& supportDetails, Extent extent);
     VkBufferUsageFlags            CastBufferUsage(BufferUsage bufferUsage);
-    VkFormat                      CastFormat(const ImageFormat& textureFormat);
+    VkFormat                      CastFormat(const Format& textureFormat);
     VkImageUsageFlags             CastTextureUsage(TextureUsage textureUsage);
 
     inline bool QueryInstanceExtension(const char* extension)

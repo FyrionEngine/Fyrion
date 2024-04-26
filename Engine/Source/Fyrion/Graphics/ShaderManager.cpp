@@ -7,6 +7,7 @@
 #include "dxc/WinAdapter.h"
 #endif
 
+#include "spirv_cross.hpp"
 #include "Fyrion/Core/Logger.hpp"
 #include "dxc/dxcapi.h"
 
@@ -27,6 +28,7 @@ namespace Fyrion
     namespace
     {
         Logger&               logger = Logger::GetLogger("Fyrion::ShaderCompiler");
+
         IDxcUtils*            utils{};
         IDxcCompiler3*        compiler{};
         DxcCreateInstanceProc dxcCreateInstance;
@@ -60,7 +62,7 @@ namespace Fyrion
     }
 
 
-    void ShaderCompilerInit()
+    void ShaderManagerInit()
     {
         VoidPtr instance = Platform::LoadDynamicLib("dxcompiler");
         if (instance)
@@ -102,8 +104,8 @@ namespace Fyrion
         {
             args.EmplaceBack(L"-spirv");
             args.EmplaceBack(L"-fspv-target-env=vulkan1.2");
-
         }
+
         IDxcResult* pResults{};
         //IncludeHandler includeHandler{rid};
         compiler->Compile(&source, args.Data(), args.Size(), nullptr, IID_PPV_ARGS(&pResults));
@@ -148,7 +150,125 @@ namespace Fyrion
         return true;
     }
 
-    void ShaderCompilerShutdown()
+    Format CastFormat(spirv_cross::SPIRType type)
+    {
+        switch (type.basetype)
+        {
+        case spirv_cross::SPIRType::SByte: break;
+        case spirv_cross::SPIRType::UByte:
+        case spirv_cross::SPIRType::Boolean:
+            switch (type.vecsize)
+            {
+            case 1: return Format::R;
+            case 2: return Format::RG;
+            case 3: return Format::RGB;
+            case 4: return Format::RGBA;
+            }
+            break;
+        case spirv_cross::SPIRType::Short: break;
+        case spirv_cross::SPIRType::UShort: break;
+        case spirv_cross::SPIRType::Int: break;
+        case spirv_cross::SPIRType::UInt: break;
+        case spirv_cross::SPIRType::Int64: break;
+        case spirv_cross::SPIRType::UInt64: break;
+        case spirv_cross::SPIRType::Half: break;
+        case spirv_cross::SPIRType::Float:
+            switch (type.vecsize)
+            {
+            case 1: return Format::R32F;
+            case 2: return Format::RG32F;
+            case 3: return Format::RGB32F;
+            case 4: return Format::RGBA32F;
+            }
+            break;
+        case spirv_cross::SPIRType::Double:
+            break;
+        case spirv_cross::SPIRType::Char:
+            break;
+        case spirv_cross::SPIRType::Unknown:
+        case spirv_cross::SPIRType::Void:
+        case spirv_cross::SPIRType::Image:
+        case spirv_cross::SPIRType::SampledImage:
+        case spirv_cross::SPIRType::Sampler:
+        case spirv_cross::SPIRType::AccelerationStructure:
+        case spirv_cross::SPIRType::RayQuery:
+        case spirv_cross::SPIRType::ControlPointArray:
+        case spirv_cross::SPIRType::Interpolant:
+        case spirv_cross::SPIRType::Struct:
+        case spirv_cross::SPIRType::AtomicCounter:
+            break;
+        }
+        return Format::Undefined;
+    }
+
+    ShaderInfo ShaderManager::ExtractShaderInfo(const Span<u8>& bytes, const Span<ShaderStageInfo>& stages, RenderApiType renderApi)
+    {
+        ShaderInfo shaderInfo;
+
+        if (renderApi != RenderApiType::D3D12)
+        {
+            for (const ShaderStageInfo& stageInfo : stages)
+            {
+                std::vector<u32> data;
+                data.resize(stageInfo.size / sizeof(u32));
+                MemCopy(data.data(), bytes.Data() + stageInfo.offset, stageInfo.size);
+                spirv_cross::Compiler compiler(data);
+                const spirv_cross::ShaderResources& resources = compiler.get_shader_resources();
+
+
+                if (stageInfo.stage == ShaderStage::Vertex)
+                {
+                    for (const auto& input : resources.stage_inputs)
+                    {
+                        Format format = CastFormat(compiler.get_type(input.base_type_id));
+
+                        shaderInfo.inputVariables.EmplaceBack(InterfaceVariable{
+                            .location = compiler.get_decoration(input.id, spv::DecorationLocation),
+                            .offset = compiler.get_decoration(input.id, spv::DecorationOffset),
+                            .name = compiler.get_decoration(input.id, spv::DecorationHlslSemanticGOOGLE),
+                            .format = format,
+                            .size = GetFormatSize(format),
+                        });
+                    }
+                }
+
+                if (stageInfo.stage == ShaderStage::Pixel)
+                {
+                    for (const auto& output : resources.stage_outputs)
+                    {
+                        Format format = CastFormat(compiler.get_type(output.base_type_id));
+
+                        shaderInfo.outputVariables.EmplaceBack(InterfaceVariable{
+                            .location = compiler.get_decoration(output.id, spv::DecorationLocation),
+                            .offset = compiler.get_decoration(output.id, spv::DecorationOffset),
+                            .name = compiler.get_decoration(output.id, spv::DecorationHlslSemanticGOOGLE),
+                            .format = format,
+                            .size = GetFormatSize(format),
+                        });
+                    }
+                }
+
+                shaderInfo.pushConstants.EmplaceBack(ShaderPushConstant{
+
+                });
+
+                // ShaderPushConstant& pushConstant = pushConstants.Back();
+                // pushConstant.name = block->name;
+                // pushConstant.offset = block->offset;
+                // pushConstant.size = block->size;
+                // pushConstant.stage = CastStage(module->shader_stage);
+
+                for(const auto& pushContant : resources.push_constant_buffers)
+                {
+
+                }
+            }
+
+        }
+        return shaderInfo;
+    }
+
+    void ShaderManagerShutdown()
     {
         if (utils)
         {

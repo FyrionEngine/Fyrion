@@ -29,8 +29,6 @@ Files extracted from upstream source:
 - `CMakeLists.txt` (modified)
 - `LICENSE.md`
 
-
-
 ## fmt
 - Upstream: https://github.com/fmtlib/fmt
 - Version: 10.2.1 (e69e5f977d458f2650bb346dadf2ad30c5320281, 2024)
@@ -74,6 +72,11 @@ Files extracted from upstream source:
 - `src/*`
 - `CMakeLists.txt`
 - `LICENSE`
+
+## SPIRV-Cross
+- Upstream: https://github.com/KhronosGroup/SPIRV-Cross
+- Version: cb956675fd24b87145090275423776786f1b2a62
+- License: Apache 2.0
 
 ## tinystl
 - Upstream: https://github.com/mendsley/tinystl

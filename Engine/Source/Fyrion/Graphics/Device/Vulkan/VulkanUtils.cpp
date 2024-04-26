@@ -211,25 +211,25 @@ namespace Fyrion::Vulkan
 		return flags;
 	}
 
-	VkFormat CastFormat(const ImageFormat& textureFormat)
+	VkFormat CastFormat(const Format& textureFormat)
 	{
 		switch (textureFormat)
 		{
-		case ImageFormat::R: return VK_FORMAT_R8_UNORM;
-		case ImageFormat::RG16F: return VK_FORMAT_R16G16_SFLOAT;
-		case ImageFormat::RGBA: return VK_FORMAT_R8G8B8A8_UNORM;
-		case ImageFormat::RGBA16F: return VK_FORMAT_R16G16B16A16_SFLOAT;
-		case ImageFormat::RGBA32F: return VK_FORMAT_R32G32B32A32_SFLOAT;
-		case ImageFormat::BGRA: return VK_FORMAT_B8G8R8A8_UNORM;
-		case ImageFormat::Depth: return VK_FORMAT_D32_SFLOAT;           //TODO should check if format is available
-		case ImageFormat::R16F: return VK_FORMAT_R16_SFLOAT;
-		case ImageFormat::R32F: return VK_FORMAT_R32_SFLOAT;
-		case ImageFormat::RG: return VK_FORMAT_R8G8_UNORM;
-		case ImageFormat::RG32F: return VK_FORMAT_R32G32_SFLOAT;
-		case ImageFormat::RGB: return VK_FORMAT_R8G8B8_UNORM;
-		case ImageFormat::RGB16F: return VK_FORMAT_R16G16B16_SFLOAT;
-		case ImageFormat::RGB32F: return VK_FORMAT_R32G32B32_SFLOAT;
-		case ImageFormat::Undefined:
+		case Format::R: return VK_FORMAT_R8_UNORM;
+		case Format::RG16F: return VK_FORMAT_R16G16_SFLOAT;
+		case Format::RGBA: return VK_FORMAT_R8G8B8A8_UNORM;
+		case Format::RGBA16F: return VK_FORMAT_R16G16B16A16_SFLOAT;
+		case Format::RGBA32F: return VK_FORMAT_R32G32B32A32_SFLOAT;
+		case Format::BGRA: return VK_FORMAT_B8G8R8A8_UNORM;
+		case Format::Depth: return VK_FORMAT_D32_SFLOAT;           //TODO should check if format is available
+		case Format::R16F: return VK_FORMAT_R16_SFLOAT;
+		case Format::R32F: return VK_FORMAT_R32_SFLOAT;
+		case Format::RG: return VK_FORMAT_R8G8_UNORM;
+		case Format::RG32F: return VK_FORMAT_R32G32_SFLOAT;
+		case Format::RGB: return VK_FORMAT_R8G8B8_UNORM;
+		case Format::RGB16F: return VK_FORMAT_R16G16B16_SFLOAT;
+		case Format::RGB32F: return VK_FORMAT_R32G32B32_SFLOAT;
+		case Format::Undefined:
 			break;
 		default:
 			FY_ASSERT(false, "[VulkanDevice] VkFormat not found");

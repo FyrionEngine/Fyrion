@@ -144,4 +144,9 @@ namespace Fyrion
     {
         return renderDevice->AcquireNextRenderPass(swapchain);
     }
+
+    RenderApiType Graphics::GetRenderApi()
+    {
+        return RenderApiType::Vulkan;
+    }
 }

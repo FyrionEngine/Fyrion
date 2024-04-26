@@ -7,6 +7,7 @@ namespace Fyrion
 {
     void RegisterResourceTypes();
     void RegisterSceneType();
+    void RegisterGraphicsTypes();
 
     void TypeRegister()
     {
@@ -35,5 +36,6 @@ namespace Fyrion
 
         RegisterResourceTypes();
         RegisterSceneType();
+        RegisterGraphicsTypes();
     }
 }

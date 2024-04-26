@@ -1,8 +1,12 @@
 #include <doctest.h>
 
 #include "Fyrion/Engine.hpp"
+#include "Fyrion/Assets/AssetTypes.hpp"
 #include "Fyrion/Core/Array.hpp"
 #include "Fyrion/Graphics/ShaderManager.hpp"
+#include "Fyrion/IO/Path.hpp"
+#include "Fyrion/Resource/Repository.hpp"
+#include "Fyrion/Resource/ResourceAssets.hpp"
 
 using namespace Fyrion;
 
@@ -15,7 +19,6 @@ namespace
 	         float3 position  : POSITION0;
 	         float3 color     : COLOR0;
 	    };
-
 
 	    struct VSOutput
 	    {
@@ -80,10 +83,40 @@ namespace
         		CHECK(res);
         		CHECK(bytes.Size() > 0);
         	}
-
-
         }
         Engine::Destroy();
+    }
+
+	TEST_CASE("Graphics::ShaderAsset")
+    {
+    	Engine::Init();
+    	{
+    		String path = Path::Join(FY_TEST_FILES, "ShaderTest");
+    		ResourceAssets::LoadAssetsFromDirectory("Fyrion", path);
+
+			RID rid = Repository::GetByPath("Fyrion://Test.raster");
+    		CHECK(rid);
+
+    		ResourceObject shader = Repository::Read(rid);
+    		CHECK(shader);
+
+    		Span<u8> bytes = shader[ShaderAsset::Bytes].As<Span<u8>>();
+    		CHECK(!bytes.Empty());
+
+    		Span<ShaderStageInfo> stages = shader[ShaderAsset::Stages].As<Span<ShaderStageInfo>>();
+    		ShaderInfo shaderInfo = shader[ShaderAsset::Info].As<ShaderInfo>();
+
+			CHECK(stages.Size() == 2);
+
+    		CHECK(stages[0].stage == ShaderStage::Vertex);
+    		CHECK(stages[1].stage == ShaderStage::Pixel);
+
+    		CHECK(shaderInfo.inputVariables.Size() == 2);
+    		CHECK(shaderInfo.outputVariables.Size() == 1);
+
+
+    	}
+    	Engine::Destroy();
 
     }
 }

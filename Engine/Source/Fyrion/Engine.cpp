@@ -30,8 +30,8 @@ namespace Fyrion
     void            RegisterAssets();
     void            SceneManagerInit();
     void            SceneManagerShutdown();
-    void            ShaderCompilerInit();
-    void            ShaderCompilerShutdown();
+    void            ShaderManagerInit();
+    void            ShaderManagerShutdown();
 
 
     namespace
@@ -65,7 +65,7 @@ namespace Fyrion
 
         RepositoryInit();
         TypeRegister();
-        ShaderCompilerInit();
+        ShaderManagerInit();
         ResourceAssetsInit();
         RegisterAssets();
         SceneManagerInit();
@@ -213,7 +213,7 @@ namespace Fyrion
         SceneManagerShutdown();
         ResourceAssetsShutdown();
         RepositoryShutdown();
-        ShaderCompilerShutdown();
+        ShaderManagerShutdown();
         RegistryShutdown();
         EventShutdown();
     }

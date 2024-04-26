@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Fyrion/Common.hpp"
+#include "Fyrion/Core/Array.hpp"
 #include "Fyrion/Platform/PlatformTypes.hpp"
 #include "Fyrion/Core/StringView.hpp"
 #include "Fyrion/Core/Math.hpp"
@@ -18,7 +19,7 @@ namespace Fyrion
     FY_HANDLER(Buffer);
     FY_HANDLER(Sampler);
 
-    enum class ImageFormat
+    enum class Format
     {
         R,
         R16F,
@@ -180,6 +181,63 @@ namespace Fyrion
         IntOpaqueWhite        = 4,
     };
 
+    enum class CullMode
+    {
+        None  = 0,
+        Front = 1,
+        Back  = 2
+    };
+
+
+    enum class PolygonMode
+    {
+        Fill  = 0,
+        Line  = 1,
+        Point = 2,
+    };
+
+    enum class PrimitiveTopology
+    {
+        PointList                  = 0,
+        LineList                   = 1,
+        LineStrip                  = 2,
+        TriangleList               = 3,
+        TriangleStrip              = 4,
+        TriangleFan                = 5,
+        LineListWithAdjacency      = 6,
+        LineStripWithAdjacency     = 7,
+        TriangleListWithAdjacency  = 8,
+        TriangleStripWithAdjacency = 9,
+        PatchList                  = 10,
+    };
+
+    enum class DescriptorType
+    {
+        SampledImage            = 0,
+        Sampler                 = 1,
+        StorageImage            = 2,
+        UniformBuffer           = 3,
+        StorageBuffer           = 4,
+        AccelerationStructure   = 5
+    };
+
+    enum class RenderType
+    {
+        None,
+        Void,
+        Bool,
+        Int,
+        Float,
+        Vector,
+        Matrix,
+        Image,
+        Sampler,
+        SampledImage,
+        Array,
+        RuntimeArray,
+        Struct
+    };
+
 
     struct SwapchainCreation
     {
@@ -211,7 +269,7 @@ namespace Fyrion
     struct TextureCreation
     {
         Extent3D     extent{};
-        ImageFormat  format{ImageFormat::RGBA};
+        Format       format{Format::RGBA};
         TextureUsage usage{};
         u32          mipLevels{1};
         u32          arrayLayers{1};
@@ -246,10 +304,21 @@ namespace Fyrion
         RenderApiType renderApi{};
     };
 
-    //TODO add other fields.
+
     struct GraphicsPipelineCreation
     {
-        RID shader{};
+        RID               shader{};
+        Span<Format>      attachments{};
+        Format            depthFormat = Format::Undefined;
+        bool              depthWrite{false};
+        bool              stencilTest{false};
+        bool              blendEnabled{false};
+        f32               minDepthBounds{1.0};
+        f32               maxDepthBounds{0.0};
+        CullMode          cullMode{CullMode::None};
+        CompareOp         compareOperator{CompareOp::Always};
+        PolygonMode       polygonMode{PolygonMode::Fill};
+        PrimitiveTopology primitiveTopology{PrimitiveTopology::TriangleList};
     };
 
     struct ComputePipelineCreation
@@ -293,6 +362,68 @@ namespace Fyrion
         bool isDepth{false};
     };
 
+    struct InterfaceVariable
+    {
+        u32    location{};
+        u32    offset{};
+        String name{};
+        Format format{};
+        u32    size{};
+    };
+
+    struct TypeDescription
+    {
+        String                 name{};
+        RenderType             type{};
+        u32                    size{};
+        u32                    offset{};
+        Array<TypeDescription> members{};
+    };
+
+    struct DescriptorBinding
+    {
+        u32                    binding{};
+        u32                    count{};
+        String                 name{};
+        DescriptorType         descriptorType{};
+        RenderType             renderType{};
+        ShaderStage            shaderStage{ShaderStage::All};
+        ViewType               viewType{};
+        Array<TypeDescription> members{};
+        u32                    size{};
+    };
+
+    struct DescriptorLayout
+    {
+        u32                         set{};
+        Array<DescriptorBinding>   bindings{};
+    };
+
+    struct ShaderPushConstant
+    {
+        String      name{};
+        u32         offset{};
+        u32         size{};
+        ShaderStage stage{};
+    };
+
+    struct ShaderStageInfo
+    {
+        ShaderStage stage{};
+        String      entryPoint{};
+        u32         offset{};
+        u32         size{};
+    };
+
+    struct ShaderInfo
+    {
+        Array<InterfaceVariable>  inputVariables{};
+        Array<InterfaceVariable>  outputVariables{};
+        Array<DescriptorLayout>   descriptors{};
+        Array<ShaderPushConstant> pushConstants{};
+        u32                       stride{};
+    };
+
     struct BindingSet
     {
         //TODO
@@ -330,5 +461,28 @@ namespace Fyrion
     };
 
 
+    inline u32 GetFormatSize(Format format)
+    {
+        switch (format)
+        {
+        case Format::R: return 8;
+        case Format::R16F: return 16;
+        case Format::R32F: return 32;
+        case Format::RG: return 8 * 2;
+        case Format::RG16F: return 16 * 2;
+        case Format::RG32F: return 32 * 2;
+        case Format::RGB: return 8 * 3;
+        case Format::RGB16F: return 16 * 3;
+        case Format::RGB32F: return 32 * 3;
+        case Format::RGBA: return 8 * 4;
+        case Format::RGBA16F: return 16 * 4;
+        case Format::RGBA32F: return 32 * 4;
+        case Format::BGRA: return 8 * 4;
+        case Format::Depth:
+        case Format::Undefined:
+            break;
+        }
+        return 0;
+    }
 
 }

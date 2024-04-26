@@ -34,7 +34,7 @@ namespace
 
 	TEST_CASE("Repository::AssetsBasic")
 	{
-        String assetPath = Path::Join(FY_TEST_FILES, "Assets");
+        String assetPath = Path::Join(FY_TEST_FILES, "AssetsBasic");
 
 		if (!FileSystem::GetFileStatus(assetPath).exists)
 		{

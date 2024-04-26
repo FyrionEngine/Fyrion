@@ -1,0 +1,40 @@
+
+struct VSInput
+{
+     float3 position  : POSITION0;
+     float3 color     : COLOR0;
+};
+
+
+struct VSOutput
+{
+    float4 pos          : SV_POSITION;
+    float3 color        : COLOR0;
+};
+
+struct CameraBuffer
+{
+	float4x4 projectionMatrix;
+	float4x4 viewMatrix;
+};
+
+struct Object
+{
+   float4x4 modelMatrix;
+};
+
+[[vk::binding(0, 0)]] ConstantBuffer<CameraBuffer> camera;
+[[vk::push_constant]] Object object;
+
+VSOutput MainVS(VSInput input)
+{
+	VSOutput output   = (VSOutput)0;
+	output.pos        = mul(camera.projectionMatrix, mul(camera.viewMatrix, mul(object.modelMatrix, float4(input.position, 1.0))));
+	output.color      = input.color;
+	return output;
+}
+
+float4 MainPS(VSOutput input) : SV_TARGET
+{
+	return float4(input.color, 1.0);
+}

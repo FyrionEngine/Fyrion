@@ -395,8 +395,8 @@ namespace Fyrion
 
     struct DescriptorLayout
     {
-        u32                         set{};
-        Array<DescriptorBinding>   bindings{};
+        u32                      set{};
+        Array<DescriptorBinding> bindings{};
     };
 
     struct ShaderPushConstant

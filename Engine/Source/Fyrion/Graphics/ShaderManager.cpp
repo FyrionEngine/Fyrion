@@ -7,9 +7,12 @@
 #include "dxc/WinAdapter.h"
 #endif
 
+#include <iostream>
+
 #include "spirv_cross.hpp"
 #include "Fyrion/Core/Logger.hpp"
 #include "dxc/dxcapi.h"
+#include "Fyrion/Core/HashMap.hpp"
 
 #define SHADER_MODEL "6_5"
 
@@ -201,12 +204,40 @@ namespace Fyrion
         return Format::Undefined;
     }
 
+    void ReadResources(const spirv_cross::Compiler&                           comp,
+                       const spirv_cross::SmallVector<spirv_cross::Resource>& resources,
+                       HashMap<u32, HashMap<u32, DescriptorBinding>>&         descriptors)
+    {
+        for (auto& resource : resources)
+        {
+            u32 set = comp.get_decoration(resource.id, spv::DecorationDescriptorSet);
+            u32 binding = comp.get_decoration(resource.id, spv::DecorationBinding);
+
+            auto setIt = descriptors.Find(set);
+            if (setIt == descriptors.end())
+            {
+                setIt = descriptors.Insert({set, HashMap<u32, DescriptorBinding>{}}).first;
+            }
+            auto& descriptorMap = setIt->second;
+            if (auto it = descriptorMap.Find(binding); it == descriptorMap.end())
+            {
+                DescriptorBinding& descriptorBinding = descriptorMap.Emplace(binding, DescriptorBinding{
+                    .binding = binding,
+                }).first->second;
+            }
+            // std::string name = comp.get_name(resource.id);
+            // std::cout << name << std::endl;
+        }
+    }
+
     ShaderInfo ShaderManager::ExtractShaderInfo(const Span<u8>& bytes, const Span<ShaderStageInfo>& stages, RenderApiType renderApi)
     {
         ShaderInfo shaderInfo;
 
         if (renderApi != RenderApiType::D3D12)
         {
+            HashMap<u32, HashMap<u32, DescriptorBinding>> descriptors{};
+
             for (const ShaderStageInfo& stageInfo : stages)
             {
                 std::vector<u32> data;
@@ -248,20 +279,24 @@ namespace Fyrion
                     }
                 }
 
-                shaderInfo.pushConstants.EmplaceBack(ShaderPushConstant{
-
-                });
-
-                // ShaderPushConstant& pushConstant = pushConstants.Back();
-                // pushConstant.name = block->name;
-                // pushConstant.offset = block->offset;
-                // pushConstant.size = block->size;
-                // pushConstant.stage = CastStage(module->shader_stage);
-
-                for(const auto& pushContant : resources.push_constant_buffers)
+                for (const auto& pushContant : resources.push_constant_buffers)
                 {
+                    spirv_cross::SPIRType type = compiler.get_type(pushContant.type_id);
 
+                    shaderInfo.pushConstants.EmplaceBack(ShaderPushConstant{
+                        .name = String{pushContant.name.c_str()},
+                        .offset = compiler.get_decoration(pushContant.id, spv::DecorationOffset),
+                        .size = static_cast<u32>(compiler.get_declared_struct_size(type)),
+                        .stage = stageInfo.stage
+                    });
                 }
+
+                ReadResources(compiler, resources.separate_images, descriptors);
+                ReadResources(compiler, resources.separate_samplers, descriptors);
+                ReadResources(compiler, resources.storage_images, descriptors);
+                ReadResources(compiler, resources.uniform_buffers, descriptors);
+                ReadResources(compiler, resources.storage_buffers, descriptors);
+                ReadResources(compiler, resources.acceleration_structures, descriptors);
             }
 
         }

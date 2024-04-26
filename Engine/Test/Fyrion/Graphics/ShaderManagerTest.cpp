@@ -113,6 +113,7 @@ namespace
 
     		CHECK(shaderInfo.inputVariables.Size() == 2);
     		CHECK(shaderInfo.outputVariables.Size() == 1);
+    		CHECK(shaderInfo.pushConstants.Size() == 1);
 
 
     	}

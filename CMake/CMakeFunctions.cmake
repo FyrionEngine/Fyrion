@@ -5,7 +5,7 @@ function(add_binary_file project folder file)
 		#elseif (APPLE)
 		#elseif (UNIX)
 	else ()
-		message(FATAL_ERROR "Unsupported target platform '${CMAKE_SYSTEM_NAME}'")
+#		message(FATAL_ERROR "Unsupported target platform '${CMAKE_SYSTEM_NAME}'")
 	endif ()
 
 endfunction()

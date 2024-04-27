@@ -970,14 +970,14 @@ namespace Fyrion
     constexpr Vec2 Vec2::operator>>(const int vl) const
     {
         //return TVec2{this->x >> vl, this->y >> vl};
-        FY_ASSERT(false, "Not Implemnted");
+        //FY_ASSERT(false, "Not Implemnted");
         return {};
     }
 
     constexpr Vec2 Vec2::operator<<(const int vl) const
     {
         //return TVec2{this->x << vl, this->y << vl};
-        FY_ASSERT(false, "Not Implemnted");
+        //FY_ASSERT(false, "Not Implemnted");
         return {};
     }
 
@@ -1257,14 +1257,14 @@ namespace Fyrion
     constexpr Vec4 Vec4::operator>>(i32 vl) const
     {
         //return {this->x >> vl, this->y >> vl, this->z >> vl, this->w >> vl};
-        FY_ASSERT(false, "TODO");
+        //FY_ASSERT(false, "TODO");
         return {};
     }
 
     constexpr Vec4 Vec4::operator<<(i32 vl) const
     {
         //return {this->x << vl, this->y << vl, this->z << vl, this->w << vl};
-        FY_ASSERT(false, "TODO");
+        //FY_ASSERT(false, "TODO");
         return {};
     }
 
@@ -1322,7 +1322,7 @@ namespace Fyrion
 
     constexpr Quat& Quat::operator=(const Mat4& m)
     {
-        FY_ASSERT(false, "not implemeneted");
+        //FY_ASSERT(false, "not implemeneted");
         return *this;
     }
 

@@ -8,13 +8,13 @@ namespace Fyrion
     {
     public:
 
-        template<auto Value, typename Type>
+        template<auto value, typename Type>
         ResourceTypeBuilder& Value(const StringView& name)
         {
             FY_ASSERT(!m_built, "Build() is already called");
 
             m_resourceFieldCreation.EmplaceBack(ResourceFieldCreation{
-                .index = static_cast<u32>(Value),
+                .index = static_cast<u32>(value),
                 .name = name,
                 .type = ResourceFieldType::Value,
                 .valueId = GetTypeID<Type>()

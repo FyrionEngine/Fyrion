@@ -105,7 +105,7 @@ inline void operator delete(void*, Fyrion::PlaceHolder, Fyrion::VoidPtr) noexcep
     #define FY_FINLINE __forceinline
 #elif defined __CLANG__
 #       define FY_FINLINE [[clang::always_inline]]
-#elif  defined__GNUC__
+#elif  defined __GNUC__
 #define FY_FINLINE inline __attribute__((always_inline))
 #else
 static_assert(false, "Compiler not supported");

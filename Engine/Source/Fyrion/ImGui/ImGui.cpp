@@ -1002,7 +1002,7 @@ namespace ImGui
         }
     }
 
-    void ImGui::Render(RenderCommands& renderCommands)
+    void Render(RenderCommands& renderCommands)
     {
         Render();
         GetRenderDevice().ImGuiRender(renderCommands);

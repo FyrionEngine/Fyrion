@@ -1,7 +1,7 @@
 
 #include "ResourceAssets.hpp"
 #include "Repository.hpp"
-#include "Fyrion/Core/logger.hpp"
+#include "Fyrion/Core/Logger.hpp"
 #include "Fyrion/IO/Path.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
 #include "ResourceSerialization.hpp"

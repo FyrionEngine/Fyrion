@@ -7,6 +7,9 @@
 #include "Fyrion/IO/Path.hpp"
 #include "Fyrion/Resource/Repository.hpp"
 #include "Fyrion/Resource/ResourceAssets.hpp"
+#include "Fyrion/IO/FileSystem.hpp"
+
+#include <iostream>
 
 using namespace Fyrion;
 
@@ -92,6 +95,7 @@ namespace
     	Engine::Init();
     	{
     		String path = Path::Join(FY_TEST_FILES, "ShaderTest");
+            REQUIRE(FileSystem::GetFileStatus(path).exists);
     		ResourceAssets::LoadAssetsFromDirectory("Fyrion", path);
 
 			RID rid = Repository::GetByPath("Fyrion://Test.raster");

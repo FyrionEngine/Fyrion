@@ -290,130 +290,131 @@ namespace
         {
             Engine::Init();
             RegisterTypes();
-
             {
-                RID ridPrototype = Repository::CreateResource<SerializationSubObjectBasics>(UUID::FromString("4618f8b1-97ee-4402-99f9-d4b5c9ce789d"));
-                ResourceSerialization::ParseResource(prototypeStr, ridPrototype);
-
-                ResourceObject prototype = Repository::Read(ridPrototype);
-                CHECK(prototype.GetValue<String>(SerializationSubObjectBasics::StringValue) == String{"TestStrPrototype"});
-                CHECK(prototype.GetValue<i32>(SerializationSubObjectBasics::IntValue) == 667788);
-            }
-
-
-            RID rid = Repository::CreateResource<SerializationResourceBasics>();
-            ResourceSerialization::ParseResource(str, rid);
-
-            ResourceObject read = Repository::Read(rid);
-            CHECK(read.GetValue<String>(SerializationResourceBasics::StringValue) == "blahblah");
-            RID assetRid = read.GetValue<RID>(SerializationResourceBasics::AssetValue);
-            CHECK(assetRid);
-            CHECK(Repository::GetUUID(assetRid) == UUID::FromString("8658b8ba-0bcd-4e9d-b940-c6f3290ca917"));
-
-            CHECK(nestedStruct == read.GetValue<NestedStruct>(SerializationResourceBasics::StructValue));
-
-            const Array<RID>& rids = read.GetValue<Array<RID>>(SerializationResourceBasics::RIDArray);
-            CHECK(rids.Size() == 3);
-
-            CHECK(Repository::GetUUID(rids[0]) == UUID::FromString("9cbb7cf9-c76c-436f-b6ae-1f31b7eda6b8"));
-            CHECK(Repository::GetUUID(rids[1]) == UUID::FromString("8a5021d0-2df9-4a30-9341-bc5c61152c5f"));
-            CHECK(Repository::GetUUID(rids[2]) == UUID::FromString("af184ba3-f0ca-48e1-9641-d1f439bae905"));
-
-            {
-                RID ridSubobject = read.GetSubObject(SerializationResourceBasics::Subobject);
-                CHECK(ridSubobject);
-
-                ResourceObject subobject = Repository::Read(ridSubobject);
-                CHECK(subobject.GetValue<String>(SerializationSubObjectBasics::StringValue) == String{"TestSubObject"});
-                CHECK(subobject.GetValue<i32>(SerializationSubObjectBasics::IntValue) == 445566);
-            }
-
-            u32 subobjectSetCount = read.GetSubObjectSetCount(SerializationResourceBasics::SubobjectSet);
-            Array<RID> subobjectSet(subobjectSetCount);
-            read.GetSubObjectSet(SerializationResourceBasics::SubobjectSet, subobjectSet);
-
-            u32 count = 0;
-            for(const RID subobjectRid: subobjectSet)
-            {
-                if (Repository::GetUUID(subobjectRid) == UUID::FromString("ebb81da8-04f5-4b8f-ba52-6b5e45473c2c"))
                 {
-                    ResourceObject subobject = Repository::Read(subobjectRid);
-                    CHECK(subobject.GetValue<String>(SerializationSubObjectBasics::StringValue) == String{"SubobjectSetString1"});
-                    CHECK(subobject.GetValue<i32>(SerializationSubObjectBasics::IntValue) == 111);
-                    count++;
+                    RID ridPrototype = Repository::CreateResource<SerializationSubObjectBasics>(UUID::FromString("4618f8b1-97ee-4402-99f9-d4b5c9ce789d"));
+                    ResourceSerialization::ParseResource(prototypeStr, ridPrototype);
+
+                    ResourceObject prototype = Repository::Read(ridPrototype);
+                    CHECK(prototype.GetValue<String>(SerializationSubObjectBasics::StringValue) == String{"TestStrPrototype"});
+                    CHECK(prototype.GetValue<i32>(SerializationSubObjectBasics::IntValue) == 667788);
                 }
-                else if (Repository::GetUUID(subobjectRid) == UUID::FromString("fe9e91c6-c629-4837-86b8-d78efce286dc"))
+
+
+                RID rid = Repository::CreateResource<SerializationResourceBasics>();
+                ResourceSerialization::ParseResource(str, rid);
+
+                ResourceObject read = Repository::Read(rid);
+                CHECK(read.GetValue<String>(SerializationResourceBasics::StringValue) == "blahblah");
+                RID assetRid = read.GetValue<RID>(SerializationResourceBasics::AssetValue);
+                CHECK(assetRid);
+                CHECK(Repository::GetUUID(assetRid) == UUID::FromString("8658b8ba-0bcd-4e9d-b940-c6f3290ca917"));
+
+                CHECK(nestedStruct == read.GetValue<NestedStruct>(SerializationResourceBasics::StructValue));
+
+                const Array<RID>& rids = read.GetValue<Array<RID>>(SerializationResourceBasics::RIDArray);
+                CHECK(rids.Size() == 3);
+
+                CHECK(Repository::GetUUID(rids[0]) == UUID::FromString("9cbb7cf9-c76c-436f-b6ae-1f31b7eda6b8"));
+                CHECK(Repository::GetUUID(rids[1]) == UUID::FromString("8a5021d0-2df9-4a30-9341-bc5c61152c5f"));
+                CHECK(Repository::GetUUID(rids[2]) == UUID::FromString("af184ba3-f0ca-48e1-9641-d1f439bae905"));
+
                 {
-                    ResourceObject subobject = Repository::Read(subobjectRid);
-                    CHECK(subobject.GetValue<String>(SerializationSubObjectBasics::StringValue) == String{"SubobjectSetString2"});
-                    CHECK(subobject.GetValue<i32>(SerializationSubObjectBasics::IntValue) == 222);
-                    count++;
+                    RID ridSubobject = read.GetSubObject(SerializationResourceBasics::Subobject);
+                    CHECK(ridSubobject);
+
+                    ResourceObject subobject = Repository::Read(ridSubobject);
+                    CHECK(subobject.GetValue<String>(SerializationSubObjectBasics::StringValue) == String{"TestSubObject"});
+                    CHECK(subobject.GetValue<i32>(SerializationSubObjectBasics::IntValue) == 445566);
                 }
-                else if (Repository::GetUUID(subobjectRid) == UUID::FromString("e1655559-7c1e-4afb-a931-8257694705f1"))
+
+                u32 subobjectSetCount = read.GetSubObjectSetCount(SerializationResourceBasics::SubobjectSet);
+                Array<RID> subobjectSet(subobjectSetCount);
+                read.GetSubObjectSet(SerializationResourceBasics::SubobjectSet, subobjectSet);
+
+                u32 count = 0;
+                for(const RID subobjectRid: subobjectSet)
                 {
-                    const NestedStruct& nestedStruct = Repository::ReadData<NestedStruct>(subobjectRid);
-                    CHECK(nestedStruct.string == "Str");
-                    CHECK(nestedStruct.value == 123);
-                    count++;
-                }
-            }
-            CHECK(subobjectSetCount == count);
-
-            RID ridPrototypeNoOverride = read.GetSubObject(SerializationResourceBasics::PrototypeNoOverride);
-            CHECK(ridPrototypeNoOverride);
-            ResourceObject prototypeNoOverride =Repository::Read(ridPrototypeNoOverride);
-            CHECK(prototypeNoOverride.GetValue<String>(SerializationSubObjectBasics::StringValue) == String{"TestStrPrototype"});
-            CHECK(prototypeNoOverride.GetValue<i32>(SerializationSubObjectBasics::IntValue) == 667788);
-
-
-            RID ridPrototypeWithOverride = read.GetSubObject(SerializationResourceBasics::PrototypeWithOverride);
-            CHECK(ridPrototypeWithOverride);
-            ResourceObject prototypeWithOverride =Repository::Read(ridPrototypeWithOverride);
-            CHECK(prototypeWithOverride.GetValue<String>(SerializationSubObjectBasics::StringValue) == String{"OverrideValue"});
-            CHECK(prototypeWithOverride.GetValue<i32>(SerializationSubObjectBasics::IntValue) == 667788);
-
-            RID ridPrototypeAll =  Repository::CreateFromPrototype(rid);
-            ResourceSerialization::ParseResource(prototype2Str, ridPrototypeAll);
-
-            {
-                ResourceObject subobject = Repository::Read(ridPrototypeAll);
-                const NestedStruct& value = read.GetValue<NestedStruct>(SerializationResourceBasics::StructValue);
-                const NestedStruct& valueSubObject = subobject.GetValue<NestedStruct>(SerializationResourceBasics::StructValue);
-                CHECK(value.value == valueSubObject.value);
-                CHECK(value.string == valueSubObject.string);
-
-                {
-                    u32 countSubObjects = subobject.GetSubObjectSetCount(SerializationResourceBasics::SubobjectSet);
-                    Array<RID> subObjects(countSubObjects);
-                    subobject.GetSubObjectSet(SerializationResourceBasics::SubobjectSet, subObjects);
-                    CHECK(subObjects.Size() == 3);
-                    u32 checks = 0;
-                    for (int i = 0; i < countSubObjects; ++i)
+                    if (Repository::GetUUID(subobjectRid) == UUID::FromString("ebb81da8-04f5-4b8f-ba52-6b5e45473c2c"))
                     {
-                        RID subobjectItem = subObjects[i];
-                        if (Repository::GetUUID(subobjectItem) == UUID::FromString("82e8aab4-7981-4c83-9b3f-c4d0738c4337"))
-                        {
-                            ResourceObject subObjectResource = Repository::Read(subobjectItem);
-                            CHECK(subObjectResource.GetValue<String>(SerializationSubObjectBasics::StringValue) == "SubobjectSetString3");
-                            CHECK(subObjectResource.GetValue<i32>(SerializationSubObjectBasics::IntValue) == 333);
-                            checks++;
-                        }
-                        else if (Repository::GetUUID(subobjectItem) == UUID::FromString("fe9e91c6-c629-4837-86b8-d78efce286dc"))
-                        {
-                            ResourceObject subObjectResource = Repository::Read(subobjectItem);
-                            CHECK(subObjectResource.GetValue<String>(SerializationSubObjectBasics::StringValue) == "SubobjectSetString2");
-                            CHECK(subObjectResource.GetValue<i32>(SerializationSubObjectBasics::IntValue) == 222);
-                            checks++;
-                        }
-                        else if (Repository::GetUUID(subobjectItem) == UUID::FromString("e1655559-7c1e-4afb-a931-8257694705f1"))
-                        {
-                            const NestedStruct& nestedStruct = Repository::ReadData<NestedStruct>(subobjectItem);
-                            CHECK(nestedStruct.string == "Str");
-                            CHECK(nestedStruct.value == 123);
-                            checks++;
-                        }
+                        ResourceObject subobject = Repository::Read(subobjectRid);
+                        CHECK(subobject.GetValue<String>(SerializationSubObjectBasics::StringValue) == String{"SubobjectSetString1"});
+                        CHECK(subobject.GetValue<i32>(SerializationSubObjectBasics::IntValue) == 111);
+                        count++;
                     }
-                    CHECK(checks == countSubObjects);
+                    else if (Repository::GetUUID(subobjectRid) == UUID::FromString("fe9e91c6-c629-4837-86b8-d78efce286dc"))
+                    {
+                        ResourceObject subobject = Repository::Read(subobjectRid);
+                        CHECK(subobject.GetValue<String>(SerializationSubObjectBasics::StringValue) == String{"SubobjectSetString2"});
+                        CHECK(subobject.GetValue<i32>(SerializationSubObjectBasics::IntValue) == 222);
+                        count++;
+                    }
+                    else if (Repository::GetUUID(subobjectRid) == UUID::FromString("e1655559-7c1e-4afb-a931-8257694705f1"))
+                    {
+                        const NestedStruct& nestedStruct = Repository::ReadData<NestedStruct>(subobjectRid);
+                        CHECK(nestedStruct.string == "Str");
+                        CHECK(nestedStruct.value == 123);
+                        count++;
+                    }
+                }
+                CHECK(subobjectSetCount == count);
+
+                RID ridPrototypeNoOverride = read.GetSubObject(SerializationResourceBasics::PrototypeNoOverride);
+                CHECK(ridPrototypeNoOverride);
+                ResourceObject prototypeNoOverride =Repository::Read(ridPrototypeNoOverride);
+                CHECK(prototypeNoOverride.GetValue<String>(SerializationSubObjectBasics::StringValue) == String{"TestStrPrototype"});
+                CHECK(prototypeNoOverride.GetValue<i32>(SerializationSubObjectBasics::IntValue) == 667788);
+
+
+                RID ridPrototypeWithOverride = read.GetSubObject(SerializationResourceBasics::PrototypeWithOverride);
+                CHECK(ridPrototypeWithOverride);
+                ResourceObject prototypeWithOverride =Repository::Read(ridPrototypeWithOverride);
+                CHECK(prototypeWithOverride.GetValue<String>(SerializationSubObjectBasics::StringValue) == String{"OverrideValue"});
+                CHECK(prototypeWithOverride.GetValue<i32>(SerializationSubObjectBasics::IntValue) == 667788);
+
+                RID ridPrototypeAll =  Repository::CreateFromPrototype(rid);
+                ResourceSerialization::ParseResource(prototype2Str, ridPrototypeAll);
+
+                {
+                    ResourceObject subobject = Repository::Read(ridPrototypeAll);
+                    const NestedStruct& value = read.GetValue<NestedStruct>(SerializationResourceBasics::StructValue);
+                    const NestedStruct& valueSubObject = subobject.GetValue<NestedStruct>(SerializationResourceBasics::StructValue);
+                    CHECK(value.value == valueSubObject.value);
+                    CHECK(value.string == valueSubObject.string);
+
+                    {
+                        u32 countSubObjects = subobject.GetSubObjectSetCount(SerializationResourceBasics::SubobjectSet);
+                        Array<RID> subObjects(countSubObjects);
+                        subobject.GetSubObjectSet(SerializationResourceBasics::SubobjectSet, subObjects);
+                        CHECK(subObjects.Size() == 3);
+                        u32 checks = 0;
+                        for (int i = 0; i < countSubObjects; ++i)
+                        {
+                            RID subobjectItem = subObjects[i];
+                            if (Repository::GetUUID(subobjectItem) == UUID::FromString("82e8aab4-7981-4c83-9b3f-c4d0738c4337"))
+                            {
+                                ResourceObject subObjectResource = Repository::Read(subobjectItem);
+                                CHECK(subObjectResource.GetValue<String>(SerializationSubObjectBasics::StringValue) == "SubobjectSetString3");
+                                CHECK(subObjectResource.GetValue<i32>(SerializationSubObjectBasics::IntValue) == 333);
+                                checks++;
+                            }
+                            else if (Repository::GetUUID(subobjectItem) == UUID::FromString("fe9e91c6-c629-4837-86b8-d78efce286dc"))
+                            {
+                                ResourceObject subObjectResource = Repository::Read(subobjectItem);
+                                CHECK(subObjectResource.GetValue<String>(SerializationSubObjectBasics::StringValue) == "SubobjectSetString2");
+                                CHECK(subObjectResource.GetValue<i32>(SerializationSubObjectBasics::IntValue) == 222);
+                                checks++;
+                            }
+                            else if (Repository::GetUUID(subobjectItem) == UUID::FromString("e1655559-7c1e-4afb-a931-8257694705f1"))
+                            {
+                                const NestedStruct& nestedStruct = Repository::ReadData<NestedStruct>(subobjectItem);
+                                CHECK(nestedStruct.string == "Str");
+                                CHECK(nestedStruct.value == 123);
+                                checks++;
+                            }
+                        }
+                        CHECK(checks == countSubObjects);
+                    }
                 }
             }
             Engine::Destroy();

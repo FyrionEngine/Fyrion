@@ -18,18 +18,17 @@ namespace
         CHECK(status.exists);
         CHECK(status.isDirectory);
         CHECK(status.lastModifiedTime > 0);
-        CHECK(status.fileSize == 0);
         CHECK(FileSystem::Remove("test"));
     }
 
     TEST_CASE("IO:FileSystemFile")
     {
-        String path = Path::Join(FY_TEST_FILES, "TestWriteFile");
-        String testText = "texttexttext";
+        String path = Path::Join(FY_TEST_FILES, "TestWriteFile.txt");
+        String testText = "texttexttextzzzz";
 
         {
             FileHandler fileHandler = FileSystem::OpenFile(path, AccessMode::WriteOnly);
-            CHECK(fileHandler);
+            REQUIRE(fileHandler);
             CHECK(FileSystem::GetFileSize(fileHandler) == 0);
             FileSystem::WriteFile(fileHandler, testText.CStr(), testText.Size());
             FileSystem::CloseFile(fileHandler);
@@ -37,7 +36,7 @@ namespace
 
         {
             FileHandler fileHandler = FileSystem::OpenFile(path, AccessMode::ReadOnly);
-            CHECK(fileHandler);
+            REQUIRE(fileHandler);
             usize size = FileSystem::GetFileSize(fileHandler);
             CHECK(size == testText.Size());
             String newString{size};

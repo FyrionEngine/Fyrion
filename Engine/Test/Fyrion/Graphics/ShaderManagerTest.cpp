@@ -111,9 +111,10 @@ namespace
     		CHECK(stages[0].stage == ShaderStage::Vertex);
     		CHECK(stages[1].stage == ShaderStage::Pixel);
 
-    		CHECK(shaderInfo.inputVariables.Size() == 2);
+    		CHECK(shaderInfo.inputVariables.Size() == 3);
     		CHECK(shaderInfo.outputVariables.Size() == 1);
     		CHECK(shaderInfo.pushConstants.Size() == 1);
+    		CHECK(shaderInfo.descriptors.Size() == 2);
 
 
     	}

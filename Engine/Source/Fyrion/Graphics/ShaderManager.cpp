@@ -30,7 +30,7 @@ namespace Fyrion
 {
     namespace
     {
-        Logger&               logger = Logger::GetLogger("Fyrion::ShaderCompiler");
+        Logger&               logger = Logger::GetLogger("Fyrion::ShaderCompiler", LogLevel::Debug);
 
         IDxcUtils*            utils{};
         IDxcCompiler3*        compiler{};
@@ -204,14 +204,56 @@ namespace Fyrion
         return Format::Undefined;
     }
 
+    ViewType CastViewType(spv::Dim dim)
+    {
+        switch (dim)
+        {
+        case spv::Dim1D: return ViewType::Type1D;
+        case spv::Dim2D: return ViewType::Type2D;
+        case spv::Dim3D: return ViewType::Type3D;
+        case spv::DimCube: return ViewType::TypeCube;
+        // case spv::DimRect: break;
+        // case spv::DimBuffer: break;
+        // case spv::DimSubpassData: break;
+        // case spv::DimMax: break;
+        }
+        return ViewType::Undefined;
+    }
+
+
+    void ReadStructMembers(const spirv_cross::Compiler& comp,
+                           const spirv_cross::SPIRType& type,
+                           Array<TypeDescription>&      members)
+    {
+        for (u32 i = 0; i < type.member_types.size(); i++)
+        {
+            TypeDescription& typeDescription = members.EmplaceBack();
+            typeDescription.size = comp.get_declared_struct_member_size(type, i);
+            typeDescription.offset = comp.type_struct_member_offset(type, i);
+            typeDescription.name = String{comp.get_member_name(type.self, i).c_str()};
+
+            auto& memberType = comp.get_type(type.member_types[i]);
+
+            if (memberType.basetype == spirv_cross::SPIRType::BaseType::Struct)
+            {
+                ReadStructMembers(comp, memberType, typeDescription.members);
+            }
+        }
+    }
+
+
     void ReadResources(const spirv_cross::Compiler&                           comp,
                        const spirv_cross::SmallVector<spirv_cross::Resource>& resources,
+                       const ShaderStage&                                     shaderStage,
                        HashMap<u32, HashMap<u32, DescriptorBinding>>&         descriptors)
     {
         for (auto& resource : resources)
         {
             u32 set = comp.get_decoration(resource.id, spv::DecorationDescriptorSet);
             u32 binding = comp.get_decoration(resource.id, spv::DecorationBinding);
+            auto& type = comp.get_type(resource.type_id);
+
+            //type.image.dim
 
             auto setIt = descriptors.Find(set);
             if (setIt == descriptors.end())
@@ -221,12 +263,79 @@ namespace Fyrion
             auto& descriptorMap = setIt->second;
             if (auto it = descriptorMap.Find(binding); it == descriptorMap.end())
             {
-                DescriptorBinding& descriptorBinding = descriptorMap.Emplace(binding, DescriptorBinding{
-                    .binding = binding,
-                }).first->second;
+                DescriptorBinding& descriptorBinding = descriptorMap.Emplace(
+                    binding,
+                    DescriptorBinding{
+                        .binding = binding,
+                        .count = 0,
+                        .name = comp.get_name(resource.id).c_str(),
+                        .renderType = RenderType::Array,
+                        .shaderStage = shaderStage,
+                        .size = 0,
+                    }).first->second;
+
+                if (type.basetype == spirv_cross::SPIRType::BaseType::Image)
+                {
+                    if (type.storage == spv::StorageClassUniformConstant)
+                    {
+                        descriptorBinding.descriptorType = DescriptorType::SampledImage;
+                    }
+                    else
+                    {
+                        FY_ASSERT(false, "TODO?");
+                    }
+                    descriptorBinding.viewType = CastViewType(type.image.dim);
+                }
+                else if (type.basetype == spirv_cross::SPIRType::BaseType::Sampler)
+                {
+                    descriptorBinding.descriptorType = DescriptorType::Sampler;
+                }
+                else if (type.basetype == spirv_cross::SPIRType::BaseType::Struct)
+                {
+                    if (type.storage == spv::StorageClassUniform)
+                    {
+                        descriptorBinding.descriptorType = DescriptorType::UniformBuffer;
+                    }
+                    else
+                    {
+                        FY_ASSERT(false, "TODO?");
+                    }
+                    ReadStructMembers(comp, type, descriptorBinding.members);
+                }
+
+                logger.Debug("binding added {} {} {}", set, descriptorBinding.binding, descriptorBinding.name);
             }
-            // std::string name = comp.get_name(resource.id);
-            // std::cout << name << std::endl;
+        }
+    }
+
+    void SortAndAddDescriptors(ShaderInfo& shaderInfo, const HashMap<u32, HashMap<u32, DescriptorBinding>>& descriptors)
+    {
+        //sorting descriptors
+        Array<u32> sortDescriptors{};
+        sortDescriptors.Reserve(descriptors.Size());
+        for (auto& descriptorIt: descriptors)
+        {
+            sortDescriptors.EmplaceBack(descriptorIt.first);
+        }
+        std::ranges::sort(sortDescriptors);
+        for (auto& set: sortDescriptors)
+        {
+            const HashMap<u32, DescriptorBinding>& bindings = descriptors.Find(set)->second;
+            DescriptorLayout descriptorLayout = DescriptorLayout{set};
+
+            Array<u32> sortBindings{};
+            sortBindings.Reserve(bindings.Size());
+            for (auto& bindingIt: bindings)
+            {
+                sortBindings.EmplaceBack(bindingIt.first);
+            }
+            std::ranges::sort(sortBindings);
+
+            for (auto& binding: sortBindings)
+            {
+                descriptorLayout.bindings.EmplaceBack(bindings.Find(binding)->second);
+            }
+            shaderInfo.descriptors.EmplaceBack(descriptorLayout);
         }
     }
 
@@ -256,7 +365,7 @@ namespace Fyrion
                         shaderInfo.inputVariables.EmplaceBack(InterfaceVariable{
                             .location = compiler.get_decoration(input.id, spv::DecorationLocation),
                             .offset = compiler.get_decoration(input.id, spv::DecorationOffset),
-                            .name = compiler.get_decoration(input.id, spv::DecorationHlslSemanticGOOGLE),
+                            .name = compiler.get_decoration_string(input.id, spv::DecorationHlslSemanticGOOGLE).c_str(),
                             .format = format,
                             .size = GetFormatSize(format),
                         });
@@ -272,7 +381,7 @@ namespace Fyrion
                         shaderInfo.outputVariables.EmplaceBack(InterfaceVariable{
                             .location = compiler.get_decoration(output.id, spv::DecorationLocation),
                             .offset = compiler.get_decoration(output.id, spv::DecorationOffset),
-                            .name = compiler.get_decoration(output.id, spv::DecorationHlslSemanticGOOGLE),
+                            .name = compiler.get_decoration_string(output.id, spv::DecorationHlslSemanticGOOGLE).c_str(),
                             .format = format,
                             .size = GetFormatSize(format),
                         });
@@ -281,7 +390,7 @@ namespace Fyrion
 
                 for (const auto& pushContant : resources.push_constant_buffers)
                 {
-                    spirv_cross::SPIRType type = compiler.get_type(pushContant.type_id);
+                    const auto& type = compiler.get_type(pushContant.type_id);
 
                     shaderInfo.pushConstants.EmplaceBack(ShaderPushConstant{
                         .name = String{pushContant.name.c_str()},
@@ -291,13 +400,15 @@ namespace Fyrion
                     });
                 }
 
-                ReadResources(compiler, resources.separate_images, descriptors);
-                ReadResources(compiler, resources.separate_samplers, descriptors);
-                ReadResources(compiler, resources.storage_images, descriptors);
-                ReadResources(compiler, resources.uniform_buffers, descriptors);
-                ReadResources(compiler, resources.storage_buffers, descriptors);
-                ReadResources(compiler, resources.acceleration_structures, descriptors);
+                ReadResources(compiler, resources.separate_images, stageInfo.stage, descriptors);
+                ReadResources(compiler, resources.separate_samplers, stageInfo.stage, descriptors);
+                ReadResources(compiler, resources.storage_images, stageInfo.stage, descriptors);
+                ReadResources(compiler, resources.uniform_buffers, stageInfo.stage, descriptors);
+                ReadResources(compiler, resources.storage_buffers, stageInfo.stage, descriptors);
+                ReadResources(compiler, resources.acceleration_structures, stageInfo.stage, descriptors);
             }
+
+            SortAndAddDescriptors(shaderInfo, descriptors);
 
         }
         return shaderInfo;

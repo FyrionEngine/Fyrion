@@ -213,12 +213,12 @@ namespace Fyrion
 
     enum class DescriptorType
     {
-        SampledImage            = 0,
-        Sampler                 = 1,
-        StorageImage            = 2,
-        UniformBuffer           = 3,
-        StorageBuffer           = 4,
-        AccelerationStructure   = 5
+        SampledImage          = 0,
+        Sampler               = 1,
+        StorageImage          = 2,
+        UniformBuffer         = 3,
+        StorageBuffer         = 4,
+        AccelerationStructure = 5
     };
 
     enum class RenderType

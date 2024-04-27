@@ -10,10 +10,12 @@ using namespace Fyrion;
 int main(int argc, char** argv)
 {
     //MemoryGlobals::SetOptions(AllocatorOptions_ShowErros | AllocatorOptions_Verbose);
-    Logger::SetDefaultLevel(LogLevel::Warn);
+
+    //Logger::SetDefaultLevel(LogLevel::Trace);
 
     StdOutSink sink{};
     Logger::RegisterSink(sink);
+
 
     doctest::Context context;
     context.applyCommandLine(argc, argv);

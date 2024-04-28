@@ -78,6 +78,17 @@ Files extracted from upstream source:
 - Version: cb956675fd24b87145090275423776786f1b2a62
 - License: Apache 2.0
 
+## SPIRV-Reflect
+- Upstream: https://github.com/KhronosGroup/SPIRV-Reflect
+- Version: ee5b57fba6a986381f998567761bbc064428e645
+- License: Apache 2.0
+ 
+Files extracted from upstream source:
+- `include/spriv/unified1/spriv.h`
+- `spirv_reflect.c`
+- `spirv_reflect.h`
+- `LICENSE`
+
 ## tinystl
 - Upstream: https://github.com/mendsley/tinystl
 - Version: git(77bfd2f32c373180ac01798a1faa95142d65288b, 2018) 

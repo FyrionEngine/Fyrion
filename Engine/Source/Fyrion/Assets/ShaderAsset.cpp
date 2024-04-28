@@ -66,6 +66,42 @@ namespace Fyrion
         return {};
     }
 
+    RID ImportCompShader(RID asset, const StringView& path)
+    {
+        RenderApiType renderApi = Graphics::GetRenderApi();
+
+        String source = FileSystem::ReadFileAsString(path);
+
+        Array<u8> bytes;
+
+        if (ShaderManager::CompileShader(ShaderCreation{
+                                             .source = source,
+                                             .entryPoint = "MainCS",
+                                             .shaderStage = ShaderStage::Compute,
+                                             .renderApi = renderApi
+                                         }, bytes))
+        {
+            Array<ShaderStageInfo> stages;
+
+            RID shader = Repository::CreateResource<ShaderAsset>();
+
+            stages.EmplaceBack(ShaderStageInfo{
+                .stage = ShaderStage::Compute,
+                .entryPoint = "MainCS",
+                .size = (u32)bytes.Size()
+            });
+
+            ResourceObject write = Repository::Write(shader);
+            write[ShaderAsset::Bytes] = bytes;
+            write[ShaderAsset::Info] = ShaderManager::ExtractShaderInfo(bytes, stages, renderApi);
+            write[ShaderAsset::Stages] = stages;
+
+            return shader;
+        }
+
+        return {};
+    }
+
     void RegisterShaderAsset()
     {
         ResourceTypeBuilder<ShaderAsset>::Builder()
@@ -75,5 +111,6 @@ namespace Fyrion
             .Build();
 
         ResourceAssets::AddAssetImporter(".raster", ImportRasterShader);
+        ResourceAssets::AddAssetImporter(".comp", ImportCompShader);
     }
 }

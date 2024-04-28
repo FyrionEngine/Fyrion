@@ -10,6 +10,7 @@
 #include <iostream>
 
 #include "spirv_cross.hpp"
+#include "spirv_reflect.h"
 #include "Fyrion/Core/Logger.hpp"
 #include "dxc/dxcapi.h"
 #include "Fyrion/Core/HashMap.hpp"

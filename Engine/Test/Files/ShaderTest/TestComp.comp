@@ -1,0 +1,8 @@
+RWTexture2D<float2> texture         : register(u0);
+RWTexture2D<float2> anotherText[]   : register(u1, space1);
+
+[numthreads(32, 32, 1)]
+void MainCS(uint3 ThreadID : SV_DispatchThreadID)
+{
+    texture[ThreadID.xy] = anotherText[ThreadID.z][ThreadID.xy];
+}

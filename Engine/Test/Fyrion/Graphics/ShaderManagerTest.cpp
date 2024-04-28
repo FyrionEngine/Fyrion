@@ -98,27 +98,39 @@ namespace
             REQUIRE(FileSystem::GetFileStatus(path).exists);
     		ResourceAssets::LoadAssetsFromDirectory("Fyrion", path);
 
-			RID rid = Repository::GetByPath("Fyrion://Test.raster");
-    		CHECK(rid);
+    		{
+    			RID rid = Repository::GetByPath("Fyrion://TestRaster.raster");
+    			CHECK(rid);
 
-    		ResourceObject shader = Repository::Read(rid);
-    		CHECK(shader);
+    			ResourceObject shader = Repository::Read(rid);
+    			CHECK(shader);
 
-    		Span<u8> bytes = shader[ShaderAsset::Bytes].As<Span<u8>>();
-    		CHECK(!bytes.Empty());
+    			Span<u8> bytes = shader[ShaderAsset::Bytes].As<Span<u8>>();
+    			CHECK(!bytes.Empty());
 
-    		Span<ShaderStageInfo> stages = shader[ShaderAsset::Stages].As<Span<ShaderStageInfo>>();
-    		ShaderInfo shaderInfo = shader[ShaderAsset::Info].As<ShaderInfo>();
+    			Span<ShaderStageInfo> stages = shader[ShaderAsset::Stages].As<Span<ShaderStageInfo>>();
+    			ShaderInfo shaderInfo = shader[ShaderAsset::Info].As<ShaderInfo>();
 
-			CHECK(stages.Size() == 2);
+    			CHECK(stages.Size() == 2);
 
-    		CHECK(stages[0].stage == ShaderStage::Vertex);
-    		CHECK(stages[1].stage == ShaderStage::Pixel);
+    			CHECK(stages[0].stage == ShaderStage::Vertex);
+    			CHECK(stages[1].stage == ShaderStage::Pixel);
 
-    		CHECK(shaderInfo.inputVariables.Size() == 3);
-    		CHECK(shaderInfo.outputVariables.Size() == 1);
-    		CHECK(shaderInfo.pushConstants.Size() == 1);
-    		CHECK(shaderInfo.descriptors.Size() == 2);
+    			CHECK(shaderInfo.inputVariables.Size() == 3);
+    			CHECK(shaderInfo.outputVariables.Size() == 1);
+    			CHECK(shaderInfo.pushConstants.Size() == 1);
+    			CHECK(shaderInfo.descriptors.Size() == 2);
+
+    			CHECK(shaderInfo.inputVariables[0].location == 0);
+    			CHECK(shaderInfo.inputVariables[0].format == Format::RGB32F);
+
+    			//TODO - improve tests.
+    		}
+
+    		{
+
+    		}
+
 
 
     	}

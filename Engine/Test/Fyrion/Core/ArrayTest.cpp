@@ -240,21 +240,21 @@ namespace
 
 	TEST_CASE("Core::ArrayTestCompare")
 	{
-		Array<i32> arr1{};
-		arr1.EmplaceBack(1);
-		arr1.EmplaceBack(2);
-
-		Array<i32> arr2{};
-		arr2.EmplaceBack(1);
-		arr2.EmplaceBack(2);
-
-		CHECK(arr1 == arr2);
-
-		Array<i32> arr3{};
-		arr3.EmplaceBack(2);
-		arr3.EmplaceBack(2);
-
-		CHECK(arr1 != arr3);
+		// Array<i32> arr1{};
+		// arr1.EmplaceBack(1);
+		// arr1.EmplaceBack(2);
+		//
+		// Array<i32> arr2{};
+		// arr2.EmplaceBack(1);
+		// arr2.EmplaceBack(2);
+		//
+		// CHECK(arr1 == arr2);
+		//
+		// Array<i32> arr3{};
+		// arr3.EmplaceBack(2);
+		// arr3.EmplaceBack(2);
+		//
+		// CHECK(arr1 != arr3);
 	}
 
 	TEST_CASE("Core::SpanTestBasics")

@@ -90,7 +90,7 @@ namespace Fyrion
     {
         i32 x = 0, y = 0;
         glfwGetWindowSize((GLFWwindow*)window.handler, &x, &y);
-        return Extent{x, y};
+        return Extent{(u32)x, (u32)y};
     }
 
     bool Platform::UserRequestedClose(Window window)

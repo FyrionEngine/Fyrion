@@ -89,7 +89,7 @@ namespace Fyrion
     Extent Platform::GetWindowExtent(Window window)
     {
         i32 x = 0, y = 0;
-        glfwGetWindowSize((GLFWwindow*)window.handler, &x, &y);
+        glfwGetFramebufferSize((GLFWwindow*)window.handler, &x, &y);
         return Extent{(u32)x, (u32)y};
     }
 

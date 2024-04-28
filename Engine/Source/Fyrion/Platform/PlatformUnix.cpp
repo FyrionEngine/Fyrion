@@ -61,9 +61,7 @@ namespace Fyrion
         VoidPtr ptr;
         if (Path::Extension(library).Empty())
         {
-#ifdef FY_LINUX
-            String libName = "lib" + String{library} + ".so";
-#endif
+            String libName = "lib" + String{library} + FY_SHARED_EXT;
             ptr = dlopen(libName.CStr(), RTLD_NOW);
         }
         else

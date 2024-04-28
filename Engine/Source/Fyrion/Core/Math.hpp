@@ -485,7 +485,7 @@ namespace Fyrion
             {
                 // If the inputs are too close for comfort, linearly interpolate
                 // and normalize the result.
-                outQuaternion = {
+                outQuaternion = Quat{
                     v0.x + ((v1.x - v0.x) * percentage),
                     v0.y + ((v1.y - v0.y) * percentage),
                     v0.z + ((v1.z - v0.z) * percentage),

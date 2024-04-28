@@ -74,6 +74,7 @@ inline void operator delete(void*, Fyrion::PlaceHolder, Fyrion::VoidPtr) noexcep
     #define FY_DESKTOP  //TODO android?
 #elif __APPLE__
     #define FY_API
+    #define FY_APPLE
     #define FY_PATH_SEPARATOR '/'
     #define FY_SHARED_EXT ".dylib"
 

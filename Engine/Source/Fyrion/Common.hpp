@@ -71,10 +71,12 @@ inline void operator delete(void*, Fyrion::PlaceHolder, Fyrion::VoidPtr) noexcep
     #define FY_PATH_SEPARATOR '/'
     #define FY_SHARED_EXT ".so"
     #define FY_LINUX
+    #define FY_UNIX
     #define FY_DESKTOP  //TODO android?
 #elif __APPLE__
     #define FY_API
     #define FY_APPLE
+    #define FY_UNIX
     #define FY_PATH_SEPARATOR '/'
     #define FY_SHARED_EXT ".dylib"
 
@@ -84,10 +86,6 @@ inline void operator delete(void*, Fyrion::PlaceHolder, Fyrion::VoidPtr) noexcep
         #define FY_DESKTOP
         #define FY_MACOS
     #endif
-#endif
-
-#ifdef __unix__
-    #define FY_UNIX
 #endif
 
 #ifndef FY_PRETTY_FUNCTION

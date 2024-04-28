@@ -1,8 +1,9 @@
-RWTexture2D<float2> texture         : register(u0);
-RWTexture2D<float2> anotherText[]   : register(u1, space1);
+RWTexture2D<float2> texture             : register(u0);
+RWTexture2D<float2> fixedTextures[5]    : register(u0, space1);
+RWTexture2D<float2> runtimeTextures[]   : register(u1, space1);
 
 [numthreads(32, 32, 1)]
 void MainCS(uint3 ThreadID : SV_DispatchThreadID)
 {
-    texture[ThreadID.xy] = anotherText[ThreadID.z][ThreadID.xy];
+    texture[ThreadID.xy] =  fixedTextures[ThreadID.z][ThreadID.xy] + runtimeTextures[ThreadID.z][ThreadID.xy];
 }

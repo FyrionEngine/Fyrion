@@ -7,9 +7,9 @@
 #include "dxc/WinAdapter.h"
 #endif
 
+#include <algorithm>
 #include <iostream>
 
-#include "spirv_cross.hpp"
 #include "spirv_reflect.h"
 #include "Fyrion/Core/Logger.hpp"
 #include "dxc/dxcapi.h"
@@ -31,7 +31,7 @@ namespace Fyrion
 {
     namespace
     {
-        Logger&               logger = Logger::GetLogger("Fyrion::ShaderCompiler", LogLevel::Debug);
+        Logger&               logger = Logger::GetLogger("Fyrion::ShaderManager", LogLevel::Debug);
 
         IDxcUtils*            utils{};
         IDxcCompiler3*        compiler{};
@@ -154,160 +154,228 @@ namespace Fyrion
         return true;
     }
 
-    Format CastFormat(spirv_cross::SPIRType type)
+    namespace SpirvUtils
     {
-        switch (type.basetype)
+
+        Format CastFormat(const SpvReflectFormat& format)
         {
-        case spirv_cross::SPIRType::SByte: break;
-        case spirv_cross::SPIRType::UByte:
-        case spirv_cross::SPIRType::Boolean:
-            switch (type.vecsize)
+            switch (format)
             {
-            case 1: return Format::R;
-            case 2: return Format::RG;
-            case 3: return Format::RGB;
-            case 4: return Format::RGBA;
+                case SPV_REFLECT_FORMAT_UNDEFINED: break;
+                case SPV_REFLECT_FORMAT_R16_UINT: break;
+                case SPV_REFLECT_FORMAT_R16_SINT: break;
+                case SPV_REFLECT_FORMAT_R16_SFLOAT: return Format::R16F;
+                case SPV_REFLECT_FORMAT_R16G16_UINT: break;
+                case SPV_REFLECT_FORMAT_R16G16_SINT: break;
+                case SPV_REFLECT_FORMAT_R16G16_SFLOAT: return Format::RG16F;
+                case SPV_REFLECT_FORMAT_R16G16B16_UINT: break;
+                case SPV_REFLECT_FORMAT_R16G16B16_SINT: break;
+                case SPV_REFLECT_FORMAT_R16G16B16_SFLOAT: return Format::RGB16F;
+                case SPV_REFLECT_FORMAT_R16G16B16A16_UINT: break;
+                case SPV_REFLECT_FORMAT_R16G16B16A16_SINT: break;
+                case SPV_REFLECT_FORMAT_R16G16B16A16_SFLOAT: return Format::RGBA16F;
+                case SPV_REFLECT_FORMAT_R32_UINT: break;
+                case SPV_REFLECT_FORMAT_R32_SINT: break;
+                case SPV_REFLECT_FORMAT_R32_SFLOAT: return Format::R32F;
+                case SPV_REFLECT_FORMAT_R32G32_UINT: break;
+                case SPV_REFLECT_FORMAT_R32G32_SINT: break;
+                case SPV_REFLECT_FORMAT_R32G32_SFLOAT: return Format::RG32F;
+                case SPV_REFLECT_FORMAT_R32G32B32_UINT: break;
+                case SPV_REFLECT_FORMAT_R32G32B32_SINT: break;
+                case SPV_REFLECT_FORMAT_R32G32B32_SFLOAT: return Format::RGB32F;
+                case SPV_REFLECT_FORMAT_R32G32B32A32_UINT:  break;
+                case SPV_REFLECT_FORMAT_R32G32B32A32_SINT: break;
+                case SPV_REFLECT_FORMAT_R32G32B32A32_SFLOAT: return Format::RGBA32F;
+                case SPV_REFLECT_FORMAT_R64_UINT: break;
+                case SPV_REFLECT_FORMAT_R64_SINT: break;
+                case SPV_REFLECT_FORMAT_R64_SFLOAT: break;
+                case SPV_REFLECT_FORMAT_R64G64_UINT: break;
+                case SPV_REFLECT_FORMAT_R64G64_SINT: break;
+                case SPV_REFLECT_FORMAT_R64G64_SFLOAT: break;
+                case SPV_REFLECT_FORMAT_R64G64B64_UINT: break;
+                case SPV_REFLECT_FORMAT_R64G64B64_SINT: break;
+                case SPV_REFLECT_FORMAT_R64G64B64_SFLOAT: break;
+                case SPV_REFLECT_FORMAT_R64G64B64A64_UINT: break;
+                case SPV_REFLECT_FORMAT_R64G64B64A64_SINT: break;
+                case SPV_REFLECT_FORMAT_R64G64B64A64_SFLOAT: break;
             }
-            break;
-        case spirv_cross::SPIRType::Short: break;
-        case spirv_cross::SPIRType::UShort: break;
-        case spirv_cross::SPIRType::Int: break;
-        case spirv_cross::SPIRType::UInt: break;
-        case spirv_cross::SPIRType::Int64: break;
-        case spirv_cross::SPIRType::UInt64: break;
-        case spirv_cross::SPIRType::Half: break;
-        case spirv_cross::SPIRType::Float:
-            switch (type.vecsize)
-            {
-            case 1: return Format::R32F;
-            case 2: return Format::RG32F;
-            case 3: return Format::RGB32F;
-            case 4: return Format::RGBA32F;
-            }
-            break;
-        case spirv_cross::SPIRType::Double:
-            break;
-        case spirv_cross::SPIRType::Char:
-            break;
-        case spirv_cross::SPIRType::Unknown:
-        case spirv_cross::SPIRType::Void:
-        case spirv_cross::SPIRType::Image:
-        case spirv_cross::SPIRType::SampledImage:
-        case spirv_cross::SPIRType::Sampler:
-        case spirv_cross::SPIRType::AccelerationStructure:
-        case spirv_cross::SPIRType::RayQuery:
-        case spirv_cross::SPIRType::ControlPointArray:
-        case spirv_cross::SPIRType::Interpolant:
-        case spirv_cross::SPIRType::Struct:
-        case spirv_cross::SPIRType::AtomicCounter:
-            break;
+            logger.FatalError("CastFormat format not found");
+            return {};
         }
-        return Format::Undefined;
-    }
 
-    ViewType CastViewType(spv::Dim dim)
-    {
-        switch (dim)
+        RenderType CastRenderType(const SpvOp& spvOp)
         {
-        case spv::Dim1D: return ViewType::Type1D;
-        case spv::Dim2D: return ViewType::Type2D;
-        case spv::Dim3D: return ViewType::Type3D;
-        case spv::DimCube: return ViewType::TypeCube;
-        // case spv::DimRect: break;
-        // case spv::DimBuffer: break;
-        // case spv::DimSubpassData: break;
-        // case spv::DimMax: break;
-        }
-        return ViewType::Undefined;
-    }
-
-
-    void ReadStructMembers(const spirv_cross::Compiler& comp,
-                           const spirv_cross::SPIRType& type,
-                           Array<TypeDescription>&      members)
-    {
-        for (u32 i = 0; i < type.member_types.size(); i++)
-        {
-            TypeDescription& typeDescription = members.EmplaceBack();
-            typeDescription.size = comp.get_declared_struct_member_size(type, i);
-            typeDescription.offset = comp.type_struct_member_offset(type, i);
-            typeDescription.name = String{comp.get_member_name(type.self, i).c_str()};
-
-            auto& memberType = comp.get_type(type.member_types[i]);
-
-            if (memberType.basetype == spirv_cross::SPIRType::BaseType::Struct)
+            switch (spvOp)
             {
-                ReadStructMembers(comp, memberType, typeDescription.members);
+                case SpvOpTypeVoid: return RenderType::Void;
+                case SpvOpTypeBool: return RenderType::Bool;
+                case SpvOpTypeInt: return RenderType::Int;
+                case SpvOpTypeFloat: return RenderType::Float;
+                case SpvOpTypeVector: return RenderType::Vector;
+                case SpvOpTypeMatrix: return RenderType::Matrix;
+                case SpvOpTypeImage: return RenderType::Image;
+                case SpvOpTypeSampler: return RenderType::Sampler;
+                case SpvOpTypeSampledImage: return RenderType::SampledImage;
+                case SpvOpTypeArray: return RenderType::Array;
+                case SpvOpTypeRuntimeArray: return RenderType::RuntimeArray;
+                case SpvOpTypeStruct: return RenderType::Struct;
+                default: return RenderType::None;
             }
         }
-    }
 
-
-    void ReadResources(const spirv_cross::Compiler&                           comp,
-                       const spirv_cross::SmallVector<spirv_cross::Resource>& resources,
-                       const ShaderStage&                                     shaderStage,
-                       HashMap<u32, HashMap<u32, DescriptorBinding>>&         descriptors)
-    {
-        for (auto& resource : resources)
+        u32 GetAttributeSize(SpvReflectFormat reflectFormat)
         {
-            u32 set = comp.get_decoration(resource.id, spv::DecorationDescriptorSet);
-            u32 binding = comp.get_decoration(resource.id, spv::DecorationBinding);
-            auto& type = comp.get_type(resource.type_id);
-
-            //type.image.dim
-
-            auto setIt = descriptors.Find(set);
-            if (setIt == descriptors.end())
+            switch (reflectFormat)
             {
-                setIt = descriptors.Insert({set, HashMap<u32, DescriptorBinding>{}}).first;
+                case SPV_REFLECT_FORMAT_UNDEFINED:  return 0;
+                case SPV_REFLECT_FORMAT_R32_UINT: return sizeof(u32);
+                case SPV_REFLECT_FORMAT_R32_SINT: return sizeof(i32);
+                case SPV_REFLECT_FORMAT_R32_SFLOAT: return sizeof(f32);
+                case SPV_REFLECT_FORMAT_R32G32_UINT: return sizeof(u32) * 2;
+                case SPV_REFLECT_FORMAT_R32G32_SINT: return sizeof(i32) * 2;
+                case SPV_REFLECT_FORMAT_R32G32_SFLOAT: return sizeof(f32) * 2;
+                case SPV_REFLECT_FORMAT_R32G32B32_UINT: return sizeof(u32) * 3;
+                case SPV_REFLECT_FORMAT_R32G32B32_SINT: return sizeof(i32) * 3;
+                case SPV_REFLECT_FORMAT_R32G32B32_SFLOAT: return sizeof(f32) * 3;
+                case SPV_REFLECT_FORMAT_R32G32B32A32_UINT: return sizeof(u32) * 4;
+                case SPV_REFLECT_FORMAT_R32G32B32A32_SINT: return sizeof(i32) * 4;
+                case SPV_REFLECT_FORMAT_R32G32B32A32_SFLOAT: return sizeof(f32) * 4;
+                case SPV_REFLECT_FORMAT_R16_UINT: break;
+                case SPV_REFLECT_FORMAT_R16_SINT: break;
+                case SPV_REFLECT_FORMAT_R16_SFLOAT: break;
+                case SPV_REFLECT_FORMAT_R16G16_UINT: break;
+                case SPV_REFLECT_FORMAT_R16G16_SINT: break;
+                case SPV_REFLECT_FORMAT_R16G16_SFLOAT: break;
+                case SPV_REFLECT_FORMAT_R16G16B16_UINT: break;
+                case SPV_REFLECT_FORMAT_R16G16B16_SINT: break;
+                case SPV_REFLECT_FORMAT_R16G16B16_SFLOAT: break;
+                case SPV_REFLECT_FORMAT_R16G16B16A16_UINT: break;
+                case SPV_REFLECT_FORMAT_R16G16B16A16_SINT: break;
+                case SPV_REFLECT_FORMAT_R16G16B16A16_SFLOAT: break;
+                case SPV_REFLECT_FORMAT_R64_UINT: break;
+                case SPV_REFLECT_FORMAT_R64_SINT: break;
+                case SPV_REFLECT_FORMAT_R64_SFLOAT: break;
+                case SPV_REFLECT_FORMAT_R64G64_UINT: break;
+                case SPV_REFLECT_FORMAT_R64G64_SINT: break;
+                case SPV_REFLECT_FORMAT_R64G64_SFLOAT: break;
+                case SPV_REFLECT_FORMAT_R64G64B64_UINT: break;
+                case SPV_REFLECT_FORMAT_R64G64B64_SINT: break;
+                case SPV_REFLECT_FORMAT_R64G64B64_SFLOAT: break;
+                case SPV_REFLECT_FORMAT_R64G64B64A64_UINT: break;
+                case SPV_REFLECT_FORMAT_R64G64B64A64_SINT: break;
+                case SPV_REFLECT_FORMAT_R64G64B64A64_SFLOAT: break;
             }
-            auto& descriptorMap = setIt->second;
-            if (auto it = descriptorMap.Find(binding); it == descriptorMap.end())
-            {
-                DescriptorBinding& descriptorBinding = descriptorMap.Emplace(
-                    binding,
-                    DescriptorBinding{
-                        .binding = binding,
-                        .count = 0,
-                        .name = comp.get_name(resource.id).c_str(),
-                        .renderType = RenderType::Array,
-                        .shaderStage = shaderStage,
-                        .size = 0,
-                    }).first->second;
+            logger.FatalError("GetAttributeSize format not found");
+            return 0;
+        }
 
-                if (type.basetype == spirv_cross::SPIRType::BaseType::Image)
+        DescriptorType GetDescriptorType(SpvReflectDescriptorType descriptorType)
+        {
+            switch (descriptorType)
+            {
+                case SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLER: return DescriptorType::Sampler;
+                case SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLED_IMAGE: return DescriptorType::SampledImage;
+                case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE: return DescriptorType::StorageImage;
+                case SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER: return DescriptorType::UniformBuffer;
+                case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER: return DescriptorType::StorageBuffer;
+                case SPV_REFLECT_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR: return DescriptorType::AccelerationStructure;
+                case SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: break;
+                case SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER: break;
+                case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER: break;
+                case SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC: break;
+                case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC: break;
+                case SPV_REFLECT_DESCRIPTOR_TYPE_INPUT_ATTACHMENT: break;
+            }
+            logger.FatalError("GetDescriptorType DescriptorType not found");
+            return {};
+        }
+
+        ViewType DimToViewType(SpvDim dim, u32 arrayed)
+        {
+            if (arrayed)
+            {
+                switch (dim)
                 {
-                    if (type.storage == spv::StorageClassUniformConstant)
-                    {
-                        descriptorBinding.descriptorType = DescriptorType::SampledImage;
-                    }
-                    else
-                    {
-                        FY_ASSERT(false, "TODO?");
-                    }
-                    descriptorBinding.viewType = CastViewType(type.image.dim);
+                    case SpvDim1D: return ViewType::Type1DArray;
+                    case SpvDim2D: return ViewType::Type2DArray;
+                    case SpvDim3D: return ViewType::Type3D;
+                    case SpvDimCube: return ViewType::TypeCubeArray;
+                    case SpvDimRect:break;
+                    case SpvDimBuffer:break;
+                    case SpvDimSubpassData:break;
+                    case SpvDimMax:break;
+                    case SpvDimTileImageDataEXT: break;
                 }
-                else if (type.basetype == spirv_cross::SPIRType::BaseType::Sampler)
-                {
-                    descriptorBinding.descriptorType = DescriptorType::Sampler;
-                }
-                else if (type.basetype == spirv_cross::SPIRType::BaseType::Struct)
-                {
-                    if (type.storage == spv::StorageClassUniform)
-                    {
-                        descriptorBinding.descriptorType = DescriptorType::UniformBuffer;
-                    }
-                    else
-                    {
-                        FY_ASSERT(false, "TODO?");
-                    }
-                    ReadStructMembers(comp, type, descriptorBinding.members);
-                }
-
-                logger.Debug("binding added {} {} {}", set, descriptorBinding.binding, descriptorBinding.name);
             }
+            else
+            {
+                switch (dim)
+                {
+                    case SpvDim1D: return ViewType::Type1D;
+                    case SpvDim2D: return ViewType::Type2D;
+                    case SpvDim3D: return ViewType::Type3D;
+                    case SpvDimCube: return ViewType::TypeCube;
+                    case SpvDimRect:break;
+                    case SpvDimBuffer:break;
+                    case SpvDimSubpassData:break;
+                    case SpvDimMax:break;
+                    case SpvDimTileImageDataEXT: break;
+                }
+            }
+
+            logger.FatalError("DimToViewType SpvDim not found");
+
+            return ViewType::Undefined;
+        }
+
+        u32 CalcTypeSize(SpvReflectTypeDescription* reflectTypeDescription)
+        {
+            switch (reflectTypeDescription->op)
+            {
+                case SpvOpTypeInt: return sizeof(i32);
+                case SpvOpTypeFloat: return sizeof(f32);
+                case SpvOpTypeVector: return reflectTypeDescription->traits.numeric.vector.component_count * sizeof(f32);
+                case SpvOpTypeMatrix: return reflectTypeDescription->traits.numeric.matrix.row_count * reflectTypeDescription->traits.numeric.matrix.stride;
+                case SpvOpTypeArray:
+                    {
+                        u32 size{};
+                        for (int d = 0; d < reflectTypeDescription->traits.array.dims_count; ++d)
+                        {
+                            size += reflectTypeDescription->traits.array.dims[d] * reflectTypeDescription->traits.numeric.scalar.width;
+                        }
+                        return size;
+                    }
+                case SpvOpTypeRuntimeArray: return 0; //runtime arrays has size?
+                case SpvOpTypeStruct: return 0;       //ignore, size will be calculated using the fields
+            }
+
+            logger.FatalError("CalcTypeSize type not found");
+
+            return 0;
+        }
+
+        void GetTypeDescription(DescriptorBinding& descriptorBinding, Array<TypeDescription>& parentMembers, SpvReflectTypeDescription* reflectTypeDescription)
+        {
+            u32 typeSize = CalcTypeSize(reflectTypeDescription);
+
+            TypeDescription typeDescription = TypeDescription{
+                .name = reflectTypeDescription->struct_member_name != nullptr ? reflectTypeDescription->struct_member_name : "",
+                .type = CastRenderType(reflectTypeDescription->op),
+                .size = typeSize,
+                .offset = descriptorBinding.size
+            };
+
+            descriptorBinding.size += typeSize;
+
+            for (int m = 0; m < reflectTypeDescription->member_count; ++m)
+            {
+                GetTypeDescription(descriptorBinding, typeDescription.members, &reflectTypeDescription->members[m]);
+            }
+
+            parentMembers.EmplaceBack(typeDescription);
         }
     }
+
 
     void SortAndAddDescriptors(ShaderInfo& shaderInfo, const HashMap<u32, HashMap<u32, DescriptorBinding>>& descriptors)
     {
@@ -346,67 +414,124 @@ namespace Fyrion
 
         if (renderApi != RenderApiType::D3D12)
         {
+            u32 varCount = 0;
             HashMap<u32, HashMap<u32, DescriptorBinding>> descriptors{};
 
             for (const ShaderStageInfo& stageInfo : stages)
             {
-                std::vector<u32> data;
-                data.resize(stageInfo.size / sizeof(u32));
-                MemCopy(data.data(), bytes.Data() + stageInfo.offset, stageInfo.size);
-                spirv_cross::Compiler compiler(data);
-                const spirv_cross::ShaderResources& resources = compiler.get_shader_resources();
+                Array<u32> data;
+                data.Resize(stageInfo.size);
+                MemCopy(data.Data(), bytes.Data() + stageInfo.offset, stageInfo.size);
 
+                SpvReflectShaderModule module{};
+                spvReflectCreateShaderModule(data.Size(), data.Data(), &module);
 
                 if (stageInfo.stage == ShaderStage::Vertex)
                 {
-                    for (const auto& input : resources.stage_inputs)
-                    {
-                        Format format = CastFormat(compiler.get_type(input.base_type_id));
+                    spvReflectEnumerateInputVariables(&module, &varCount, nullptr);
+                    Array<SpvReflectInterfaceVariable*> inputVariables;
+                    inputVariables.Resize(varCount);
+                    spvReflectEnumerateInputVariables(&module, &varCount, inputVariables.Data());
 
-                        shaderInfo.inputVariables.EmplaceBack(InterfaceVariable{
-                            .location = compiler.get_decoration(input.id, spv::DecorationLocation),
-                            .offset = compiler.get_decoration(input.id, spv::DecorationOffset),
-                            .name = compiler.get_decoration_string(input.id, spv::DecorationHlslSemanticGOOGLE).c_str(),
-                            .format = format,
-                            .size = GetFormatSize(format),
-                        });
+                    u32 offset = 0;
+                    for (SpvReflectInterfaceVariable* variable: inputVariables)
+                    {
+                        if (variable->location < U32_MAX)
+                        {
+                            InterfaceVariable interfaceVariable{
+                                .location = variable->location,
+                                .offset = offset,
+                                .name = variable->name,
+                                .format = SpirvUtils::CastFormat(variable->format),
+                                .size = SpirvUtils::GetAttributeSize(variable->format),
+                            };
+
+                            offset += interfaceVariable.size;
+                            shaderInfo.inputVariables.EmplaceBack(interfaceVariable);
+                        }
+                    }
+                    shaderInfo.stride = offset;
+                }
+                else if (stageInfo.stage == ShaderStage::Pixel)
+                {
+                    Array<SpvReflectInterfaceVariable*> outputVariables;
+                    spvReflectEnumerateOutputVariables(&module, &varCount, nullptr);
+                    outputVariables.Resize(varCount);
+                    spvReflectEnumerateOutputVariables(&module, &varCount, outputVariables.Data());
+
+                    for (SpvReflectInterfaceVariable* variable: outputVariables)
+                    {
+                        InterfaceVariable interfaceVariable{
+                            .location = variable->location,
+                            .format = SpirvUtils::CastFormat(variable->format),
+                            .size = SpirvUtils::GetAttributeSize(variable->format),
+                        };
+                        shaderInfo.outputVariables.EmplaceBack(interfaceVariable);
                     }
                 }
 
-                if (stageInfo.stage == ShaderStage::Pixel)
+                spvReflectEnumeratePushConstantBlocks(&module, &varCount, nullptr);
+                Array<SpvReflectBlockVariable*> blockVariables;
+                blockVariables.Resize(varCount);
+                spvReflectEnumeratePushConstantBlocks(&module, &varCount, blockVariables.Data());
+
+                for (auto block : blockVariables)
                 {
-                    for (const auto& output : resources.stage_outputs)
-                    {
-                        Format format = CastFormat(compiler.get_type(output.base_type_id));
-
-                        shaderInfo.outputVariables.EmplaceBack(InterfaceVariable{
-                            .location = compiler.get_decoration(output.id, spv::DecorationLocation),
-                            .offset = compiler.get_decoration(output.id, spv::DecorationOffset),
-                            .name = compiler.get_decoration_string(output.id, spv::DecorationHlslSemanticGOOGLE).c_str(),
-                            .format = format,
-                            .size = GetFormatSize(format),
-                        });
-                    }
-                }
-
-                for (const auto& pushContant : resources.push_constant_buffers)
-                {
-                    const auto& type = compiler.get_type(pushContant.type_id);
-
                     shaderInfo.pushConstants.EmplaceBack(ShaderPushConstant{
-                        .name = String{pushContant.name.c_str()},
-                        .offset = compiler.get_decoration(pushContant.id, spv::DecorationOffset),
-                        .size = static_cast<u32>(compiler.get_declared_struct_size(type)),
+                        .name = block->name,
+                        .offset = block->offset,
+                        .size = block->size,
                         .stage = stageInfo.stage
                     });
                 }
 
-                ReadResources(compiler, resources.separate_images, stageInfo.stage, descriptors);
-                ReadResources(compiler, resources.separate_samplers, stageInfo.stage, descriptors);
-                ReadResources(compiler, resources.storage_images, stageInfo.stage, descriptors);
-                ReadResources(compiler, resources.uniform_buffers, stageInfo.stage, descriptors);
-                ReadResources(compiler, resources.storage_buffers, stageInfo.stage, descriptors);
-                ReadResources(compiler, resources.acceleration_structures, stageInfo.stage, descriptors);
+                u32 varCount{0};
+                spvReflectEnumerateDescriptorSets(&module, &varCount, nullptr);
+                Array<SpvReflectDescriptorSet*> descriptorSets{};
+                descriptorSets.Resize(varCount);
+                spvReflectEnumerateDescriptorSets(&module, &varCount, descriptorSets.Data());
+
+                spvReflectEnumerateDescriptorBindings(&module, &varCount, nullptr);
+                Array<SpvReflectDescriptorBinding*> descriptorBinds{};
+                descriptorBinds.Resize(varCount);
+                spvReflectEnumerateDescriptorBindings(&module, &varCount, descriptorBinds.Data());
+
+                for (const auto descriptorSet: descriptorSets)
+                {
+                    auto setIt = descriptors.Find(descriptorSet->set);
+                    if (setIt == descriptors.end())
+                    {
+                        setIt = descriptors.Insert({descriptorSet->set, HashMap<u32, DescriptorBinding>{}}).first;
+                    }
+                    HashMap<u32, DescriptorBinding>& bindings = setIt->second;
+
+                    for (const auto descriptorBind: descriptorBinds)
+                    {
+                        if (descriptorBind->set == descriptorSet->set)
+                        {
+                            if (bindings.Find(descriptorBind->binding) == bindings.end())
+                            {
+                                DescriptorBinding descriptorBinding = DescriptorBinding{
+                                    .binding = descriptorBind->binding,
+                                    .count = descriptorBind->count,
+                                    .name = descriptorBind->name,
+                                    .descriptorType = SpirvUtils::GetDescriptorType(descriptorBind->descriptor_type),
+                                    .renderType = SpirvUtils::CastRenderType(descriptorBind->type_description->op),
+                                    .viewType = SpirvUtils::DimToViewType(descriptorBind->image.dim, descriptorBind->image.arrayed),
+                                };
+
+                                for (int m = 0; m < descriptorBind->type_description->member_count; ++m)
+                                {
+                                    SpirvUtils::GetTypeDescription(descriptorBinding, descriptorBinding.members, &descriptorBind->type_description->members[m]);
+                                }
+
+                                bindings.Emplace(descriptorBind->binding, Traits::Move(descriptorBinding));
+                            }
+                        }
+                    }
+                }
+
+                spvReflectDestroyShaderModule(&module);
             }
 
             SortAndAddDescriptors(shaderInfo, descriptors);

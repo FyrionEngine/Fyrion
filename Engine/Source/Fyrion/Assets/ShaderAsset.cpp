@@ -95,6 +95,7 @@ namespace Fyrion
             write[ShaderAsset::Bytes] = bytes;
             write[ShaderAsset::Info] = ShaderManager::ExtractShaderInfo(bytes, stages, renderApi);
             write[ShaderAsset::Stages] = stages;
+            write.Commit();
 
             return shader;
         }

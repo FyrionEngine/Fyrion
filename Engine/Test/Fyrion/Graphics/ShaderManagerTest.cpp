@@ -128,6 +128,65 @@ namespace
     		}
 
     		{
+    			RID rid = Repository::GetByPath("Fyrion://TestComp.comp");
+    			REQUIRE(rid);
+
+    			ResourceObject shader = Repository::Read(rid);
+    			REQUIRE(shader);
+
+    			Span<u8> bytes = shader[ShaderAsset::Bytes].As<Span<u8>>();
+    			CHECK(!bytes.Empty());
+
+    			Span<ShaderStageInfo> stages = shader[ShaderAsset::Stages].As<Span<ShaderStageInfo>>();
+    			ShaderInfo shaderInfo = shader[ShaderAsset::Info].As<ShaderInfo>();
+
+    			REQUIRE(stages.Size() == 1);
+    			CHECK(stages[0].stage == ShaderStage::Compute);
+
+
+    			CHECK(shaderInfo.descriptors.Size() == 2);
+
+    			{
+    				DescriptorLayout& descriptorLayout = shaderInfo.descriptors[0];
+    				CHECK(descriptorLayout.set == 0);
+    				REQUIRE(descriptorLayout.bindings.Size() == 1);
+
+    				DescriptorBinding& biding = descriptorLayout.bindings[0];
+
+					CHECK(biding.binding == 0);
+					CHECK(biding.count == 1);
+					CHECK(biding.name == "texture");
+    				CHECK(biding.descriptorType == DescriptorType::StorageImage);
+					CHECK(biding.renderType == RenderType::Image);
+    				CHECK(biding.viewType == ViewType::Type2D);
+    			}
+
+    			{
+    				DescriptorLayout& descriptorLayout = shaderInfo.descriptors[1];
+    				CHECK(descriptorLayout.set == 1);
+    				REQUIRE(descriptorLayout.bindings.Size() == 2);
+
+    				{
+    					DescriptorBinding& biding = descriptorLayout.bindings[0];
+    					CHECK(biding.binding == 0);
+    					CHECK(biding.count == 5);
+    					CHECK(biding.name == "fixedTextures");
+    					CHECK(biding.descriptorType == DescriptorType::StorageImage);
+    					CHECK(biding.renderType == RenderType::Array);
+    					CHECK(biding.viewType == ViewType::Type2D);
+    				}
+    				{
+    					DescriptorBinding& biding = descriptorLayout.bindings[1];
+    					CHECK(biding.binding == 1);
+    					CHECK(biding.count == 0);
+    					CHECK(biding.name == "runtimeTextures");
+    					CHECK(biding.descriptorType == DescriptorType::StorageImage);
+    					CHECK(biding.renderType == RenderType::RuntimeArray);
+    					CHECK(biding.viewType == ViewType::Type2D);
+    				}
+
+
+    			}
 
     		}
 

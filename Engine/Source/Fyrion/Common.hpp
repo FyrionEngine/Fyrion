@@ -79,13 +79,14 @@ inline void operator delete(void*, Fyrion::PlaceHolder, Fyrion::VoidPtr) noexcep
     #define FY_UNIX
     #define FY_PATH_SEPARATOR '/'
     #define FY_SHARED_EXT ".dylib"
+    #define FY_DESKTOP // TODO IOS?
 
-    #if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
-        #define FY_IOS
-    #elif TARGET_OS_MAC
-        #define FY_DESKTOP
-        #define FY_MACOS
-    #endif
+//    #if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+//        #define FY_IOS
+//    #elif TARGET_OS_MAC
+//        #define FY_DESKTOP
+//        #define FY_MACOS
+//    #endif
 #endif
 
 #ifndef FY_PRETTY_FUNCTION

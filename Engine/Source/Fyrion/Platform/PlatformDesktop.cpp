@@ -32,16 +32,16 @@ namespace Fyrion
 
     void PlatformDesktopInit()
     {
+        glfwInitVulkanLoader([](VkInstance instance, const char *procName)
+        {
+            return vulkanLoader(instance, procName);
+        });
+
         if (!glfwInit())
         {
             logger.Error("Error in initialize glfw");
             return;
         }
-
-        glfwInitVulkanLoader([](VkInstance instance, const char* procName)
-        {
-            return vulkanLoader(instance, procName);
-        });
 
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -89,7 +89,7 @@ namespace Fyrion
     Extent Platform::GetWindowExtent(Window window)
     {
         i32 x = 0, y = 0;
-        glfwGetWindowSize((GLFWwindow*)window.handler, &x, &y);
+        glfwGetFramebufferSize((GLFWwindow*)window.handler, &x, &y);
         return Extent{(u32)x, (u32)y};
     }
 
@@ -105,7 +105,7 @@ namespace Fyrion
 
     f32 Platform::GetWindowScale(Window window)
     {
-#ifdef SK_MACOS
+#ifdef FY_MACOS
         return 1.0f;
 #endif
 

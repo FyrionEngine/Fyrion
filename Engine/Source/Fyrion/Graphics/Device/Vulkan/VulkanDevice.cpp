@@ -42,7 +42,10 @@ namespace Fyrion
 
     VulkanDevice::VulkanDevice()
     {
-        volkInitialize();
+        if (volkInitialize() != VK_SUCCESS)
+        {
+            logger.FatalError("vulkan cannot be initialized");
+        }
 
 #ifdef FY_DEBUG
         enableValidationLayers = true;
@@ -99,7 +102,7 @@ namespace Fyrion
         }
 
 #ifdef FY_MACOS
-        if (QueryInstanceExtension(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME))
+        if (Vulkan::QueryInstanceExtension(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME))
 		{
 			requiredExtensions.EmplaceBack(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
 			createInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
@@ -199,7 +202,7 @@ namespace Fyrion
             i32 i = 0;
             for (const auto& queueFamily: queueFamilies)
             {
-                if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+                if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT && graphicsFamily == U32_MAX)
                 {
                     graphicsFamily = i;
                 }
@@ -216,6 +219,9 @@ namespace Fyrion
                 i++;
             }
         }
+
+        FY_ASSERT(graphicsFamily != U32_MAX, "Graphics queue not found");
+        FY_ASSERT(presentFamily != U32_MAX, "Present queue not found");
 
 
         float queuePriority = 1.0f;
@@ -329,7 +335,7 @@ namespace Fyrion
             deviceExtensions.EmplaceBack(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
         }
 
-#if __APPLE_CC__
+#ifdef FY_APPLE
         deviceExtensions.EmplaceBack("VK_KHR_portability_subset");
 #endif
 
@@ -371,16 +377,17 @@ namespace Fyrion
             defaultCommands[j] = MakeShared<VulkanCommands>(*this);
         }
 
-        VkDescriptorPoolSize sizes[4] = {
+        VkDescriptorPoolSize sizes[5] = {
             {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         500},
             {VK_DESCRIPTOR_TYPE_SAMPLER,                500},
             {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,          500},
-            {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,         500}
+            {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,         500},
+            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 500}
         };
 
         VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.poolSizeCount = 4;
+        poolInfo.poolSizeCount = 5;
         poolInfo.pPoolSizes = sizes;
         poolInfo.maxSets = 500;
         poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
@@ -884,19 +891,20 @@ namespace Fyrion
         }, this);
 
         ImGui_ImplVulkan_InitInfo Info = {};
-        Info.Instance        = instance;
-        Info.PhysicalDevice  = physicalDevice;
-        Info.Device          = device;
-        Info.QueueFamily     = graphicsFamily;
-        Info.Queue           = graphicsQueue;
-        Info.PipelineCache   = VK_NULL_HANDLE;
-        Info.DescriptorPool  = descriptorPool;
-        Info.Subpass         = 0;
-        Info.MinImageCount   = 2;
-        Info.ImageCount      = vulkanSwapchain->images.Size();
-        Info.MSAASamples     = VK_SAMPLE_COUNT_1_BIT;
-        Info.Allocator       = nullptr;
-        Info.RenderPass      = vulkanSwapchain->renderPasses[0].renderPass;
+        Info.Instance = instance;
+        Info.PhysicalDevice = physicalDevice;
+        Info.Device = device;
+        Info.QueueFamily = graphicsFamily;
+        Info.Queue = graphicsQueue;
+        Info.PipelineCache = VK_NULL_HANDLE;
+        Info.DescriptorPool = descriptorPool;
+        Info.UseDynamicRendering = false;
+        Info.Subpass = 0;
+        Info.MinImageCount = 2;
+        Info.ImageCount = vulkanSwapchain->images.Size();
+        Info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+        Info.Allocator = nullptr;
+        Info.RenderPass = vulkanSwapchain->renderPasses[0].renderPass;
         Info.CheckVkResultFn = CheckVkResult;
 
         ImGui_ImplVulkan_Init(&Info);

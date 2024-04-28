@@ -88,6 +88,13 @@ namespace Fyrion
             Log(LogLevel::Critical, fmt, Traits::Forward<Args>(args)...);
         }
 
+        template<typename ...Args>
+        inline void FatalError(const fmt::format_string<Args...>& fmt, Args&& ...args)
+        {
+            Log(LogLevel::Error, fmt, Traits::Forward<Args>(args)...);
+            FY_ASSERT(false, "error");
+        }
+
         static Logger&  GetLogger(const StringView& name);
         static Logger&  GetLogger(const StringView& name, LogLevel logLevel);
         static void     RegisterSink(LogSink& logSink);

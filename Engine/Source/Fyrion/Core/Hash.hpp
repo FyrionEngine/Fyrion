@@ -241,7 +241,7 @@ namespace Fyrion
     {
         usize hash = 5381;
         usize c = 0;
-        while (c = *str++)
+        while ((c = *str++))
         {
             hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
         }

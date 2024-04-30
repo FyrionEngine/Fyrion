@@ -1,7 +1,6 @@
 #pragma once
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Editor/EditorTypes.hpp"
-#include "Fyrion/Graphics/ViewportRenderer.hpp"
 
 namespace Fyrion
 {
@@ -20,7 +19,7 @@ namespace Fyrion
         u32              m_guizmoOperation{};
         bool             m_windowStartedSimulation{};
         bool             m_movingScene{};
-        ViewportRenderer m_viewportRenderer{};
+        //ViewportRenderer m_viewportRenderer{};
 
         static void OpenSceneView(VoidPtr userData);
     };

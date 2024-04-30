@@ -151,7 +151,7 @@ namespace Fyrion
         	auto diffCursor = cursor - initCursor;
         	size -= diffCursor;
         	Rect bb{(i32)cursor.x, (i32)cursor.y, u32(cursor.x + size.x), u32(cursor.y + size.y)};
-	        m_viewportRenderer.SetSize(Extent{(u32)size.x, (u32)size.y});
+//	        m_viewportRenderer.SetSize(Extent{(u32)size.x, (u32)size.y});
 
         	if (open)
         	{

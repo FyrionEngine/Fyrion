@@ -30,6 +30,6 @@ namespace Fyrion::Platform
     FY_API DialogResult PickFolder(String& path, const StringView& defaultPath);
 
     FY_API VoidPtr LoadDynamicLib(const StringView& library);
+    FY_API void    FreeDynamicLib(VoidPtr library);
     FY_API VoidPtr GetFunctionAddress(VoidPtr library, const StringView& functionName);
-
 }

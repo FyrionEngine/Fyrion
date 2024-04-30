@@ -235,6 +235,7 @@ namespace Fyrion
         Array<FunctionHandler*>                       m_functionArray{};
 
         HashMap<TypeID, FnCast>                       m_baseTypes{};
+        Array<TypeID>                                 m_baseTypesArray{};
         Array<DerivedType>                            m_derivedTypes{};
     public:
         TypeHandler(const StringView& name, const TypeInfo& typeInfo, u32 version);
@@ -249,6 +250,7 @@ namespace Fyrion
         Span<FunctionHandler*>          GetFunctions() const;
 
         Span<DerivedType>               GetDerivedTypes() const;
+        Array<TypeID>                   GetBaseTypes() const;
 
 
         StringView          GetName() const;

@@ -82,7 +82,7 @@ namespace Fyrion
         template<typename T, typename ...Tp, usize I, usize... Is, typename ...Vals>
         static void Eval(VoidPtr instance, VoidPtr* params, Traits::IndexSequence<I, Is...> seq, Vals&& ...vals)
         {
-            return Eval<Tp...>(instance, params, Traits::IndexSequence<Is...>(), Traits::Forward<Vals>(vals)..., *static_cast<T*>(params[I]));
+            return Eval<Tp...>(instance, params, Traits::IndexSequence<Is...>(), Traits::Forward<Vals>(vals)..., *static_cast<Traits::RemoveReference<T>*>(params[I]));
         }
 
         static void EventCallback(VoidPtr userData, VoidPtr instance, VoidPtr* parameters)

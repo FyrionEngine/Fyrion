@@ -221,6 +221,11 @@ namespace Fyrion
         return m_derivedTypes;
     }
 
+    Array<TypeID> TypeHandler::GetBaseTypes() const
+    {
+        return m_baseTypesArray;
+    }
+
     StringView TypeHandler::GetName() const
     {
         return m_name;
@@ -447,6 +452,7 @@ namespace Fyrion
 
         baseType->m_derivedTypes.EmplaceBack(m_typeHandler.GetTypeInfo().typeId, fnCast);
         m_typeHandler.m_baseTypes.Insert(typeId, fnCast);
+        m_typeHandler.m_baseTypesArray.EmplaceBack(typeId);
     }
 
     TypeHandler& TypeBuilder::GetTypeHandler() const

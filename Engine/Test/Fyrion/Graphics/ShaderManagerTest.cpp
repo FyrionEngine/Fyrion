@@ -184,14 +184,8 @@ namespace
     					CHECK(biding.renderType == RenderType::RuntimeArray);
     					CHECK(biding.viewType == ViewType::Type2D);
     				}
-
-
     			}
-
     		}
-
-
-
     	}
     	Engine::Destroy();
 

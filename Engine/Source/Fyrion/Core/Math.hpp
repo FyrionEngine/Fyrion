@@ -7,6 +7,9 @@
 
 namespace Fyrion
 {
+    struct Vec3;
+    struct Vec2;
+
     template <typename T>
     struct Compare
     {
@@ -22,6 +25,12 @@ namespace Fyrion
     {
         u32 width{};
         u32 height{};
+
+        constexpr bool   operator<(const u32& b) const;
+        constexpr bool   operator>(const u32& b) const;
+        constexpr Extent operator*(const Extent& b) const;
+        constexpr Extent operator*(const u32& b) const;
+        constexpr Extent operator*(const Vec2& b) const;
     };
 
     struct Extent3D
@@ -29,6 +38,12 @@ namespace Fyrion
         u32 width{};
         u32 height{};
         u32 depth{};
+
+        constexpr bool     operator<(const u32& b) const;
+        constexpr bool     operator>(const u32& b) const;
+        constexpr Extent3D operator*(const Extent3D& b) const;
+        constexpr Extent3D operator*(const u32& b) const;
+        constexpr Extent3D operator*(const Vec3& b) const;
     };
 
 
@@ -936,6 +951,57 @@ namespace Fyrion
     }
 
     //impl
+
+    constexpr bool Extent::operator<(const u32& b) const
+    {
+        return this->width < b && this->height < b;
+    }
+
+    constexpr bool Extent::operator>(const u32& b) const
+    {
+        return this->width > b && this->height > b;
+    }
+
+    constexpr Extent Extent::operator*(const Extent& b) const
+    {
+        return {this->width * b.width && this->height * b.height};
+    }
+
+    constexpr Extent Extent::operator*(const u32& b) const
+    {
+        return {this->width * b && this->height * b};
+    }
+
+    constexpr Extent Extent::operator*(const Vec2& b) const
+    {
+        return {this->width * b.width && this->height * b.height};
+    }
+
+    constexpr bool Extent3D::operator<(const u32& b) const
+    {
+        return this->width < b && this->height < b && this->depth < b;
+    }
+
+    constexpr bool Extent3D::operator>(const u32& b) const
+    {
+        return this->width > b && this->height > b && this->depth > b;
+    }
+
+    constexpr Extent3D Extent3D::operator*(const Extent3D& b) const
+    {
+        return {this->width * b.width, this->height * b.height, this->depth * b.depth};
+    }
+
+    constexpr Extent3D Extent3D::operator*(const u32& b) const
+    {
+        return {this->width * b, this->height * b, this->depth * b};
+    }
+
+    constexpr Extent3D Extent3D::operator*(const Vec3& b) const
+    {
+        return {u32((f32)this->width * b.x), u32((f32)this->height * b.y), u32((f32)this->depth * b.z)};
+    }
+
 
     constexpr Vec2 Vec2::operator/(const Vec2& b) const
     {

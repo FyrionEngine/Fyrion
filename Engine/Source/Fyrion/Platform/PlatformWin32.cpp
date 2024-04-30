@@ -61,6 +61,11 @@ namespace Fyrion
     {
         return (VoidPtr)GetProcAddress(static_cast<HMODULE>(library), functionName.CStr());
     }
+
+    void Platform::FreeDynamicLib(VoidPtr library)
+    {
+        FreeLibrary(static_cast<HMODULE>(library));
+    }
 }
 
 #endif

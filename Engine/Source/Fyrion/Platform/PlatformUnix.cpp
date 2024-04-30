@@ -82,6 +82,11 @@ namespace Fyrion
     {
         return dlsym(library, functionName.CStr());
     }
+
+    void Platform::FreeDynamicLib(VoidPtr library)
+    {
+        dlclose(library);
+    }
 }
 
 #endif

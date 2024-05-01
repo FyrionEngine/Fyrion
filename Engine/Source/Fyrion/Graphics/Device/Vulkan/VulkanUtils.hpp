@@ -21,6 +21,14 @@ namespace Fyrion::Vulkan
     VkBufferUsageFlags            CastBufferUsage(BufferUsage bufferUsage);
     VkFormat                      CastFormat(const Format& textureFormat);
     VkImageUsageFlags             CastTextureUsage(TextureUsage textureUsage);
+    void                          CreateDescriptorSetLayout(VkDevice vkDevice, const DescriptorLayout& descriptor, VkDescriptorSetLayout* descriptorSetLayout, bool* hasRuntimeArray = nullptr);
+    void                          CreatePipelineLayout(VkDevice vkDevice, Array<DescriptorLayout>& descriptors, Array<ShaderPushConstant>& pushConstants, VkPipelineLayout* vkPipelineLayout);
+    VkShaderStageFlags            CastStage(const ShaderStage& shaderStage);
+    VkPolygonMode                 CastPolygonMode(const PolygonMode& polygonMode);
+    VkCullModeFlags               CastCull(const CullMode& cullMode);
+    VkCompareOp                   CastCompareOp(const CompareOp& compareOp);
+    VkDescriptorType              CastDescriptorType(const DescriptorType& descriptorType);
+    VkPrimitiveTopology           CastPrimitiveTopology(const PrimitiveTopology& primitiveTopology);
 
     inline bool QueryInstanceExtension(const char* extension)
     {

@@ -150,6 +150,67 @@ namespace Fyrion
     {
     }
 
+	void RenderGraph::RecordCommands(RenderCommands& renderCommands, f64 deltaTime)
+    {
+		for(auto& node: m_nodes)
+		{
+			node->m_renderGraphPass->Update(deltaTime);
+
+			renderCommands.BeginLabel(node->m_name, {0, 0, 0, 1});
+
+//				GPUDevice::BeginLabel(cmd, node.m_name, {node.m_debugColor.x,
+//				                                         node.m_debugColor.y,
+//				                                         node.m_debugColor.z,
+//				                                         1});
+			for(const auto& inputIt: node->m_inputs)
+			{
+				if (inputIt.second.creation.type == RenderGraphResourceType::Texture)
+				{
+					ResourceBarrierInfo resourceBarrierInfo{};
+					resourceBarrierInfo.texture = inputIt.second.resource->texture;
+					resourceBarrierInfo.oldLayout = inputIt.second.resource->creation.format != Format::Depth ? ResourceLayout::ColorAttachment : ResourceLayout::DepthStencilAttachment;
+					resourceBarrierInfo.newLayout = ResourceLayout::ShaderReadOnly;
+					resourceBarrierInfo.isDepth = inputIt.second.resource->creation.format == Format::Depth;
+					renderCommands.ResourceBarrier(resourceBarrierInfo);
+				}
+			}
+
+			if (node->m_renderPass)
+			{
+				BeginRenderPassInfo renderPassInfo{};
+				renderPassInfo.renderPass = node->m_renderPass;
+				renderPassInfo.clearValues = node->m_clearValues;
+				renderCommands.BeginRenderPass(renderPassInfo);
+
+				ViewportInfo viewportInfo{};
+				viewportInfo.x = 0.;
+				viewportInfo.y = 0.;
+				viewportInfo.y = (f32) node->m_extent.height;
+				viewportInfo.width = (f32)node->m_extent.width;
+				viewportInfo.height = -(f32)node->m_extent.height;
+				viewportInfo.minDepth = 0.;
+				viewportInfo.maxDepth = 1.;
+
+				renderCommands.SetViewport(viewportInfo);
+
+				auto scissor = Rect{0, 0, node->m_extent.width, node->m_extent.height};
+				renderCommands.SetScissor(scissor);
+			}
+
+			if (node->m_renderGraphPass)
+			{
+				node->m_renderGraphPass->Render(renderCommands);
+			}
+
+			if (node->m_renderPass)
+			{
+				renderCommands.EndRenderPass();
+			}
+
+			renderCommands.EndLabel();
+		}
+    }
+
     void RenderGraph::Destroy()
     {
     	//GPUDevice::WaitGPU();
@@ -177,6 +238,8 @@ namespace Fyrion
     	}
 
 	    renderGraphs.Erase(renderGraphs.Find(m_id));
+
+		MemoryGlobals::GetDefaultAllocator().DestroyAndFree(this);
     }
 
     RenderGraph* RenderGraph::Create(const Extent& viewportSize, RID renderGraphId)

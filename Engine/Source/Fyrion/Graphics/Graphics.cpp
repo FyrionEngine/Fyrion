@@ -145,6 +145,11 @@ namespace Fyrion
         return renderDevice->AcquireNextRenderPass(swapchain);
     }
 
+    void Graphics::WaitQueue()
+    {
+        renderDevice->WaitQueue();
+    }
+
     RenderApiType Graphics::GetRenderApi()
     {
         return RenderApiType::Vulkan;

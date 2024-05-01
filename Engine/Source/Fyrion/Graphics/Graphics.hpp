@@ -24,5 +24,6 @@ namespace Fyrion::Graphics
     FY_API void          DestroyComputePipelineState(const PipelineState& pipelineState);
     FY_API void          DestroyBindingSet(BindingSet& bindingSet);
     FY_API RenderPass    AcquireNextRenderPass(Swapchain swapchain);
+    FY_API void          WaitQueue();
     FY_API RenderApiType GetRenderApi();
 }

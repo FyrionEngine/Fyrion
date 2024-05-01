@@ -25,7 +25,6 @@ namespace Fyrion
         constexpr static u32 DepthOutput = 3;
     };
 
-
     class RenderGraph;
 
     enum class RenderGraphResourceType
@@ -143,6 +142,7 @@ namespace Fyrion
 
         Extent  GetViewportExtent();
         void    Resize(Extent viewportSize);
+        void    RecordCommands(RenderCommands& renderCommands, f64 deltaTime);
         Texture GetColorOutput() const;
         Texture GetDepthOutput() const;
         void    Destroy();

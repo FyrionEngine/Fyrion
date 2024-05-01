@@ -51,6 +51,7 @@ namespace Fyrion
         EventHandler<OnEndFrame> onEndFrameHandler{};
         EventHandler<OnShutdown> onShutdownHandler{};
         EventHandler<OnShutdownRequest> onShutdownRequest{};
+        EventHandler<OnRecordRenderCommands> onRecordRenderCommands{};
         EventHandler<OnSwapchainRender> onSwapchainRender{};
     }
 
@@ -134,7 +135,7 @@ namespace Fyrion
             RenderCommands& cmd = GraphicsBeginFrame();
             cmd.Begin();
 
-            //TODO - record commands.
+            onRecordRenderCommands.Invoke(cmd, deltaTime);
 
             RenderPass renderPass = Graphics::AcquireNextRenderPass(swapchain);
 
@@ -168,6 +169,8 @@ namespace Fyrion
 
             frame++;
         }
+
+        Graphics::WaitQueue();
 
         onShutdownHandler.Invoke();
 

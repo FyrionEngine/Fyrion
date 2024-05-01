@@ -9,6 +9,9 @@
 
 namespace Fyrion
 {
+
+    static const u32 MaxBindlessResources = 16536;
+
     struct VulkanSwapChainSupportDetails
     {
         VkSurfaceCapabilitiesKHR  capabilities{};
@@ -66,5 +69,15 @@ namespace Fyrion
         VkImage         image{};
         VmaAllocation   allocation{};
         TextureView     textureView{};
+    };
+
+    struct VulkanPipelineState
+    {
+        GraphicsPipelineCreation graphicsPipelineCreation{};
+        ComputePipelineCreation  computePipelineCreation{};
+        VkPipelineBindPoint      bindingPoint{};
+        VkPipeline               pipeline{};
+        VkPipelineLayout         layout{};
+        VkPipelineCache          cache{};
     };
 }

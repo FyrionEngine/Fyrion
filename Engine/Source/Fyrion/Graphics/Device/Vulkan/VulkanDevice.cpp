@@ -7,8 +7,10 @@
 #include "VulkanBindingSet.hpp"
 #include "VulkanPlatform.hpp"
 #include "VulkanUtils.hpp"
+#include "Fyrion/Assets/AssetTypes.hpp"
 #include "Fyrion/Platform/Platform.hpp"
 #include "Fyrion/ImGui/Lib/imgui_impl_vulkan.h"
+#include "Fyrion/Resource/Repository.hpp"
 
 namespace Fyrion
 {
@@ -735,7 +737,247 @@ namespace Fyrion
 
     PipelineState VulkanDevice::CreateGraphicsPipelineState(const GraphicsPipelineCreation& graphicsPipelineCreation)
     {
-        return {};
+
+        ResourceObject shader = Repository::Read(graphicsPipelineCreation.shader);
+
+        Span<u8> bytes = shader[ShaderAsset::Bytes].As<Span<u8>>();
+        Span<ShaderStageInfo> stages = shader[ShaderAsset::Stages].As<Span<ShaderStageInfo>>();
+        ShaderInfo shaderInfo = shader[ShaderAsset::Info].As<ShaderInfo>();
+
+        VulkanPipelineState* vulkanPipelineState = allocator.Alloc<VulkanPipelineState>();
+        vulkanPipelineState->graphicsPipelineCreation = graphicsPipelineCreation;
+
+        Array<VkPushConstantRange> pushConstants{};
+		Array<VkPipelineColorBlendAttachmentState> attachments{};
+		Array<VkVertexInputAttributeDescription> attributeDescriptions{};
+
+		Array<VkShaderModule> shaderModules{};
+		shaderModules.Resize(stages.Size());
+		Array<VkPipelineShaderStageCreateInfo> shaderStages{};
+		shaderStages.Resize(stages.Size());
+
+		for(u32 i = 0; i < stages.Size(); ++i)
+		{
+            const ShaderStageInfo& shaderStageAsset = stages[i];
+
+            Span<u8> data = Span<u8>{
+                bytes.begin() + shaderStageAsset.offset,
+                bytes.begin() + shaderStageAsset.offset + shaderStageAsset.size
+            };
+
+			VkShaderModuleCreateInfo createInfo{VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
+			createInfo.codeSize = data.Size();
+			createInfo.pCode = reinterpret_cast<const u32*>(data.Data());
+			vkCreateShaderModule(device, &createInfo, nullptr, &shaderModules[i]);
+
+			shaderStages[i].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			shaderStages[i].module = shaderModules[i];
+			shaderStages[i].pName = shaderStageAsset.entryPoint.CStr();
+			shaderStages[i].stage = static_cast<VkShaderStageFlagBits>(Vulkan::CastStage(shaderStageAsset.stage));
+		}
+
+		for (ShaderPushConstant pushConstant: shaderInfo.pushConstants)
+		{
+			pushConstants.EmplaceBack(VkPushConstantRange{
+				.stageFlags = Vulkan::CastStage(pushConstant.stage),
+				.offset =  pushConstant.offset,
+				.size =  pushConstant.size
+			});
+		}
+
+		for (const auto& input: shaderInfo.inputVariables)
+		{
+			attributeDescriptions.EmplaceBack(VkVertexInputAttributeDescription{
+				.location = input.location,
+				.binding = 0,
+				.format = Vulkan::CastFormat(input.format),
+				.offset = input.offset
+			});
+		}
+
+		for (const auto& output: shaderInfo.outputVariables)
+		{
+			VkPipelineColorBlendAttachmentState attachmentState{};
+			attachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+			if (graphicsPipelineCreation.blendEnabled)
+			{
+				attachmentState.blendEnable = VK_TRUE;
+				attachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+				attachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+				attachmentState.colorBlendOp = VK_BLEND_OP_ADD;
+				attachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+				attachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+				attachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
+			}
+			else
+			{
+				attachmentState.blendEnable = VK_FALSE;
+			}
+			attachments.EmplaceBack(attachmentState);
+		}
+
+		Vulkan::CreatePipelineLayout(device, shaderInfo.descriptors, shaderInfo.pushConstants, &vulkanPipelineState->layout);
+
+		VkVertexInputBindingDescription bindingDescription{};
+		bindingDescription.binding = 0;
+		bindingDescription.stride = shaderInfo.stride;
+		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+		VkPipelineVertexInputStateCreateInfo vertexInputInfo{VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
+
+		if (bindingDescription.stride > 0)
+		{
+			vertexInputInfo.vertexBindingDescriptionCount = 1;
+			vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+		}
+		else
+		{
+			vertexInputInfo.vertexBindingDescriptionCount = 0;
+		}
+
+		vertexInputInfo.vertexAttributeDescriptionCount = attributeDescriptions.Size();
+		vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.Data();
+
+		VkPipelineInputAssemblyStateCreateInfo inputAssembly{VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
+		inputAssembly.topology = Vulkan::CastPrimitiveTopology(graphicsPipelineCreation.primitiveTopology);
+		inputAssembly.primitiveRestartEnable = VK_FALSE;
+
+		VkPipelineViewportStateCreateInfo viewportState{VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO};
+		viewportState.viewportCount = 1;
+		viewportState.scissorCount = 1;
+
+		VkPipelineRasterizationStateCreateInfo rasterizer{};
+		rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+		rasterizer.depthClampEnable = VK_FALSE;
+		rasterizer.rasterizerDiscardEnable = VK_FALSE;
+		rasterizer.polygonMode = Vulkan::CastPolygonMode(graphicsPipelineCreation.polygonMode);
+		rasterizer.lineWidth = 1.0f;
+		rasterizer.cullMode = Vulkan::CastCull(graphicsPipelineCreation.cullMode);
+		rasterizer.depthBiasEnable = VK_FALSE;
+
+		VkPipelineMultisampleStateCreateInfo multisampling{};
+		multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+		multisampling.sampleShadingEnable = VK_FALSE;
+		multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+		VkPipelineColorBlendStateCreateInfo colorBlending{VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO};
+		colorBlending.logicOpEnable = VK_FALSE;
+		colorBlending.logicOp = VK_LOGIC_OP_COPY;
+		colorBlending.attachmentCount = attachments.Size();
+		colorBlending.pAttachments = attachments.Data();
+		colorBlending.blendConstants[0] = 0.0f;
+		colorBlending.blendConstants[1] = 0.0f;
+		colorBlending.blendConstants[2] = 0.0f;
+		colorBlending.blendConstants[3] = 0.0f;
+
+		FixedArray<VkDynamicState, 2> dynamicStateEnables = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+		VkPipelineDynamicStateCreateInfo dynamicState = {VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO};
+		dynamicState.pDynamicStates = dynamicStateEnables.Data();
+		dynamicState.dynamicStateCount = dynamicStateEnables.Size();
+
+        Array<VkAttachmentDescription> attachmentDescriptions{};
+        Array<VkAttachmentReference>   colorAttachmentReference{};
+        VkAttachmentReference          depthReference{};
+
+        for (Format attachmentFormat : graphicsPipelineCreation.attachments)
+        {
+            VkAttachmentDescription attachmentDescription{};
+            attachmentDescription.format = Vulkan::CastFormat(attachmentFormat);
+            attachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
+            attachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            attachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            attachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            attachmentDescriptions.EmplaceBack(attachmentDescription);
+
+            VkAttachmentReference reference{};
+            reference.attachment = colorAttachmentReference.Size();
+            reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            colorAttachmentReference.EmplaceBack(reference);
+        }
+
+        if (graphicsPipelineCreation.depthFormat != Format::Undefined)
+        {
+            VkAttachmentDescription attachmentDescription{};
+            attachmentDescription.format = VK_FORMAT_D32_SFLOAT;
+            attachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
+            attachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            attachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            attachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            attachmentDescriptions.EmplaceBack(attachmentDescription);
+
+            VkAttachmentReference reference{};
+            depthReference.attachment = colorAttachmentReference.Size();
+            depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            colorAttachmentReference.EmplaceBack(reference);
+        }
+
+        VkSubpassDescription subPass = {};
+        subPass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        subPass.colorAttachmentCount = colorAttachmentReference.Size();
+        subPass.pColorAttachments = colorAttachmentReference.Data();
+        if (graphicsPipelineCreation.depthFormat != Format::Undefined)
+        {
+            subPass.pDepthStencilAttachment = &depthReference;
+        }
+
+        VkRenderPass renderPass = {};
+        VkRenderPassCreateInfo renderPassInfo = {VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO};
+        renderPassInfo.attachmentCount = attachmentDescriptions.Size();
+        renderPassInfo.pAttachments = attachmentDescriptions.Data();
+        renderPassInfo.subpassCount = 1;
+        renderPassInfo.pSubpasses = &subPass;
+        renderPassInfo.dependencyCount = 0;
+        vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass);
+
+
+		VkGraphicsPipelineCreateInfo pipelineInfo{};
+		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+		pipelineInfo.stageCount = shaderStages.Size();
+		pipelineInfo.pStages = shaderStages.Data();
+		pipelineInfo.pVertexInputState = &vertexInputInfo;
+		pipelineInfo.pInputAssemblyState = &inputAssembly;
+		pipelineInfo.pViewportState = &viewportState;
+		pipelineInfo.pDynamicState = &dynamicState;
+		pipelineInfo.pRasterizationState = &rasterizer;
+		pipelineInfo.pMultisampleState = &multisampling;
+		pipelineInfo.pColorBlendState = &colorBlending;
+		pipelineInfo.layout = vulkanPipelineState->layout;
+		pipelineInfo.subpass = 0;
+		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+		pipelineInfo.renderPass = renderPass;
+
+		VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo = {VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO};
+		if (graphicsPipelineCreation.depthFormat != Format::Undefined)
+		{
+			auto depthTest = graphicsPipelineCreation.compareOperator != CompareOp::Always;
+			depthStencilStateCreateInfo.depthTestEnable = depthTest ? VK_TRUE : VK_FALSE;
+			depthStencilStateCreateInfo.depthWriteEnable = graphicsPipelineCreation.depthWrite ? VK_TRUE : VK_FALSE;
+			depthStencilStateCreateInfo.depthCompareOp = Vulkan::CastCompareOp(graphicsPipelineCreation.compareOperator);
+			depthStencilStateCreateInfo.depthBoundsTestEnable = VK_FALSE;
+			depthStencilStateCreateInfo.minDepthBounds = graphicsPipelineCreation.minDepthBounds;
+			depthStencilStateCreateInfo.maxDepthBounds = graphicsPipelineCreation.maxDepthBounds;
+			depthStencilStateCreateInfo.stencilTestEnable = graphicsPipelineCreation.stencilTest ? VK_TRUE : VK_FALSE;
+			depthStencilStateCreateInfo.pNext = nullptr;
+
+			pipelineInfo.pDepthStencilState = &depthStencilStateCreateInfo;
+		}
+
+		vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &vulkanPipelineState->pipeline);
+
+		for (const auto shaderModule: shaderModules)
+		{
+			vkDestroyShaderModule(device, shaderModule, nullptr);
+		}
+
+        vkDestroyRenderPass(device, renderPass, nullptr);
+
+		return {vulkanPipelineState};
     }
 
     PipelineState VulkanDevice::CreateComputePipelineState(const ComputePipelineCreation& computePipelineCreation)
@@ -786,6 +1028,16 @@ namespace Fyrion
 
     void VulkanDevice::DestroyGraphicsPipelineState(const PipelineState& pipelineState)
     {
+        VulkanPipelineState* vulkanPipelineState = static_cast<VulkanPipelineState*>(pipelineState.handler);
+        if (vulkanPipelineState->pipeline)
+        {
+            vkDestroyPipeline(device, vulkanPipelineState->pipeline, nullptr);
+        }
+        if (vulkanPipelineState->layout)
+        {
+            vkDestroyPipelineLayout(device, vulkanPipelineState->layout, nullptr);
+        }
+        allocator.DestroyAndFree(vulkanPipelineState);
     }
 
     void VulkanDevice::DestroyComputePipelineState(const PipelineState& pipelineState)
@@ -871,6 +1123,12 @@ namespace Fyrion
 
         currentFrame = (currentFrame + 1) % FY_FRAMES_IN_FLIGHT;
     }
+
+    void VulkanDevice::WaitQueue()
+    {
+        vkQueueWaitIdle(graphicsQueue);
+    }
+
 
     static void CheckVkResult(VkResult err)
     {

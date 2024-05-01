@@ -29,6 +29,7 @@ namespace Fyrion
         virtual RenderCommands& BeginFrame() = 0;
         virtual RenderPass      AcquireNextRenderPass(Swapchain swapchain) = 0;
         virtual void            EndFrame(Swapchain swapchain) = 0;
+        virtual void            WaitQueue() = 0;
 
         virtual void    ImGuiInit(Swapchain renderSwapchain) = 0;
         virtual void    ImGuiNewFrame() = 0;

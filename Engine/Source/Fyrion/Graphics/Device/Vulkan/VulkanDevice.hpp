@@ -78,6 +78,7 @@ namespace Fyrion
         RenderCommands& BeginFrame() override;
         RenderPass      AcquireNextRenderPass(Swapchain swapchain) override;
         void            EndFrame(Swapchain swapchain) override;
+        void            WaitQueue() override;
 
 
         bool CreateSwapchain(VulkanSwapchain* vulkanSwapchain);

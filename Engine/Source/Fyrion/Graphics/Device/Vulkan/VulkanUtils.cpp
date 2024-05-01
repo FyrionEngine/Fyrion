@@ -272,5 +272,211 @@ namespace Fyrion::Vulkan
 		}
 		return usage;
 	}
+
+	void CreateDescriptorSetLayout(VkDevice vkDevice, const DescriptorLayout& descriptor, VkDescriptorSetLayout* descriptorSetLayout, bool* hasRuntimeArrays)
+	{
+		Array<VkDescriptorSetLayoutBinding> bindings{};
+		bindings.Resize(descriptor.bindings.Size());
+
+		bool hasRuntimeArrayValue{};
+
+		for (int i = 0; i < descriptor.bindings.Size(); ++i)
+		{
+			bindings[i].binding = descriptor.bindings[i].binding;
+			bindings[i].descriptorCount = descriptor.bindings[i].renderType != RenderType::RuntimeArray ? descriptor.bindings[i].count : MaxBindlessResources;
+			bindings[i].descriptorType = CastDescriptorType(descriptor.bindings[i].descriptorType);
+			bindings[i].stageFlags = CastStage(descriptor.bindings[i].shaderStage);
+
+			if (descriptor.bindings[i].renderType == RenderType::RuntimeArray)
+			{
+				hasRuntimeArrayValue = true;
+			}
+		}
+
+		Array<VkDescriptorBindingFlags> bindlessFlags{};
+
+		if (hasRuntimeArrayValue)
+		{
+			bindlessFlags.Resize(bindings.Size());
+			for (int i = 0; i < bindings.Size(); ++i)
+			{
+				if (descriptor.bindings[i].renderType == RenderType::RuntimeArray)
+				{
+					bindlessFlags[i] = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT | VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT_EXT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT_EXT;
+				}
+			}
+		}
+
+		VkDescriptorSetLayoutBindingFlagsCreateInfoEXT extendedInfo{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT, nullptr};
+		VkDescriptorSetLayoutCreateInfo setLayoutCreateInfo{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
+
+		setLayoutCreateInfo.bindingCount = bindings.Size();
+		setLayoutCreateInfo.pBindings = bindings.Data();
+
+		if (hasRuntimeArrayValue)
+		{
+			extendedInfo.bindingCount = bindlessFlags.Size();
+			extendedInfo.pBindingFlags = bindlessFlags.Data();
+
+			setLayoutCreateInfo.pNext = &extendedInfo;
+			setLayoutCreateInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT_EXT;
+		}
+		vkCreateDescriptorSetLayout(vkDevice, &setLayoutCreateInfo, nullptr, descriptorSetLayout);
+
+		if (hasRuntimeArrayValue)
+		{
+			*hasRuntimeArrays = hasRuntimeArrayValue;
+		}
+	}
+
+	void CreatePipelineLayout(VkDevice vkDevice, Array<DescriptorLayout>& descriptors, Array<ShaderPushConstant>& pushConstants, VkPipelineLayout* vkPipelineLayout)
+	{
+		Array<VkDescriptorSetLayout> descriptorSetLayouts{};
+		descriptorSetLayouts.Resize(descriptors.Size());
+
+
+		Array<VkPushConstantRange> pushConstantRanges{};
+
+		for(const ShaderPushConstant& pushConstant: pushConstants)
+		{
+			pushConstantRanges.EmplaceBack(VkPushConstantRange{
+				.stageFlags = CastStage(pushConstant.stage),
+				.offset = pushConstant.offset,
+				.size = pushConstant.size
+			});
+		}
+
+		for (int i = 0; i < descriptors.Size(); ++i)
+		{
+			CreateDescriptorSetLayout(vkDevice, descriptors[i], &descriptorSetLayouts[i]);
+		}
+
+		VkPipelineLayoutCreateInfo layoutCreateInfo{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+		layoutCreateInfo.setLayoutCount = descriptorSetLayouts.Size();
+		layoutCreateInfo.pSetLayouts = descriptorSetLayouts.Data();
+		layoutCreateInfo.pPushConstantRanges = pushConstantRanges.Data();
+		layoutCreateInfo.pushConstantRangeCount = pushConstantRanges.Size();
+
+		vkCreatePipelineLayout(vkDevice, &layoutCreateInfo, nullptr, vkPipelineLayout);
+
+		for (int i = 0; i < descriptorSetLayouts.Size(); ++i)
+		{
+			vkDestroyDescriptorSetLayout(vkDevice, descriptorSetLayouts[i], nullptr);
+		}
+	}
+
+	VkShaderStageFlags CastStage(const ShaderStage& shaderStage)
+	{
+		VkShaderStageFlags stage{0};
+
+		if (shaderStage && ShaderStage::Vertex)
+		{
+			stage |= VK_SHADER_STAGE_VERTEX_BIT;
+		}
+
+		if (shaderStage && ShaderStage::Pixel)
+		{
+			stage |= VK_SHADER_STAGE_FRAGMENT_BIT;
+		}
+
+		if (shaderStage && ShaderStage::Compute)
+		{
+			stage |= VK_SHADER_STAGE_COMPUTE_BIT;
+		}
+		if (shaderStage && ShaderStage::RayGen)
+		{
+			stage |= VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+		}
+		if (shaderStage && ShaderStage::RayMiss)
+		{
+			stage |= VK_SHADER_STAGE_MISS_BIT_KHR;
+		}
+		if (shaderStage && ShaderStage::RayClosestHit)
+		{
+			stage |= VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+		}
+		if (shaderStage && ShaderStage::All)
+		{
+			stage |= VK_SHADER_STAGE_ALL;
+		}
+
+		FY_ASSERT(stage != 0, "Shader stage missing");
+
+		return stage;
+	}
+
+	VkPolygonMode CastPolygonMode(const PolygonMode& polygonMode)
+	{
+		switch (polygonMode)
+		{
+			case PolygonMode::Fill : return VK_POLYGON_MODE_FILL;
+			case PolygonMode::Line : return VK_POLYGON_MODE_LINE;
+			case PolygonMode::Point : return VK_POLYGON_MODE_POINT;
+		}
+		FY_ASSERT(false, "VulkanUtils.cpp:  castPolygonMode not found");
+		return VK_POLYGON_MODE_MAX_ENUM;
+	}
+
+	VkCullModeFlags CastCull(const CullMode& cullMode)
+	{
+		switch (cullMode)
+		{
+			case CullMode::None: return VK_CULL_MODE_NONE;
+			case CullMode::Front: return VK_CULL_MODE_FRONT_BIT;
+			case CullMode::Back: return VK_CULL_MODE_BACK_BIT;
+		}
+		FY_ASSERT(false, "VulkanUtils.cpp:  castCull not found");
+		return VK_CULL_MODE_FLAG_BITS_MAX_ENUM;
+	}
+
+	VkCompareOp CastCompareOp(const CompareOp& compareOp)
+	{
+		switch (compareOp)
+		{
+			case CompareOp::Never:return VK_COMPARE_OP_NEVER;
+			case CompareOp::Less:return VK_COMPARE_OP_LESS;
+			case CompareOp::Equal:return VK_COMPARE_OP_EQUAL;
+			case CompareOp::LessOrEqual:return VK_COMPARE_OP_LESS_OR_EQUAL;
+			case CompareOp::Greater:return VK_COMPARE_OP_GREATER;
+			case CompareOp::NotEqual: return VK_COMPARE_OP_NOT_EQUAL;
+			case CompareOp::GreaterOrEqual: return VK_COMPARE_OP_GREATER_OR_EQUAL;
+			case CompareOp::Always: return VK_COMPARE_OP_ALWAYS;
+		}
+		FY_ASSERT(false, "VulkanUtils.hpp:  castCompareOp not found");
+		return VK_COMPARE_OP_MAX_ENUM;
+	}
+
+	VkDescriptorType CastDescriptorType(const DescriptorType& descriptorType)
+	{
+		switch (descriptorType)
+		{
+			case DescriptorType::SampledImage: return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+			case DescriptorType::Sampler: return VK_DESCRIPTOR_TYPE_SAMPLER;
+			case DescriptorType::StorageImage: return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			case DescriptorType::UniformBuffer: return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			case DescriptorType::StorageBuffer: return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			case DescriptorType::AccelerationStructure: return VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+		}
+		return VK_DESCRIPTOR_TYPE_MAX_ENUM;
+	}
+
+	VkPrimitiveTopology CastPrimitiveTopology(const PrimitiveTopology& primitiveTopology)
+	{
+		switch (primitiveTopology)
+		{
+			case PrimitiveTopology::PointList: return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+			case PrimitiveTopology::LineList: return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+			case PrimitiveTopology::LineStrip: return VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
+			case PrimitiveTopology::TriangleList: return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+			case PrimitiveTopology::TriangleStrip: return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+			case PrimitiveTopology::TriangleFan: return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
+			case PrimitiveTopology::LineListWithAdjacency: return VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY;
+			case PrimitiveTopology::LineStripWithAdjacency: return VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY;
+			case PrimitiveTopology::TriangleListWithAdjacency: return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY;
+			case PrimitiveTopology::TriangleStripWithAdjacency: return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY;
+			case PrimitiveTopology::PatchList: break;
+		}
+		return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	}
 }
 

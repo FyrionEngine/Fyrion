@@ -124,7 +124,8 @@ namespace Fyrion
 
     void VulkanCommands::BindPipelineState(const PipelineState& pipeline)
     {
-
+        auto& pipelineState =  *static_cast<VulkanPipelineState*>(pipeline.handler);
+        vkCmdBindPipeline(commandBuffer, pipelineState.bindingPoint, pipelineState.pipeline);
     }
 
     void VulkanCommands::Dispatch(u32 x, u32 y, u32 z)

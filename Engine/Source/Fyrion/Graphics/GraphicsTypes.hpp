@@ -113,8 +113,7 @@ namespace Fyrion
     {
         GPUOnly       = 1,
         TransferToGPU = 2,
-        TransferToCPU = 3,
-        Dynamic       = 4
+        TransferToCPU = 3
     };
 
     enum class TextureUsage : u32
@@ -263,7 +262,7 @@ namespace Fyrion
     {
         BufferUsage  usage{};
         usize        size{};
-        BufferMemory memory{BufferMemory::Dynamic};
+        BufferMemory memory{BufferMemory::GPUOnly};
     };
 
     struct TextureCreation

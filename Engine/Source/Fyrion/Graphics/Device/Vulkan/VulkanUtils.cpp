@@ -478,5 +478,22 @@ namespace Fyrion::Vulkan
 		}
 		return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	}
+
+	VkImageLayout CastLayout(const ResourceLayout& resourceLayout, VkImageLayout defaultUndefined)
+	{
+		switch (resourceLayout)
+		{
+			case ResourceLayout::Undefined: return defaultUndefined;
+			case ResourceLayout::General: return VK_IMAGE_LAYOUT_GENERAL;
+			case ResourceLayout::ColorAttachment: return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			case ResourceLayout::DepthStencilAttachment: return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+			case ResourceLayout::ShaderReadOnly: return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			case ResourceLayout::CopyDest: return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+			case ResourceLayout::CopySource: return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			case ResourceLayout::Present: return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		}
+		FY_ASSERT(false, "vulkan_utils.hpp:  castLayout not found");
+		return VK_IMAGE_LAYOUT_UNDEFINED;
+	}
 }
 

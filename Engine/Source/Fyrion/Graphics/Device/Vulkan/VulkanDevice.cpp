@@ -14,8 +14,6 @@
 
 namespace Fyrion
 {
-
-
     VulkanDevice::~VulkanDevice()
     {
         ImGui_ImplVulkan_Shutdown();
@@ -56,13 +54,12 @@ namespace Fyrion
         Platform::SetVulkanLoader(vkGetInstanceProcAddr);
 
         VkApplicationInfo applicationInfo{};
-        applicationInfo.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        applicationInfo.pApplicationName   = "Fyrion";
+        applicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+        applicationInfo.pApplicationName = "Fyrion";
         applicationInfo.applicationVersion = 0;
-        applicationInfo.pEngineName        = "Fyrion";
-        applicationInfo.engineVersion      = 0;
-        applicationInfo.apiVersion         = VK_API_VERSION_1_3;
-
+        applicationInfo.pEngineName = "Fyrion";
+        applicationInfo.engineVersion = 0;
+        applicationInfo.apiVersion = VK_API_VERSION_1_3;
 
         VkInstanceCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -153,7 +150,6 @@ namespace Fyrion
 
     void VulkanDevice::CreateDevice(Adapter adapter)
     {
-
         VulkanAdapter* vulkanAdapter = static_cast<VulkanAdapter*>(adapter.handler != nullptr ? adapter.handler : adapters[0].handler);
         physicalDevice = vulkanAdapter->physicalDevice;
 
@@ -162,8 +158,8 @@ namespace Fyrion
 
         deviceFeatures.multiDrawIndirectSupported = vulkanDeviceFeatures.multiDrawIndirect;
 
-        VkPhysicalDeviceDescriptorIndexingFeatures indexingFeatures{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES, nullptr };
-        VkPhysicalDeviceFeatures2 deviceFeatures2{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, &indexingFeatures };
+        VkPhysicalDeviceDescriptorIndexingFeatures indexingFeatures{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES, nullptr};
+        VkPhysicalDeviceFeatures2                  deviceFeatures2{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, &indexingFeatures};
         vkGetPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures2);
         //TODO check other extensions for bindless.
         deviceFeatures.bindlessSupported = false; //indexingFeatures.descriptorBindingPartiallyBound && indexingFeatures.runtimeDescriptorArray;
@@ -202,7 +198,7 @@ namespace Fyrion
 
         {
             i32 i = 0;
-            for (const auto& queueFamily: queueFamilies)
+            for (const auto& queueFamily : queueFamilies)
             {
                 if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT && graphicsFamily == U32_MAX)
                 {
@@ -347,7 +343,7 @@ namespace Fyrion
         if (validationLayersAvailable)
         {
             auto validationLayerSize = sizeof(validationLayers) / sizeof(const char*);
-            createInfo.enabledLayerCount   = validationLayerSize;
+            createInfo.enabledLayerCount = validationLayerSize;
             createInfo.ppEnabledLayerNames = validationLayers;
         }
         else
@@ -380,10 +376,10 @@ namespace Fyrion
         }
 
         VkDescriptorPoolSize sizes[5] = {
-            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         500},
-            {VK_DESCRIPTOR_TYPE_SAMPLER,                500},
-            {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,          500},
-            {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,         500},
+            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 500},
+            {VK_DESCRIPTOR_TYPE_SAMPLER, 500},
+            {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 500},
+            {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 500},
             {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 500}
         };
 
@@ -422,10 +418,10 @@ namespace Fyrion
         }
 
         logger.Info("Vulkan API {}.{}.{} Device: {} ",
-            VK_VERSION_MAJOR(vulkanDeviceProperties.apiVersion),
-            VK_VERSION_MINOR(vulkanDeviceProperties.apiVersion),
-            VK_VERSION_PATCH(vulkanDeviceProperties.apiVersion),
-            vulkanDeviceProperties.deviceName);
+                    VK_VERSION_MAJOR(vulkanDeviceProperties.apiVersion),
+                    VK_VERSION_MINOR(vulkanDeviceProperties.apiVersion),
+                    VK_VERSION_PATCH(vulkanDeviceProperties.apiVersion),
+                    vulkanDeviceProperties.deviceName);
     }
 
     bool VulkanDevice::CreateSwapchain(VulkanSwapchain* swapchain)
@@ -436,10 +432,10 @@ namespace Fyrion
             return false;
         }
 
-        VulkanSwapChainSupportDetails details   = Vulkan::QuerySwapChainSupport(physicalDevice, swapchain->surfaceKHR);
-        VkSurfaceFormatKHR      format          = Vulkan::ChooseSwapSurfaceFormat(details, {VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR});
-        VkPresentModeKHR        presentMode     = Vulkan::ChooseSwapPresentMode(details, swapchain->vsync ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_MAILBOX_KHR);
-        Extent                  extent          = Platform::GetWindowExtent(swapchain->window);
+        VulkanSwapChainSupportDetails details = Vulkan::QuerySwapChainSupport(physicalDevice, swapchain->surfaceKHR);
+        VkSurfaceFormatKHR            format = Vulkan::ChooseSwapSurfaceFormat(details, {VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR});
+        VkPresentModeKHR              presentMode = Vulkan::ChooseSwapPresentMode(details, swapchain->vsync ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_MAILBOX_KHR);
+        Extent                        extent = Platform::GetWindowExtent(swapchain->window);
 
         swapchain->extent = Vulkan::ChooseSwapExtent(details, {extent.width, extent.height});
 
@@ -523,7 +519,7 @@ namespace Fyrion
             vulkanRenderPass.clearValues.Resize(1);
 
             VkAttachmentDescription attachmentDescription{};
-            VkAttachmentReference colorAttachmentReference{};
+            VkAttachmentReference   colorAttachmentReference{};
 
             attachmentDescription.format = format.format;
             attachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -608,7 +604,7 @@ namespace Fyrion
 
     RenderPass VulkanDevice::CreateRenderPass(const RenderPassCreation& renderPassCreation)
     {
-        VulkanRenderPass*              vulkanRenderPass = allocator.Alloc<VulkanRenderPass>();
+        VulkanRenderPass* vulkanRenderPass = allocator.Alloc<VulkanRenderPass>();
 
         Array<VkAttachmentDescription> attachmentDescriptions{};
         Array<VkAttachmentReference>   colorAttachmentReference{};
@@ -620,7 +616,7 @@ namespace Fyrion
         for (u32 i = 0; i < renderPassCreation.attachments.Size(); ++i)
         {
             const AttachmentCreation& attachment = renderPassCreation.attachments[i];
-            VulkanTexture* vulkanTexture = static_cast<VulkanTexture*>(attachment.texture.handler);
+            VulkanTexture*            vulkanTexture = static_cast<VulkanTexture*>(attachment.texture.handler);
             FY_ASSERT(vulkanTexture, "texture not provided");
 
             //imageViews.EmplaceBack(static_cast<VulkanTextureView*>(vulkanTexture->textureView.handler)->imageView);
@@ -634,7 +630,7 @@ namespace Fyrion
         renderPassInfo.attachmentCount = attachmentDescriptions.Size();
         renderPassInfo.pAttachments = attachmentDescriptions.Data();
         renderPassInfo.subpassCount = 1;
-      //  renderPassInfo.pSubpasses = &subPass;
+        //  renderPassInfo.pSubpasses = &subPass;
         renderPassInfo.dependencyCount = 0;
         vkCreateRenderPass(device, &renderPassInfo, nullptr, &vulkanRenderPass->renderPass);
 
@@ -654,20 +650,19 @@ namespace Fyrion
 
         switch (bufferCreation.memory)
         {
-        case BufferMemory::GPUOnly:
+            case BufferMemory::GPUOnly:
             {
                 vmaAllocInfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
                 bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
                 break;
             }
-        case BufferMemory::Dynamic: //TODO dynamic buffer should be VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT with a stagging.
-        case BufferMemory::TransferToGPU:
+            case BufferMemory::TransferToGPU:
             {
                 vmaAllocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
                 bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
                 break;
             }
-        case BufferMemory::TransferToCPU:
+            case BufferMemory::TransferToCPU:
             {
                 vmaAllocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
                 bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
@@ -737,27 +732,26 @@ namespace Fyrion
 
     PipelineState VulkanDevice::CreateGraphicsPipelineState(const GraphicsPipelineCreation& graphicsPipelineCreation)
     {
-
         ResourceObject shader = Repository::Read(graphicsPipelineCreation.shader);
 
-        Span<u8> bytes = shader[ShaderAsset::Bytes].As<Span<u8>>();
+        Span<u8>              bytes = shader[ShaderAsset::Bytes].As<Span<u8>>();
         Span<ShaderStageInfo> stages = shader[ShaderAsset::Stages].As<Span<ShaderStageInfo>>();
-        ShaderInfo shaderInfo = shader[ShaderAsset::Info].As<ShaderInfo>();
+        ShaderInfo            shaderInfo = shader[ShaderAsset::Info].As<ShaderInfo>();
 
         VulkanPipelineState* vulkanPipelineState = allocator.Alloc<VulkanPipelineState>();
         vulkanPipelineState->graphicsPipelineCreation = graphicsPipelineCreation;
 
-        Array<VkPushConstantRange> pushConstants{};
-		Array<VkPipelineColorBlendAttachmentState> attachments{};
-		Array<VkVertexInputAttributeDescription> attributeDescriptions{};
+        Array<VkPushConstantRange>                 pushConstants{};
+        Array<VkPipelineColorBlendAttachmentState> attachments{};
+        Array<VkVertexInputAttributeDescription>   attributeDescriptions{};
 
-		Array<VkShaderModule> shaderModules{};
-		shaderModules.Resize(stages.Size());
-		Array<VkPipelineShaderStageCreateInfo> shaderStages{};
-		shaderStages.Resize(stages.Size());
+        Array<VkShaderModule> shaderModules{};
+        shaderModules.Resize(stages.Size());
+        Array<VkPipelineShaderStageCreateInfo> shaderStages{};
+        shaderStages.Resize(stages.Size());
 
-		for(u32 i = 0; i < stages.Size(); ++i)
-		{
+        for (u32 i = 0; i < stages.Size(); ++i)
+        {
             const ShaderStageInfo& shaderStageAsset = stages[i];
 
             Span<u8> data = Span<u8>{
@@ -765,115 +759,122 @@ namespace Fyrion
                 bytes.begin() + shaderStageAsset.offset + shaderStageAsset.size
             };
 
-			VkShaderModuleCreateInfo createInfo{VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
-			createInfo.codeSize = data.Size();
-			createInfo.pCode = reinterpret_cast<const u32*>(data.Data());
-			vkCreateShaderModule(device, &createInfo, nullptr, &shaderModules[i]);
+            VkShaderModuleCreateInfo createInfo{VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
+            createInfo.codeSize = data.Size();
+            createInfo.pCode = reinterpret_cast<const u32*>(data.Data());
+            vkCreateShaderModule(device, &createInfo, nullptr, &shaderModules[i]);
 
-			shaderStages[i].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-			shaderStages[i].module = shaderModules[i];
-			shaderStages[i].pName = shaderStageAsset.entryPoint.CStr();
-			shaderStages[i].stage = static_cast<VkShaderStageFlagBits>(Vulkan::CastStage(shaderStageAsset.stage));
-		}
+            shaderStages[i].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+            shaderStages[i].module = shaderModules[i];
+            shaderStages[i].pName = shaderStageAsset.entryPoint.CStr();
+            shaderStages[i].stage = static_cast<VkShaderStageFlagBits>(Vulkan::CastStage(shaderStageAsset.stage));
+        }
 
-		for (ShaderPushConstant pushConstant: shaderInfo.pushConstants)
-		{
-			pushConstants.EmplaceBack(VkPushConstantRange{
-				.stageFlags = Vulkan::CastStage(pushConstant.stage),
-				.offset =  pushConstant.offset,
-				.size =  pushConstant.size
-			});
-		}
+        for (ShaderPushConstant pushConstant : shaderInfo.pushConstants)
+        {
+            pushConstants.EmplaceBack(VkPushConstantRange{
+                .stageFlags = Vulkan::CastStage(pushConstant.stage),
+                .offset = pushConstant.offset,
+                .size = pushConstant.size
+            });
+        }
 
-		for (const auto& input: shaderInfo.inputVariables)
-		{
-			attributeDescriptions.EmplaceBack(VkVertexInputAttributeDescription{
-				.location = input.location,
-				.binding = 0,
-				.format = Vulkan::CastFormat(input.format),
-				.offset = input.offset
-			});
-		}
+        for (const auto& input : shaderInfo.inputVariables)
+        {
+            attributeDescriptions.EmplaceBack(VkVertexInputAttributeDescription{
+                .location = input.location,
+                .binding = 0,
+                .format = Vulkan::CastFormat(input.format),
+                .offset = input.offset
+            });
+        }
 
-		for (const auto& output: shaderInfo.outputVariables)
-		{
-			VkPipelineColorBlendAttachmentState attachmentState{};
-			attachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-			if (graphicsPipelineCreation.blendEnabled)
-			{
-				attachmentState.blendEnable = VK_TRUE;
-				attachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-				attachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-				attachmentState.colorBlendOp = VK_BLEND_OP_ADD;
-				attachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-				attachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-				attachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
-			}
-			else
-			{
-				attachmentState.blendEnable = VK_FALSE;
-			}
-			attachments.EmplaceBack(attachmentState);
-		}
+        for (const auto& output : shaderInfo.outputVariables)
+        {
+            VkPipelineColorBlendAttachmentState attachmentState{};
+            attachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+            if (graphicsPipelineCreation.blendEnabled)
+            {
+                attachmentState.blendEnable = VK_TRUE;
+                attachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+                attachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+                attachmentState.colorBlendOp = VK_BLEND_OP_ADD;
+                attachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+                attachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+                attachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
+            }
+            else
+            {
+                attachmentState.blendEnable = VK_FALSE;
+            }
+            attachments.EmplaceBack(attachmentState);
+        }
 
-		Vulkan::CreatePipelineLayout(device, shaderInfo.descriptors, shaderInfo.pushConstants, &vulkanPipelineState->layout);
+        Vulkan::CreatePipelineLayout(device, shaderInfo.descriptors, shaderInfo.pushConstants, &vulkanPipelineState->layout);
 
-		VkVertexInputBindingDescription bindingDescription{};
-		bindingDescription.binding = 0;
-		bindingDescription.stride = shaderInfo.stride;
-		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+        VkVertexInputBindingDescription bindingDescription{};
+        bindingDescription.binding = 0;
+        bindingDescription.stride = shaderInfo.stride;
+        bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-		VkPipelineVertexInputStateCreateInfo vertexInputInfo{VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
+        VkPipelineVertexInputStateCreateInfo vertexInputInfo{VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
 
-		if (bindingDescription.stride > 0)
-		{
-			vertexInputInfo.vertexBindingDescriptionCount = 1;
-			vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-		}
-		else
-		{
-			vertexInputInfo.vertexBindingDescriptionCount = 0;
-		}
+        if (bindingDescription.stride > 0)
+        {
+            vertexInputInfo.vertexBindingDescriptionCount = 1;
+            vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+        }
+        else
+        {
+            vertexInputInfo.vertexBindingDescriptionCount = 0;
+        }
 
-		vertexInputInfo.vertexAttributeDescriptionCount = attributeDescriptions.Size();
-		vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.Data();
+        if (!attributeDescriptions.Empty())
+        {
+            vertexInputInfo.vertexAttributeDescriptionCount = attributeDescriptions.Size();
+            vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.Data();
+        } else
+        {
+            vertexInputInfo.vertexAttributeDescriptionCount = 0;
+        }
 
-		VkPipelineInputAssemblyStateCreateInfo inputAssembly{VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
-		inputAssembly.topology = Vulkan::CastPrimitiveTopology(graphicsPipelineCreation.primitiveTopology);
-		inputAssembly.primitiveRestartEnable = VK_FALSE;
 
-		VkPipelineViewportStateCreateInfo viewportState{VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO};
-		viewportState.viewportCount = 1;
-		viewportState.scissorCount = 1;
+        VkPipelineInputAssemblyStateCreateInfo inputAssembly{VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
+        inputAssembly.topology = Vulkan::CastPrimitiveTopology(graphicsPipelineCreation.primitiveTopology);
+        inputAssembly.primitiveRestartEnable = VK_FALSE;
 
-		VkPipelineRasterizationStateCreateInfo rasterizer{};
-		rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-		rasterizer.depthClampEnable = VK_FALSE;
-		rasterizer.rasterizerDiscardEnable = VK_FALSE;
-		rasterizer.polygonMode = Vulkan::CastPolygonMode(graphicsPipelineCreation.polygonMode);
-		rasterizer.lineWidth = 1.0f;
-		rasterizer.cullMode = Vulkan::CastCull(graphicsPipelineCreation.cullMode);
-		rasterizer.depthBiasEnable = VK_FALSE;
+        VkPipelineViewportStateCreateInfo viewportState{VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO};
+        viewportState.viewportCount = 1;
+        viewportState.scissorCount = 1;
 
-		VkPipelineMultisampleStateCreateInfo multisampling{};
-		multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-		multisampling.sampleShadingEnable = VK_FALSE;
-		multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+        VkPipelineRasterizationStateCreateInfo rasterizer{};
+        rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+        rasterizer.depthClampEnable = VK_FALSE;
+        rasterizer.rasterizerDiscardEnable = VK_FALSE;
+        rasterizer.polygonMode = Vulkan::CastPolygonMode(graphicsPipelineCreation.polygonMode);
+        rasterizer.lineWidth = 1.0f;
+        rasterizer.cullMode = Vulkan::CastCull(graphicsPipelineCreation.cullMode);
+        rasterizer.depthBiasEnable = VK_FALSE;
 
-		VkPipelineColorBlendStateCreateInfo colorBlending{VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO};
-		colorBlending.logicOpEnable = VK_FALSE;
-		colorBlending.logicOp = VK_LOGIC_OP_COPY;
-		colorBlending.attachmentCount = attachments.Size();
-		colorBlending.pAttachments = attachments.Data();
-		colorBlending.blendConstants[0] = 0.0f;
-		colorBlending.blendConstants[1] = 0.0f;
-		colorBlending.blendConstants[2] = 0.0f;
-		colorBlending.blendConstants[3] = 0.0f;
+        VkPipelineMultisampleStateCreateInfo multisampling{};
+        multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+        multisampling.sampleShadingEnable = VK_FALSE;
+        multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
-		FixedArray<VkDynamicState, 2> dynamicStateEnables = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
-		VkPipelineDynamicStateCreateInfo dynamicState = {VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO};
-		dynamicState.pDynamicStates = dynamicStateEnables.Data();
-		dynamicState.dynamicStateCount = dynamicStateEnables.Size();
+        VkPipelineColorBlendStateCreateInfo colorBlending{VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO};
+        colorBlending.logicOpEnable = VK_FALSE;
+        colorBlending.logicOp = VK_LOGIC_OP_COPY;
+        colorBlending.attachmentCount = attachments.Size();
+        colorBlending.pAttachments = attachments.Data();
+        colorBlending.blendConstants[0] = 0.0f;
+        colorBlending.blendConstants[1] = 0.0f;
+        colorBlending.blendConstants[2] = 0.0f;
+        colorBlending.blendConstants[3] = 0.0f;
+
+        FixedArray<VkDynamicState, 2>    dynamicStateEnables = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+        VkPipelineDynamicStateCreateInfo dynamicState = {VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO};
+        dynamicState.pDynamicStates = dynamicStateEnables.Data();
+        dynamicState.dynamicStateCount = dynamicStateEnables.Size();
 
         Array<VkAttachmentDescription> attachmentDescriptions{};
         Array<VkAttachmentReference>   colorAttachmentReference{};
@@ -926,7 +927,7 @@ namespace Fyrion
             subPass.pDepthStencilAttachment = &depthReference;
         }
 
-        VkRenderPass renderPass = {};
+        VkRenderPass           renderPass = {};
         VkRenderPassCreateInfo renderPassInfo = {VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO};
         renderPassInfo.attachmentCount = attachmentDescriptions.Size();
         renderPassInfo.pAttachments = attachmentDescriptions.Data();
@@ -936,48 +937,48 @@ namespace Fyrion
         vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass);
 
 
-		VkGraphicsPipelineCreateInfo pipelineInfo{};
-		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-		pipelineInfo.stageCount = shaderStages.Size();
-		pipelineInfo.pStages = shaderStages.Data();
-		pipelineInfo.pVertexInputState = &vertexInputInfo;
-		pipelineInfo.pInputAssemblyState = &inputAssembly;
-		pipelineInfo.pViewportState = &viewportState;
-		pipelineInfo.pDynamicState = &dynamicState;
-		pipelineInfo.pRasterizationState = &rasterizer;
-		pipelineInfo.pMultisampleState = &multisampling;
-		pipelineInfo.pColorBlendState = &colorBlending;
-		pipelineInfo.layout = vulkanPipelineState->layout;
-		pipelineInfo.subpass = 0;
-		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-		pipelineInfo.renderPass = renderPass;
+        VkGraphicsPipelineCreateInfo pipelineInfo{};
+        pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipelineInfo.stageCount = shaderStages.Size();
+        pipelineInfo.pStages = shaderStages.Data();
+        pipelineInfo.pVertexInputState = &vertexInputInfo;
+        pipelineInfo.pInputAssemblyState = &inputAssembly;
+        pipelineInfo.pViewportState = &viewportState;
+        pipelineInfo.pDynamicState = &dynamicState;
+        pipelineInfo.pRasterizationState = &rasterizer;
+        pipelineInfo.pMultisampleState = &multisampling;
+        pipelineInfo.pColorBlendState = &colorBlending;
+        pipelineInfo.layout = vulkanPipelineState->layout;
+        pipelineInfo.subpass = 0;
+        pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+        pipelineInfo.renderPass = renderPass;
 
-		VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo = {VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO};
-		if (graphicsPipelineCreation.depthFormat != Format::Undefined)
-		{
-			auto depthTest = graphicsPipelineCreation.compareOperator != CompareOp::Always;
-			depthStencilStateCreateInfo.depthTestEnable = depthTest ? VK_TRUE : VK_FALSE;
-			depthStencilStateCreateInfo.depthWriteEnable = graphicsPipelineCreation.depthWrite ? VK_TRUE : VK_FALSE;
-			depthStencilStateCreateInfo.depthCompareOp = Vulkan::CastCompareOp(graphicsPipelineCreation.compareOperator);
-			depthStencilStateCreateInfo.depthBoundsTestEnable = VK_FALSE;
-			depthStencilStateCreateInfo.minDepthBounds = graphicsPipelineCreation.minDepthBounds;
-			depthStencilStateCreateInfo.maxDepthBounds = graphicsPipelineCreation.maxDepthBounds;
-			depthStencilStateCreateInfo.stencilTestEnable = graphicsPipelineCreation.stencilTest ? VK_TRUE : VK_FALSE;
-			depthStencilStateCreateInfo.pNext = nullptr;
+        VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo = {VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO};
+        if (graphicsPipelineCreation.depthFormat != Format::Undefined)
+        {
+            auto depthTest = graphicsPipelineCreation.compareOperator != CompareOp::Always;
+            depthStencilStateCreateInfo.depthTestEnable = depthTest ? VK_TRUE : VK_FALSE;
+            depthStencilStateCreateInfo.depthWriteEnable = graphicsPipelineCreation.depthWrite ? VK_TRUE : VK_FALSE;
+            depthStencilStateCreateInfo.depthCompareOp = Vulkan::CastCompareOp(graphicsPipelineCreation.compareOperator);
+            depthStencilStateCreateInfo.depthBoundsTestEnable = VK_FALSE;
+            depthStencilStateCreateInfo.minDepthBounds = graphicsPipelineCreation.minDepthBounds;
+            depthStencilStateCreateInfo.maxDepthBounds = graphicsPipelineCreation.maxDepthBounds;
+            depthStencilStateCreateInfo.stencilTestEnable = graphicsPipelineCreation.stencilTest ? VK_TRUE : VK_FALSE;
+            depthStencilStateCreateInfo.pNext = nullptr;
 
-			pipelineInfo.pDepthStencilState = &depthStencilStateCreateInfo;
-		}
+            pipelineInfo.pDepthStencilState = &depthStencilStateCreateInfo;
+        }
 
-		vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &vulkanPipelineState->pipeline);
+        vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &vulkanPipelineState->pipeline);
 
-		for (const auto shaderModule: shaderModules)
-		{
-			vkDestroyShaderModule(device, shaderModule, nullptr);
-		}
+        for (const auto shaderModule : shaderModules)
+        {
+            vkDestroyShaderModule(device, shaderModule, nullptr);
+        }
 
         vkDestroyRenderPass(device, renderPass, nullptr);
 
-		return {vulkanPipelineState};
+        return {vulkanPipelineState};
     }
 
     PipelineState VulkanDevice::CreateComputePipelineState(const ComputePipelineCreation& computePipelineCreation)
@@ -1015,7 +1016,6 @@ namespace Fyrion
 
     void VulkanDevice::DestroyTexture(const Texture& texture)
     {
-
     }
 
     void VulkanDevice::DestroyTextureView(const TextureView& textureView)
@@ -1052,7 +1052,7 @@ namespace Fyrion
     RenderPass VulkanDevice::AcquireNextRenderPass(Swapchain swapchain)
     {
         VulkanSwapchain* vulkanSwapchain = static_cast<VulkanSwapchain*>(swapchain.handler);
-        Extent extent = Platform::GetWindowExtent(vulkanSwapchain->window);
+        Extent           extent = Platform::GetWindowExtent(vulkanSwapchain->window);
         if (extent.width != vulkanSwapchain->extent.width || extent.height != vulkanSwapchain->extent.height)
         {
             while (extent.width == 0 || extent.height == 0)
@@ -1066,11 +1066,11 @@ namespace Fyrion
         }
 
         VkResult result = vkAcquireNextImageKHR(device,
-            vulkanSwapchain->swapchainKHR,
-            UINT64_MAX,
-            vulkanSwapchain->imageAvailableSemaphores[currentFrame],
-            VK_NULL_HANDLE,
-            &vulkanSwapchain->imageIndex);
+                                                vulkanSwapchain->swapchainKHR,
+                                                UINT64_MAX,
+                                                vulkanSwapchain->imageAvailableSemaphores[currentFrame],
+                                                VK_NULL_HANDLE,
+                                                &vulkanSwapchain->imageIndex);
 
         if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
         {
@@ -1136,7 +1136,7 @@ namespace Fyrion
         {
             return;
         }
-       //logger.Error("VkResult = {}", (i32) err);
+        //logger.Error("VkResult = {}", (i32) err);
     }
 
     void VulkanDevice::ImGuiInit(Swapchain renderSwapchain)

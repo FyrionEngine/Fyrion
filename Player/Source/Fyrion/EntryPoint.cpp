@@ -13,8 +13,7 @@ PipelineState graphicsPipeline = {};
 void Draw(RenderCommands& renderCommands)
 {
     renderCommands.BindPipelineState(graphicsPipeline);
-
-
+    renderCommands.Draw(3, 1, 0, 0);
 }
 
 void Shutdown()

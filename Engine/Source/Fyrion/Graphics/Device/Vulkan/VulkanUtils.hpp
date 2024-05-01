@@ -29,6 +29,7 @@ namespace Fyrion::Vulkan
     VkCompareOp                   CastCompareOp(const CompareOp& compareOp);
     VkDescriptorType              CastDescriptorType(const DescriptorType& descriptorType);
     VkPrimitiveTopology           CastPrimitiveTopology(const PrimitiveTopology& primitiveTopology);
+    VkImageLayout                 CastLayout(const ResourceLayout& resourceLayout, VkImageLayout defaultUndefined = VK_IMAGE_LAYOUT_UNDEFINED);
 
     inline bool QueryInstanceExtension(const char* extension)
     {

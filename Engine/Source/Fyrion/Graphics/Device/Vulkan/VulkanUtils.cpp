@@ -492,8 +492,101 @@ namespace Fyrion::Vulkan
 			case ResourceLayout::CopySource: return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 			case ResourceLayout::Present: return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 		}
-		FY_ASSERT(false, "vulkan_utils.hpp:  castLayout not found");
+		FY_ASSERT(false, "VulkanUtils.hpp: castLayout not found");
 		return VK_IMAGE_LAYOUT_UNDEFINED;
+	}
+
+	VkAttachmentLoadOp CastLoadOp(LoadOp loadOp)
+	{
+		switch (loadOp)
+		{
+			case LoadOp::Load: return VK_ATTACHMENT_LOAD_OP_LOAD;
+			case LoadOp::Clear: return VK_ATTACHMENT_LOAD_OP_CLEAR;
+			case LoadOp::DontCare: return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		}
+		FY_ASSERT(false, "VulkanUtils.hpp: castLoadOp not found");
+		return VK_ATTACHMENT_LOAD_OP_MAX_ENUM;
+	}
+
+	VkAttachmentStoreOp CastStoreOp(StoreOp storeOp)
+	{
+		switch (storeOp)
+		{
+			case StoreOp::Store: return VK_ATTACHMENT_STORE_OP_STORE;
+			case StoreOp::DontCare: return VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		}
+		FY_ASSERT(false, "VulkanUtils.hpp: castStoreOp not found");
+		return VK_ATTACHMENT_STORE_OP_MAX_ENUM;
+	}
+
+	VkImageViewType CastViewType(const ViewType& viewType)
+	{
+		switch(viewType)
+		{
+			case ViewType::Type1D: return VK_IMAGE_VIEW_TYPE_1D;
+			case ViewType::Type2D: return VK_IMAGE_VIEW_TYPE_2D;
+			case ViewType::Type3D: return VK_IMAGE_VIEW_TYPE_3D;
+			case ViewType::TypeCube: return VK_IMAGE_VIEW_TYPE_CUBE;
+			case ViewType::Type1DArray: return VK_IMAGE_VIEW_TYPE_1D;
+			case ViewType::Type2DArray: return VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+			case ViewType::TypeCubeArray: return VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
+			case ViewType::Undefined:break;
+		}
+		FY_ASSERT(false, "VulkanUtils.hpp: CastLayout not found");
+		return VK_IMAGE_VIEW_TYPE_MAX_ENUM;
+	}
+
+	VkFilter CastFilter(const SamplerFilter& samplerFilter)
+	{
+		switch (samplerFilter)
+		{
+			case SamplerFilter::Nearest: return VK_FILTER_NEAREST;
+			case SamplerFilter::Linear: return VK_FILTER_LINEAR;
+			case SamplerFilter::CubicImg: return VK_FILTER_CUBIC_IMG;
+		}
+
+		FY_ASSERT(false, "VulkanUtils.hpp: CastFilter not filter");
+		return VK_FILTER_MAX_ENUM;
+	}
+
+	VkBorderColor CasterBorderColor(BorderColor borderColor)
+	{
+		switch (borderColor)
+		{
+			case BorderColor::FloatTransparentBlack: return VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+			case BorderColor::IntTransparentBlack: return VK_BORDER_COLOR_INT_TRANSPARENT_BLACK;
+			case BorderColor::FloatOpaqueBlack: return VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+			case BorderColor::IntOpaqueBlack: return VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+			case BorderColor::FloatOpaqueWhite: return VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+		}
+
+		FY_ASSERT(false, "VulkanUtils.hpp: CasterBorderColor");
+		return VK_BORDER_COLOR_MAX_ENUM;
+	}
+
+	VkSamplerAddressMode CastTextureAddressMode(const TextureAddressMode& mode)
+	{
+		switch (mode)
+		{
+			case TextureAddressMode::Repeat:return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+			case TextureAddressMode::MirroredRepeat: return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+			case TextureAddressMode::ClampToEdge: return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+			case TextureAddressMode::ClampToBorder: return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+			case TextureAddressMode::MirrorClampToEdge: return VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE;
+		}
+		FY_ASSERT(false, "VulkanUtils.hpp: CastTextureAddressMode not found");
+		return VK_SAMPLER_ADDRESS_MODE_MAX_ENUM;
+	}
+
+	VkSamplerMipmapMode CastSamplerMipmapMode(SamplerMipmapMode samplerMipmapMode)
+	{
+		switch (samplerMipmapMode)
+		{
+			case SamplerMipmapMode::Nearest: return VK_SAMPLER_MIPMAP_MODE_NEAREST;
+			case SamplerMipmapMode::Linear: return VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		}
+		FY_ASSERT(false, "VulkanUtils.hpp: CastTextureAddressMode not found");
+		return VK_SAMPLER_MIPMAP_MODE_MAX_ENUM;
 	}
 }
 

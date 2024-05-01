@@ -8,7 +8,8 @@
 
 namespace Fyrion::Vulkan
 {
-    VkBool32 VKAPI_PTR DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* callbackDataExt, void* userData);
+    VkBool32 VKAPI_PTR DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* callbackDataExt,
+                                     void*                                  userData);
 
     bool                          QueryLayerProperties(const Span<const char*>& requiredLayers);
     bool                          QueryInstanceExtensions(const Span<const char*>& requiredExtensions);
@@ -30,9 +31,25 @@ namespace Fyrion::Vulkan
     VkDescriptorType              CastDescriptorType(const DescriptorType& descriptorType);
     VkPrimitiveTopology           CastPrimitiveTopology(const PrimitiveTopology& primitiveTopology);
     VkImageLayout                 CastLayout(const ResourceLayout& resourceLayout, VkImageLayout defaultUndefined = VK_IMAGE_LAYOUT_UNDEFINED);
+    VkAttachmentLoadOp            CastLoadOp(LoadOp loadOp);
+    VkAttachmentStoreOp           CastStoreOp(StoreOp storeOp);
+    VkImageViewType               CastViewType(const ViewType& viewType);
+    VkFilter                      CastFilter(const SamplerFilter& samplerFilter);
+    VkBorderColor                 CasterBorderColor(BorderColor borderColor);
+    VkSamplerAddressMode          CastTextureAddressMode(const TextureAddressMode& mode);
+    VkSamplerMipmapMode           CastSamplerMipmapMode(SamplerMipmapMode samplerMipmapMode);
 
     inline bool QueryInstanceExtension(const char* extension)
     {
         return QueryInstanceExtensions(Span<const char*>(&extension, &extension + 1));
+    }
+
+    constexpr bool IsDepthFormat(VkFormat format)
+    {
+        return (format == VK_FORMAT_D32_SFLOAT_S8_UINT
+            || format == VK_FORMAT_D32_SFLOAT
+            || format == VK_FORMAT_D24_UNORM_S8_UINT
+            || format == VK_FORMAT_D16_UNORM_S8_UINT
+            || format == VK_FORMAT_D16_UNORM);
     }
 }

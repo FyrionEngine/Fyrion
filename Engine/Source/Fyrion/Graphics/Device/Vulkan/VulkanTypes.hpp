@@ -72,6 +72,11 @@ namespace Fyrion
         TextureView     textureView{};
     };
 
+    struct VulkanSampler
+    {
+        VkSampler sampler{};
+    };
+
     struct VulkanPipelineState
     {
         GraphicsPipelineCreation graphicsPipelineCreation{};

@@ -615,28 +615,84 @@ namespace Fyrion
         Array<VkImageView>             imageViews{};
         VkAttachmentReference          depthReference{};
 
-        vulkanRenderPass->clearValues.Resize(renderPassCreation.attachments.Size());
+        bool     hasDepth = false;
+        Extent3D framebufferSize{};
 
-        for (u32 i = 0; i < renderPassCreation.attachments.Size(); ++i)
-        {
-            const AttachmentCreation& attachment = renderPassCreation.attachments[i];
-            VulkanTexture*            vulkanTexture = static_cast<VulkanTexture*>(attachment.texture.handler);
-            FY_ASSERT(vulkanTexture, "texture not provided");
+		vulkanRenderPass->clearValues.Resize(renderPassCreation.attachments.Size());
 
-            //imageViews.EmplaceBack(static_cast<VulkanTextureView*>(vulkanTexture->textureView.handler)->imageView);
+		for (int i = 0; i < renderPassCreation.attachments.Size(); ++i)
+		{
+			const AttachmentCreation& attachment = renderPassCreation.attachments[i];
 
-            // VkFormat format = Vulkan::CastFormat(vulkanTexture->textureCreation.format);
-            // framebufferSize = vulkanTexture->textureCreation.extent;
-            // bool isDepthFormat = IsDepthFormat(format);
-        }
+			VulkanTexture* vulkanTexture = static_cast<VulkanTexture*>(attachment.texture.handler);
+			FY_ASSERT(vulkanTexture, "texture is mandatory");
 
-        VkRenderPassCreateInfo renderPassInfo = {VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO};
-        renderPassInfo.attachmentCount = attachmentDescriptions.Size();
-        renderPassInfo.pAttachments = attachmentDescriptions.Data();
-        renderPassInfo.subpassCount = 1;
-        //  renderPassInfo.pSubpasses = &subPass;
-        renderPassInfo.dependencyCount = 0;
-        vkCreateRenderPass(device, &renderPassInfo, nullptr, &vulkanRenderPass->renderPass);
+			imageViews.EmplaceBack(static_cast<VulkanTextureView*>(vulkanTexture->textureView.handler)->imageView);
+
+			VkFormat format = Vulkan::CastFormat(vulkanTexture->creation.format);
+			framebufferSize = vulkanTexture->creation.extent;
+			bool isDepthFormat = Vulkan::IsDepthFormat(format);
+
+			VkAttachmentDescription attachmentDescription{};
+			attachmentDescription.format = format;
+			attachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
+
+			attachmentDescription.loadOp = Vulkan::CastLoadOp(attachment.loadOp);
+			attachmentDescription.storeOp = Vulkan::CastStoreOp(attachment.storeOp);
+
+			attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+			attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+
+			attachmentDescription.initialLayout = Vulkan::CastLayout(attachment.initialLayout);
+
+			if (!isDepthFormat)
+			{
+				attachmentDescription.finalLayout = Vulkan::CastLayout(attachment.finalLayout, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+				VkAttachmentReference reference{};
+				reference.attachment = i;
+				reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+				colorAttachmentReference.EmplaceBack(reference);
+			}
+			else
+			{
+				attachmentDescription.finalLayout = Vulkan::CastLayout(attachment.finalLayout, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+				depthReference.attachment = i;
+				depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+				hasDepth = true;
+			}
+			attachmentDescriptions.EmplaceBack(attachmentDescription);
+		}
+
+		vulkanRenderPass->extent = {framebufferSize.height, framebufferSize.width};
+
+		VkSubpassDescription subPass = {};
+		subPass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subPass.colorAttachmentCount = colorAttachmentReference.Size();
+		subPass.pColorAttachments = colorAttachmentReference.Data();
+		if (hasDepth)
+		{
+			subPass.pDepthStencilAttachment = &depthReference;
+			vulkanRenderPass->hasDepth = true;
+		}
+
+		VkRenderPassCreateInfo renderPassInfo = {VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO};
+		renderPassInfo.attachmentCount = attachmentDescriptions.Size();
+		renderPassInfo.pAttachments = attachmentDescriptions.Data();
+		renderPassInfo.subpassCount = 1;
+		renderPassInfo.pSubpasses = &subPass;
+		renderPassInfo.dependencyCount = 0;
+		vkCreateRenderPass(device, &renderPassInfo, nullptr, &vulkanRenderPass->renderPass);
+
+		VkFramebufferCreateInfo framebufferCreateInfo{};
+		framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebufferCreateInfo.renderPass = vulkanRenderPass->renderPass;
+		framebufferCreateInfo.width = framebufferSize.width;
+		framebufferCreateInfo.height = framebufferSize.height;
+		framebufferCreateInfo.layers = std::max(framebufferSize.depth, 1u);
+		framebufferCreateInfo.attachmentCount = imageViews.Size();
+		framebufferCreateInfo.pAttachments = imageViews.Data();
+
+		vkCreateFramebuffer(device, &framebufferCreateInfo, nullptr, &vulkanRenderPass->framebuffer);
 
         return {vulkanRenderPass};
     }
@@ -684,7 +740,7 @@ namespace Fyrion
         VkImageCreateInfo imageCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
         imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
         imageCreateInfo.format = Vulkan::CastFormat(textureCreation.format);
-        imageCreateInfo.extent = {textureCreation.extent.width, textureCreation.extent.height, std::max(textureCreation.extent.depth, 1u)};
+        imageCreateInfo.extent = {textureCreation.extent.width, textureCreation.extent.height, Math::Max(textureCreation.extent.depth, 1u)};
         imageCreateInfo.mipLevels = textureCreation.mipLevels;
         imageCreateInfo.arrayLayers = textureCreation.arrayLayers;
         imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -726,12 +782,56 @@ namespace Fyrion
 
     TextureView VulkanDevice::CreateTextureView(const TextureViewCreation& textureViewCreation)
     {
-        return {};
+        VulkanTextureView* vulkanTextureView = allocator.Alloc<VulkanTextureView>();
+        vulkanTextureView->texture = textureViewCreation.texture;
+
+        VulkanTexture* vulkanTexture = static_cast<VulkanTexture*>(textureViewCreation.texture.handler);
+
+        VkImageViewCreateInfo viewCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
+        viewCreateInfo.viewType = Vulkan::CastViewType(textureViewCreation.viewType);
+        viewCreateInfo.image = vulkanTexture->image;
+        viewCreateInfo.format = Vulkan::CastFormat(vulkanTexture->creation.format);
+        viewCreateInfo.subresourceRange.baseMipLevel = textureViewCreation.baseMipLevel;
+        viewCreateInfo.subresourceRange.levelCount = textureViewCreation.levelCount;
+        viewCreateInfo.subresourceRange.baseArrayLayer = textureViewCreation.baseArrayLayer;
+        viewCreateInfo.subresourceRange.layerCount = textureViewCreation.layerCount;
+
+        if (Vulkan::IsDepthFormat(viewCreateInfo.format))
+        {
+            viewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+        }
+        else
+        {
+            viewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        }
+
+        vkCreateImageView(device, &viewCreateInfo, nullptr, &vulkanTextureView->imageView);
+
+        return {vulkanTextureView};
     }
 
     Sampler VulkanDevice::CreateSampler(const SamplerCreation& samplerCreation)
     {
-        return {};
+        VulkanSampler* vulkanSampler = allocator.Alloc<VulkanSampler>();
+        VkSamplerCreateInfo vkSamplerInfo{};
+        vkSamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        vkSamplerInfo.magFilter = Vulkan::CastFilter(samplerCreation.filter);
+        vkSamplerInfo.minFilter = Vulkan::CastFilter(samplerCreation.filter);
+        vkSamplerInfo.addressModeU = Vulkan::CastTextureAddressMode(samplerCreation.addressMode);
+        vkSamplerInfo.addressModeV = vkSamplerInfo.addressModeU;
+        vkSamplerInfo.addressModeW = vkSamplerInfo.addressModeU;
+        vkSamplerInfo.anisotropyEnable = samplerCreation.anisotropyEnable;
+        vkSamplerInfo.maxAnisotropy = vulkanDeviceProperties.limits.maxSamplerAnisotropy;
+        vkSamplerInfo.borderColor = Vulkan::CasterBorderColor(samplerCreation.borderColor);
+        vkSamplerInfo.unnormalizedCoordinates = VK_FALSE;
+        vkSamplerInfo.compareEnable = VK_FALSE;
+        vkSamplerInfo.compareOp =  Vulkan::CastCompareOp(samplerCreation.compareOperator);
+        vkSamplerInfo.mipmapMode = Vulkan::CastSamplerMipmapMode(samplerCreation.samplerMipmapMode);
+        vkSamplerInfo.mipLodBias = samplerCreation.mipLodBias;
+        vkSamplerInfo.minLod = samplerCreation.minLod;
+        vkSamplerInfo.maxLod = samplerCreation.maxLod;
+        vkCreateSampler(device, &vkSamplerInfo, nullptr, &vulkanSampler->sampler);
+        return {vulkanSampler};
     }
 
     PipelineState VulkanDevice::CreateGraphicsPipelineState(const GraphicsPipelineCreation& graphicsPipelineCreation)
@@ -1005,6 +1105,8 @@ namespace Fyrion
     void VulkanDevice::DestroyRenderPass(const RenderPass& renderPass)
     {
         VulkanRenderPass* vulkanRenderPass = static_cast<VulkanRenderPass*>(renderPass.handler);
+        vkDestroyFramebuffer(device, vulkanRenderPass->framebuffer, nullptr);
+        vkDestroyRenderPass(device, vulkanRenderPass->renderPass, nullptr);
         allocator.DestroyAndFree(vulkanRenderPass);
     }
 
@@ -1020,14 +1122,33 @@ namespace Fyrion
 
     void VulkanDevice::DestroyTexture(const Texture& texture)
     {
+        VulkanTexture* vulkanTexture = static_cast<VulkanTexture*>(texture.handler);
+
+        if (vulkanTexture->textureView.handler)
+        {
+            DestroyTextureView(vulkanTexture->textureView);
+        }
+
+        if (vulkanTexture->allocation)
+        {
+            vmaDestroyImage(vmaAllocator, vulkanTexture->image, vulkanTexture->allocation);
+            vulkanTexture->allocation = nullptr;
+        }
+        allocator.DestroyAndFree(vulkanTexture);
     }
 
     void VulkanDevice::DestroyTextureView(const TextureView& textureView)
     {
+        VulkanTextureView* vulkanTextureView = static_cast<VulkanTextureView*>(textureView.handler);
+        vkDestroyImageView(device, vulkanTextureView->imageView, nullptr);
+        allocator.DestroyAndFree(vulkanTextureView);
     }
 
     void VulkanDevice::DestroySampler(const Sampler& sampler)
     {
+        VulkanSampler* vulkanSampler = static_cast<VulkanSampler*>(sampler.handler);
+        vkDestroySampler(device, vulkanSampler->sampler, nullptr);
+        allocator.DestroyAndFree(vulkanSampler);
     }
 
     void VulkanDevice::DestroyGraphicsPipelineState(const PipelineState& pipelineState)

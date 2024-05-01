@@ -238,6 +238,11 @@ namespace Fyrion
         Struct
     };
 
+    enum class SamplerMipmapMode
+    {
+        Nearest,
+        Linear
+    };
 
     struct SwapchainCreation
     {
@@ -290,10 +295,13 @@ namespace Fyrion
     {
         SamplerFilter      filter{SamplerFilter::Linear};
         TextureAddressMode addressMode{TextureAddressMode::Repeat};
-        CompareOp          compareOperator{};
+        CompareOp          compareOperator{CompareOp::Always};
+        f32                mipLodBias = 0.0f;
         f32                minLod{};
         f32                maxLod{};
+        bool               anisotropyEnable = true;
         BorderColor        borderColor{BorderColor::IntOpaqueBlack};
+        SamplerMipmapMode  samplerMipmapMode = SamplerMipmapMode::Linear;
     };
 
     struct ShaderCreation

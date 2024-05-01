@@ -52,7 +52,7 @@ namespace Fyrion
         Vec4                    cleanValue{};
         Format                  format{};
         BufferUsage             bufferUsage{};
-        BufferMemory            bufferMemory{BufferMemory::GPUOnly};
+        BufferAllocation        bufferAllocation{BufferAllocation::GPUOnly};
         usize                   bufferInitialSize{};
     };
 

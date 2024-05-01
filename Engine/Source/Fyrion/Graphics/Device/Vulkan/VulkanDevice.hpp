@@ -45,6 +45,7 @@ namespace Fyrion
 
         VkQueue graphicsQueue{};
         VkQueue presentQueue{};
+        SharedPtr<VulkanCommands> temporaryCmd;
 
         FixedArray<VkFence, FY_FRAMES_IN_FLIGHT>                   inFlightFences{};
         FixedArray<VkSemaphore, FY_FRAMES_IN_FLIGHT>               renderFinishedSemaphores{};
@@ -79,6 +80,7 @@ namespace Fyrion
         RenderPass      AcquireNextRenderPass(Swapchain swapchain) override;
         void            EndFrame(Swapchain swapchain) override;
         void            WaitQueue() override;
+        void            UpdateBufferData(const BufferDataInfo& bufferDataInfo) override;
 
 
         bool CreateSwapchain(VulkanSwapchain* vulkanSwapchain);

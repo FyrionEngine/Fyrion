@@ -11,12 +11,12 @@ namespace Fyrion
         commandPoolInfo.queueFamilyIndex = vulkanDevice.graphicsFamily;
         vkCreateCommandPool(vulkanDevice.device, &commandPoolInfo, nullptr, &commandPool);
 
-        VkCommandBufferAllocateInfo tempAllocInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
-        tempAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        tempAllocInfo.commandPool = commandPool;
-        tempAllocInfo.commandBufferCount = 1;
+        VkCommandBufferAllocateInfo allocInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
+        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        allocInfo.commandPool = commandPool;
+        allocInfo.commandBufferCount = 1;
 
-        vkAllocateCommandBuffers(vulkanDevice.device, &tempAllocInfo, &commandBuffer);
+        vkAllocateCommandBuffers(vulkanDevice.device, &allocInfo, &commandBuffer);
     }
 
     void VulkanCommands::Begin()
@@ -260,5 +260,30 @@ namespace Fyrion
                              0, nullptr,
                              0, nullptr,
                              1, &barrier);
+    }
+
+    void VulkanCommands::CopyBuffer(Buffer srcBuffer, Buffer dstBuffer, const Span<BufferCopyInfo>& info)
+    {
+        vkCmdCopyBuffer(commandBuffer,
+                        static_cast<VulkanBuffer*>(srcBuffer.handler)->buffer,
+                        static_cast<VulkanBuffer*>(dstBuffer.handler)->buffer,
+                        info.Size(),
+                        (const VkBufferCopy*)info.Data()
+        );
+    }
+
+
+    void VulkanCommands::SubmitAndWait(GPUQueue queue)
+    {
+        vkEndCommandBuffer(commandBuffer);
+
+        VkSubmitInfo submitInfo = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &commandBuffer;
+
+        VkQueue vkQueue = static_cast<VkQueue>(queue.handler);
+
+        vkQueueSubmit(vkQueue, 1, &submitInfo, VK_NULL_HANDLE);
+        vkQueueWaitIdle(vkQueue);
     }
 }

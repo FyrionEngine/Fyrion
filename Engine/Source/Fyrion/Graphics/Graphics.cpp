@@ -150,6 +150,11 @@ namespace Fyrion
         renderDevice->WaitQueue();
     }
 
+    void Graphics::UpdateBufferData(const BufferDataInfo& bufferDataInfo)
+    {
+        renderDevice->UpdateBufferData(bufferDataInfo);
+    }
+
     RenderApiType Graphics::GetRenderApi()
     {
         return RenderApiType::Vulkan;

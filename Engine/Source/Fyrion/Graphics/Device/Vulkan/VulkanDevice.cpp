@@ -26,6 +26,8 @@ namespace Fyrion
 
         vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 
+        vkDestroyCommandPool(device, temporaryCmd->commandPool, nullptr);
+
         for (int i = 0; i < FY_FRAMES_IN_FLIGHT; ++i)
         {
             vkDestroyCommandPool(device, defaultCommands[i]->commandPool, nullptr);
@@ -370,6 +372,8 @@ namespace Fyrion
         allocatorInfo.pVulkanFunctions = &vmaVulkanFunctions;
         vmaCreateAllocator(&allocatorInfo, &vmaAllocator);
 
+        temporaryCmd = MakeShared<VulkanCommands>(*this);
+
         for (int j = 0; j < FY_FRAMES_IN_FLIGHT; ++j)
         {
             defaultCommands[j] = MakeShared<VulkanCommands>(*this);
@@ -639,7 +643,7 @@ namespace Fyrion
 
     Buffer VulkanDevice::CreateBuffer(const BufferCreation& bufferCreation)
     {
-        VulkanBuffer* vulkanBuffer = allocator.Alloc<VulkanBuffer>();
+        VulkanBuffer* vulkanBuffer = allocator.Alloc<VulkanBuffer>(bufferCreation);
 
         VkBufferCreateInfo bufferInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
         bufferInfo.size = bufferCreation.size;
@@ -648,21 +652,21 @@ namespace Fyrion
         VmaAllocationCreateInfo vmaAllocInfo = {};
         vmaAllocInfo.usage = VMA_MEMORY_USAGE_AUTO;
 
-        switch (bufferCreation.memory)
+        switch (bufferCreation.allocation)
         {
-            case BufferMemory::GPUOnly:
+            case BufferAllocation::GPUOnly:
             {
                 vmaAllocInfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
                 bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
                 break;
             }
-            case BufferMemory::TransferToGPU:
+            case BufferAllocation::TransferToGPU:
             {
                 vmaAllocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
                 bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
                 break;
             }
-            case BufferMemory::TransferToCPU:
+            case BufferAllocation::TransferToCPU:
             {
                 vmaAllocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
                 bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
@@ -1127,6 +1131,49 @@ namespace Fyrion
     void VulkanDevice::WaitQueue()
     {
         vkQueueWaitIdle(graphicsQueue);
+    }
+
+    void VulkanDevice::UpdateBufferData(const BufferDataInfo& bufferDataInfo)
+    {
+        FY_ASSERT(bufferDataInfo.data, "data cannot be null");
+        FY_ASSERT(bufferDataInfo.size > 0, "size should be higher then zero");
+
+        VulkanBuffer& vulkanBuffer = *static_cast<VulkanBuffer*>(bufferDataInfo.buffer.handler);
+        if (vulkanBuffer.bufferCreation.allocation != BufferAllocation::GPUOnly)
+        {
+            if (bufferDataInfo.data)
+            {
+                memcpy((i8*)vulkanBuffer.allocInfo.pMappedData + bufferDataInfo.offset, bufferDataInfo.data, bufferDataInfo.size);
+            }
+        }
+        else
+        {
+            VulkanBuffer stagingBuffer = {};
+
+            VkBufferCreateInfo bufferInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+            bufferInfo.size = bufferDataInfo.size;
+            bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+            bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+            VmaAllocationCreateInfo vmaAllocInfo = {};
+            vmaAllocInfo.usage = VMA_MEMORY_USAGE_AUTO;
+            vmaAllocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+            vmaCreateBuffer(vmaAllocator, &bufferInfo, &vmaAllocInfo, &stagingBuffer.buffer, &stagingBuffer.allocation, &stagingBuffer.allocInfo);
+
+            memcpy(stagingBuffer.allocInfo.pMappedData, bufferDataInfo.data, bufferDataInfo.size);
+
+            temporaryCmd->Begin();
+
+            BufferCopyInfo copy{};
+            copy.dstOffset = 0;
+            copy.srcOffset = bufferDataInfo.offset;
+            copy.size = bufferDataInfo.size;
+
+            temporaryCmd->CopyBuffer({&stagingBuffer}, bufferDataInfo.buffer, &copy);
+            temporaryCmd->SubmitAndWait({graphicsQueue});
+
+            vmaDestroyBuffer(vmaAllocator, stagingBuffer.buffer, stagingBuffer.allocation);
+        }
     }
 
 

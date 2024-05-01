@@ -35,5 +35,7 @@ namespace Fyrion
         void BeginLabel(const StringView& name, const Vec4& color) override;
         void EndLabel() override;
         void ResourceBarrier(const ResourceBarrierInfo& resourceBarrierInfo) override;
+        void CopyBuffer(Buffer srcBuffer, Buffer dstBuffer, const Span<BufferCopyInfo>& info) override;
+        void SubmitAndWait(GPUQueue queue) override;
     };
 }

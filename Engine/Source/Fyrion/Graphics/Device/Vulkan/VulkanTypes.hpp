@@ -52,6 +52,7 @@ namespace Fyrion
 
     struct VulkanBuffer
     {
+        BufferCreation    bufferCreation{};
         VkBuffer          buffer{};
         VmaAllocation     allocation{};
         VmaAllocationInfo allocInfo{};

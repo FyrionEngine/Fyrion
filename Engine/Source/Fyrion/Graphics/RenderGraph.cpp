@@ -389,7 +389,7 @@ namespace Fyrion
                     renderGraphResource.buffer = Graphics::CreateBuffer(BufferCreation{
                         .usage = renderGraphResourceCreation.bufferUsage,
                         .size = renderGraphResourceCreation.bufferInitialSize,
-                        .memory = renderGraphResourceCreation.bufferMemory
+                        .allocation = renderGraphResourceCreation.bufferAllocation
                     });
                     renderGraphResource.ownResource = true;
                     renderGraphResource.destroyed = false;

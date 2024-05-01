@@ -18,6 +18,7 @@ namespace Fyrion
     FY_HANDLER(TextureView);
     FY_HANDLER(Buffer);
     FY_HANDLER(Sampler);
+    FY_HANDLER(GPUQueue);
 
     enum class Format
     {
@@ -109,7 +110,7 @@ namespace Fyrion
 
     ENUM_FLAGS(BufferUsage, u32)
 
-    enum class BufferMemory
+    enum class BufferAllocation
     {
         GPUOnly       = 1,
         TransferToGPU = 2,
@@ -260,9 +261,9 @@ namespace Fyrion
 
     struct BufferCreation
     {
-        BufferUsage  usage{};
-        usize        size{};
-        BufferMemory memory{BufferMemory::GPUOnly};
+        BufferUsage      usage{};
+        usize            size{};
+        BufferAllocation allocation{BufferAllocation::GPUOnly};
     };
 
     struct TextureCreation
@@ -423,6 +424,21 @@ namespace Fyrion
         u32                       stride{};
     };
 
+    struct BufferDataInfo
+    {
+        Buffer      buffer{};
+        const void* data{};
+        usize       size{};
+        usize       offset{};
+    };
+
+    struct BufferCopyInfo
+    {
+        usize srcOffset;
+        usize dstOffset;
+        usize size;
+    };
+
     struct BindingSet
     {
         //TODO
@@ -450,6 +466,10 @@ namespace Fyrion
         virtual void BeginLabel(const StringView& name, const Vec4& color) = 0;
         virtual void EndLabel() = 0;
         virtual void ResourceBarrier(const ResourceBarrierInfo& resourceBarrierInfo) = 0;
+        virtual void CopyBuffer(Buffer srcBuffer, Buffer dstBuffer, const Span<BufferCopyInfo>& info) = 0;
+
+        virtual void SubmitAndWait(GPUQueue queue) = 0;
+
     };
 
     struct DeviceFeatures

@@ -66,7 +66,7 @@ namespace Fyrion
         Sampler         CreateSampler(const SamplerCreation& samplerCreation) override;
         PipelineState   CreateGraphicsPipelineState(const GraphicsPipelineCreation& graphicsPipelineCreation) override;
         PipelineState   CreateComputePipelineState(const ComputePipelineCreation& computePipelineCreation) override;
-        BindingSet&     CreateBindingSet(RID shader) override;
+        BindingSet&     CreateBindingSet(RID shader, const BindingSetType& bindingSetType) override;
         void            DestroySwapchain(const Swapchain& swapchain) override;
         void            DestroyRenderPass(const RenderPass& renderPass) override;
         void            DestroyBuffer(const Buffer& buffer) override;

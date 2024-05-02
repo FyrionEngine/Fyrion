@@ -244,6 +244,12 @@ namespace Fyrion
         Linear
     };
 
+    enum class BindingSetType
+    {
+        Dynamic,
+        Static
+    };
+
     struct SwapchainCreation
     {
         Window window{};
@@ -447,9 +453,82 @@ namespace Fyrion
         usize size;
     };
 
-    struct BindingSet
+    struct BindingValue;
+
+
+    template<typename T>
+    struct BindingValueSetter
     {
-        //TODO
+        static void SetValue(BindingValue& bindingValue, const T& value)
+        {
+            static_assert(Traits::AlwaysFalse<T>, "Type not implemented");
+        }
+    };
+
+
+    struct FY_API BindingValue
+    {
+        virtual ~BindingValue() = default;
+
+        template<typename T>
+        BindingValue& operator=(const T& val)
+        {
+            BindingValueSetter<T>::SetValue(*this, val);
+            return *this;
+        }
+
+        virtual void SetTexture(const Texture& texture) = 0;
+        virtual void SetTextureView(const TextureView& textureView) = 0;
+        virtual void SetSampler(const Sampler& sampler) = 0;
+        virtual void SetBuffer(const Buffer& buffer) = 0;
+    };
+
+    struct FY_API BindingSet
+    {
+        virtual ~BindingSet() = default;
+
+        virtual BindingValue& GetBindingValue(const StringView& name) = 0;
+
+        BindingValue& operator[](const StringView& name)
+        {
+            return GetBindingValue(name);
+        }
+    };
+
+    template<>
+    struct BindingValueSetter<Texture>
+    {
+        static void SetValue(BindingValue& bindingValue, const Texture& value)
+        {
+            bindingValue.SetTexture(value);
+        }
+    };
+
+    template<>
+    struct BindingValueSetter<TextureView>
+    {
+        static void SetValue(BindingValue& bindingValue, const TextureView& value)
+        {
+            bindingValue.SetTextureView(value);
+        }
+    };
+
+    template<>
+    struct BindingValueSetter<Sampler>
+    {
+        static void SetValue(BindingValue& bindingValue, const Sampler& value)
+        {
+            bindingValue.SetSampler(value);
+        }
+    };
+
+    template<>
+    struct BindingValueSetter<Buffer>
+    {
+        static void SetValue(BindingValue& bindingValue, const Buffer& value)
+        {
+            bindingValue.SetBuffer(value);
+        }
     };
 
     struct RenderCommands

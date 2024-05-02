@@ -90,9 +90,9 @@ namespace Fyrion
         return renderDevice->CreateComputePipelineState(computePipelineCreation);
     }
 
-    BindingSet& Graphics::CreateBindingSet(RID shader)
+    BindingSet& Graphics::CreateBindingSet(RID shader, const BindingSetType& bindingSetType)
     {
-        return renderDevice->CreateBindingSet(shader);
+        return renderDevice->CreateBindingSet(shader, bindingSetType);
     }
 
     void Graphics::DestroySwapchain(const Swapchain& swapchain)

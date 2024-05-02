@@ -72,6 +72,10 @@ int main(i32 argc, char** argv)
 
     graphicsPipeline = Graphics::CreateGraphicsPipelineState(graphicsPipelineCreation);
 
+    BindingSet& bindingSet = Graphics::CreateBindingSet(graphicsPipelineCreation.shader, BindingSetType::Dynamic);
+    bindingSet["buffer"] = vertexBuffer;
+
+
     Engine::Run();
     Engine::Destroy();
 

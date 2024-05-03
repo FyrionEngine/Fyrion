@@ -1,15 +1,17 @@
 #pragma once
 #include "Fyrion/Core/HashMap.hpp"
-#include "Fyrion/Core/UniquePtr.hpp"
+#include "Fyrion/Core/SharedPtr.hpp"
 #include "Fyrion/Graphics/GraphicsTypes.hpp"
 
 namespace Fyrion
 {
+    class VulkanDevice;
+
     struct VulkanBindingValue : BindingValue
     {
         union
         {
-            Texture     m_texture;
+            Texture     m_texture{};
             TextureView m_textureView;
             Sampler     m_sampler;
             Buffer      m_buffer;
@@ -23,16 +25,17 @@ namespace Fyrion
 
     struct VulkanBindingSet : BindingSet
     {
-        RID                                            shader;
-        BindingSetType                                 bindingSetType;
+        VulkanDevice&  vulkanDevice;
+        RID            shader;
+        BindingSetType bindingSetType;
 
-        VulkanBindingSet(const RID& shader, BindingSetType bindingSetType)
-            : shader(shader),
-              bindingSetType(bindingSetType)
-        {
-        }
+        HashMap<String, SharedPtr<VulkanBindingValue>> bindingValues;
+        HashMap<String, u32>                           valueDescriptorSetLookup{};
+        HashMap<u32, DescriptorLayout>                 descriptorLayoutLookup{};
 
-        HashMap<String, UniquePtr<VulkanBindingValue>> bindingValues{};
+
+        VulkanBindingSet(VulkanDevice& vulkanDevice, const RID& shader, BindingSetType bindingSetType);
+
 
         BindingValue& GetBindingValue(const StringView& name) override;
     };

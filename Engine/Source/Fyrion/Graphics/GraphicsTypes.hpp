@@ -284,7 +284,7 @@ namespace Fyrion
         TextureUsage usage{};
         u32          mipLevels{1};
         u32          arrayLayers{1};
-        ViewType     defaultView{ViewType::Undefined};
+        ViewType     defaultView{ViewType::Type2D};
     };
 
     struct TextureViewCreation

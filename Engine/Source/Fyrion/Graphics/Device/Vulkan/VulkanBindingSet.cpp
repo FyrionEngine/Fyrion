@@ -1,7 +1,34 @@
 #include "VulkanBindingSet.hpp"
 
+#include "Fyrion/Assets/AssetTypes.hpp"
+#include "Fyrion/Resource/Repository.hpp"
+
 namespace Fyrion
 {
+    VulkanBindingSet::VulkanBindingSet(VulkanDevice& vulkanDevice, const RID& shader, BindingSetType bindingSetType) : vulkanDevice(vulkanDevice), shader(shader), bindingSetType(bindingSetType)
+    {
+        ResourceObject shaderAsset = Repository::Read(shader);
+        const ShaderInfo& shaderInfo = shaderAsset[ShaderAsset::Info].As<ShaderInfo>();
+
+        for(const DescriptorLayout& descriptorLayout: shaderInfo.descriptors)
+        {
+            auto setIt = descriptorLayoutLookup.Find(descriptorLayout.set);
+
+            if (setIt == descriptorLayoutLookup.end())
+            {
+                descriptorLayoutLookup.Insert(descriptorLayout.set, descriptorLayout);
+            }
+
+            for(const DescriptorBinding& binding: descriptorLayout.bindings)
+            {
+                if (auto it = valueDescriptorSetLookup.Find(binding.name); it == valueDescriptorSetLookup.end())
+                {
+                    valueDescriptorSetLookup.Emplace(String{binding.name}, (u32)descriptorLayout.set);
+                }
+            }
+        }
+    }
+
     void VulkanBindingValue::SetTexture(const Texture& texture)
     {
         if (texture != m_texture)
@@ -30,7 +57,7 @@ namespace Fyrion
         auto it = bindingValues.Find(name);
         if (it == bindingValues.end())
         {
-            it = bindingValues.Emplace(String{name}, MakeUnique<VulkanBindingValue>()).first;
+            it = bindingValues.Emplace(String{name}, MakeShared<VulkanBindingValue>()).first;
         }
         return *it->second;
     }

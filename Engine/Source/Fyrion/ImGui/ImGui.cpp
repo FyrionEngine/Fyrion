@@ -42,6 +42,7 @@ namespace ImGui
     {
         TypeHandler* typeHandler{};
         VoidPtr      instance{};
+        ConstPtr     originalData{};
         u64          lastFrameUsage{};
         bool         readOnly{};
     };
@@ -1054,12 +1055,19 @@ namespace ImGui
                 DrawTypeContent{
                     .typeHandler = typeHandler,
                     .instance = !readOnly ? typeHandler->NewInstance() : const_cast<VoidPtr>(instance),
+                    .originalData = instance,
                     .readOnly = readOnly
                 }).first;
 
             typeHandler->Copy(instance, it->second.instance);
         }
         DrawTypeContent& content = it->second;
+
+        if (instance != content.originalData)
+        {
+            typeHandler->Copy(instance, it->second.instance);
+            content.originalData = instance;
+        }
 
         content.lastFrameUsage = Engine::GetFrame();
         bool hasChanged = false;

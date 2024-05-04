@@ -228,7 +228,7 @@ namespace Fyrion
         {
             if (ImGui::MenuItem("Reset"))
             {
-                //TODO
+                m_sceneEditor.ResetComponent(m_selectedComponent);
                 ImGui::CloseCurrentPopup();
             }
 

@@ -750,9 +750,11 @@ namespace Fyrion
         ResourceData* data = allocator.Alloc<ResourceData>();
         data->storage = storage;
         data->memory = storage->typeHandler->NewInstance(allocator);
-        storage->typeHandler->Copy(pointer, data->memory);
+        if (pointer)
+        {
+            storage->typeHandler->Copy(pointer, data->memory);
+        }
         storage->data.store(data);
-
         UpdateVersion(storage);
     }
 

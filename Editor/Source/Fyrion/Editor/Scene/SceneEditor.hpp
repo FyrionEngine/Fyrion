@@ -29,6 +29,7 @@ namespace Fyrion
         void          RenameObject(RID rid, const StringView& newName);
         void          AddComponent(RID object, TypeHandler* typeHandler);
         void          RemoveComponent(RID object, RID component);
+        void          ResetComponent(RID component);
         void          UpdateComponent(RID component, VoidPtr value);
 
     private:

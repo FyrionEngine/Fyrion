@@ -195,7 +195,7 @@ namespace Fyrion
         void DrawMenu()
         {
             ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(0.46f, 0.49f, 0.50f, 0.67f));
-            menuContext.ExecuteHotKeys();
+            menuContext.ExecuteHotKeys(nullptr, true);
             if (ImGui::BeginMenuBar())
             {
                 menuContext.Draw();

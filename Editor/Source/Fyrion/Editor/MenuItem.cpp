@@ -130,9 +130,9 @@ namespace Fyrion
         }
     }
 
-    bool MenuItemContext::ExecuteHotKeys(MenuItemContext* context, VoidPtr userData)
+    bool MenuItemContext::ExecuteHotKeys(MenuItemContext* context, VoidPtr userData, bool executeOnFocus)
     {
-        if (ImGui::GetIO().WantCaptureKeyboard) return false;
+        if (!executeOnFocus && ImGui::GetIO().WantCaptureKeyboard) return false;
 
         bool executed = false;
 
@@ -164,7 +164,7 @@ namespace Fyrion
 
         for (MenuItemContext* menuItemStorage: context->m_children)
         {
-            if (ExecuteHotKeys(menuItemStorage, userData))
+            if (ExecuteHotKeys(menuItemStorage, userData, executeOnFocus))
             {
                 executed = true;
             }
@@ -173,8 +173,8 @@ namespace Fyrion
         return executed;
     }
 
-    bool MenuItemContext::ExecuteHotKeys(VoidPtr userData)
+    bool MenuItemContext::ExecuteHotKeys(VoidPtr userData, bool executeOnFocus)
     {
-        return ExecuteHotKeys(this, userData);
+        return ExecuteHotKeys(this, userData, executeOnFocus);
     }
 }

@@ -29,7 +29,7 @@ namespace Fyrion
     public:
         void AddMenuItem(const MenuItemCreation& menuItem);
         void Draw(VoidPtr userData = nullptr);
-        bool ExecuteHotKeys(VoidPtr userData = nullptr);
+        bool ExecuteHotKeys(VoidPtr userData = nullptr, bool executeOnFocus = false);
     private:
         String m_label{};
         String m_itemName{};
@@ -41,6 +41,6 @@ namespace Fyrion
         Shortcut m_itemShortcut{};
 
         static void DrawMenuItemChildren(MenuItemContext* context, VoidPtr userData);
-        static bool ExecuteHotKeys(MenuItemContext* context, VoidPtr userData);
+        static bool ExecuteHotKeys(MenuItemContext* context, VoidPtr userData, bool executeOnFocus);
     };
 }

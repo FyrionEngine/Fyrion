@@ -22,6 +22,7 @@ namespace Fyrion
         String				m_renamingCache{};
         RID                 m_renamingObject{};
         String              m_searchComponentString{};
+        RID                 m_selectedComponent = {};
 
         static void OpenProperties(VoidPtr userData);
         void        DrawSceneObject(u32 id, RID rid);

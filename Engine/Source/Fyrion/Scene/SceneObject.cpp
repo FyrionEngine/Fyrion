@@ -267,6 +267,22 @@ namespace Fyrion
         }
     }
 
+    void SceneObject::Notify(i64 notificationId)
+    {
+        for (const auto& it : m_components)
+        {
+            for (Component* instance : it.second.instances)
+            {
+                instance->OnNotify(notificationId);
+            }
+        }
+
+        for (SceneObject& child : GetChildren())
+        {
+            child.Notify(notificationId);
+        }
+    }
+
     void SceneObject::AddChild(SceneObject* object)
     {
         if (!m_head)

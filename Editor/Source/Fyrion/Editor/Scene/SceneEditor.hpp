@@ -28,6 +28,7 @@ namespace Fyrion
         RID           GetLastSelectedObject() const;
         void          RenameObject(RID rid, const StringView& newName);
         void          AddComponent(RID object, TypeHandler* typeHandler);
+        void          RemoveComponent(RID object, RID component);
         void          UpdateComponent(RID component, VoidPtr value);
 
     private:

@@ -12,6 +12,7 @@ using namespace Fyrion;
 namespace Fyrion
 {
     class TypeHandler;
+    class FieldHandler;
 }
 
 enum ImGuiContentTableFlags_
@@ -31,6 +32,8 @@ typedef u32 ImGuiDrawTypeFlags;
 
 namespace ImGui
 {
+    typedef void (*FieldRendererFn)(FieldHandler* fieldHandler, VoidPtr value, bool* hasChanged);
+
     struct ContentItemDesc
     {
         u32             ItemId{};
@@ -100,23 +103,24 @@ namespace ImGui
     FY_API ImU32 TextToColor(const char* str);
 
     //content table
-    FY_API bool BeginContentTable(u32 id, f32 thumbnailSize, ImGuiContentTableFlags flags = 0);
-    FY_API bool DrawContentItem(const ContentItemDesc& contentItemDesc);
-    FY_API void CancelRenameContentSelected(ImGuiID id);
-    FY_API bool ContentItemHovered(ImGuiID itemId);
-    FY_API bool ContentItemSelected(ImGuiID itemId);
-    FY_API void SelectContentItem(ImGuiID itemId, ImGuiID tableId);
-    FY_API bool ContentItemFocused(ImGuiID itemId);
-    FY_API void RenameContentSelected(ImGuiID id);
-    FY_API void CancelRenameContentSelected(ImGuiID id);
-    FY_API bool ContentItemBeginPayload(ImGuiID itemId);
-    FY_API bool ContentItemAcceptPayload(ImGuiID itemId);
-    FY_API bool ContentItemRenamed(ImGuiID itemId);
-    FY_API bool RenamingSelected(ImGuiID itemId);
+    FY_API bool       BeginContentTable(u32 id, f32 thumbnailSize, ImGuiContentTableFlags flags = 0);
+    FY_API bool       DrawContentItem(const ContentItemDesc& contentItemDesc);
+    FY_API void       CancelRenameContentSelected(ImGuiID id);
+    FY_API bool       ContentItemHovered(ImGuiID itemId);
+    FY_API bool       ContentItemSelected(ImGuiID itemId);
+    FY_API void       SelectContentItem(ImGuiID itemId, ImGuiID tableId);
+    FY_API bool       ContentItemFocused(ImGuiID itemId);
+    FY_API void       RenameContentSelected(ImGuiID id);
+    FY_API void       CancelRenameContentSelected(ImGuiID id);
+    FY_API bool       ContentItemBeginPayload(ImGuiID itemId);
+    FY_API bool       ContentItemAcceptPayload(ImGuiID itemId);
+    FY_API bool       ContentItemRenamed(ImGuiID itemId);
+    FY_API bool       RenamingSelected(ImGuiID itemId);
     FY_API StringView ContentRenameString();
-    FY_API void EndContentTable();
+    FY_API void       EndContentTable();
 
-    FY_API VoidPtr DrawType(u64 itemId, TypeHandler* typeHandler, ConstPtr instance, ImGuiDrawTypeFlags flags = 0);
+    FY_API void    AddFieldRenderer(TypeID typeId, FieldRendererFn fieldRendererFn);
+    FY_API VoidPtr DrawType(usize itemId, TypeHandler* typeHandler, ConstPtr instance, ImGuiDrawTypeFlags flags = 0);
 
     FY_API ImGuiKey GetImGuiKey(Key key);
 

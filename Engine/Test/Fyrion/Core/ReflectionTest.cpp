@@ -260,6 +260,10 @@ namespace
 			CHECK(PropertyTest::countSet == 1);
 			CHECK(propertyTest.GetIntValue() == 30);
 			CHECK(intValue->GetValueAs<i32>(&propertyTest) == 30);
+
+			i32 value{};
+			intValue->CopyValueTo(&propertyTest, value);
+			CHECK(value == 30);
 		}
 
 		Engine::Destroy();

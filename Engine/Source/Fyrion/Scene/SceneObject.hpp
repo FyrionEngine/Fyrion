@@ -67,6 +67,7 @@ namespace Fyrion
         void                RemoveComponent(TypeID typeId, u32 index);
         void                RemoveChild(const SceneObject* child);
         void                Destroy();
+        void                Notify(i64 notificationId);
 
         template <typename T, Traits::EnableIf<Traits::IsBaseOf<Component, T>>* = nullptr>
         T& AddComponent()

@@ -1,39 +1,15 @@
 #include "TypeRegister.hpp"
-#include "Fyrion/Resource/ResourceTypes.hpp"
-#include "Fyrion/Core/Registry.hpp"
-#include "Fyrion/Core/Math.hpp"
 
 namespace Fyrion
 {
+    void RegisterCoreTypes();
     void RegisterResourceTypes();
     void RegisterSceneType();
     void RegisterGraphicsTypes();
 
     void TypeRegister()
     {
-        Registry::Type<bool>("bool");
-        Registry::Type<u8>("u8");
-        Registry::Type<u16>("u16");
-        Registry::Type<u32>("u32");
-        Registry::Type<u64>("u64");
-        Registry::Type<ul32>("ul32");
-        Registry::Type<i8>("i8");
-        Registry::Type<i16>("i16");
-        Registry::Type<i32>("i32");
-        Registry::Type<i64>("i64");
-        Registry::Type<f32>("f32");
-        Registry::Type<f64>("f64");
-        Registry::Type<String>("Fyrion::String");
-        Registry::Type<StringView>("Fyrion::StringView");
-
-        Registry::Type<RID>("Fyrion::RID");
-        Registry::Type<Array<RID>>("Fyrion::RIDArray");
-        Registry::Type<Array<u8>>("Fyrion::ByteArray");
-
-        auto extent = Registry::Type<Extent>();
-        extent.Field<&Extent::width>("width");
-        extent.Field<&Extent::height>("height");
-
+        RegisterCoreTypes();
         RegisterResourceTypes();
         RegisterSceneType();
         RegisterGraphicsTypes();

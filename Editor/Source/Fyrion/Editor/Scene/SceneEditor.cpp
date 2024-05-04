@@ -187,10 +187,20 @@ namespace Fyrion
         ResourceObject write = Repository::Write(object);
         write.AddToSubObjectSet(SceneObjectAsset::Components, component);
         write.Commit();
+
+        Editor::GetAssetTree().MarkDirty();
+    }
+
+    void SceneEditor::RemoveComponent(RID object, RID component)
+    {
+        Repository::DestroyResource(component);
+
+        Editor::GetAssetTree().MarkDirty();
     }
 
     void SceneEditor::UpdateComponent(RID component, VoidPtr value)
     {
-
+        Repository::Commit(component, value);
+        Editor::GetAssetTree().MarkDirty();
     }
 }

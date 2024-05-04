@@ -75,9 +75,11 @@ namespace Fyrion
     class FY_API AttributeHandler
     {
     public:
-        ConstPtr                GetAttribute(TypeID attributeId) const;
-        bool                    HasAttribute(TypeID attributeId) const;
-        Span<AttributeInfo*>    GetAttributes() const;
+        virtual ~AttributeHandler() = default;
+
+        ConstPtr             GetAttribute(TypeID attributeId) const;
+        bool                 HasAttribute(TypeID attributeId) const;
+        Span<AttributeInfo*> GetAttributes() const;
 
         template<typename AttType>
         const AttType* GetAttribute() const
@@ -137,7 +139,6 @@ namespace Fyrion
         typedef VoidPtr     (*FnGetFieldPointer)(const FieldHandler* fieldHandler, VoidPtr instance);
         typedef void        (*FnCopyValueTo)(const FieldHandler* fieldHandler, ConstPtr instance, VoidPtr value);
         typedef void        (*FnSetValue)(const FieldHandler* fieldHandler, VoidPtr instance, ConstPtr value);
-        typedef void        (*FnGetValue)(const FieldHandler* fieldHandler, VoidPtr instance, VoidPtr result);
 
         explicit FieldHandler(const String& name);
 
@@ -159,6 +160,12 @@ namespace Fyrion
             SetValue(instance, &value);
         }
 
+        template<typename T>
+        void CopyValueTo(ConstPtr instance, T& value)
+        {
+            CopyValueTo(instance, &value);
+        }
+
         friend class FieldBuilder;
     private:
         String            m_name;
@@ -166,7 +173,6 @@ namespace Fyrion
         FnGetFieldPointer m_fnGetFieldPointer;
         FnCopyValueTo     m_fnCopyValueTo;
         FnSetValue        m_fnSetValue;
-        FnGetValue        m_fnGetValue;
     };
 
     class FY_API FunctionHandler : public AttributeHandler
@@ -203,7 +209,6 @@ namespace Fyrion
 
     struct DerivedType
     {
-
         TypeID typeId{};
         FnCast fnCast{};
     };
@@ -345,7 +350,6 @@ namespace Fyrion
         void SetFnGetFieldPointer(FieldHandler::FnGetFieldPointer fnGetFieldPointer);
         void SetFnCopyValueTo(FieldHandler::FnCopyValueTo fnCopyValueTo);
         void SetFnSetValue(FieldHandler::FnSetValue fnSetValue);
-        void SetFnGetValue(FieldHandler::FnGetValue fnGetValue);
     };
 
     class FY_API FunctionBuilder
@@ -539,13 +543,13 @@ namespace Fyrion
         explicit NativeFieldHandler(FieldBuilder fieldBuilder): NativeFieldHandlerBase<mfp, Owner, Field>(fieldBuilder)
         {
             fieldBuilder.SetFnSetValue(&SetValue);
-            fieldBuilder.SetFnGetValue(&GetValue);
+            fieldBuilder.SetFnCopyValueTo(&CopyValueToImpl);
         }
     private:
-        static void GetValue(const FieldHandler* fieldHandler, VoidPtr instance, VoidPtr result)
+        static void CopyValueToImpl(const FieldHandler* fieldHandler, ConstPtr instance, VoidPtr value)
         {
             using Return = Traits::FunctionReturnType<getFp>;
-            *static_cast<Traits::RemoveReference<Return>*>(result) = (*static_cast<Owner*>(instance).*getFp)();
+            *static_cast<Traits::RemoveAll<Return>*>(value) = (*static_cast<const Owner*>(instance).*getFp)();
 
         }
 
@@ -671,7 +675,7 @@ namespace Fyrion
     template<auto mfp, typename Return, typename Owner>
     struct MemberFunctionTemplateDecomposer<mfp, Return(Owner::*)()>
     {
-        using FuncType = MemberFunctionTemplateDecomposer<mfp, Return(Owner::*)()>;
+        using FuncType = MemberFunctionTemplateDecomposer;
 
         static decltype(auto) CreateHandler(FunctionBuilder functionBuilder)
         {

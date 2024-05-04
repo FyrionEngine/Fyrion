@@ -430,6 +430,7 @@ namespace Fyrion
 
     void Repository::DestroyResource(RID rid)
     {
+        FY_ASSERT(rid, "resource cannot be null");
         ResourceStorage* storage = &pages[rid.page]->elements[rid.offset];
         toCollectItems.enqueue(ToDestroyResourceData{
             .data = storage->data,
@@ -1216,6 +1217,8 @@ namespace Fyrion
 
     void RegisterResourceTypes()
     {
+        Registry::Type<RID>();
+        Registry::Type<Array<RID>>("Fyrion::RIDArray");
         Registry::Type<SubObjectSetData>();
         Registry::Type<StreamObject>();
     }

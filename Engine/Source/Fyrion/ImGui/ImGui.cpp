@@ -8,6 +8,7 @@
 #include "Fyrion/Assets/AssetTypes.hpp"
 #include "IconsFontAwesome6.h"
 #include "Fyrion/Engine.hpp"
+#include "Fyrion/Core/StringUtils.hpp"
 #include "Fyrion/ImGui/Lib/imgui_internal.h"
 #include "Fyrion/ImGui/Lib/ImGuizmo.h"
 
@@ -16,6 +17,7 @@ using namespace Fyrion;
 namespace Fyrion
 {
     RenderDevice& GetRenderDevice();
+    void RegisterFieldRenderers();
 }
 
 namespace ImGui
@@ -51,7 +53,8 @@ namespace ImGui
 
         HashMap<ImGuiID, ContentTable> contentTables{};
         ImGuiID currentContentTable{U32_MAX};
-        HashMap<u64, DrawTypeContent> drawTypes{};
+        HashMap<usize, DrawTypeContent> drawTypes{};
+        HashMap<TypeID, FieldRendererFn> fieldRenders{};
     }
 
     struct InputTextCallback_UserData
@@ -973,9 +976,11 @@ namespace ImGui
 
         Platform::ImGuiInit(window);
         GetRenderDevice().ImGuiInit(swapchain);
+
+        RegisterFieldRenderers();
     }
 
-    void BeginFrame(Fyrion::Window window, Fyrion::f64 deltaTime)
+    void BeginFrame(Window window, f64 deltaTime)
     {
         GetRenderDevice().ImGuiNewFrame();
         Platform::ImGuiNewFrame();
@@ -1012,6 +1017,7 @@ namespace ImGui
     {
         drawTypes.Clear();
         contentTables.Clear();
+        fieldRenders.Clear();
         DestroyContext();
     }
 
@@ -1020,26 +1026,71 @@ namespace ImGui
         return keys[static_cast<usize>(key)];
     }
 
-    VoidPtr DrawType(u64 itemId, TypeHandler* typeHandler, ConstPtr instance, ImGuiDrawTypeFlags flags)
+    void AddFieldRenderer(TypeID typeId, FieldRendererFn fieldRendererFn)
     {
+        fieldRenders.Emplace(typeId, Traits::Move(fieldRendererFn));
+    }
+
+    VoidPtr DrawType(usize itemId, TypeHandler* typeHandler, ConstPtr instance, ImGuiDrawTypeFlags flags)
+    {
+
         bool readOnly = flags & ImGuiDrawTypeFlags_ReadOnly;
 
         auto it = drawTypes.Find(itemId);
+
+        if (it != drawTypes.end() && it->second.typeHandler->GetTypeInfo().typeId != typeHandler->GetTypeInfo().typeId)
+        {
+            if (!it->second.readOnly && it->second.instance != nullptr)
+            {
+                it->second.typeHandler->Destroy(it->second.instance);
+            }
+            drawTypes.Erase(it);
+        }
+
         if (it == drawTypes.end())
         {
             it = drawTypes.Emplace(
                 itemId,
                 DrawTypeContent{
                     .typeHandler = typeHandler,
-                    .instance = !readOnly ? typeHandler->NewInstance() : (VoidPtr)instance,
+                    .instance = !readOnly ? typeHandler->NewInstance() : const_cast<VoidPtr>(instance),
                     .readOnly = readOnly
                 }).first;
-        }
 
+            typeHandler->Copy(instance, it->second.instance);
+        }
         DrawTypeContent& content = it->second;
-        FY_ASSERT(readOnly == content.readOnly, "Item flags is different from the registered use a different itemId");
+
         content.lastFrameUsage = Engine::GetFrame();
         bool hasChanged = false;
+
+        if (BeginTable("##component-table", 2))
+        {
+            TableSetupColumn("Label", ImGuiTableColumnFlags_WidthStretch, 0.4f);
+            TableSetupColumn("Item", ImGuiTableColumnFlags_WidthStretch);
+
+            for (FieldHandler* field : content.typeHandler->GetFields())
+            {
+                BeginDisabled(readOnly);
+
+                TableNextColumn();
+                AlignTextToFramePadding();
+
+                String formattedName = FormatName(field->GetName());
+                String idStr = "###string_" + formattedName;
+
+                Text("%s", formattedName.CStr());
+                TableNextColumn();
+
+                if (const auto& it = fieldRenders.Find(field->GetFieldInfo().typeInfo.typeId))
+                {
+                    it->second(field, field->GetFieldPointer(content.instance), &hasChanged);
+                }
+
+                EndDisabled();
+            }
+            EndTable();
+        }
 
         return !hasChanged ? nullptr : content.instance;
     }

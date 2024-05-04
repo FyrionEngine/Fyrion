@@ -144,6 +144,7 @@ namespace Fyrion
                 ImGui::PushID(HashValue(component));
 
                 ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_AllowItemOverlap;
+                ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
                 bool open = ImGui::CollapsingHeader(typeHandler->GetSimpleName().CStr(), flags);
                 bool rightClicked = ImGui::IsItemClicked(ImGuiMouseButton_Right);
                 bool hovered = ImGui::IsItemHovered();
@@ -160,6 +161,7 @@ namespace Fyrion
                     if (ImGui::Button(ICON_FA_ELLIPSIS_VERTICAL, ImVec2{size.y, size.y - 4 * style.ScaleFactor}) || rightClicked)
                     {
                         openComponentSettings = true;
+                        m_selectedComponent = component;
                     }
                     if (hovered)
                     {
@@ -171,11 +173,13 @@ namespace Fyrion
 
                 if (open)
                 {
+                    ImGui::Indent();
                     ConstPtr ptr = Repository::ReadData(component);
-                    if (VoidPtr newValue = ImGui::DrawType(HashValue(component) + 10, typeHandler, ptr, ImGuiDrawTypeFlags_ReadOnly))
+                    if (VoidPtr newValue = ImGui::DrawType(HashValue(component), typeHandler, ptr, readOnly ? ImGuiDrawTypeFlags_ReadOnly : 0))
                     {
-                        m_sceneEditor.UpdateComponent(rid, newValue);
+                        m_sceneEditor.UpdateComponent(component, newValue);
                     }
+                    ImGui::Unindent();
                 }
             }
         }
@@ -230,7 +234,7 @@ namespace Fyrion
 
             if (ImGui::MenuItem("Remove"))
             {
-                //TODO
+                m_sceneEditor.RemoveComponent(rid, m_selectedComponent);
                 ImGui::CloseCurrentPopup();
             }
         }

@@ -230,4 +230,26 @@ namespace Fyrion::Traits
     template<typename Base, typename Derived>
     constexpr bool IsBaseOf = std::is_base_of_v<Base, Derived>;
 
+
+    template<auto func, typename Type>
+    struct FuncInfoImpl
+    {
+        static_assert(Traits::AlwaysFalse<Type>, "info not found");
+    };
+
+    template<auto func, typename Return, typename Owner, typename ...Args>
+    struct FuncInfoImpl<func, Return (Owner::*)(Args...) const>
+    {
+        using returnType = Return;
+    };
+
+    template<auto func, typename Return, typename Owner, typename ...Args>
+    struct FuncInfoImpl<func, Return (Owner::*)(Args...)>
+    {
+        using returnType = Return;
+    };
+
+    template<auto func>
+    using FunctionReturnType = typename FuncInfoImpl<func, decltype(func)>::returnType;
+
 }

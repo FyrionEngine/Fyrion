@@ -97,7 +97,44 @@ namespace
 		{
             staticVoidFuncCalls++;
 		}
+	};
 
+	class PropertyTest
+	{
+	public:
+
+		inline static i32 countSet = 0;
+
+		i32 GetIntValue() const
+		{
+			return m_intValue;
+		}
+
+		void SetIntValue(i32 intValue)
+		{
+			countSet++;
+			m_intValue = intValue;
+		}
+
+		String GetStringValue() const
+		{
+			return m_stringValue;
+		}
+
+		void SetStringValue(const String& stringValue)
+		{
+			m_stringValue = stringValue;
+		}
+
+		static void RegisterType(NativeTypeHandler<PropertyTest>& type)
+		{
+			type.Field<&PropertyTest::m_intValue, &PropertyTest::GetIntValue, &PropertyTest::SetIntValue>("intValue");
+			type.Field<&PropertyTest::m_stringValue, &PropertyTest::GetStringValue, &PropertyTest::SetStringValue>("stringValue");
+		}
+
+	private:
+		i32    m_intValue;
+		String m_stringValue;
 	};
 
 	i32 ReflectionTestClass::constructorCalls    = 0;
@@ -176,6 +213,8 @@ namespace
 	{
 		Engine::Init();
 
+		Registry::Type<PropertyTest>();
+
 		TestTypeRegister();
 		TypeHandler* testStruct = Registry::FindTypeByName("Tests::ReflectionTestStruct");
 		REQUIRE(testStruct != nullptr);
@@ -202,7 +241,7 @@ namespace
 		static_cast<ReflectionTestStruct*>(instance)->iint = 100;
 
 		CHECK(iintField->GetFieldPointer(instance) != nullptr);
-		CHECK(iintField->GetFieldAs<i32>(instance) == 100);
+		CHECK(iintField->GetValueAs<i32>(instance) == 100);
 
 		uintField->SetValueAs(instance, 10u);
 
@@ -210,6 +249,18 @@ namespace
 		uintField->CopyValueTo(instance, &vlCopy);
 		CHECK(vlCopy == 10);
 		testStruct->Destroy(instance);
+
+		PropertyTest propertyTest{};
+
+		{
+			TypeHandler* handler = Registry::FindType<PropertyTest>();
+			FieldHandler* intValue = handler->FindField("intValue");
+			REQUIRE(intValue);
+			intValue->SetValueAs(&propertyTest, 30);
+			CHECK(PropertyTest::countSet == 1);
+			CHECK(propertyTest.GetIntValue() == 30);
+			CHECK(intValue->GetValueAs<i32>(&propertyTest) == 30);
+		}
 
 		Engine::Destroy();
 	}

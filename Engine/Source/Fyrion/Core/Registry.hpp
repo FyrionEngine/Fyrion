@@ -137,6 +137,7 @@ namespace Fyrion
         typedef VoidPtr     (*FnGetFieldPointer)(const FieldHandler* fieldHandler, VoidPtr instance);
         typedef void        (*FnCopyValueTo)(const FieldHandler* fieldHandler, ConstPtr instance, VoidPtr value);
         typedef void        (*FnSetValue)(const FieldHandler* fieldHandler, VoidPtr instance, ConstPtr value);
+        typedef void        (*FnGetValue)(const FieldHandler* fieldHandler, VoidPtr instance, VoidPtr result);
 
         explicit FieldHandler(const String& name);
 
@@ -147,7 +148,7 @@ namespace Fyrion
         void        SetValue(VoidPtr instance, ConstPtr value);
 
         template<typename T>
-        T& GetFieldAs(VoidPtr instance)
+        T& GetValueAs(VoidPtr instance)
         {
             return *static_cast<T*>(GetFieldPointer(instance));
         }
@@ -165,6 +166,7 @@ namespace Fyrion
         FnGetFieldPointer m_fnGetFieldPointer;
         FnCopyValueTo     m_fnCopyValueTo;
         FnSetValue        m_fnSetValue;
+        FnGetValue        m_fnGetValue;
     };
 
     class FY_API FunctionHandler : public AttributeHandler
@@ -343,6 +345,7 @@ namespace Fyrion
         void SetFnGetFieldPointer(FieldHandler::FnGetFieldPointer fnGetFieldPointer);
         void SetFnCopyValueTo(FieldHandler::FnCopyValueTo fnCopyValueTo);
         void SetFnSetValue(FieldHandler::FnSetValue fnSetValue);
+        void SetFnGetValue(FieldHandler::FnGetValue fnGetValue);
     };
 
     class FY_API FunctionBuilder
@@ -509,15 +512,13 @@ namespace Fyrion
     //fields
 
     template<auto mfp, typename Owner, typename Field>
-    class NativeFieldHandler
+    class NativeFieldHandlerBase
     {
-    public:
-        explicit NativeFieldHandler(FieldBuilder fieldBuilder)
+    protected:
+        explicit NativeFieldHandlerBase(FieldBuilder fieldBuilder)
         {
-           fieldBuilder.SetFnGetFieldInfo(&GetFieldImpl);
-           fieldBuilder.SetFnGetFieldPointer(&FnGetFieldPointerImpl);
-           fieldBuilder.SetFnCopyValueTo(&CopyValueToImpl);
-           fieldBuilder.SetFnSetValue(&SetValue);
+            fieldBuilder.SetFnGetFieldInfo(&GetFieldImpl);
+            fieldBuilder.SetFnGetFieldPointer(&FnGetFieldPointerImpl);
         }
 
         static FieldInfo GetFieldImpl(const FieldHandler* fieldHandler)
@@ -529,7 +530,41 @@ namespace Fyrion
         {
             return &((*static_cast<Owner*>(instance)).*mfp);
         }
+    };
 
+    template<auto mfp, auto getFp, auto setFp, typename Owner, typename Field>
+    class NativeFieldHandler : NativeFieldHandlerBase<mfp, Owner, Field>
+    {
+    public:
+        explicit NativeFieldHandler(FieldBuilder fieldBuilder): NativeFieldHandlerBase<mfp, Owner, Field>(fieldBuilder)
+        {
+            fieldBuilder.SetFnSetValue(&SetValue);
+            fieldBuilder.SetFnGetValue(&GetValue);
+        }
+    private:
+        static void GetValue(const FieldHandler* fieldHandler, VoidPtr instance, VoidPtr result)
+        {
+            using Return = Traits::FunctionReturnType<getFp>;
+            *static_cast<Traits::RemoveReference<Return>*>(result) = (*static_cast<Owner*>(instance).*getFp)();
+
+        }
+
+        static void SetValue(const FieldHandler* fieldHandler, VoidPtr instance, ConstPtr value)
+        {
+            (*static_cast<Owner*>(instance).*setFp)(*static_cast<const Field*>(value));
+        }
+    };
+
+    template <auto mfp, typename Owner, typename Field>
+    class NativeFieldHandler<mfp, nullptr, nullptr, Owner, Field> : NativeFieldHandlerBase<mfp, Owner, Field>
+    {
+    public:
+        explicit NativeFieldHandler(FieldBuilder fieldBuilder): NativeFieldHandlerBase<mfp, Owner, Field>(fieldBuilder)
+        {
+            fieldBuilder.SetFnCopyValueTo(&CopyValueToImpl);
+            fieldBuilder.SetFnSetValue(&SetValue);
+        }
+    private:
         static void CopyValueToImpl(const FieldHandler* fieldHandler, ConstPtr instance, VoidPtr value)
         {
             *static_cast<Field*>(value) = ((*static_cast<const Owner*>(instance)).*mfp);
@@ -537,17 +572,18 @@ namespace Fyrion
 
         static void SetValue(const FieldHandler* fieldHandler, VoidPtr instance, ConstPtr value)
         {
-            ((*static_cast<Owner*>(instance)).*mfp) = *static_cast<const Field*>(value);
+            *static_cast<Owner*>(instance).*mfp = *static_cast<const Field*>(value);
         }
     };
 
-    template<auto mfp, typename Field>
+
+    template<auto mfp, auto getFp, auto setFp, typename Field>
     struct FieldTemplateDecomposer
     {
     };
 
-    template<auto mfp, typename Owner, typename FieldType>
-    struct FieldTemplateDecomposer<mfp, FieldType Owner::*>
+    template<auto mfp, auto getFp, auto setFp, typename Owner, typename FieldType>
+    struct FieldTemplateDecomposer<mfp, getFp, setFp, FieldType Owner::*>
     {
 
         static TypeID GetTypeId()
@@ -557,7 +593,7 @@ namespace Fyrion
 
         static auto CreateHandler(FieldBuilder fieldBuilder)
         {
-            return NativeFieldHandler<mfp, Owner, FieldType>(fieldBuilder);
+            return NativeFieldHandler<mfp, getFp, setFp, Owner, FieldType>(fieldBuilder);
         }
     };
 
@@ -810,9 +846,17 @@ namespace Fyrion
         template<auto mfp>
         auto Field(const StringView& name)
         {
-            using FieldDecomp = FieldTemplateDecomposer<mfp, decltype(mfp)>;
+            using FieldDecomp = FieldTemplateDecomposer<mfp, nullptr, nullptr, decltype(mfp)>;
             return FieldDecomp::CreateHandler(m_typeBuilder.NewField(name));
         }
+
+        template<auto mfp, auto getFp, auto setFp>
+        auto Field(const StringView& fieldName)
+        {
+            using FieldDecomp = FieldTemplateDecomposer<mfp, getFp, setFp, decltype(mfp)>;
+            return FieldDecomp::CreateHandler(m_typeBuilder.NewField(fieldName));
+        }
+
 
         template<auto mfp>
         auto Function(const StringView& name)

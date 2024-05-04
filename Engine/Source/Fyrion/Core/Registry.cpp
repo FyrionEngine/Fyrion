@@ -347,6 +347,11 @@ namespace Fyrion
         m_fieldHandler.m_fnSetValue = fnSetValue;
     }
 
+    void FieldBuilder::SetFnGetValue(FieldHandler::FnGetValue fnGetValue)
+    {
+        m_fieldHandler.m_fnGetValue = fnGetValue;
+    }
+
     FunctionBuilder::FunctionBuilder(FunctionHandler& functionHandler) : m_functionHandler(functionHandler)
     {
     }

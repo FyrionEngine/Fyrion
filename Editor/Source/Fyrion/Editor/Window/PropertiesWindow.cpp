@@ -1,5 +1,6 @@
 #include "PropertiesWindow.hpp"
 
+#include "Fyrion/Core/StringUtils.hpp"
 #include "Fyrion/Editor/Editor.hpp"
 #include "Fyrion/Editor/Scene/SceneEditor.hpp"
 #include "Fyrion/ImGui/IconsFontAwesome6.h"
@@ -58,7 +59,7 @@ namespace Fyrion
                 nameFlags |= ImGuiInputTextFlags_ReadOnly;
             }
 
-            StringView objectName = root ? m_sceneEditor.GetRootName() : read[SceneObjectAsset::Name].Value<StringView>();
+            StringView objectName = root ? m_sceneEditor.GetRootName() : read[SceneObjectAsset::name].Value<StringView>();
             m_stringCache = objectName;
             u32 hash = HashValue(rid);
 
@@ -132,7 +133,7 @@ namespace Fyrion
 
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5 * style.ScaleFactor);
 
-        Array<RID> components = read.GetSubObjectSetAsArray(SceneObjectAsset::Components);
+        Array<RID> components = read.GetSubObjectSetAsArray(SceneObjectAsset::components);
 
         bool openComponentSettings = false;
 
@@ -145,7 +146,8 @@ namespace Fyrion
 
                 ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_AllowItemOverlap;
                 ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
-                bool open = ImGui::CollapsingHeader(typeHandler->GetSimpleName().CStr(), flags);
+                String name = FormatName(typeHandler->GetSimpleName());
+                bool open = ImGui::CollapsingHeader(name.CStr(), flags);
                 bool rightClicked = ImGui::IsItemClicked(ImGuiMouseButton_Right);
                 bool hovered = ImGui::IsItemHovered();
                 ImVec2 size = ImGui::GetItemRectSize();
@@ -208,7 +210,8 @@ namespace Fyrion
                     TypeHandler* typeHandler = Registry::FindTypeById(derivedType.typeId);
                     if (typeHandler)
                     {
-                        if (ImGui::Selectable(typeHandler->GetSimpleName().CStr()))
+                        String name = FormatName(typeHandler->GetSimpleName());
+                        if (ImGui::Selectable(name.CStr()))
                         {
                             m_sceneEditor.AddComponent(rid, typeHandler);
                         }

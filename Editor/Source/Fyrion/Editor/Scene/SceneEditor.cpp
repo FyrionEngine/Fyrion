@@ -23,9 +23,9 @@ namespace Fyrion
         u64 count{};
 
         ResourceObject object = Repository::Read(rid);
-        if (object.Has(SceneObjectAsset::Children))
+        if (object.Has(SceneObjectAsset::children))
         {
-            Array<RID> children = object.GetSubObjectSetAsArray(SceneObjectAsset::Children);
+            Array<RID> children = object.GetSubObjectSetAsArray(SceneObjectAsset::children);
             count = children.Size();
 
             for (RID child : children)
@@ -63,16 +63,16 @@ namespace Fyrion
             ResourceObject root = Repository::Write(m_rootObject);
 
             ResourceObject write = Repository::Write(object);
-            write[SceneObjectAsset::Name] = "Object " + ToString(m_count++);
+            write[SceneObjectAsset::name] = "Object " + ToString(m_count++);
             write.Commit();
 
             Repository::SetUUID(object, UUID::RandomUUID());
 
-            Array<RID> children = root[SceneObjectAsset::ChildrenSort].Value<Array<RID>>();
+            Array<RID> children = root[SceneObjectAsset::childrenSort].Value<Array<RID>>();
             children.EmplaceBack(object);
-            root[SceneObjectAsset::ChildrenSort] = children;
+            root[SceneObjectAsset::childrenSort] = children;
 
-            root.AddToSubObjectSet(SceneObjectAsset::Children, object);
+            root.AddToSubObjectSet(SceneObjectAsset::children, object);
             root.Commit();
         }
         else
@@ -89,15 +89,15 @@ namespace Fyrion
                 m_lastSelectedRid = object;
 
                 ResourceObject write = Repository::Write(object);
-                write[SceneObjectAsset::Name] = "Object " + ToString(m_count++);
+                write[SceneObjectAsset::name] = "Object " + ToString(m_count++);
                 write.Commit();
 
                 Repository::SetUUID(object, UUID::RandomUUID());
 
-                Array<RID> children = writeParent[SceneObjectAsset::ChildrenSort].Value<Array<RID>>();
+                Array<RID> children = writeParent[SceneObjectAsset::childrenSort].Value<Array<RID>>();
                 children.EmplaceBack(object);
-                writeParent[SceneObjectAsset::ChildrenSort] = children;
-                writeParent.AddToSubObjectSet(SceneObjectAsset::Children, object);
+                writeParent[SceneObjectAsset::childrenSort] = children;
+                writeParent.AddToSubObjectSet(SceneObjectAsset::children, object);
                 writeParent.Commit();
             }
         }
@@ -115,13 +115,13 @@ namespace Fyrion
             if (RID parent = Repository::GetParent(it.first))
             {
                 ResourceObject writeParent = Repository::Write(parent);
-                Array<RID> children = writeParent[SceneObjectAsset::ChildrenSort].Value<Array<RID>>();
+                Array<RID> children = writeParent[SceneObjectAsset::childrenSort].Value<Array<RID>>();
                 auto itArr = FindFirst(children.begin(), children.end(), it.first);
                 if (itArr)
                 {
                     children.Erase(itArr, itArr + 1);
                 }
-                writeParent[SceneObjectAsset::ChildrenSort] = children;
+                writeParent[SceneObjectAsset::childrenSort] = children;
                 writeParent.Commit();
             }
             Repository::DestroyResource(it.first);
@@ -185,7 +185,7 @@ namespace Fyrion
         typeHandler->Destroy(instance);
 
         ResourceObject write = Repository::Write(object);
-        write.AddToSubObjectSet(SceneObjectAsset::Components, component);
+        write.AddToSubObjectSet(SceneObjectAsset::components, component);
         write.Commit();
 
         Editor::GetAssetTree().MarkDirty();

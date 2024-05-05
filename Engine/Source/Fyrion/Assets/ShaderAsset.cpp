@@ -55,9 +55,9 @@ namespace Fyrion
             RID shader = Repository::CreateResource<ShaderAsset>();
 
             ResourceObject write = Repository::Write(shader);
-            write[ShaderAsset::Bytes] = bytes;
-            write[ShaderAsset::Info] = ShaderManager::ExtractShaderInfo(bytes, stages, renderApi);
-            write[ShaderAsset::Stages] = stages;
+            write[ShaderAsset::bytes] = bytes;
+            write[ShaderAsset::info] = ShaderManager::ExtractShaderInfo(bytes, stages, renderApi);
+            write[ShaderAsset::stages] = stages;
 
             write.Commit();
 
@@ -92,9 +92,9 @@ namespace Fyrion
             });
 
             ResourceObject write = Repository::Write(shader);
-            write[ShaderAsset::Bytes] = bytes;
-            write[ShaderAsset::Info] = ShaderManager::ExtractShaderInfo(bytes, stages, renderApi);
-            write[ShaderAsset::Stages] = stages;
+            write[ShaderAsset::bytes] = bytes;
+            write[ShaderAsset::info] = ShaderManager::ExtractShaderInfo(bytes, stages, renderApi);
+            write[ShaderAsset::stages] = stages;
             write.Commit();
 
             return shader;
@@ -106,9 +106,9 @@ namespace Fyrion
     void RegisterShaderAsset()
     {
         ResourceTypeBuilder<ShaderAsset>::Builder()
-            .Value<ShaderAsset::Bytes, Array<u8>>("Bytes")
-            .Value<ShaderAsset::Info, ShaderInfo>("Info")
-            .Value<ShaderAsset::Stages, Array<ShaderStageInfo>>("Stages")
+            .Value<ShaderAsset::bytes, Array<u8>>("Bytes")
+            .Value<ShaderAsset::info, ShaderInfo>("Info")
+            .Value<ShaderAsset::stages, Array<ShaderStageInfo>>("Stages")
             .Build();
 
         ResourceAssets::AddAssetImporter(".raster", ImportRasterShader);

@@ -5,10 +5,9 @@
 
 namespace Fyrion
 {
-    class Transform : public Component
+    class FY_API TransformComponent : public Component
     {
     public:
-        static void RegisterType(NativeTypeHandler<Transform>& type);
 
         FY_FINLINE void SetPosition(const Vec3& position)
         {
@@ -42,8 +41,10 @@ namespace Fyrion
         FY_FINLINE const Mat4& GetGlobalTransform() const { return m_globalTransform; }
 
         void OnNotify(i64 type) override;
+
         inline static i64 TransformChanged = 1001;
 
+        static void RegisterType(NativeTypeHandler<TransformComponent>& type);
     private:
         Vec3 m_position{0, 0, 0};
         Quat m_rotation{0, 0, 0, 1};

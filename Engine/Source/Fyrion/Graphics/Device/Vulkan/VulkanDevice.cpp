@@ -838,9 +838,9 @@ namespace Fyrion
     {
         ResourceObject shader = Repository::Read(graphicsPipelineCreation.shader);
 
-        Span<u8>              bytes = shader[ShaderAsset::Bytes].As<Span<u8>>();
-        Span<ShaderStageInfo> stages = shader[ShaderAsset::Stages].As<Span<ShaderStageInfo>>();
-        ShaderInfo            shaderInfo = shader[ShaderAsset::Info].As<ShaderInfo>();
+        Span<u8>              bytes = shader[ShaderAsset::bytes].As<Span<u8>>();
+        Span<ShaderStageInfo> stages = shader[ShaderAsset::stages].As<Span<ShaderStageInfo>>();
+        ShaderInfo            shaderInfo = shader[ShaderAsset::info].As<ShaderInfo>();
 
         VulkanPipelineState* vulkanPipelineState = allocator.Alloc<VulkanPipelineState>();
         vulkanPipelineState->graphicsPipelineCreation = graphicsPipelineCreation;

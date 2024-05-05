@@ -21,7 +21,7 @@ namespace Fyrion
 	void RegisterFontAsset()
 	{
         ResourceTypeBuilder<UIFont>::Builder()
-            .Value<UIFont::fontBytes, Array<u8>>("FontBytes")
+            .Value<UIFont::fontBytes, Array<u8>>("fontBytes")
             .Build();
         ResourceAssets::AddAssetImporter(".ttf,.otf", ImportFontAsset);
 	}

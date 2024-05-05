@@ -106,9 +106,9 @@ namespace Fyrion
     void RegisterShaderAsset()
     {
         ResourceTypeBuilder<ShaderAsset>::Builder()
-            .Value<ShaderAsset::bytes, Array<u8>>("Bytes")
-            .Value<ShaderAsset::info, ShaderInfo>("Info")
-            .Value<ShaderAsset::stages, Array<ShaderStageInfo>>("Stages")
+            .Value<ShaderAsset::bytes, Array<u8>>("bytes")
+            .Value<ShaderAsset::info, ShaderInfo>("info")
+            .Value<ShaderAsset::stages, Array<ShaderStageInfo>>("stages")
             .Build();
 
         ResourceAssets::AddAssetImporter(".raster", ImportRasterShader);

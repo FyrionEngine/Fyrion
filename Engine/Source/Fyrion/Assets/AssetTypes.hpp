@@ -13,7 +13,7 @@ namespace Fyrion
     {
         constexpr static u32 extent = 0;
         constexpr static u32 channels = 1;
-        constexpr static u32 Data = 2;
+        constexpr static u32 data = 2;
     };
 
     struct ShaderAsset

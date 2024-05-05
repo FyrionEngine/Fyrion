@@ -242,7 +242,7 @@ namespace Fyrion
     {
         Editor::AddMenuItem(MenuItemCreation{.itemName = "Window/Scene Tree", .action = OpenSceneTree});
 
-        AddMenuItem(MenuItemCreation{.itemName = "Add Empty Object", .priority = 0, .action = AddSceneObject});
+        AddMenuItem(MenuItemCreation{.itemName = "Add Empty Object", .priority = 0, .itemShortcut = {.ctrl = true, .presKey = Key::Space}, .action = AddSceneObject});
         AddMenuItem(MenuItemCreation{.itemName = "Add Object From Asset", .priority = 10, .action = AddSceneObjectFromAsset});
         AddMenuItem(MenuItemCreation{.itemName = "Add Component", .priority = 20, .action = AddComponent});
         AddMenuItem(MenuItemCreation{.itemName = "Rename", .priority = 200, .itemShortcut = {.presKey = Key::F2}, .action = RenameSceneObject});

@@ -362,12 +362,24 @@ namespace
 	{
 		Engine::Init();
 		{
-			Registry::Function<&GlobalSum>("GlobalSum").Attribute<TestAttribute>();
+			auto func = Registry::Function<&GlobalSum>("GlobalSum");
+			func.Attribute<TestAttribute>();
+			func.Param<0>("a").Attribute<TestAttribute>();
+			func.Param<1>("b").Attribute<TestAttribute>();
 		}
 
 		{
 			FunctionHandler* function = Registry::FindFunctionByName("GlobalSum");
 			CHECK(function);
+
+			auto paramsInfo = function->GetParams();
+			CHECK(paramsInfo.Size() == 2);
+			CHECK(paramsInfo[0].GetName() == "a");
+			CHECK(paramsInfo[0].HasAttribute<TestAttribute>());
+			CHECK(paramsInfo[0].GetAttribute<TestAttribute>() != nullptr);
+			CHECK(paramsInfo[1].GetName() == "b");
+			CHECK(paramsInfo[1].HasAttribute<TestAttribute>());
+			CHECK(paramsInfo[1].GetAttribute<TestAttribute>() != nullptr);
 
 			i32 ret{}, a{10}, b{20};
 			VoidPtr params[2]{&a, &b};

@@ -102,12 +102,13 @@ namespace Fyrion
         Array<AttributeInfo*>                      m_attributeArray{};
     };
 
-    class FY_API ParamHandler
+    class FY_API ParamHandler : public AttributeHandler
     {
     public:
         ParamHandler(usize index, const FieldInfo& fieldInfo);
         const FieldInfo&    GetFieldInfo() const;
         const String&       GetName() const;
+        void  SetName(const StringView& name);
     private:
         FieldInfo   m_fieldInfo{};
         String      m_name{};
@@ -361,6 +362,7 @@ namespace Fyrion
         void        Create(const FunctionHandlerCreation& creation);
 
         FunctionHandler& GetFunctionHandler() const;
+        ParamHandler& GetParam(usize index);
 
         void SetFnInvoke(FunctionHandler::FnInvoke fnInvoke);
         void SetFunctionPointer(VoidPtr functionPointer);
@@ -463,6 +465,18 @@ namespace Fyrion
         }
     private:
         AttributeHandler& m_attributeHandler;
+    };
+
+
+    template <usize I, typename Owner>
+    class NativeParamHandler : public NativeAttributeBuilder<NativeParamHandler<I, Owner>>
+    {
+    public:
+        NativeParamHandler(ParamHandler& paramHandler) : NativeAttributeBuilder<NativeParamHandler>(paramHandler), m_paramHandler(paramHandler)
+        {
+        }
+    private:
+        ParamHandler& m_paramHandler;
     };
 
 
@@ -608,14 +622,28 @@ namespace Fyrion
     class NativeFunctionHandler : public NativeAttributeBuilder<NativeFunctionHandler<fp, Return, Args...>>
     {
     public:
-        NativeFunctionHandler(FunctionBuilder& functionBuilder) :
-            NativeAttributeBuilder<NativeFunctionHandler<fp, Return, Args...>>(functionBuilder.GetFunctionHandler())
+        NativeFunctionHandler(FunctionBuilder functionBuilder) :
+            NativeAttributeBuilder<NativeFunctionHandler>(functionBuilder.GetFunctionHandler()),
+            m_functionBuilder(functionBuilder)
         {
             functionBuilder.SetFnInvoke(InvokeImpl);
             functionBuilder.SetFunctionPointer(reinterpret_cast<VoidPtr>(&FunctionImpl));
         }
 
+        template <usize I>
+        auto Param(const StringView& name = "")
+        {
+            ParamHandler& paramHandler = m_functionBuilder.GetParam(I);
+            if (!name.Empty())
+            {
+                paramHandler.SetName(name);
+            }
+            return NativeParamHandler<I, NativeFunctionHandler>(paramHandler);
+        }
+
     private:
+        FunctionBuilder m_functionBuilder;
+
         static void InvokeImpl(const FunctionHandler* handler, VoidPtr instance, VoidPtr  ret, VoidPtr* params)
         {
             u32 i{sizeof...(Args)};

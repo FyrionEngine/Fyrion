@@ -4,6 +4,7 @@ namespace Fyrion
 {
     void RegisterCoreTypes();
     void RegisterResourceTypes();
+    void RegisterResourceGraphTypes();
     void RegisterSceneType();
     void RegisterGraphicsTypes();
 
@@ -11,6 +12,7 @@ namespace Fyrion
     {
         RegisterCoreTypes();
         RegisterResourceTypes();
+        RegisterResourceGraphTypes();
         RegisterSceneType();
         RegisterGraphicsTypes();
     }

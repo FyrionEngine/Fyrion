@@ -33,6 +33,11 @@ namespace Fyrion
         return m_name;
     }
 
+    void ParamHandler::SetName(const StringView& name)
+    {
+        m_name = name;
+    }
+
     ConstPtr AttributeHandler::GetAttribute(TypeID attributeId) const
     {
         if (auto it = m_attributes.Find(attributeId))
@@ -370,6 +375,11 @@ namespace Fyrion
     FunctionHandler& FunctionBuilder::GetFunctionHandler() const
     {
         return m_functionHandler;
+    }
+
+    ParamHandler& FunctionBuilder::GetParam(usize index)
+    {
+        return m_functionHandler.m_params[index];
     }
 
     void FunctionBuilder::SetFnInvoke(FunctionHandler::FnInvoke fnInvoke)

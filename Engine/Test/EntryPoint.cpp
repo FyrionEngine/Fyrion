@@ -19,7 +19,7 @@ int main(int argc, char** argv)
 
     doctest::Context context;
     context.applyCommandLine(argc, argv);
-    context.setOption("no-breaks", true);
+    //context.setOption("no-breaks", true);
 
     i32 res = context.run();
 

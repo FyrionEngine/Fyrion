@@ -1,6 +1,4 @@
 #pragma once
-#include "String.hpp"
-#include "Fyrion/Resource/ResourceTypes.hpp"
 
 namespace Fyrion
 {
@@ -12,16 +10,5 @@ namespace Fyrion
     {
     };
 
-    struct GraphNodeAsset
-    {
 
-    };
-
-    struct GraphNodeLink
-    {
-        RID    inputNode;
-        String inputPin;
-        RID    outputNode;
-        String outputPin;
-    };
 }

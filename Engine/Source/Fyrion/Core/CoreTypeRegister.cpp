@@ -1,10 +1,13 @@
 
+#include "GraphTypes.hpp"
 #include "Math.hpp"
 #include "Registry.hpp"
 #include "UUID.hpp"
+#include "Fyrion/Resource/Repository.hpp"
 
 namespace Fyrion
 {
+    struct GraphNodeAsset;
     struct UUID;
 
     void RegisterBaseTypes()
@@ -62,6 +65,7 @@ namespace Fyrion
         quat.Field<&Quat::z>("z");
         quat.Field<&Quat::w>("w");
     }
+
 
     void RegisterCoreTypes()
     {

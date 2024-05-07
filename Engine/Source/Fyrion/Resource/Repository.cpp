@@ -14,6 +14,7 @@
 #include "StreamObject.hpp"
 
 #include "concurrentqueue.h"
+#include "ResourceGraph.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
 #include "Fyrion/IO/Path.hpp"
 
@@ -1223,5 +1224,11 @@ namespace Fyrion
         Registry::Type<Array<RID>>("Fyrion::RIDArray");
         Registry::Type<SubObjectSetData>();
         Registry::Type<StreamObject>();
+
+        ResourceTypeBuilder<ResourceGraphAsset>::Builder()
+            .SubObjectSet<ResourceGraphAsset::Links>("Links")
+            .SubObjectSet<ResourceGraphAsset::Nodes>("Nodes")
+            .Build();
+
     }
 }

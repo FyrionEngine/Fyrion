@@ -58,7 +58,7 @@ namespace
     }
 
 
-    TEST_CASE("Resource::ResourceGraphBasics")
+    TEST_CASE("Resource::ResourceGraphAssetBasics")
     {
         Engine::Init();
         {
@@ -76,7 +76,7 @@ namespace
                         String vl = "valuevalue1";
                         Repository::Commit(value, &vl);
                         ResourceObject object = Repository::Write(vl1);
-                        object[GraphNodeValue::Input] = "input1";
+                        object[GraphNodeValue::Input] = "input1";  //TODO string?
                         object.SetSubObject(GraphNodeValue::Value, value);
                         object.Commit();
                     }
@@ -95,7 +95,7 @@ namespace
 
 
                     ResourceObject object = Repository::Write(contentString1);
-                    object[GraphNodeAsset::NodeType] = "Fyrion::ConcatString";
+                    object[GraphNodeAsset::NodeType] = "Fyrion::ConcatString"; //TODO string?
                     object.AddToSubObjectSet(GraphNodeAsset::InputValues, vl1);
                     object.AddToSubObjectSet(GraphNodeAsset::InputValues, vl2);
                     object.Commit();
@@ -105,7 +105,7 @@ namespace
                 RID output = Repository::CreateResource<GraphNodeAsset>();
                 {
                     ResourceObject object = Repository::Write(output);
-                    object[GraphNodeAsset::NodeType] = "Fyrion::TestOutputNode";
+                    object[GraphNodeAsset::NodeType] = "Fyrion::TestOutputNode"; //TODO string?
                     object.Commit();
                 }
 
@@ -127,6 +127,75 @@ namespace
                     object.Commit();
                 }
             }
+
+        }
+        Engine::Destroy();
+    }
+
+    TEST_CASE("Resource::ResourceGraphBasics")
+    {
+        String vl = "value-";
+
+        Engine::Init();
+        {
+            RegisterTypes();
+
+            FixedArray<ResourceGraphInputNodeInfo, 1> inputs{
+                ResourceGraphInputNodeInfo{
+                    .index = 0,
+                    .name = "inputValue",
+                    .typeHandler = Registry::FindType<String>(),
+                    .value = nullptr
+                }
+            };
+
+
+            FixedArray<ResourceGraphNodeInfo, 1> nodes{
+                ResourceGraphNodeInfo{
+                    .index = 1,
+                    .functionHandler = Registry::FindFunctionByName("Fyrion::ConcatString"),
+                    .defaultValues = {
+                        ResourceGraphNodeValue{
+                            .name = "input2",
+                            .typeHandler = Registry::FindType<String>(),
+                            .value = &vl
+                        }
+                    }
+                }
+            };
+
+            FixedArray<ResourceGraphOutputNodeInfo, 1> outputNodes{
+                ResourceGraphOutputNodeInfo{
+                    .index = 2,
+                    .typeHandler = Registry::FindType<TestOutputNode>()
+                }
+            };
+
+            FixedArray<ResourceGraphLinkInfo, 2> links{
+                ResourceGraphLinkInfo{
+                    .inputNodeIndex = 0,
+                    .inputPin = "inputValue",
+                    .outputNodeIndex = 1,
+                    .outputPin = "input1",
+                },
+                ResourceGraphLinkInfo{
+                    .inputNodeIndex = 1,
+                    .inputPin = "out",
+                    .outputNodeIndex = 2,
+                    .outputPin = "stringValue",
+                }
+            };
+
+            ResourceGraph resourceGraph = {inputs, outputNodes, nodes, links};
+
+            ResourceGraphInstance* instance = resourceGraph.CreateInstance();
+            String vl = "value-";
+            instance->SetInputValue("inputValue", &vl, sizeof(String));
+
+            instance->Execute();
+
+            Span<TestOutputNode> outputs = instance->GetOutputs<TestOutputNode>();
+            CHECK(outputs[0].stringValue == "value-value-");
         }
         Engine::Destroy();
     }

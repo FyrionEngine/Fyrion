@@ -19,20 +19,22 @@ namespace
     struct TestOutputNode
     {
         String stringValue;
-        i32    intValue{};
+        i32    intValue;
+        u32    stringSize;
 
         static void RegisterType(NativeTypeHandler<TestOutputNode>& type)
         {
             type.Field<&TestOutputNode::stringValue>("stringValue").Attribute<GraphInput>();
-            type.Field<&TestOutputNode::intValue>("intValue");
+            type.Field<&TestOutputNode::intValue>("intValue").Attribute<GraphInput>();
+            type.Field<&TestOutputNode::stringSize>("stringSize").Attribute<GraphInput>();
             type.Attribute<ResourceGraphOutput>();
         }
     };
 
 
-    void SumValue(i32 vl1, i32 vl2, i32& out)
+    void MultypleValue(u32 vl1, u32 vl2, u32& out)
     {
-        out = vl1 + vl2;
+        out = vl1 * vl2;
     }
 
     void ConcatString(const String& input1, const String& input2, String& out)
@@ -40,21 +42,31 @@ namespace
         out = input1 + input2;
     }
 
+    void StringSize(const String& string, u32& size)
+    {
+        size = string.Size();
+    }
+
     void RegisterTypes()
     {
         Registry::Type<TestOutputNode>("Fyrion::TestOutputNode");
 
-        auto sumValue = Registry::Function<SumValue>("Fyrion::SumValue");
-        sumValue.Param<0>("vl1").Attribute<GraphInput>();
-        sumValue.Param<1>("vl2").Attribute<GraphInput>();
-        sumValue.Param<2>("out").Attribute<GraphOutput>();
-        sumValue.Attribute<ResourceGraphNode>();
+        auto multiplyValue = Registry::Function<MultypleValue>("Fyrion::MultypleValue");
+        multiplyValue.Param<0>("vl1").Attribute<GraphInput>();
+        multiplyValue.Param<1>("vl2").Attribute<GraphInput>();
+        multiplyValue.Param<2>("out").Attribute<GraphOutput>();
+        multiplyValue.Attribute<ResourceGraphNode>();
 
         auto concatString = Registry::Function<ConcatString>("Fyrion::ConcatString");
         concatString.Param<0>("input1").Attribute<GraphInput>();
         concatString.Param<1>("input2").Attribute<GraphInput>();
         concatString.Param<2>("out").Attribute<GraphOutput>();
         concatString.Attribute<ResourceGraphNode>();
+
+        auto stringSize = Registry::Function<StringSize>("Fyrion::StringSize");
+        stringSize.Param<0>("string").Attribute<GraphInput>();
+        stringSize.Param<1>("size").Attribute<GraphOutput>();
+        stringSize.Attribute<ResourceGraphNode>();
     }
 
 
@@ -69,14 +81,13 @@ namespace
             {
                 RID contentString1 = Repository::CreateResource<GraphNodeAsset>();
                 {
-
                     RID vl1 = Repository::CreateResource<GraphNodeValue>();
                     {
-                        RID value = Repository::CreateResource<String>();
+                        RID    value = Repository::CreateResource<String>();
                         String vl = "valuevalue1";
                         Repository::Commit(value, &vl);
                         ResourceObject object = Repository::Write(vl1);
-                        object[GraphNodeValue::Input] = "input1";  //TODO string?
+                        object[GraphNodeValue::Input] = "input1"; //TODO string?
                         object.SetSubObject(GraphNodeValue::Value, value);
                         object.Commit();
                     }
@@ -84,7 +95,7 @@ namespace
                     RID vl2 = Repository::CreateResource<GraphNodeValue>();
 
                     {
-                        RID value = Repository::CreateResource<String>();
+                        RID    value = Repository::CreateResource<String>();
                         String vl = "valuevalue2";
                         Repository::Commit(value, &vl);
                         ResourceObject object = Repository::Write(vl2);
@@ -95,7 +106,7 @@ namespace
 
 
                     ResourceObject object = Repository::Write(contentString1);
-                    object[GraphNodeAsset::NodeType] = "Fyrion::ConcatString"; //TODO string?
+                    object[GraphNodeAsset::NodeType] = "Fyrion::ConcatString";
                     object.AddToSubObjectSet(GraphNodeAsset::InputValues, vl1);
                     object.AddToSubObjectSet(GraphNodeAsset::InputValues, vl2);
                     object.Commit();
@@ -105,7 +116,7 @@ namespace
                 RID output = Repository::CreateResource<GraphNodeAsset>();
                 {
                     ResourceObject object = Repository::Write(output);
-                    object[GraphNodeAsset::NodeType] = "Fyrion::TestOutputNode"; //TODO string?
+                    object[GraphNodeAsset::NodeType] = "Fyrion::TestOutputNode";
                     object.Commit();
                 }
 
@@ -134,56 +145,37 @@ namespace
 
     TEST_CASE("Resource::ResourceGraphBasics")
     {
-        String vl = "value";
-
         Engine::Init();
         {
+            String vlInput = "value";
+            u32    defaultValue = 3;
+
             RegisterTypes();
 
-            FixedArray<ResourceGraphNodeValue, 1> inputValues = {
-                ResourceGraphNodeValue{
-                    .name = "inputValue",
-                    .typeHandler = Registry::FindType<String>(),
-                    .publicValue = true
-                }
+            FixedArray<ResourceGraphNodeValue, 2> inputValues = {
+                ResourceGraphNodeValue{.name = "inputValue", .typeHandler = Registry::FindType<String>(), .publicValue = true},
+                ResourceGraphNodeValue{.name = "valueToSum", .typeHandler = Registry::FindType<u32>(), .value = &defaultValue, .publicValue = true},
             };
 
-            FixedArray<ResourceGraphNodeInfo, 3> nodes{
+            FixedArray<ResourceGraphNodeInfo, 5> nodes{
+                ResourceGraphNodeInfo{.id = 0, .values = inputValues},
+                ResourceGraphNodeInfo{.id = 4, .typeHandler = Registry::FindType<TestOutputNode>()},
                 ResourceGraphNodeInfo{
-                    .id = 0,
-                    .values = inputValues
-                }
-                ,
-                ResourceGraphNodeInfo{
-                    .id = 2,
-                    .typeHandler = Registry::FindType<TestOutputNode>()
-                },
-                ResourceGraphNodeInfo{
-                    .id = 1,
-                    .functionHandler = Registry::FindFunctionByName("Fyrion::ConcatString"),
-                    .values = {
-                        ResourceGraphNodeValue{
-                            .name = "input2",
-                            .typeHandler = Registry::FindType<String>(),
-                            .value = &vl
-                        }
+                    .id = 1, .functionHandler = Registry::FindFunctionByName("Fyrion::ConcatString"), .values = {
+                        ResourceGraphNodeValue{.name = "input2", .typeHandler = Registry::FindType<String>(), .value = &vlInput}
                     }
-                }
+                },
+                ResourceGraphNodeInfo{.id = 2, .functionHandler = Registry::FindFunctionByName("Fyrion::StringSize"),},
+                ResourceGraphNodeInfo{.id = 3, .functionHandler = Registry::FindFunctionByName("Fyrion::MultypleValue"),},
             };
 
-            FixedArray<ResourceGraphLinkInfo, 2> links{
-                ResourceGraphLinkInfo{
-                    .outputNodeId = 0,
-                    .outputPin = "inputValue",
-                    .inputNodeId = 1,
-                    .inputPin = "input1",
-                },
-                ResourceGraphLinkInfo{
-                    .outputNodeId = 1,
-                    .outputPin = "out",
-                    .inputNodeId = 2,
-                    .inputPin = "stringValue",
-                }
+            FixedArray<ResourceGraphLinkInfo, 6> links{
+                ResourceGraphLinkInfo{.outputNodeId = 0, .outputPin = "inputValue", .inputNodeId = 1, .inputPin = "input1",},
+                ResourceGraphLinkInfo{.outputNodeId = 0, .outputPin = "valueToSum", .inputNodeId = 3, .inputPin = "vl1",},
+                ResourceGraphLinkInfo{.outputNodeId = 1, .outputPin = "out", .inputNodeId = 2, .inputPin = "string",},
+                ResourceGraphLinkInfo{.outputNodeId = 1, .outputPin = "out", .inputNodeId = 4, .inputPin = "stringValue",},
+                ResourceGraphLinkInfo{.outputNodeId = 2, .outputPin = "size", .inputNodeId = 3, .inputPin = "vl2",},
+                ResourceGraphLinkInfo{.outputNodeId = 3, .outputPin = "out", .inputNodeId = 4, .inputPin = "stringSize",}
             };
 
             ResourceGraph resourceGraph = {nodes, links};
@@ -192,11 +184,13 @@ namespace
             CHECK(graphNodes[0]->GetId() == 0);
             CHECK(graphNodes[1]->GetId() == 1);
             CHECK(graphNodes[2]->GetId() == 2);
+            CHECK(graphNodes[3]->GetId() == 3);
+            CHECK(graphNodes[4]->GetId() == 4);
 
             ResourceGraphInstance* instance = resourceGraph.CreateInstance();
             String vl = "default-";
-            instance->SetInputValue("inputValue", &vl);
 
+            instance->SetInputValue("inputValue", &vl);
             instance->Execute();
 
             Span<ConstPtr> outputs = instance->GetOutputs(GetTypeID<TestOutputNode>());
@@ -205,6 +199,7 @@ namespace
 
             const TestOutputNode* testOutputNode = static_cast<const TestOutputNode*>(outputs[0]);
             CHECK(testOutputNode->stringValue == "default-value");
+            CHECK(testOutputNode->stringSize == testOutputNode->stringValue.Size() * defaultValue);
 
             instance->Destroy();
         }

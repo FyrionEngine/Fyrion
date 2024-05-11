@@ -91,7 +91,10 @@ namespace Fyrion
                     for(auto& itOffset: node->m_offsets)
                     {
                         auto& data = m_resourceGraph->m_data[itOffset.second];
-                        data.typeHandler->Copy(&m_instanceData[data.copyOffset], &m_instanceData[data.offset]);
+                        if (data.copyOffset != U32_MAX)
+                        {
+                            data.typeHandler->Copy(&m_instanceData[data.copyOffset], &m_instanceData[data.offset]);
+                        }
                     }
                 }
             }
@@ -138,6 +141,7 @@ namespace Fyrion
         {
             SharedPtr<ResourceGraphNodeData> inputNode = graph.GetNode(link.inputNodeId);
             inputNode->m_inputLinks.Insert(link.inputPin, link);
+            graph.AddEdge(link.inputNodeId, link.outputNodeId);
         }
 
         m_nodes = graph.Sort();
@@ -185,6 +189,9 @@ namespace Fyrion
                         {
                             if (auto itOffset = m_nodes[it->second.outputNodeId]->m_offsets.Find(it->second.outputPin))
                             {
+                                //TODO - validate types.
+                                // TypeHandler* paramType = Registry::FindTypeById(param.GetFieldInfo().typeInfo.typeId);
+                                // FY_ASSERT(m_data[itOffset->second].typeHandler->GetTypeInfo().typeId == paramType->GetTypeInfo().typeId, "different types");
                                 node->m_offsets.Insert(param.GetName(), itOffset->second);
                             }
                         }

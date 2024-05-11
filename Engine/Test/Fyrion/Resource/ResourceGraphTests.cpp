@@ -134,7 +134,7 @@ namespace
 
     TEST_CASE("Resource::ResourceGraphBasics")
     {
-        String vl = "default";
+        String vl = "value";
 
         Engine::Init();
         {
@@ -194,7 +194,7 @@ namespace
             CHECK(graphNodes[2]->GetId() == 2);
 
             ResourceGraphInstance* instance = resourceGraph.CreateInstance();
-            String vl = "value-";
+            String vl = "default-";
             instance->SetInputValue("inputValue", &vl);
 
             instance->Execute();
@@ -204,7 +204,7 @@ namespace
             REQUIRE(outputs[0]);
 
             const TestOutputNode* testOutputNode = static_cast<const TestOutputNode*>(outputs[0]);
-          //  CHECK(testOutputNode->stringValue == "value-value-");
+            CHECK(testOutputNode->stringValue == "default-value");
 
             instance->Destroy();
         }

@@ -49,6 +49,7 @@ namespace Fyrion
         u32          offset = U32_MAX;
         TypeHandler* typeHandler;
         VoidPtr      defaultValue;
+        u32          copyOffset = U32_MAX;
     };
 
     class FY_API ResourceGraphNodeData

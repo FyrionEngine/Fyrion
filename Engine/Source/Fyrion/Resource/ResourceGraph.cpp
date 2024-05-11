@@ -26,7 +26,7 @@ namespace Fyrion
 
         for (auto& data : m_resourceGraph->m_data)
         {
-            if (data.defaultValue == nullptr &&  data.typeHandler && data.offset != U32_MAX)
+            if (data.defaultValue == nullptr && data.typeHandler && data.offset != U32_MAX)
             {
                 data.typeHandler->Construct(&m_instanceData[data.offset]);
             }
@@ -59,8 +59,10 @@ namespace Fyrion
                 }
                 else if (node->m_outputOffset != U32_MAX && node->m_typeHandler != nullptr)
                 {
+                    //type constructor
                     node->m_typeHandler->Construct(&m_instanceData[node->m_outputOffset]);
 
+                    //publish output.
                     auto it = m_outputs.Find(node->m_typeHandler->GetTypeInfo().typeId);
                     if (it == m_outputs.end())
                     {
@@ -77,9 +79,21 @@ namespace Fyrion
         for (int n = 0; n < m_resourceGraph->m_nodes.Size(); ++n)
         {
             const auto& node = m_resourceGraph->m_nodes[n];
-            if (node->m_valid && node->m_functionHandler)
+            if (node->m_valid)
             {
-                node->m_functionHandler->Invoke(nullptr, nullptr, m_nodeParams[n].Data());
+                if (node->m_functionHandler)
+                {
+                    node->m_functionHandler->Invoke(nullptr, nullptr, m_nodeParams[n].Data());
+                }
+                else if (node->m_typeHandler)
+                {
+                    //copy links to type.
+                    for(auto& itOffset: node->m_offsets)
+                    {
+                        auto& data = m_resourceGraph->m_data[itOffset.second];
+                        data.typeHandler->Copy(&m_instanceData[data.copyOffset], &m_instanceData[data.offset]);
+                    }
+                }
             }
         }
     }
@@ -236,10 +250,18 @@ namespace Fyrion
                         node->m_offsets.Insert(fieldHandler->GetName(), m_data.Size());
 
                         //TODO don't need to c construct.
-                        m_data.EmplaceBack(ResourceGraphNodeParamData{
+                        auto& data = m_data.EmplaceBack(ResourceGraphNodeParamData{
                             .offset = node->m_outputOffset + (u32)fieldInfo.offsetOf,
-                            .typeHandler = fieldType
+                            .typeHandler = fieldType,
                         });
+
+                        if (auto it = node->m_inputLinks.Find(fieldHandler->GetName()))
+                        {
+                            if (auto itOffset = m_nodes[it->second.outputNodeId]->m_offsets.Find(it->second.outputPin))
+                            {
+                                data.copyOffset = m_data[itOffset->second].offset;
+                            }
+                        }
                     }
                 }
             }

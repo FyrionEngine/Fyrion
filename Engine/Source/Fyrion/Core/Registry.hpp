@@ -38,6 +38,7 @@ namespace Fyrion
         bool isPointer{};
         bool isReference{};
         TypeInfo typeInfo{};
+        usize offsetOf{};
     };
 
     template<typename Owner, typename Field>
@@ -49,6 +50,19 @@ namespace Fyrion
             .isPointer  = false,
             .isReference  = false,
             .typeInfo = GetTypeInfo<Field>()
+        };
+    }
+
+    template<auto mfp, typename Owner, typename Field>
+    constexpr FieldInfo MakeFieldInfo()
+    {
+        return FieldInfo{
+            .ownerId = GetTypeID<Owner>(),
+            .isConst = false,
+            .isPointer  = false,
+            .isReference  = false,
+            .typeInfo = GetTypeInfo<Field>(),
+            .offsetOf = Traits::OffsetOf(mfp)
         };
     }
 
@@ -92,7 +106,6 @@ namespace Fyrion
         {
             return HasAttribute(GetTypeID<AttType>());
         }
-
 
         friend class AttributeBuilder;
     protected:
@@ -347,6 +360,8 @@ namespace Fyrion
     public:
         explicit FieldBuilder(FieldHandler& fieldHandler);
 
+        FieldHandler& GetFieldHandler() const;
+
         void SetFnGetFieldInfo(FieldHandler::FnGetFieldInfo fnGetFieldInfo);
         void SetFnGetFieldPointer(FieldHandler::FnGetFieldPointer fnGetFieldPointer);
         void SetFnCopyValueTo(FieldHandler::FnCopyValueTo fnCopyValueTo);
@@ -458,7 +473,7 @@ namespace Fyrion
         }
 
         template<typename Type, typename ...Args>
-        inline Owner& Attribute(Args&& ... args)
+        Owner& Attribute(Args&& ... args)
         {
             NativeAttributeHandlerBuild<Owner, Type>::Build(m_attributeHandler, Traits::Forward<Args>(args)...);
             return *static_cast<Owner*>(this);
@@ -530,10 +545,10 @@ namespace Fyrion
     //fields
 
     template<auto mfp, typename Owner, typename Field>
-    class NativeFieldHandlerBase
+    class NativeFieldHandlerBase : public NativeAttributeBuilder<NativeFieldHandlerBase<mfp, Owner, Field>>
     {
     protected:
-        explicit NativeFieldHandlerBase(FieldBuilder fieldBuilder)
+        explicit NativeFieldHandlerBase(FieldBuilder fieldBuilder) : NativeAttributeBuilder<NativeFieldHandlerBase>(fieldBuilder.GetFieldHandler())
         {
             fieldBuilder.SetFnGetFieldInfo(&GetFieldImpl);
             fieldBuilder.SetFnGetFieldPointer(&FnGetFieldPointerImpl);
@@ -541,7 +556,7 @@ namespace Fyrion
 
         static FieldInfo GetFieldImpl(const FieldHandler* fieldHandler)
         {
-            return MakeFieldInfo<Owner, Field>();
+            return MakeFieldInfo<mfp, Owner, Field>();
         }
 
         static VoidPtr FnGetFieldPointerImpl(const FieldHandler* fieldHandler, VoidPtr instance)
@@ -551,7 +566,7 @@ namespace Fyrion
     };
 
     template<auto mfp, auto getFp, auto setFp, typename Owner, typename Field>
-    class NativeFieldHandler : NativeFieldHandlerBase<mfp, Owner, Field>
+    class NativeFieldHandler : public NativeFieldHandlerBase<mfp, Owner, Field>
     {
     public:
         explicit NativeFieldHandler(FieldBuilder fieldBuilder): NativeFieldHandlerBase<mfp, Owner, Field>(fieldBuilder)
@@ -574,7 +589,7 @@ namespace Fyrion
     };
 
     template <auto mfp, typename Owner, typename Field>
-    class NativeFieldHandler<mfp, nullptr, nullptr, Owner, Field> : NativeFieldHandlerBase<mfp, Owner, Field>
+    class NativeFieldHandler<mfp, nullptr, nullptr, Owner, Field> : public NativeFieldHandlerBase<mfp, Owner, Field>
     {
     public:
         explicit NativeFieldHandler(FieldBuilder fieldBuilder): NativeFieldHandlerBase<mfp, Owner, Field>(fieldBuilder)
@@ -644,7 +659,7 @@ namespace Fyrion
     private:
         FunctionBuilder m_functionBuilder;
 
-        static void InvokeImpl(const FunctionHandler* handler, VoidPtr instance, VoidPtr  ret, VoidPtr* params)
+        static void InvokeImpl(const FunctionHandler* handler, VoidPtr instance, VoidPtr ret, VoidPtr* params)
         {
             u32 i{sizeof...(Args)};
             if constexpr (Traits::IsSame<Return, void>)

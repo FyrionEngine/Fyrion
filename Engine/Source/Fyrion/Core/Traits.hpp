@@ -252,4 +252,10 @@ namespace Fyrion::Traits
     template<auto func>
     using FunctionReturnType = typename FuncInfoImpl<func, decltype(func)>::returnType;
 
+    template <typename T, typename U>
+    usize OffsetOf(U T::* member)
+    {
+        return (char*)&((T*)nullptr->*member) - (char*)nullptr;
+    }
+
 }

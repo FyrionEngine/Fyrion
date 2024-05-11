@@ -17,7 +17,7 @@ namespace Fyrion
         Logger&                                             logger = Logger::GetLogger("Fyrion::Registry");
     }
 
-    ParamHandler::ParamHandler(usize index, const FieldInfo& fieldInfo)
+    ParamHandler::ParamHandler(usize index, const FieldInfo& fieldInfo) : m_fieldInfo(fieldInfo)
     {
         m_name.Append("param_");
         m_name.Append(index);
@@ -330,6 +330,11 @@ namespace Fyrion
 
     FieldBuilder::FieldBuilder(FieldHandler& fieldHandler) : m_fieldHandler(fieldHandler)
     {
+    }
+
+    FieldHandler& FieldBuilder::GetFieldHandler() const
+    {
+        return m_fieldHandler;
     }
 
     void FieldBuilder::SetFnGetFieldInfo(FieldHandler::FnGetFieldInfo fnGetFieldInfo)

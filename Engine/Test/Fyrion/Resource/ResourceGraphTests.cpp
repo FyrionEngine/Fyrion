@@ -23,7 +23,7 @@ namespace
 
         static void RegisterType(NativeTypeHandler<TestOutputNode>& type)
         {
-            type.Field<&TestOutputNode::stringValue>("stringValue");
+            type.Field<&TestOutputNode::stringValue>("stringValue").Attribute<GraphInput>();
             type.Field<&TestOutputNode::intValue>("intValue");
             type.Attribute<ResourceGraphOutput>();
         }
@@ -47,13 +47,13 @@ namespace
         auto sumValue = Registry::Function<SumValue>("Fyrion::SumValue");
         sumValue.Param<0>("vl1").Attribute<GraphInput>();
         sumValue.Param<1>("vl2").Attribute<GraphInput>();
-        sumValue.Param<2>("out").Attribute<GraphInput>();
+        sumValue.Param<2>("out").Attribute<GraphOutput>();
         sumValue.Attribute<ResourceGraphNode>();
 
         auto concatString = Registry::Function<ConcatString>("Fyrion::ConcatString");
         concatString.Param<0>("input1").Attribute<GraphInput>();
         concatString.Param<1>("input2").Attribute<GraphInput>();
-        concatString.Param<2>("out").Attribute<GraphInput>();
+        concatString.Param<2>("out").Attribute<GraphOutput>();
         concatString.Attribute<ResourceGraphNode>();
     }
 
@@ -127,75 +127,86 @@ namespace
                     object.Commit();
                 }
             }
-
+            //TODO make tests with assets
         }
         Engine::Destroy();
     }
 
     TEST_CASE("Resource::ResourceGraphBasics")
     {
-        String vl = "value-";
+        String vl = "default";
 
         Engine::Init();
         {
-            // RegisterTypes();
-            //
-            // FixedArray<ResourceGraphInputNodeInfo, 1> inputs{
-            //     ResourceGraphInputNodeInfo{
-            //         .index = 0,
-            //         .name = "inputValue",
-            //         .typeHandler = Registry::FindType<String>(),
-            //         .value = nullptr
-            //     }
-            // };
-            //
-            //
-            // FixedArray<ResourceGraphNodeInfo, 1> nodes{
-            //     ResourceGraphNodeInfo{
-            //         .index = 1,
-            //         .functionHandler = Registry::FindFunctionByName("Fyrion::ConcatString"),
-            //         .defaultValues = {
-            //             ResourceGraphNodeValue{
-            //                 .name = "input2",
-            //                 .typeHandler = Registry::FindType<String>(),
-            //                 .value = &vl
-            //             }
-            //         }
-            //     }
-            // };
-            //
-            // FixedArray<ResourceGraphOutputNodeInfo, 1> outputNodes{
-            //     ResourceGraphOutputNodeInfo{
-            //         .index = 2,
-            //         .typeHandler = Registry::FindType<TestOutputNode>()
-            //     }
-            // };
-            //
-            // FixedArray<ResourceGraphLinkInfo, 2> links{
-            //     ResourceGraphLinkInfo{
-            //         .inputNodeIndex = 0,
-            //         .inputPin = "inputValue",
-            //         .outputNodeIndex = 1,
-            //         .outputPin = "input1",
-            //     },
-            //     ResourceGraphLinkInfo{
-            //         .inputNodeIndex = 1,
-            //         .inputPin = "out",
-            //         .outputNodeIndex = 2,
-            //         .outputPin = "stringValue",
-            //     }
-            // };
-            //
-            // ResourceGraph resourceGraph = {inputs, outputNodes, nodes, links};
-            //
-            // ResourceGraphInstance* instance = resourceGraph.CreateInstance();
-            // String vl = "value-";
-            // instance->SetInputValue("inputValue", &vl, sizeof(String));
-            //
-            // instance->Execute();
-            //
-            // Span<TestOutputNode> outputs = instance->GetOutputs<TestOutputNode>();
-            //CHECK(outputs[0].stringValue == "value-value-");
+            RegisterTypes();
+
+            FixedArray<ResourceGraphNodeValue, 1> inputValues = {
+                ResourceGraphNodeValue{
+                    .name = "inputValue",
+                    .typeHandler = Registry::FindType<String>(),
+                    .publicValue = true
+                }
+            };
+
+            FixedArray<ResourceGraphNodeInfo, 3> nodes{
+                ResourceGraphNodeInfo{
+                    .id = 0,
+                    .values = inputValues
+                }
+                ,
+                ResourceGraphNodeInfo{
+                    .id = 2,
+                    .typeHandler = Registry::FindType<TestOutputNode>()
+                },
+                ResourceGraphNodeInfo{
+                    .id = 1,
+                    .functionHandler = Registry::FindFunctionByName("Fyrion::ConcatString"),
+                    .values = {
+                        ResourceGraphNodeValue{
+                            .name = "input2",
+                            .typeHandler = Registry::FindType<String>(),
+                            .value = &vl
+                        }
+                    }
+                }
+            };
+
+            FixedArray<ResourceGraphLinkInfo, 2> links{
+                ResourceGraphLinkInfo{
+                    .outputNodeId = 0,
+                    .outputPin = "inputValue",
+                    .inputNodeId = 1,
+                    .inputPin = "input1",
+                },
+                ResourceGraphLinkInfo{
+                    .outputNodeId = 1,
+                    .outputPin = "out",
+                    .inputNodeId = 2,
+                    .inputPin = "stringValue",
+                }
+            };
+
+            ResourceGraph resourceGraph = {nodes, links};
+
+            auto graphNodes = resourceGraph.GetNodes();
+            CHECK(graphNodes[0]->GetId() == 0);
+            CHECK(graphNodes[1]->GetId() == 1);
+            CHECK(graphNodes[2]->GetId() == 2);
+
+            ResourceGraphInstance* instance = resourceGraph.CreateInstance();
+            String vl = "value-";
+            instance->SetInputValue("inputValue", &vl);
+
+            instance->Execute();
+
+            Span<ConstPtr> outputs = instance->GetOutputs(GetTypeID<TestOutputNode>());
+            REQUIRE(!outputs.Empty());
+            REQUIRE(outputs[0]);
+
+            const TestOutputNode* testOutputNode = static_cast<const TestOutputNode*>(outputs[0]);
+          //  CHECK(testOutputNode->stringValue == "value-value-");
+
+            instance->Destroy();
         }
         Engine::Destroy();
     }

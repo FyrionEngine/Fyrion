@@ -6,7 +6,6 @@
 
 namespace Fyrion
 {
-
     class TypeHandler;
     class FunctionHandler;
 
@@ -25,45 +24,61 @@ namespace Fyrion
         String       name;
         TypeHandler* typeHandler;
         ConstPtr     value;
+        bool         publicValue;
     };
-
-    struct ResourceGraphInputNodeInfo
-    {
-        u32          index;
-        String       name;
-        TypeHandler* typeHandler;
-        ConstPtr     value;
-    };
-
-    struct ResourceGraphOutputNodeInfo
-    {
-        u32          index;
-        TypeHandler* typeHandler;
-    };
-
 
     struct ResourceGraphNodeInfo
     {
-        u32                           index;
+        u32                           id;
         FunctionHandler*              functionHandler;
-        Array<ResourceGraphNodeValue> defaultValues;
+        TypeHandler*                  typeHandler;
+        Array<ResourceGraphNodeValue> values;
     };
 
     struct ResourceGraphLinkInfo
     {
-        u32    inputNodeIndex;
-        String inputPin;
-        u32    outputNodeIndex;
+        u32    outputNodeId;
         String outputPin;
+        u32    inputNodeId;
+        String inputPin;
     };
 
+
+    struct ResourceGraphNodeParamData
+    {
+        u32          offset = U32_MAX;
+        TypeHandler* typeHandler;
+        VoidPtr      defaultValue;
+    };
+
+    class FY_API ResourceGraphNodeData
+    {
+    public:
+        ResourceGraphNodeData(ResourceGraph* resourceGraph, const ResourceGraphNodeInfo& info);
+
+        FY_FINLINE u32 GetId() const { return m_id; }
+
+        friend class ResourceGraphInstance;
+        friend class ResourceGraph;
+
+    private:
+        ResourceGraph*                         m_resourceGraph;
+        ResourceGraphNodeInfo                  m_info;
+        u32                                    m_id;
+        bool                                   m_valid = true;
+        FunctionHandler*                       m_functionHandler;
+        TypeHandler*                           m_typeHandler;
+        u32                                    m_outputOffset = U32_MAX;
+        HashMap<String, u32>                   m_offsets;
+        HashMap<String, ResourceGraphLinkInfo> m_inputLinks;
+    };
 
     class FY_API ResourceGraphInstance
     {
     public:
         ResourceGraphInstance(ResourceGraph* resourceGraph);
 
-        void           SetInputValue(const StringView& inputName, ConstPtr data, usize size);
+        void           SetInputValue(const StringView& inputName, ConstPtr data);
         Span<ConstPtr> GetOutputs(TypeID typeId) const;
         void           Destroy();
         void           Execute();
@@ -76,21 +91,35 @@ namespace Fyrion
         }
 
     private:
-        ResourceGraph* m_resourceGraph;
+        ResourceGraph*                   m_resourceGraph;
+        CharPtr                          m_instanceData;
+        Array<Array<VoidPtr>>            m_nodeParams;
+        HashMap<TypeID, Array<ConstPtr>> m_outputs;
     };
 
 
     class FY_API ResourceGraph
     {
     public:
-        ResourceGraph(const Span<ResourceGraphInputNodeInfo>  inputs,
-                      const Span<ResourceGraphOutputNodeInfo> outputs,
-                      const Span<ResourceGraphNodeInfo>&      nodes,
-                      const Span<ResourceGraphLinkInfo>&      links);
+        ResourceGraph(const Span<ResourceGraphNodeInfo>& nodes,
+                      const Span<ResourceGraphLinkInfo>& links);
 
-        ResourceGraphInstance* CreateInstance();
+        ResourceGraphInstance*                 CreateInstance();
+        Span<SharedPtr<ResourceGraphNodeData>> GetNodes() const;
+
+        friend class ResourceGraphInstance;
+        friend class ResourceGraphNodeData;
 
     private:
         Allocator& m_allocator = MemoryGlobals::GetDefaultAllocator();
+
+        Array<SharedPtr<ResourceGraphNodeData>> m_nodes;
+        Array<ResourceGraphLinkInfo>            m_links;
+        Array<ResourceGraphNodeParamData>       m_data;
+        HashMap<String, u32>                    m_publicInputs;
+        HashMap<TypeID, Array<u32>>             m_outputs;
+
+
+        u32 m_instanceAllocRequiredSize = 0;
     };
 }

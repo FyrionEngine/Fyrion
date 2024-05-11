@@ -51,6 +51,7 @@ namespace Fyrion
         TypeHandler* typeHandler{};
         VoidPtr      defaultValue{};
         u32          copyOffset = U32_MAX;
+        bool         offsetFromInstance = false;
     };
 
     class FY_API ResourceGraphNodeData
@@ -85,6 +86,7 @@ namespace Fyrion
         void           SetInputValue(const StringView& inputName, ConstPtr data);
         Span<ConstPtr> GetOutputs(TypeID typeId) const;
         void           Destroy();
+
         void           Execute();
 
         template <typename T>
@@ -105,6 +107,7 @@ namespace Fyrion
     class FY_API ResourceGraph
     {
     public:
+
         void SetGraph(const Span<ResourceGraphNodeInfo>& nodes,
                       const Span<ResourceGraphLinkInfo>& links);
 
@@ -112,6 +115,8 @@ namespace Fyrion
 
         ResourceGraphInstance*                 CreateInstance();
         Span<SharedPtr<ResourceGraphNodeData>> GetNodes() const;
+
+        void Destroy();
 
         friend class ResourceGraphInstance;
         friend class ResourceGraphNodeData;
@@ -124,7 +129,6 @@ namespace Fyrion
         Array<ResourceGraphNodeParamData>       m_data;
         HashMap<String, u32>                    m_publicInputs;
         HashMap<TypeID, Array<u32>>             m_outputs;
-
 
         u32 m_instanceAllocRequiredSize = 0;
     };

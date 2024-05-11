@@ -157,6 +157,7 @@ namespace
             CHECK(testOutputNode->stringValue == "valuevalue1valuevalue2");
 
             instance->Destroy();
+            resourceGraph.Destroy();
         }
         Engine::Destroy();
     }
@@ -221,6 +222,8 @@ namespace
             CHECK(testOutputNode->stringSize == testOutputNode->stringValue.Size() * defaultValue);
 
             instance->Destroy();
+
+            resourceGraph.Destroy();
         }
         Engine::Destroy();
     }

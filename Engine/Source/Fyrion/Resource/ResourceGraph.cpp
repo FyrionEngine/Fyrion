@@ -28,7 +28,7 @@ namespace Fyrion
 
         for (auto& data : m_resourceGraph->m_data)
         {
-            if (data.defaultValue == nullptr && data.typeHandler && data.offset != U32_MAX)
+            if (!data.offsetFromInstance && data.defaultValue == nullptr && data.typeHandler && data.offset != U32_MAX)
             {
                 data.typeHandler->Construct(&m_instanceData[data.offset]);
             }
@@ -123,6 +123,23 @@ namespace Fyrion
 
     void ResourceGraphInstance::Destroy()
     {
+        for (auto& data : m_resourceGraph->m_data)
+        {
+            if (!data.offsetFromInstance && data.defaultValue == nullptr && data.typeHandler && data.offset != U32_MAX)
+            {
+                data.typeHandler->Destructor(&m_instanceData[data.offset]);
+            }
+        }
+
+        for (auto& node : m_resourceGraph->m_nodes)
+        {
+            if (node->m_typeHandler && node->m_outputOffset != U32_MAX)
+            {
+                node->m_typeHandler->Destructor(&m_instanceData[node->m_outputOffset]);
+            }
+        }
+
+        m_resourceGraph->m_allocator.MemFree(m_instanceData);
         m_resourceGraph->m_allocator.DestroyAndFree(this);
     }
 
@@ -263,6 +280,7 @@ namespace Fyrion
                         auto& data = m_data.EmplaceBack(ResourceGraphNodeParamData{
                             .offset = node->m_outputOffset + (u32)fieldInfo.offsetOf,
                             .typeHandler = fieldType,
+                            .offsetFromInstance = true
                         });
 
                         if (auto it = node->m_inputLinks.Find(fieldHandler->GetName()))
@@ -280,6 +298,8 @@ namespace Fyrion
 
     void ResourceGraph::SetGraph(RID assetGraph)
     {
+        FY_ASSERT(m_nodes.Empty(), "Graph is not empty");
+
         ResourceObject graphAsset = Repository::Read(assetGraph);
 
         Array<RID> nodes = graphAsset.GetSubObjectSetAsArray(ResourceGraphAsset::Nodes);
@@ -353,6 +373,23 @@ namespace Fyrion
     Span<SharedPtr<ResourceGraphNodeData>> ResourceGraph::GetNodes() const
     {
         return m_nodes;
+    }
+
+    void ResourceGraph::Destroy()
+    {
+        for (auto& data : m_data)
+        {
+            if (!data.offsetFromInstance && data.defaultValue != nullptr && data.typeHandler)
+            {
+                data.typeHandler->Destroy(data.defaultValue);
+            }
+        }
+
+        m_nodes.Clear();
+        m_links.Clear();
+        m_data.Clear();
+        m_publicInputs.Clear();
+        m_outputs.Clear();
     }
 
     void RegisterResourceGraphTypes()

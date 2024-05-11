@@ -1,5 +1,7 @@
 #include "ResourceGraph.hpp"
 
+#include "Repository.hpp"
+#include "Fyrion/Assets/AssetTypes.hpp"
 #include "Fyrion/Core/Graph.hpp"
 #include "Fyrion/Core/GraphTypes.hpp"
 #include "Fyrion/Core/Logger.hpp"
@@ -126,9 +128,10 @@ namespace Fyrion
 
     //***************************************************************ResourceGraph*************************************************************
 
-    ResourceGraph::ResourceGraph(const Span<ResourceGraphNodeInfo>& nodes,
-                                 const Span<ResourceGraphLinkInfo>& links) : m_links(links)
+    void ResourceGraph::SetGraph(const Span<ResourceGraphNodeInfo>& nodes, const Span<ResourceGraphLinkInfo>& links)
     {
+        m_links = links;
+
         Graph<u32, SharedPtr<ResourceGraphNodeData>> graph{};
 
         for (const ResourceGraphNodeInfo& info : nodes)
@@ -273,6 +276,73 @@ namespace Fyrion
                 }
             }
         }
+    }
+
+    void ResourceGraph::SetGraph(RID assetGraph)
+    {
+        ResourceObject graphAsset = Repository::Read(assetGraph);
+
+        Array<RID> nodes = graphAsset.GetSubObjectSetAsArray(ResourceGraphAsset::Nodes);
+        Array<RID> links = graphAsset.GetSubObjectSetAsArray(ResourceGraphAsset::Links);
+
+        Array<ResourceGraphNodeInfo> nodesInfo;
+        Array<ResourceGraphLinkInfo> nodeLinks;
+
+        nodesInfo.Reserve(nodes.Size());
+        nodeLinks.Reserve(links.Size());
+
+        HashMap<RID, u32> nodeIds;
+        u32 idCount = 0;
+
+        for (const RID& node : nodes)
+        {
+            nodeIds[node] = idCount;
+
+            ResourceGraphNodeInfo nodeInfo;
+            nodeInfo.id = idCount;
+
+            ResourceObject nodeObject = Repository::Read(node);
+            if (nodeObject.Has(GraphNodeAsset::NodeFunction))
+            {
+                nodeInfo.functionHandler = Registry::FindFunctionByName(nodeObject[GraphNodeAsset::NodeFunction].As<String>());
+            }
+            else if (nodeObject.Has(GraphNodeAsset::NodeOutput))
+            {
+                nodeInfo.typeHandler = Registry::FindTypeByName(nodeObject[GraphNodeAsset::NodeOutput].As<String>());
+            }
+
+            Array<RID> inputValues = nodeObject.GetSubObjectSetAsArray(GraphNodeAsset::InputValues);
+
+            for (const RID& inputValue : inputValues)
+            {
+                ResourceObject valueObject = Repository::Read(inputValue);
+
+                RID valueSuboject = valueObject.GetSubObject(GraphNodeValue::Value);
+                nodeInfo.values.EmplaceBack(ResourceGraphNodeValue{
+                    .name = valueObject[GraphNodeValue::Input].Value<String>(),
+                    .typeHandler = Repository::GetResourceTypeHandler(valueSuboject),
+                    .value = Repository::ReadData(valueSuboject),
+                    .publicValue = valueObject[GraphNodeValue::PublicValue].Value<bool>(),
+                });
+            }
+
+            nodesInfo.EmplaceBack(nodeInfo);
+            idCount++;
+        }
+
+        for(const RID& link : links)
+        {
+            ResourceObject linkObject = Repository::Read(link);
+            nodeLinks.EmplaceBack(
+                ResourceGraphLinkInfo{
+                    .outputNodeId = nodeIds[linkObject[GraphNodeLinkAsset::OutputNode].Value<RID>()],
+                    .outputPin = linkObject[GraphNodeLinkAsset::OutputPin].As<String>(),
+                    .inputNodeId = nodeIds[linkObject[GraphNodeLinkAsset::InputNode].Value<RID>()],
+                    .inputPin = linkObject[GraphNodeLinkAsset::InputPin].As<String>(),
+                });
+        }
+
+        SetGraph(nodesInfo, nodeLinks);
     }
 
     ResourceGraphInstance* ResourceGraph::CreateInstance()

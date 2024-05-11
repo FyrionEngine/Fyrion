@@ -87,7 +87,7 @@ namespace
                         String vl = "valuevalue1";
                         Repository::Commit(value, &vl);
                         ResourceObject object = Repository::Write(vl1);
-                        object[GraphNodeValue::Input] = "input1"; //TODO string?
+                        object[GraphNodeValue::Input] = "input1";
                         object.SetSubObject(GraphNodeValue::Value, value);
                         object.Commit();
                     }
@@ -106,7 +106,7 @@ namespace
 
 
                     ResourceObject object = Repository::Write(contentString1);
-                    object[GraphNodeAsset::NodeType] = "Fyrion::ConcatString";
+                    object[GraphNodeAsset::NodeFunction] = "Fyrion::ConcatString";
                     object.AddToSubObjectSet(GraphNodeAsset::InputValues, vl1);
                     object.AddToSubObjectSet(GraphNodeAsset::InputValues, vl2);
                     object.Commit();
@@ -116,17 +116,17 @@ namespace
                 RID output = Repository::CreateResource<GraphNodeAsset>();
                 {
                     ResourceObject object = Repository::Write(output);
-                    object[GraphNodeAsset::NodeType] = "Fyrion::TestOutputNode";
+                    object[GraphNodeAsset::NodeOutput] = "Fyrion::TestOutputNode";
                     object.Commit();
                 }
 
                 RID link1 = Repository::CreateResource<GraphNodeLinkAsset>();
                 {
                     ResourceObject object = Repository::Write(link1);
-                    object[GraphNodeLinkAsset::InputNode] = contentString1;
-                    object[GraphNodeLinkAsset::InputPin] = "out";
-                    object[GraphNodeLinkAsset::OutputNode] = output;
-                    object[GraphNodeLinkAsset::OutputPin] = "stringValue";
+                    object[GraphNodeLinkAsset::OutputNode] = contentString1;
+                    object[GraphNodeLinkAsset::OutputPin] = "out";
+                    object[GraphNodeLinkAsset::InputNode] = output;
+                    object[GraphNodeLinkAsset::InputPin] = "stringValue";
                     object.Commit();
                 }
 
@@ -138,7 +138,25 @@ namespace
                     object.Commit();
                 }
             }
-            //TODO make tests with assets
+
+            ResourceGraph resourceGraph;
+            resourceGraph.SetGraph(rid);
+
+            auto graphNodes = resourceGraph.GetNodes();
+            CHECK(graphNodes.Size() == 2);
+            CHECK(graphNodes[0]->GetFunctionHandler() != nullptr);
+            CHECK(graphNodes[0]->GetTypeHandler() == nullptr);
+
+            CHECK(graphNodes[1]->GetFunctionHandler() == nullptr);
+            CHECK(graphNodes[1]->GetTypeHandler() != nullptr);
+
+            ResourceGraphInstance* instance = resourceGraph.CreateInstance();
+            instance->Execute();
+
+            const TestOutputNode* testOutputNode = instance->GetOutput<TestOutputNode>(0);
+            CHECK(testOutputNode->stringValue == "valuevalue1valuevalue2");
+
+            instance->Destroy();
         }
         Engine::Destroy();
     }
@@ -178,7 +196,8 @@ namespace
                 ResourceGraphLinkInfo{.outputNodeId = 3, .outputPin = "out", .inputNodeId = 4, .inputPin = "stringSize",}
             };
 
-            ResourceGraph resourceGraph = {nodes, links};
+            ResourceGraph resourceGraph;
+            resourceGraph.SetGraph(nodes, links);
 
             auto graphNodes = resourceGraph.GetNodes();
             CHECK(graphNodes[0]->GetId() == 0);

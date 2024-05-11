@@ -27,14 +27,16 @@ namespace Fyrion
     struct GraphNodeValue
     {
         constexpr static u32 Input = 0;
-        constexpr static u32 Value = 1;
+        constexpr static u32 PublicValue = 1;
+        constexpr static u32 Value = 2;
     };
 
     struct GraphNodeAsset
     {
-        constexpr static u32 NodeType = 0;
-        constexpr static u32 Position = 1;
-        constexpr static u32 InputValues = 2;
+        constexpr static u32 NodeFunction = 0;
+        constexpr static u32 NodeOutput = 1;
+        constexpr static u32 Position = 2;
+        constexpr static u32 InputValues = 3;
     };
 
     struct GraphNodeLinkAsset

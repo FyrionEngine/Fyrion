@@ -11,6 +11,7 @@ namespace Fyrion
     {
         ResourceTypeBuilder<GraphNodeValue>::Builder()
             .Value<GraphNodeValue::Input, String>("NodeType")
+            .Value<GraphNodeValue::PublicValue, bool>("PublicValue")
             .SubObject<GraphNodeValue::Value>("Value")
             .Build();
 
@@ -22,16 +23,11 @@ namespace Fyrion
             .Build();
 
         ResourceTypeBuilder<GraphNodeAsset>::Builder()
-            .Value<GraphNodeAsset::NodeType, String>("NodeType")
+            .Value<GraphNodeAsset::NodeFunction, String>("NodeFunction")
+            .Value<GraphNodeAsset::NodeOutput, String>("NodeOutput")
             .Value<GraphNodeAsset::Position, Vec2>("Position")
             .SubObjectSet<GraphNodeAsset::InputValues>("InputValues")
             .Build();
-
-        ResourceTypeBuilder<GraphNodeAsset>::Builder()
-            .Value<GraphNodeAsset::NodeType, String>("NodeType")
-            .Value<GraphNodeAsset::Position, Vec2>("Position")
-            .Build();
-
     }
 
     void RegisterAssets()

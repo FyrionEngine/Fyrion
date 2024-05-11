@@ -1,4 +1,5 @@
 #pragma once
+#include "ResourceTypes.hpp"
 #include "Fyrion/Common.hpp"
 #include "Fyrion/Core/Allocator.hpp"
 #include "Fyrion/Core/Registry.hpp"
@@ -21,34 +22,34 @@ namespace Fyrion
 
     struct ResourceGraphNodeValue
     {
-        String       name;
-        TypeHandler* typeHandler;
-        ConstPtr     value;
-        bool         publicValue;
+        String       name{};
+        TypeHandler* typeHandler{};
+        ConstPtr     value{};
+        bool         publicValue{};
     };
 
     struct ResourceGraphNodeInfo
     {
-        u32                           id;
-        FunctionHandler*              functionHandler;
-        TypeHandler*                  typeHandler;
-        Array<ResourceGraphNodeValue> values;
+        u32                           id{};
+        FunctionHandler*              functionHandler{};
+        TypeHandler*                  typeHandler{};
+        Array<ResourceGraphNodeValue> values{};
     };
 
     struct ResourceGraphLinkInfo
     {
-        u32    outputNodeId;
-        String outputPin;
-        u32    inputNodeId;
-        String inputPin;
+        u32    outputNodeId{};
+        String outputPin{};
+        u32    inputNodeId{};
+        String inputPin{};
     };
 
 
     struct ResourceGraphNodeParamData
     {
         u32          offset = U32_MAX;
-        TypeHandler* typeHandler;
-        VoidPtr      defaultValue;
+        TypeHandler* typeHandler{};
+        VoidPtr      defaultValue{};
         u32          copyOffset = U32_MAX;
     };
 
@@ -57,21 +58,23 @@ namespace Fyrion
     public:
         ResourceGraphNodeData(ResourceGraph* resourceGraph, const ResourceGraphNodeInfo& info);
 
-        FY_FINLINE u32 GetId() const { return m_id; }
+        FY_FINLINE u32              GetId() const { return m_id; }
+        FY_FINLINE TypeHandler*     GetTypeHandler() { return m_typeHandler; }
+        FY_FINLINE FunctionHandler* GetFunctionHandler() { return m_functionHandler; }
 
         friend class ResourceGraphInstance;
         friend class ResourceGraph;
 
     private:
-        ResourceGraph*                         m_resourceGraph;
-        ResourceGraphNodeInfo                  m_info;
-        u32                                    m_id;
+        ResourceGraph*                         m_resourceGraph{};
+        ResourceGraphNodeInfo                  m_info{};
+        u32                                    m_id{};
         bool                                   m_valid = true;
-        FunctionHandler*                       m_functionHandler;
-        TypeHandler*                           m_typeHandler;
+        FunctionHandler*                       m_functionHandler{};
+        TypeHandler*                           m_typeHandler{};
         u32                                    m_outputOffset = U32_MAX;
-        HashMap<String, u32>                   m_offsets;
-        HashMap<String, ResourceGraphLinkInfo> m_inputLinks;
+        HashMap<String, u32>                   m_offsets{};
+        HashMap<String, ResourceGraphLinkInfo> m_inputLinks{};
     };
 
     class FY_API ResourceGraphInstance
@@ -85,10 +88,10 @@ namespace Fyrion
         void           Execute();
 
         template <typename T>
-        Span<T> GetOutputs() const
+        const T* GetOutput(u32 index) const
         {
             Span<ConstPtr> outputs = GetOutputs(GetTypeID<T>());
-            return Span<T>{*static_cast<const T*>(*outputs.begin()), *static_cast<const T*>(*outputs.end())};
+            return static_cast<const T*>(outputs[index]);
         }
 
     private:
@@ -102,8 +105,10 @@ namespace Fyrion
     class FY_API ResourceGraph
     {
     public:
-        ResourceGraph(const Span<ResourceGraphNodeInfo>& nodes,
+        void SetGraph(const Span<ResourceGraphNodeInfo>& nodes,
                       const Span<ResourceGraphLinkInfo>& links);
+
+        void SetGraph(RID assetGraph);
 
         ResourceGraphInstance*                 CreateInstance();
         Span<SharedPtr<ResourceGraphNodeData>> GetNodes() const;

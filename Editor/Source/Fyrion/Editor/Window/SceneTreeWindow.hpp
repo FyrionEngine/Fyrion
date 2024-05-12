@@ -26,13 +26,13 @@ namespace Fyrion
         bool         m_entityIsSelected{};
 
         void        DrawSceneObject(RID object);
-        static void OpenSceneTree(VoidPtr userData);
-        static void AddSceneObject(VoidPtr userData);
-        static void AddSceneObjectFromAsset(VoidPtr userData);
-        static void AddComponent(VoidPtr userData);
-        static void RenameSceneObject(VoidPtr userData);
-        static void DuplicateSceneObject(VoidPtr userData);
-        static void DeleteSceneObject(VoidPtr userData);
+        static void OpenSceneTree(const MenuItemEventData& eventData);
+        static void AddSceneObject(const MenuItemEventData& eventData);
+        static void AddSceneObjectFromAsset(const MenuItemEventData& eventData);
+        static void AddComponent(const MenuItemEventData& eventData);
+        static void RenameSceneObject(const MenuItemEventData& eventData);
+        static void DuplicateSceneObject(const MenuItemEventData& eventData);
+        static void DeleteSceneObject(const MenuItemEventData& eventData);
 
         static MenuItemContext s_menuItemContext;
     };

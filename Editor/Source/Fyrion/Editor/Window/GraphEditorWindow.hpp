@@ -38,5 +38,7 @@ namespace Fyrion
 
         static MenuItemContext s_menuItemContext;
         static void OnInitGraphEditor();
+
+        static void AddNewNodeOutputAction(const MenuItemEventData& eventData);
     };
 }

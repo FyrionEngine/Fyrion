@@ -162,7 +162,7 @@ namespace Fyrion
         ImGui::End();
     }
 
-    void SceneViewWindow::OpenSceneView(VoidPtr userData)
+    void SceneViewWindow::OpenSceneView(const MenuItemEventData& eventData)
     {
         Editor::OpenWindow<SceneViewWindow>();
     }

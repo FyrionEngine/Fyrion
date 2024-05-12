@@ -5,6 +5,7 @@
 
 namespace Fyrion
 {
+    struct MenuItemEventData;
     class SceneEditor;
     struct SceneObject;
 
@@ -24,7 +25,7 @@ namespace Fyrion
         String              m_searchComponentString{};
         RID                 m_selectedComponent = {};
 
-        static void OpenProperties(VoidPtr userData);
+        static void OpenProperties(const MenuItemEventData& eventData);
         void        DrawSceneObject(u32 id, RID rid);
     };
 }

@@ -10,6 +10,7 @@
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Assets/AssetTypes.hpp"
 #include "Fyrion/Core/Event.hpp"
+#include "Fyrion/Core/StringUtils.hpp"
 #include "Fyrion/Resource/Repository.hpp"
 #include "Fyrion/Resource/ResourceGraph.hpp"
 
@@ -135,7 +136,7 @@ namespace Fyrion
         {
             ImGui::SearchInputText(id + 100, m_searchNodeString);
             ImGui::Separator();
-            s_menuItemContext.Draw();
+            s_menuItemContext.Draw(this);
         }
 
         ImGui::EndPopupMenu(popupRes);
@@ -147,10 +148,28 @@ namespace Fyrion
         Editor::OpenWindow(GetTypeID<GraphEditorWindow>(), &graphId);
     }
 
+    void GraphEditorWindow::AddNewNodeOutputAction(const MenuItemEventData& eventData)
+    {
+        GraphEditorWindow* graphEditorWindow = static_cast<GraphEditorWindow*>(eventData.drawData);
+        TypeHandler* outputType = static_cast<TypeHandler*>(eventData.itemData);
+
+
+
+    }
+
     void GraphEditorWindow::OnInitGraphEditor()
     {
-        // Span<FunctionHandler*> outputs = Registry::FindT<ResourceGraphOutput>();
-        // for()
+        Span<TypeHandler*> outputs = Registry::FindTypesByAttribute<ResourceGraphOutput>();
+        for (TypeHandler* outputType : outputs)
+        {
+            const ResourceGraphOutput* resourceGraphOutput = outputType->GetAttribute<ResourceGraphOutput>();
+
+            s_menuItemContext.AddMenuItem(MenuItemCreation{
+                .itemName = !resourceGraphOutput->label.Empty() ? resourceGraphOutput->label : FormatName(outputType->GetSimpleName()),
+                .action = AddNewNodeOutputAction,
+                .menuData = outputType
+            });
+        }
     }
 
     void GraphEditorWindow::RegisterType(NativeTypeHandler<GraphEditorWindow>& type)

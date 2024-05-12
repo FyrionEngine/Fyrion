@@ -296,6 +296,16 @@ namespace Fyrion
         return instance;
     }
 
+    void TypeHandler::OnAttributeCreated(TypeID attributeId)
+    {
+        auto fIt = typesByAttribute.Find(attributeId);
+        if (fIt == typesByAttribute.end())
+        {
+            fIt = typesByAttribute.Emplace(attributeId, Array<TypeHandler*>{}).first;
+        }
+        fIt->second.EmplaceBack(this);
+    }
+
     ///builders
 
     AttributeBuilder::AttributeBuilder(AttributeHandler& attributeHandler) : m_attributeHandler(attributeHandler)
@@ -551,6 +561,14 @@ namespace Fyrion
         return nullptr;
     }
 
+    Span<TypeHandler*> Registry::FindTypesByAttribute(TypeID typeId)
+    {
+        if (auto it = typesByAttribute.Find(typeId))
+        {
+            return it->second;
+        }
+        return {};
+    }
 
     void RegistryShutdown()
     {

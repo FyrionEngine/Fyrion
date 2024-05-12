@@ -326,6 +326,9 @@ namespace Fyrion
         {
           return static_cast<T*>(Cast(GetTypeID<T>(), instance));
         }
+
+    protected:
+        void OnAttributeCreated(TypeID attributeId) override;
     };
 
     ///-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -929,9 +932,10 @@ namespace Fyrion
 
     namespace Registry
     {
-        FY_API TypeBuilder      NewType(const StringView& name, const TypeInfo& typeInfo);
-        FY_API TypeHandler*     FindTypeByName(const StringView& name);
-        FY_API TypeHandler*     FindTypeById(TypeID typeId);
+        FY_API TypeBuilder        NewType(const StringView& name, const TypeInfo& typeInfo);
+        FY_API TypeHandler*       FindTypeByName(const StringView& name);
+        FY_API TypeHandler*       FindTypeById(TypeID typeId);
+        FY_API Span<TypeHandler*> FindTypesByAttribute(TypeID typeId);
 
 
         FY_API FunctionBuilder          NewFunction(const FunctionHandlerCreation& functionHandlerCreation);
@@ -956,7 +960,7 @@ namespace Fyrion
         }
 
         template<typename T, typename ...B>
-        inline decltype(auto) Type()
+        decltype(auto) Type()
         {
             return Type<T, B...>(GetTypeName<T>());
         }
@@ -965,6 +969,12 @@ namespace Fyrion
         TypeHandler* FindType()
         {
             return FindTypeById(GetTypeID<T>());
+        }
+
+        template<typename T>
+        Span<TypeHandler*> FindTypesByAttribute()
+        {
+            return FindTypesByAttribute(GetTypeID<T>());
         }
 
         template<typename T>

@@ -4,6 +4,7 @@
 
 namespace Fyrion
 {
+    struct MenuItemEventData;
     class SceneEditor;
 
     class SceneViewWindow : public EditorWindow
@@ -21,6 +22,6 @@ namespace Fyrion
         bool             m_movingScene{};
         //ViewportRenderer m_viewportRenderer{};
 
-        static void OpenSceneView(VoidPtr userData);
+        static void OpenSceneView(const MenuItemEventData& eventData);
     };
 }

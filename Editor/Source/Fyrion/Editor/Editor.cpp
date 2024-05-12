@@ -106,22 +106,22 @@ namespace Fyrion
             }
         }
 
-        void CloseEngine(VoidPtr userData)
+        void CloseEngine(const MenuItemEventData& eventData)
         {
             Engine::Shutdown();
         }
 
-        void NewProject(VoidPtr userData)
+        void NewProject(const MenuItemEventData& eventData)
         {
 
         }
 
-        void SaveAll(VoidPtr userData)
+        void SaveAll(const MenuItemEventData& eventData)
         {
             SaveAll();
         }
 
-        void ShowImGuiDemo(VoidPtr userData)
+        void ShowImGuiDemo(const MenuItemEventData& eventData)
         {
             showImGuiDemo = true;
         }

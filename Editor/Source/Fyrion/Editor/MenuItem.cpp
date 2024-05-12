@@ -39,6 +39,7 @@ namespace Fyrion
             storage->m_action = menuItem.action;
             storage->m_enable = menuItem.enable;
             storage->m_itemShortcut = menuItem.itemShortcut;
+            storage->m_itemMenuData = menuItem.menuData;
 
             if (!menuItem.icon.Empty())
             {
@@ -61,7 +62,10 @@ namespace Fyrion
         bool enabled = true;
         if (context->m_enable)
         {
-            enabled =  context->m_enable(userData);
+            enabled = context->m_enable(MenuItemEventData{
+                .drawData = userData,
+                .itemData = context->m_itemMenuData
+            });
         }
 
         bool isItem = context->m_children.Empty();
@@ -93,7 +97,10 @@ namespace Fyrion
             {
                 if (context->m_action)
                 {
-                    context->m_action(userData);
+                    context->m_action(MenuItemEventData{
+                        .drawData = userData,
+                        .itemData = context->m_itemMenuData
+                    });
                 }
             }
         }
@@ -152,11 +159,17 @@ namespace Fyrion
                 bool enabled = true;
                 if (context->m_enable)
                 {
-                    enabled = context->m_enable(userData);
+                    enabled = context->m_enable(MenuItemEventData{
+                        .drawData = userData,
+                        .itemData = context->m_itemMenuData
+                    });
                 }
                 if (enabled)
                 {
-                    context->m_action(userData);
+                    context->m_action(MenuItemEventData{
+                        .drawData = userData,
+                        .itemData = context->m_itemMenuData
+                    });
                     executed = true;
                 }
             }

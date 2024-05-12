@@ -452,46 +452,46 @@ namespace Fyrion
         ImGui::End();
     }
 
-    void ProjectBrowserWindow::AssetNewFolder(VoidPtr userData)
+    void ProjectBrowserWindow::AssetNewFolder(const MenuItemEventData& eventData)
     {
-        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(userData);
+        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
         RID newDirectory = projectBrowserWindow->m_assetTree.NewDirectory(projectBrowserWindow->m_openFolder, "New Folder");
 
         ImGui::SelectContentItem(Hash<RID>::Value(newDirectory), CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
         ImGui::RenameContentSelected(CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
     }
 
-    void ProjectBrowserWindow::AssetNewScene(VoidPtr userData)
+    void ProjectBrowserWindow::AssetNewScene(const MenuItemEventData& eventData)
     {
-        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(userData);
+        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
         RID newAsset = projectBrowserWindow->m_assetTree.NewAsset(projectBrowserWindow->m_openFolder, Repository::CreateResource<SceneObjectAsset>(), "New Scene");
 
         ImGui::SelectContentItem(Hash<RID>::Value(newAsset), CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
         ImGui::RenameContentSelected(CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
     }
 
-    void ProjectBrowserWindow::AssetDelete(VoidPtr userData)
+    void ProjectBrowserWindow::AssetDelete(const MenuItemEventData& eventData)
     {
-        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(userData);
+        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
         projectBrowserWindow->m_assetTree.Delete(projectBrowserWindow->m_selectedItem);
         projectBrowserWindow->m_selectedItem = {};
     }
 
-    bool ProjectBrowserWindow::CheckSelectedAsset(VoidPtr userData)
+    bool ProjectBrowserWindow::CheckSelectedAsset(const MenuItemEventData& eventData)
     {
-        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(userData);
+        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
         return projectBrowserWindow->m_selectedItem != RID{} && Repository::IsAlive(projectBrowserWindow->m_selectedItem);
     }
 
-    void ProjectBrowserWindow::AssetRename(VoidPtr userData)
+    void ProjectBrowserWindow::AssetRename(const MenuItemEventData& eventData)
     {
-        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(userData);
+        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
         ImGui::RenameContentSelected(CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
     }
 
-    void ProjectBrowserWindow::AssetShowInExplorer(VoidPtr userData)
+    void ProjectBrowserWindow::AssetShowInExplorer(const MenuItemEventData& eventData)
     {
-        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(userData);
+        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
         RID itemToShow = projectBrowserWindow->m_selectedItem ? projectBrowserWindow->m_selectedItem : projectBrowserWindow->m_openFolder;
         StringView path = ResourceAssets::GetAbsolutePath(itemToShow);
         if (!path.Empty())
@@ -500,9 +500,9 @@ namespace Fyrion
         }
     }
 
-    void ProjectBrowserWindow::AssetNewResourceGraph(VoidPtr userData)
+    void ProjectBrowserWindow::AssetNewResourceGraph(const MenuItemEventData& eventData)
     {
-        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(userData);
+        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
         RID newAsset = projectBrowserWindow->m_assetTree.NewAsset(projectBrowserWindow->m_openFolder, Repository::CreateResource<ResourceGraphAsset>(), "New Resource Graph");
 
         ImGui::SelectContentItem(Hash<RID>::Value(newAsset), CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
@@ -540,7 +540,7 @@ namespace Fyrion
         });
     }
 
-    void ProjectBrowserWindow::OpenProjectBrowser(VoidPtr userData)
+    void ProjectBrowserWindow::OpenProjectBrowser(const MenuItemEventData& eventData)
     {
         Editor::OpenWindow(GetTypeID<ProjectBrowserWindow>());
     }

@@ -207,35 +207,35 @@ namespace Fyrion
         s_menuItemContext.AddMenuItem(menuItem);
     }
 
-    void SceneTreeWindow::OpenSceneTree(VoidPtr userData)
+    void SceneTreeWindow::OpenSceneTree(const MenuItemEventData& eventData)
     {
         Editor::OpenWindow<SceneTreeWindow>();
     }
 
-    void SceneTreeWindow::AddSceneObject(VoidPtr userData)
+    void SceneTreeWindow::AddSceneObject(const MenuItemEventData& eventData)
     {
-        static_cast<SceneTreeWindow*>(userData)->m_sceneEditor.CreateObject();
+        static_cast<SceneTreeWindow*>(eventData.drawData)->m_sceneEditor.CreateObject();
     }
 
-    void SceneTreeWindow::AddSceneObjectFromAsset(VoidPtr userData)
-    {
-    }
-
-    void SceneTreeWindow::AddComponent(VoidPtr userData)
+    void SceneTreeWindow::AddSceneObjectFromAsset(const MenuItemEventData& eventData)
     {
     }
 
-    void SceneTreeWindow::RenameSceneObject(VoidPtr userData)
+    void SceneTreeWindow::AddComponent(const MenuItemEventData& eventData)
     {
     }
 
-    void SceneTreeWindow::DuplicateSceneObject(VoidPtr userData)
+    void SceneTreeWindow::RenameSceneObject(const MenuItemEventData& eventData)
     {
     }
 
-    void SceneTreeWindow::DeleteSceneObject(VoidPtr userData)
+    void SceneTreeWindow::DuplicateSceneObject(const MenuItemEventData& eventData)
     {
-        static_cast<SceneTreeWindow*>(userData)->m_sceneEditor.DestroySelectedObjects();
+    }
+
+    void SceneTreeWindow::DeleteSceneObject(const MenuItemEventData& eventData)
+    {
+        static_cast<SceneTreeWindow*>(eventData.drawData)->m_sceneEditor.DestroySelectedObjects();
     }
 
     void SceneTreeWindow::RegisterType(NativeTypeHandler<SceneTreeWindow>& type)

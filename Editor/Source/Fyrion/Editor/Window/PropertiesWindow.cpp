@@ -26,7 +26,7 @@ namespace Fyrion
         ImGui::End();
     }
 
-    void PropertiesWindow::OpenProperties(VoidPtr userData)
+    void PropertiesWindow::OpenProperties(const MenuItemEventData& eventData)
     {
         Editor::OpenWindow<PropertiesWindow>();
     }

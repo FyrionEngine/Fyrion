@@ -39,15 +39,15 @@ namespace Fyrion
 
         static MenuItemContext s_menuItemContext;
         static void Shutdown();
-        static void OpenProjectBrowser(VoidPtr userData);
+        static void OpenProjectBrowser(const MenuItemEventData& eventData);
 
-        static void AssetNewFolder(VoidPtr userData);
-        static void AssetNewScene(VoidPtr userData);
-        static void AssetDelete(VoidPtr userData);
-        static bool CheckSelectedAsset(VoidPtr userData);
-        static void AssetRename(VoidPtr userData);
-        static void AssetShowInExplorer(VoidPtr userData);
-        static void AssetNewResourceGraph(VoidPtr userData);
+        static void AssetNewFolder(const MenuItemEventData& eventData);
+        static void AssetNewScene(const MenuItemEventData& eventData);
+        static void AssetDelete(const MenuItemEventData& eventData);
+        static bool CheckSelectedAsset(const MenuItemEventData& eventData);
+        static void AssetRename(const MenuItemEventData& eventData);
+        static void AssetShowInExplorer(const MenuItemEventData& eventData);
+        static void AssetNewResourceGraph(const MenuItemEventData& eventData);
     };
 
 }

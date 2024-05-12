@@ -10,8 +10,15 @@
 
 namespace Fyrion
 {
-	typedef void            (*FnMenuItemAction)(VoidPtr userData);
-	typedef bool            (*FnMenuItemEnable)(VoidPtr userData);
+	struct MenuItemEventData
+	{
+		VoidPtr drawData{};
+		VoidPtr itemData{};
+	};
+
+
+	typedef void            (*FnMenuItemAction)(const MenuItemEventData& eventData);
+	typedef bool            (*FnMenuItemEnable)(const MenuItemEventData& eventData);
 
 	struct MenuItemCreation
 	{
@@ -21,8 +28,8 @@ namespace Fyrion
 		Shortcut         itemShortcut{};
 		FnMenuItemAction action{};
 		FnMenuItemEnable enable{};
+		VoidPtr          menuData{};
 	};
-
 
     class FY_API MenuItemContext
     {
@@ -31,14 +38,15 @@ namespace Fyrion
         void Draw(VoidPtr userData = nullptr);
         bool ExecuteHotKeys(VoidPtr userData = nullptr, bool executeOnFocus = false);
     private:
-        String m_label{};
-        String m_itemName{};
-        i32 m_priority{};
-        Array<MenuItemContext*> m_children{};
+        String                                       m_label{};
+        String                                       m_itemName{};
+        i32                                          m_priority{};
+        Array<MenuItemContext*>                      m_children{};
         HashMap <String, SharedPtr<MenuItemContext>> m_menuItemsMap{};
-        FnMenuItemAction m_action{};
-        FnMenuItemEnable m_enable{};
-        Shortcut m_itemShortcut{};
+        FnMenuItemAction                             m_action{};
+        FnMenuItemEnable                             m_enable{};
+        Shortcut                                     m_itemShortcut{};
+        VoidPtr                                      m_itemMenuData{};
 
         static void DrawMenuItemChildren(MenuItemContext* context, VoidPtr userData);
         static bool ExecuteHotKeys(MenuItemContext* context, VoidPtr userData, bool executeOnFocus);

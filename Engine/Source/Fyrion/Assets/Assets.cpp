@@ -27,6 +27,7 @@ namespace Fyrion
             .Value<GraphNodeAsset::NodeOutput, String>("NodeOutput")
             .Value<GraphNodeAsset::Position, Vec2>("Position")
             .SubObjectSet<GraphNodeAsset::InputValues>("InputValues")
+            .Value<GraphNodeAsset::Label, Vec2>("Label")
             .Build();
     }
 

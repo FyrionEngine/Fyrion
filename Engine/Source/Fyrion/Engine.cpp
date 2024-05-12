@@ -32,6 +32,8 @@ namespace Fyrion
     void            SceneManagerShutdown();
     void            ShaderManagerInit();
     void            ShaderManagerShutdown();
+    void            DefaultRenderPipelineInit();
+    void            DefaultRenderPipelineShutdown();
 
 
     namespace
@@ -70,6 +72,7 @@ namespace Fyrion
         ResourceAssetsInit();
         RegisterAssets();
         SceneManagerInit();
+        DefaultRenderPipelineInit();
     }
 
     void Engine::CreateContext(const EngineContextCreation& contextCreation)
@@ -213,6 +216,7 @@ namespace Fyrion
 
     void Engine::Destroy()
     {
+        DefaultRenderPipelineShutdown();
         SceneManagerShutdown();
         ResourceAssetsShutdown();
         RepositoryShutdown();

@@ -27,7 +27,7 @@
 
 //------------------------------------------------------------------------------
 #ifndef IMGUI_NODE_EDITOR_API
-#define IMGUI_NODE_EDITOR_API
+#define IMGUI_NODE_EDITOR_API FY_API
 #endif
 
 

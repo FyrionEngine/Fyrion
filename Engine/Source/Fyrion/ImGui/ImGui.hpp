@@ -83,7 +83,7 @@ namespace ImGui
     };
 
     FY_API void CreateDockSpace(ImGuiID dockSpaceId);
-    FY_API bool Begin(u32 id, const char* name, bool* pOpen, ImGuiWindowFlags flags);
+    FY_API bool Begin(u32 id, const char* name, bool* pOpen, ImGuiWindowFlags flags = 0);
     FY_API void DockBuilderReset(ImGuiID dockSpaceId);
     FY_API void DockBuilderDockWindow(ImGuiID windowId, ImGuiID nodeId);
     FY_API bool InputText(u32 idx, Fyrion::String& string, ImGuiInputTextFlags flags = 0);

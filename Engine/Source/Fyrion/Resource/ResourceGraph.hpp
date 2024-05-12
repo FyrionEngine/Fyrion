@@ -10,8 +10,16 @@ namespace Fyrion
     class TypeHandler;
     class FunctionHandler;
 
-    struct ResourceGraphOutput;
-    struct ResourceGraphNode;
+    struct ResourceGraphOutput
+    {
+        String label{};
+    };
+
+    struct ResourceGraphNode
+    {
+        String label{};
+    };
+
     class ResourceGraph;
 
     struct ResourceGraphAsset

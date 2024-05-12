@@ -21,7 +21,7 @@ namespace Utilities {
 
 
 //------------------------------------------------------------------------------
-struct BlueprintNodeBuilder
+struct IMGUI_API BlueprintNodeBuilder
 {
     BlueprintNodeBuilder(ImTextureID texture = nullptr, int textureWidth = 0, int textureHeight = 0);
 

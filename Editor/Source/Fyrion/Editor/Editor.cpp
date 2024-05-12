@@ -17,6 +17,7 @@ namespace Fyrion
     void InitPropertiesWindow();
     void InitSceneViewWindow();
     void InitSceneTreeWindow();
+    void InitGraphEditorWindow();
 
     struct EditorWindowStorage
     {
@@ -407,6 +408,7 @@ namespace Fyrion
         InitSceneTreeWindow();
         InitSceneViewWindow();
         InitPropertiesWindow();
+        InitGraphEditorWindow();
 
         Event::Bind<OnInit , &InitEditor>();
         Event::Bind<OnUpdate, &EditorUpdate>();

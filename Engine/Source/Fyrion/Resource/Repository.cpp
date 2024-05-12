@@ -1225,7 +1225,7 @@ namespace Fyrion
         Registry::Type<SubObjectSetData>();
         Registry::Type<StreamObject>();
 
-        ResourceTypeBuilder<ResourceGraphAsset>::Builder()
+        ResourceTypeBuilder<ResourceGraphAsset>::Builder("Fyrion::ResourceGraph")
             .SubObjectSet<ResourceGraphAsset::Links>("Links")
             .SubObjectSet<ResourceGraphAsset::Nodes>("Nodes")
             .Build();

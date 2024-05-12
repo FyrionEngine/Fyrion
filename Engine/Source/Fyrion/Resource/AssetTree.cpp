@@ -2,6 +2,7 @@
 #include "AssetTree.hpp"
 #include "Repository.hpp"
 #include "ResourceAssets.hpp"
+#include "Fyrion/Core/StringUtils.hpp"
 
 namespace Fyrion
 {
@@ -28,7 +29,7 @@ namespace Fyrion
             {
                 RID subobject = asset.GetSubObject(Asset::Object);
                 node->objectType = Repository::GetResourceTypeID(subobject);
-                node->assetDesc = Repository::GetResourceTypeSimpleName(Repository::GetResourceType(subobject));
+                node->assetDesc =  FormatName(Repository::GetResourceTypeSimpleName(Repository::GetResourceType(subobject)));
             }
         }
         return node;

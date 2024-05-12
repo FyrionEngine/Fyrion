@@ -1,5 +1,6 @@
 #include "ProjectBrowserWindow.hpp"
 
+#include "GraphEditorWindow.hpp"
 #include "Fyrion/ImGui/ImGui.hpp"
 #include "Fyrion/ImGui/IconsFontAwesome6.h"
 
@@ -10,6 +11,7 @@
 #include "Fyrion/Resource/ResourceAssets.hpp"
 #include "Fyrion/Resource/Repository.hpp"
 #include "Fyrion/Engine.hpp"
+#include "Fyrion/Resource/ResourceGraph.hpp"
 #include "Fyrion/Scene/SceneAssets.hpp"
 
 #define CONTENT_TABLE_ID 500
@@ -286,10 +288,11 @@ namespace Fyrion
                 ImGui::StyleVar browserWinPadding(ImGuiStyleVar_WindowPadding, ImVec2(padding * 2, padding));
 
                 ImGui::BeginChild(52211, ImVec2(0, 0), false, ImGuiWindowFlags_AlwaysUseWindowPadding);
-                ImGui::SetWindowFontScale(0.9);
+
+                ImGui::SetWindowFontScale(m_contentBrowserZoom);
 
                 RID selectedFolder = {};
-                if (ImGui::BeginContentTable(id + CONTENT_TABLE_ID, 96 * ImGui::GetStyle().ScaleFactor))
+                if (ImGui::BeginContentTable(id + CONTENT_TABLE_ID, m_contentBrowserZoom * 112 * ImGui::GetStyle().ScaleFactor))
                 {
                     AssetNode* openFolderNode = m_assetTree.GetNode(m_openFolder);
 
@@ -371,6 +374,10 @@ namespace Fyrion
                                     if (node->objectType == GetTypeID<SceneObjectAsset>())
                                     {
                                         Editor::GetSceneEditor().LoadScene(node->rid);
+                                    }
+                                    else if (node->objectType == GetTypeID<ResourceGraphAsset>())
+                                    {
+                                        GraphEditorWindow::OpenGraphWindow(node->rid);
                                     }
                                 }
 
@@ -493,6 +500,15 @@ namespace Fyrion
         }
     }
 
+    void ProjectBrowserWindow::AssetNewResourceGraph(VoidPtr userData)
+    {
+        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(userData);
+        RID newAsset = projectBrowserWindow->m_assetTree.NewAsset(projectBrowserWindow->m_openFolder, Repository::CreateResource<ResourceGraphAsset>(), "New Resource Graph");
+
+        ImGui::SelectContentItem(Hash<RID>::Value(newAsset), CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
+        ImGui::RenameContentSelected(CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
+    }
+
     void ProjectBrowserWindow::AddMenuItem(const MenuItemCreation& menuItem)
     {
         s_menuItemContext.AddMenuItem(menuItem);
@@ -513,6 +529,9 @@ namespace Fyrion
         AddMenuItem(MenuItemCreation{.itemName="Delete", .icon=ICON_FA_TRASH, .priority = 20, .itemShortcut {.presKey = Key::Delete}, .action = AssetDelete, .enable= CheckSelectedAsset});
         AddMenuItem(MenuItemCreation{.itemName="Rename", .icon=ICON_FA_PEN_TO_SQUARE, .priority = 30, .itemShortcut {.presKey = Key::F2}, .action = AssetRename, .enable= CheckSelectedAsset});
         AddMenuItem(MenuItemCreation{.itemName="Show in Explorer", .icon=ICON_FA_FOLDER, .priority = 40, .action = AssetShowInExplorer});
+        AddMenuItem(MenuItemCreation{.itemName="Create New Asset", .icon=ICON_FA_PLUS, .priority = 150});
+        AddMenuItem(MenuItemCreation{.itemName="Create New Asset/Resource Graph", .icon=ICON_FA_DIAGRAM_PROJECT, .priority = 10, .action = AssetNewResourceGraph});
+        AddMenuItem(MenuItemCreation{.itemName="Create New Asset/Behavior Graph", .icon=ICON_FA_DIAGRAM_PROJECT, .priority = 20});
 
         type.Function<&ProjectBrowserWindow::SetOpenFolder>("SetOpenFolder");
         type.Attribute<EditorWindowProperties>(EditorWindowProperties{

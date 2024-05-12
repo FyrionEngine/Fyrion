@@ -37,6 +37,7 @@ namespace Fyrion
         constexpr static u32 NodeOutput = 1;
         constexpr static u32 Position = 2;
         constexpr static u32 InputValues = 3;
+        constexpr static u32 Label = 4;
     };
 
     struct GraphNodeLinkAsset

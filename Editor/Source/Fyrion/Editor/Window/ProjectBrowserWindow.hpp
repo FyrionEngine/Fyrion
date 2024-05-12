@@ -22,16 +22,17 @@ namespace Fyrion
         static void RegisterType(NativeTypeHandler<ProjectBrowserWindow>& type);
 
     private:
-        AssetTree& m_assetTree;
-        u32 m_windowId{};
-        RID m_openFolder{};
-        RID m_selectedItem{};
-        String m_searchString{};
-        String m_stringCache{};
-        RID m_movingItem{};
-        Array<AssetNode*> m_folderCache{};
-        RID m_popupFolder{};
+        AssetTree&         m_assetTree;
+        u32                m_windowId{};
+        RID                m_openFolder{};
+        RID                m_selectedItem{};
+        String             m_searchString{};
+        String             m_stringCache{};
+        RID                m_movingItem{};
+        Array<AssetNode*>  m_folderCache{};
+        RID                m_popupFolder{};
         HashMap<RID, bool> m_openTreeFolders{};
+        f32                m_contentBrowserZoom = 0.8;
 
         void DrawTreeNode(AssetNode* node);
         void DrawPathItems();
@@ -46,6 +47,7 @@ namespace Fyrion
         static bool CheckSelectedAsset(VoidPtr userData);
         static void AssetRename(VoidPtr userData);
         static void AssetShowInExplorer(VoidPtr userData);
+        static void AssetNewResourceGraph(VoidPtr userData);
     };
 
 }

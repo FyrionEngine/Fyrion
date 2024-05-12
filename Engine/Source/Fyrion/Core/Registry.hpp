@@ -210,6 +210,7 @@ namespace Fyrion
     public:
 
         StringView          GetName() const;
+        StringView          GetSimpleName() const;
         Span<ParamHandler>  GetParams() const;
         FieldInfo           GetReturn() const;
         TypeID              GetOwner() const;

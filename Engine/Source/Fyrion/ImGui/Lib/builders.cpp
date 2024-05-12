@@ -56,28 +56,38 @@ void util::BlueprintNodeBuilder::End()
         const auto halfBorderWidth = ed::GetStyle().NodeBorderWidth * 0.5f;
 
         auto headerColor = IM_COL32(0, 0, 0, alpha) | (HeaderColor & IM_COL32(255, 255, 255, 0));
-        if ((HeaderMax.x > HeaderMin.x) && (HeaderMax.y > HeaderMin.y) && HeaderTextureId)
+        if ((HeaderMax.x > HeaderMin.x) && (HeaderMax.y > HeaderMin.y))
         {
-            const auto uv = ImVec2(
-                (HeaderMax.x - HeaderMin.x) / (float)(4.0f * HeaderTextureWidth),
-                (HeaderMax.y - HeaderMin.y) / (float)(4.0f * HeaderTextureHeight));
+            if (HeaderTextureId)
+            {
+                const auto uv = ImVec2((HeaderMax.x - HeaderMin.x) / (float)(4.0f * HeaderTextureWidth), (HeaderMax.y - HeaderMin.y) / (float)(4.0f * HeaderTextureHeight));
 
-            drawList->AddImageRounded(HeaderTextureId,
-                HeaderMin - ImVec2(8 - halfBorderWidth, 4 - halfBorderWidth),
-                HeaderMax + ImVec2(8 - halfBorderWidth, 0),
-                ImVec2(0.0f, 0.0f), uv,
-#if IMGUI_VERSION_NUM > 18101
-                headerColor, GetStyle().NodeRounding, ImDrawFlags_RoundCornersTop);
+                drawList->AddImageRounded(HeaderTextureId,
+                    HeaderMin - ImVec2(8 - halfBorderWidth, 4 - halfBorderWidth),
+                    HeaderMax + ImVec2(8 - halfBorderWidth, 0),
+                    ImVec2(0.0f, 0.0f), uv,
+    #if IMGUI_VERSION_NUM > 18101
+                    headerColor, GetStyle().NodeRounding, ImDrawFlags_RoundCornersTop);
 #else
                 headerColor, GetStyle().NodeRounding, 1 | 2);
 #endif
+            }
+            else
+            {
+                drawList->AddRectFilled(
+                    HeaderMin - ImVec2(8 - halfBorderWidth, 4 - halfBorderWidth),
+                    HeaderMax + ImVec2(8 - halfBorderWidth, 0),
+                    headerColor, GetStyle().NodeRounding,
+                    ImDrawFlags_RoundCornersTop);
+            }
+
 
             if (ContentMin.y > HeaderMax.y)
             {
-                drawList->AddLine(
-                    ImVec2(HeaderMin.x - (8 - halfBorderWidth), HeaderMax.y - 0.5f),
-                    ImVec2(HeaderMax.x + (8 - halfBorderWidth), HeaderMax.y - 0.5f),
-                    ImColor(255, 255, 255, 96 * alpha / (3 * 255)), 1.0f);
+                // drawList->AddLine(
+                //     ImVec2(HeaderMin.x - (8 - halfBorderWidth), HeaderMax.y - 0.5f),
+                //     ImVec2(HeaderMax.x + (8 - halfBorderWidth), HeaderMax.y - 0.5f),
+                //     ImColor(255, 255, 255, 96 * alpha / (3 * 255)), 1.0f);
             }
         }
     }

@@ -24,6 +24,9 @@ namespace Fyrion
         static void OpenGraphWindow(RID graphId);
         static void RegisterType(NativeTypeHandler<GraphEditorWindow>& type);
 
+
+        void AddOutput(TypeHandler* outputType);
+        void AddNode(FunctionHandler* functionHandler);
     private:
         RID     m_assetId{};
         RID     m_graph{};
@@ -39,6 +42,7 @@ namespace Fyrion
         static MenuItemContext s_menuItemContext;
         static void OnInitGraphEditor();
 
-        static void AddNewNodeOutputAction(const MenuItemEventData& eventData);
+        static void AddOutputAction(const MenuItemEventData& eventData);
+        static void AddNodeAction(const MenuItemEventData& eventData);
     };
 }

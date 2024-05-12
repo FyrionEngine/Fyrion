@@ -280,6 +280,12 @@ namespace Fyrion
             return x;
         }
 
+        constexpr f32 SmoothStep(f32 edge0, f32 edge1, f32 x, f32 min = 0.0f, f32 max = 1.0f)
+        {
+            x = Clamp((x - edge0) / (edge1 - edge0), min, max);
+            return x * x * (3.0f - 2.0f * x);
+        }
+
         template <typename Type>
         constexpr Type Atan(Type a, Type b)
         {

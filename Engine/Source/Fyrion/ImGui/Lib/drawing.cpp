@@ -76,7 +76,7 @@ void ax::Drawing::DrawIcon(ImDrawList* drawList, const ImVec2& a, const ImVec2& 
     }
     else
     {
-        auto triangleStart = rect_center_x + 0.32f * rect_w;
+        auto triangleStart = rect_center_x + 0.14f * rect_w;
 
         auto rect_offset = -static_cast<int>(rect_w * 0.25f * 0.25f);
 
@@ -90,17 +90,16 @@ void ax::Drawing::DrawIcon(ImDrawList* drawList, const ImVec2& a, const ImVec2& 
         {
             const auto c = rect_center;
 
-            if (!filled)
-            {
-                const auto r = 0.5f * rect_w / 2.0f - 0.5f;
+	        const auto r = 0.5f * rect_w / 2.0f - 0.5f;
 
-                if (innerColor & 0xFF000000)
-                    drawList->AddCircleFilled(c, r, innerColor, 12 + extra_segments);
-                drawList->AddCircle(c, r, color, 12 + extra_segments, 2.0f * outline_scale);
-            }
-            else
+	        if (innerColor & 0xFF000000)
+		        drawList->AddCircleFilled(c, r, innerColor, 12 + extra_segments);
+
+	        drawList->AddCircle(c, r, color, 12 + extra_segments, 2.0f * outline_scale);
+
+            if (filled)
             {
-                drawList->AddCircleFilled(c, 0.5f * rect_w / 2.0f, color, 12 + extra_segments);
+	            drawList->AddCircleFilled(c, r / 2.0f, color, 12 + extra_segments);
             }
         }
 
@@ -240,12 +239,12 @@ void ax::Drawing::DrawIcon(ImDrawList* drawList, const ImVec2& a, const ImVec2& 
         }
         else
         {
-            const auto triangleTip = triangleStart + rect_w * (0.45f - 0.32f);
+            const auto triangleTip = triangleStart + rect_w * (0.45f - 0.14f);
 
             drawList->AddTriangleFilled(
                 ImVec2(ceilf(triangleTip), rect_y + rect_h * 0.5f),
-                ImVec2(triangleStart, rect_center_y + 0.15f * rect_h),
-                ImVec2(triangleStart, rect_center_y - 0.15f * rect_h),
+                ImVec2(triangleStart, rect_center_y + 0.19f * rect_h),
+                ImVec2(triangleStart, rect_center_y - 0.19f * rect_h),
                 color);
         }
     }

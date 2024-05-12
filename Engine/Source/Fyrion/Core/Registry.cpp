@@ -135,6 +135,11 @@ namespace Fyrion
         return m_name;
     }
 
+    StringView FunctionHandler::GetSimpleName() const
+    {
+        return m_simpleName;
+    }
+
     Span<ParamHandler> FunctionHandler::GetParams() const
     {
         return m_params;
@@ -379,7 +384,7 @@ namespace Fyrion
         m_functionHandler.m_return = creation.retInfo;
         m_functionHandler.m_owner = creation.owner;
 
-        //TODO SimpleName
+        m_functionHandler.m_simpleName = GetSimpleName(m_functionHandler.m_name);
 
         for (int i = 0; i < creation.params.Size(); ++i)
         {

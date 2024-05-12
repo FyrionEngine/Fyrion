@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Fyrion/Common.hpp"
+#include "Fyrion/Core/HashSet.hpp"
+#include "Fyrion/Core/Math.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Editor/EditorTypes.hpp"
 #include "Fyrion/Editor/MenuItem.hpp"
@@ -34,8 +36,12 @@ namespace Fyrion
         String  m_graphName{};
         VoidPtr m_editorContext{};
         String  m_searchNodeString{};
+        Vec2    m_mousePos{};
+        Vec2    m_clickMousePos{};
 
-        Array<RID> m_nodesCache{};
+        Array<RID>   m_nodesCache{};
+        Array<RID>   m_linkCache{};
+        HashSet<RID> m_initialized{};
 
         void SetCurrentEditor();
 

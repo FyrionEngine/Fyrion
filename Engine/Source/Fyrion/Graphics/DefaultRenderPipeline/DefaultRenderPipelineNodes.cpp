@@ -8,7 +8,7 @@
 
 namespace Fyrion
 {
-    void CreateGPUBuffer(const Array<u8>& data, const BufferUsage& usage, Buffer& buffer)
+    void CreateBuffer(const Array<u8>& data, const BufferUsage& usage, Buffer& buffer)
     {
         buffer = Graphics::CreateBuffer(BufferCreation{
             .usage = usage,
@@ -31,10 +31,10 @@ namespace Fyrion
         geometryRender.Attribute<ResourceGraphOutput>("Outputs/Geometry Render");
 
 
-        auto uploadGPUBuffer = Registry::Function<CreateGPUBuffer>("Fyrion::CreateGPUBuffer");
+        auto uploadGPUBuffer = Registry::Function<CreateBuffer>("Fyrion::CreateBuffer");
         uploadGPUBuffer.Param<0>("data").Attribute<GraphInput>();
         uploadGPUBuffer.Param<1>("usage").Attribute<GraphInput>();
         uploadGPUBuffer.Param<2>("buffer").Attribute<GraphOutput>();
-        uploadGPUBuffer.Attribute<ResourceGraphNode>("Render/Create GPU Buffer");
+        uploadGPUBuffer.Attribute<ResourceGraphNode>("Render/Create Buffer");
     }
 }

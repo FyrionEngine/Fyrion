@@ -8,6 +8,7 @@
 #include <imgui_canvas.h>
 #include "builders.h"
 #include "drawing.h"
+#include "imgui_node_editor_internal.h"
 #include "widgets.h"
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Assets/AssetTypes.hpp"
@@ -17,8 +18,8 @@
 #include "Fyrion/Resource/Repository.hpp"
 #include "Fyrion/Resource/ResourceGraph.hpp"
 
-
 namespace ed = ax::NodeEditor;
+
 
 namespace Fyrion
 {
@@ -27,6 +28,12 @@ namespace Fyrion
 
     namespace
     {
+        bool operator==(const ImRect& a, const ImRect& b)
+        {
+            return a.Min.x == b.Min.x && a.Min.y == b.Min.y && a.Max.x == b.Max.x && a.Max.y == b.Max.y;
+        }
+
+
         const int pinIconSize = 24;
 
         inline ImColor GetNodeColor(const StringView& nodeName)
@@ -94,11 +101,17 @@ namespace Fyrion
     void GraphEditorWindow::SetCurrentEditor()
     {
         ed::SetCurrentEditor((ed::EditorContext*)m_editorContext);
+        ImVec2 mousePos = ed::ScreenToCanvas(ImGui::GetMousePos());
+        m_mousePos = {mousePos.x, mousePos.y};
     }
 
     void GraphEditorWindow::Draw(u32 id, bool& open)
     {
         if (!m_graph) return;
+
+        static ImRect lastRect = {};
+
+        ed::Detail::EditorContext* editor = static_cast<ed::Detail::EditorContext*>(m_editorContext);
 
         ax::NodeEditor::Utilities::BlueprintNodeBuilder builder{nullptr, 64, 64};
 
@@ -108,6 +121,11 @@ namespace Fyrion
         ImGui::SetNextWindowSize({800 * style.ScaleFactor, 400 * style.ScaleFactor}, ImGuiCond_Once);
         ImGui::Begin(id, ICON_FA_DIAGRAM_PROJECT " Graph Editor", &open);
 
+        if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))
+        {
+            lastRect = editor->GetViewRect();
+        }
+
         SetCurrentEditor();
 
         if (m_graphTypeId == GetTypeID<ResourceGraphAsset>())
@@ -115,15 +133,26 @@ namespace Fyrion
             ResourceObject object = Repository::Read(m_graph);
             m_nodesCache.Resize(object.GetSubObjectSetCount(ResourceGraphAsset::Nodes));
             object.GetSubObjectSet(ResourceGraphAsset::Nodes, m_nodesCache);
+
+            m_linkCache.Resize(object.GetSubObjectSetCount(ResourceGraphAsset::Links));
+            object.GetSubObjectSet(ResourceGraphAsset::Nodes, m_linkCache);
         }
 
         ed::Begin("Node Graph Editor", ImVec2(0.0, 0.0f));
 
         for(const RID& node: m_nodesCache)
         {
+            ResourceObject nodeObject = Repository::Read(node);
+
+            if (!m_initialized.Has(node))
+            {
+                Vec2 pos = nodeObject[GraphNodeAsset::Position].Value<Vec2>();
+                ed::SetNodePosition(ed::NodeId(node.id), ImVec2(pos.x, pos.y));
+                m_initialized.Insert(node);
+            }
+
             builder.Begin(ed::NodeId(node.id));
 
-            ResourceObject nodeObject = Repository::Read(node);
             TypeHandler* typeHandler = nullptr;
             FunctionHandler* functionHandler = nullptr;
 
@@ -181,9 +210,8 @@ namespace Fyrion
             }
             else if (functionHandler)
             {
-
                 Span<ParamHandler> params = functionHandler->GetParams();
-                for(const ParamHandler& param : params)
+                for (const ParamHandler& param : params)
                 {
                     if (param.HasAttribute<GraphInput>())
                     {
@@ -196,7 +224,7 @@ namespace Fyrion
                     }
                 }
 
-                for(const ParamHandler& param : params)
+                for (const ParamHandler& param : params)
                 {
                     if (param.HasAttribute<GraphOutput>())
                     {
@@ -208,17 +236,36 @@ namespace Fyrion
                     }
                 }
             }
-
-
             builder.End();
         }
+
+        for(const RID& link: m_linkCache)
+        {
+            ResourceObject linkObject = Repository::Read(link);
+
+            //ed::Link(link.id, link.inputId, link.outputId, GetTypeColor(link.type),  3.f);
+        }
+
+        if (ed::BeginCreate())
+        {
+            ed::PinId inputPinId, outputPinId;
+            if (ed::QueryNewLink(&inputPinId, &outputPinId))
+            {
+                if (inputPinId && outputPinId && inputPinId != outputPinId)
+                {
+
+                }
+            }
+        }
+        ed::EndCreate();
 
         ed::End();
 
         ed::SetCurrentEditor(nullptr);
 
-        if (ImGui::IsMouseReleased(ImGuiMouseButton_Right) && ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))
+        if (ImGui::IsMouseReleased(ImGuiMouseButton_Right) && ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) && editor->GetViewRect() == lastRect)
         {
+            m_clickMousePos = m_mousePos;
             ImGui::OpenPopup("add-node-popup");
         }
 
@@ -244,6 +291,7 @@ namespace Fyrion
         RID nodeAsset = Repository::CreateResource<GraphNodeAsset>();
         ResourceObject nodeObject = Repository::Write(nodeAsset);
         nodeObject[GraphNodeAsset::NodeOutput] = outputType->GetName();
+        nodeObject[GraphNodeAsset::Position] = m_clickMousePos;
         nodeObject.Commit();
 
         ResourceObject graphAsset = Repository::Write(m_graph);
@@ -256,6 +304,7 @@ namespace Fyrion
         RID nodeAsset = Repository::CreateResource<GraphNodeAsset>();
         ResourceObject nodeObject = Repository::Write(nodeAsset);
         nodeObject[GraphNodeAsset::NodeFunction] = functionHandler->GetName();
+        nodeObject[GraphNodeAsset::Position] = m_clickMousePos;
         nodeObject.Commit();
 
         ResourceObject graphAsset = Repository::Write(m_graph);

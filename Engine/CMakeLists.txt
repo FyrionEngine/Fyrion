@@ -6,6 +6,7 @@ file(GLOB_RECURSE FYRION_ENGINE_SOURCES Source/*.hpp Source/*.cpp Source/*.h Sou
 add_library(FyrionEngine SHARED ${FYRION_ENGINE_SOURCES})
 
 target_include_directories(FyrionEngine PUBLIC Source)
+target_include_directories(FyrionEngine PUBLIC Source/Fyrion/ImGui/Lib)
 target_include_directories(FyrionEngine PRIVATE ThirdParty/concurrentqueue)
 target_include_directories(FyrionEngine PRIVATE ThirdParty/dxc/include)
 

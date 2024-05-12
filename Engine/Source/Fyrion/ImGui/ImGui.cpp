@@ -878,33 +878,6 @@ namespace ImGui
 		guizmoSize.ScaleLineThickness = guizmoSize.ScaleLineThickness * guizmoScaleFactor;
 		guizmoSize.TranslationLineArrowSize = guizmoSize.TranslationLineArrowSize * guizmoScaleFactor;
 		guizmoSize.TranslationLineThickness = guizmoSize.TranslationLineThickness * guizmoScaleFactor;
-
-//		ImNodesStyle& nodesStyle = ImNodes::GetStyle();
-//		nodesStyle.GridSpacing = nodesStyle.GridSpacing * scaleFactor;
-//		nodesStyle.NodeCornerRounding = nodesStyle.NodeCornerRounding * scaleFactor;
-//		nodesStyle.NodePadding = nodesStyle.NodePadding * scaleFactor;
-//		nodesStyle.NodeBorderThickness = nodesStyle.NodeBorderThickness * scaleFactor;
-//		nodesStyle.LinkThickness = nodesStyle.LinkThickness * scaleFactor;
-//		nodesStyle.LinkLineSegmentsPerLength = nodesStyle.LinkLineSegmentsPerLength * scaleFactor;
-//		nodesStyle.LinkHoverDistance = nodesStyle.LinkHoverDistance * scaleFactor;
-//		nodesStyle.PinCircleRadius = 4 * scaleFactor;
-//		nodesStyle.PinQuadSideLength = nodesStyle.PinQuadSideLength * scaleFactor;
-//		nodesStyle.PinTriangleSideLength = nodesStyle.PinTriangleSideLength * scaleFactor;
-//		nodesStyle.PinLineThickness = nodesStyle.PinLineThickness * scaleFactor;
-//		nodesStyle.PinHoverRadius = nodesStyle.PinHoverRadius * scaleFactor;
-//		nodesStyle.PinOffset = nodesStyle.PinOffset * scaleFactor;
-//		nodesStyle.MiniMapPadding = nodesStyle.MiniMapPadding * scaleFactor;
-//		nodesStyle.MiniMapOffset = nodesStyle.MiniMapOffset * scaleFactor;
-//
-//		nodesStyle.Colors[ImNodesCol_TitleBar] = IM_COL32(53, 54, 56, 255);
-//		nodesStyle.Colors[ImNodesCol_TitleBarSelected] = IM_COL32(83, 84, 86, 255);
-//		nodesStyle.Colors[ImNodesCol_TitleBarHovered] = IM_COL32(73, 74, 76, 255);
-//		nodesStyle.Colors[ImNodesCol_GridBackground] = IM_COL32(20, 21, 23, 255);
-//		nodesStyle.Colors[ImNodesCol_GridLine] = IM_COL32(38, 39, 31, 255);
-//		nodesStyle.Colors[ImNodesCol_NodeBackground] = IM_COL32(28, 31, 33, 255);
-//		nodesStyle.Colors[ImNodesCol_NodeBackgroundSelected] = nodesStyle.Colors[ImNodesCol_NodeBackground];
-//		nodesStyle.Colors[ImNodesCol_NodeBackgroundHovered] = nodesStyle.Colors[ImNodesCol_NodeBackground];
-//		nodesStyle.Colors[ImNodesCol_NodeOutline] = nodesStyle.Colors[ImNodesCol_TitleBar];
     }
 
     void ApplyFonts()

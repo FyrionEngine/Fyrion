@@ -68,8 +68,8 @@ namespace Fyrion
         ResourceGraphNodeData(ResourceGraph* resourceGraph, const ResourceGraphNodeInfo& info);
 
         FY_FINLINE u32              GetId() const { return m_id; }
-        FY_FINLINE TypeHandler*     GetTypeHandler() { return m_typeHandler; }
-        FY_FINLINE FunctionHandler* GetFunctionHandler() { return m_functionHandler; }
+        FY_FINLINE TypeHandler*     GetTypeHandler() const { return m_typeHandler; }
+        FY_FINLINE FunctionHandler* GetFunctionHandler() const { return m_functionHandler; }
 
         friend class ResourceGraphInstance;
         friend class ResourceGraph;

@@ -135,12 +135,12 @@ namespace Fyrion
             object.GetSubObjectSet(ResourceGraphAsset::Nodes, m_nodesCache);
 
             m_linkCache.Resize(object.GetSubObjectSetCount(ResourceGraphAsset::Links));
-            object.GetSubObjectSet(ResourceGraphAsset::Nodes, m_linkCache);
+            object.GetSubObjectSet(ResourceGraphAsset::Links, m_linkCache);
         }
 
         ed::Begin("Node Graph Editor", ImVec2(0.0, 0.0f));
 
-        for(const RID& node: m_nodesCache)
+        for (const RID& node : m_nodesCache)
         {
             ResourceObject nodeObject = Repository::Read(node);
 
@@ -199,7 +199,7 @@ namespace Fyrion
                 {
                     if (field->HasAttribute<GraphInput>())
                     {
-                        builder.Input(HashValue(field->GetName()));
+                        builder.Input(HashValue(field->GetName())); //TODO wrong, needs a unique ID.
                         DrawPinIcon(field->GetFieldInfo().typeInfo.typeId, false);
                         ImGui::Spring(0);
                         ImGui::TextUnformatted(FormatName(field->GetName()).CStr());
@@ -215,7 +215,7 @@ namespace Fyrion
                 {
                     if (param.HasAttribute<GraphInput>())
                     {
-                        builder.Input(HashValue(StringView{param.GetName()}));
+                        builder.Input(HashValue(StringView{param.GetName()})); //TODO wrong, needs a unique ID.
                         DrawPinIcon(param.GetFieldInfo().typeInfo.typeId, false);
                         ImGui::Spring(0);
                         ImGui::TextUnformatted(FormatName(param.GetName()).CStr());
@@ -228,7 +228,7 @@ namespace Fyrion
                 {
                     if (param.HasAttribute<GraphOutput>())
                     {
-                        builder.Output(HashValue(StringView{param.GetName()}));
+                        builder.Output(HashValue(StringView{param.GetName()})); //TODO wrong, needs a unique ID.
                         ImGui::TextUnformatted(FormatName(param.GetName()).CStr());
                         ImGui::Spring(0);
                         DrawPinIcon(param.GetFieldInfo().typeInfo.typeId, false);

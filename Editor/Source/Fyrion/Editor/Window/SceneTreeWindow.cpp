@@ -17,7 +17,7 @@ namespace Fyrion
     void SceneTreeWindow::DrawSceneObject(RID object)
     {
         ResourceObject read = Repository::Read(object);
-        Span<RID> children = read[SceneObjectAsset::childrenSort].Value<Span<RID>>();
+        Span<RID> children = read[SceneObjectAsset::ChildrenSort].Value<Span<RID>>();
 
 
         ImGui::TableNextRow();
@@ -28,7 +28,7 @@ namespace Fyrion
         m_nameCache.Clear();
         m_nameCache += root ? ICON_FA_CUBES : ICON_FA_CUBE;
         m_nameCache += " ";
-        m_nameCache += root ? m_sceneEditor.GetRootName() : read[SceneObjectAsset::name].Value<StringView>();
+        m_nameCache += root ? m_sceneEditor.GetRootName() : read[SceneObjectAsset::Name].Value<StringView>();
 
         bool isSelected =  m_sceneEditor.IsSelected(object);
         auto treeFlags = isSelected ? ImGuiTreeNodeFlags_Selected | ImGuiTreeNodeFlags_SpanAllColumns : ImGuiTreeNodeFlags_SpanAllColumns;

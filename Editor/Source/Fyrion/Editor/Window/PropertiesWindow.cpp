@@ -59,7 +59,7 @@ namespace Fyrion
                 nameFlags |= ImGuiInputTextFlags_ReadOnly;
             }
 
-            StringView objectName = root ? m_sceneEditor.GetRootName() : read[SceneObjectAsset::name].Value<StringView>();
+            StringView objectName = root ? m_sceneEditor.GetRootName() : read[SceneObjectAsset::Name].Value<StringView>();
             m_stringCache = objectName;
             u32 hash = HashValue(rid);
 
@@ -133,7 +133,7 @@ namespace Fyrion
 
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5 * style.ScaleFactor);
 
-        Array<RID> components = read.GetSubObjectSetAsArray(SceneObjectAsset::components);
+        Array<RID> components = read.GetSubObjectSetAsArray(SceneObjectAsset::Components);
 
         bool openComponentSettings = false;
 

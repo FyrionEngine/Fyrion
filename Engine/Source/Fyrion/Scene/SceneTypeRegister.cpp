@@ -16,10 +16,10 @@ namespace Fyrion
         Registry::Type<RenderComponent, Component>();
 
         ResourceTypeBuilder<SceneObjectAsset>::Builder("Fyrion::Scene")
-            .Value<SceneObjectAsset::name, String>("name")
-            .SubObjectSet<SceneObjectAsset::components>("components")
-            .SubObjectSet<SceneObjectAsset::children>("children")
-            .Value<SceneObjectAsset::childrenSort, Array<RID>>("childrenSort")
+            .Value<SceneObjectAsset::Name, String>("Name")
+            .SubObjectSet<SceneObjectAsset::Components>("Components")
+            .SubObjectSet<SceneObjectAsset::Children>("Children")
+            .Value<SceneObjectAsset::ChildrenSort, Array<RID>>("ChildrenSort")
             .Build();
     }
 }

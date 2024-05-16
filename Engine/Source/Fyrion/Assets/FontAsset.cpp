@@ -12,7 +12,7 @@ namespace Fyrion
         Array<u8> bytes = FileSystem::ReadFileAsByteArray(path);
 		RID rid = Repository::CreateResource<UIFont>();
 		ResourceObject fontObject = Repository::Write(rid);
-		fontObject.SetValue(UIFont::fontBytes, bytes);
+		fontObject[UIFont::FontBytes] =  bytes;
 		fontObject.Commit();
 
 		return rid;
@@ -21,7 +21,7 @@ namespace Fyrion
 	void RegisterFontAsset()
 	{
         ResourceTypeBuilder<UIFont>::Builder()
-            .Value<UIFont::fontBytes, Array<u8>>("fontBytes")
+            .Value<UIFont::FontBytes, Array<u8>>("fontBytes")
             .Build();
         ResourceAssets::AddAssetImporter(".ttf,.otf", ImportFontAsset);
 	}

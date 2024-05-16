@@ -105,11 +105,11 @@ namespace
     			ResourceObject shader = Repository::Read(rid);
     			CHECK(shader);
 
-    			Span<u8> bytes = shader[ShaderAsset::bytes].As<Span<u8>>();
+    			Span<u8> bytes = shader[ShaderAsset::Bytes].As<Span<u8>>();
     			CHECK(!bytes.Empty());
 
-    			Span<ShaderStageInfo> stages = shader[ShaderAsset::stages].As<Span<ShaderStageInfo>>();
-    			ShaderInfo shaderInfo = shader[ShaderAsset::info].As<ShaderInfo>();
+    			Span<ShaderStageInfo> stages = shader[ShaderAsset::Stages].As<Span<ShaderStageInfo>>();
+    			ShaderInfo shaderInfo = shader[ShaderAsset::Info].As<ShaderInfo>();
 
     			CHECK(stages.Size() == 2);
 
@@ -134,11 +134,11 @@ namespace
     			ResourceObject shader = Repository::Read(rid);
     			REQUIRE(shader);
 
-    			Span<u8> bytes = shader[ShaderAsset::bytes].As<Span<u8>>();
+    			Span<u8> bytes = shader[ShaderAsset::Bytes].As<Span<u8>>();
     			CHECK(!bytes.Empty());
 
-    			Span<ShaderStageInfo> stages = shader[ShaderAsset::stages].As<Span<ShaderStageInfo>>();
-    			ShaderInfo shaderInfo = shader[ShaderAsset::info].As<ShaderInfo>();
+    			Span<ShaderStageInfo> stages = shader[ShaderAsset::Stages].As<Span<ShaderStageInfo>>();
+    			ShaderInfo shaderInfo = shader[ShaderAsset::Info].As<ShaderInfo>();
 
     			REQUIRE(stages.Size() == 1);
     			CHECK(stages[0].stage == ShaderStage::Compute);

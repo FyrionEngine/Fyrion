@@ -889,7 +889,7 @@ namespace ImGui
         ResourceObject dejaVuSans = Repository::Read(Repository::GetByPath("Fyrion://Fonts/DejaVuSans.ttf"));
         if (dejaVuSans)
         {
-            const Array<u8>& dejaVuSansBytes = dejaVuSans.GetValue<Array<u8>>(UIFont::fontBytes);
+            const Array<u8>& dejaVuSansBytes = dejaVuSans.GetValue<Array<u8>>(UIFont::FontBytes);
 
             auto font = ImFontConfig();
             font.SizePixels = fontSize * scaleFactor;
@@ -918,7 +918,7 @@ namespace ImGui
             config.FontDataOwnedByAtlas = false;
             memcpy(config.Name, "FontAwesome", 11);
 
-            const Array<u8>& faSolidBytes = faSolid.GetValue<Array<u8>>(UIFont::fontBytes);
+            const Array<u8>& faSolidBytes = faSolid.GetValue<Array<u8>>(UIFont::FontBytes);
             io.Fonts->AddFontFromMemoryTTF((void*) faSolidBytes.Data(), faSolidBytes.Size(), config.SizePixels, &config, icon_ranges);
         }
     }

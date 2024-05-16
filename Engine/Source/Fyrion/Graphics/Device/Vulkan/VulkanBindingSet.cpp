@@ -8,7 +8,7 @@ namespace Fyrion
     VulkanBindingSet::VulkanBindingSet(VulkanDevice& vulkanDevice, const RID& shader, BindingSetType bindingSetType) : vulkanDevice(vulkanDevice), shader(shader), bindingSetType(bindingSetType)
     {
         ResourceObject shaderAsset = Repository::Read(shader);
-        const ShaderInfo& shaderInfo = shaderAsset[ShaderAsset::info].As<ShaderInfo>();
+        const ShaderInfo& shaderInfo = shaderAsset[ShaderAsset::Info].As<ShaderInfo>();
 
         for(const DescriptorLayout& descriptorLayout: shaderInfo.descriptors)
         {

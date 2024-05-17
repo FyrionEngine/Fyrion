@@ -214,6 +214,8 @@ namespace Fyrion
         graphAsset.AddToSubObjectSet(ResourceGraphAsset::Nodes, nodeAsset);
         graphAsset.Commit();
 
+        Repository::SetUUID(nodeAsset, UUID::RandomUUID());
+
         AddNodeCache(nodeAsset);
 
         m_assetTree.MarkDirty();
@@ -231,6 +233,8 @@ namespace Fyrion
         ResourceObject graphAsset = Repository::Write(m_graph);
         graphAsset.AddToSubObjectSet(ResourceGraphAsset::Nodes, nodeAsset);
         graphAsset.Commit();
+
+        Repository::SetUUID(nodeAsset, UUID::RandomUUID());
 
         AddNodeCache(nodeAsset);
 
@@ -258,9 +262,16 @@ namespace Fyrion
         linkObject[GraphNodeLinkAsset::OutputPin] = output->name;
         linkObject.Commit();
 
-        AddLinkCache(linkAsset);
+        ResourceObject graphAsset = Repository::Write(m_graph);
+        graphAsset.AddToSubObjectSet(ResourceGraphAsset::Links, linkAsset);
+        graphAsset.Commit();
+
+        Repository::SetUUID(linkAsset, UUID::RandomUUID());
 
         m_assetTree.MarkDirty();
+
+        AddLinkCache(linkAsset);
+
     }
 
     bool GraphEditor::IsGraphLoaded() const

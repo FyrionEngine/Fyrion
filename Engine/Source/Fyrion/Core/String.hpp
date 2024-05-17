@@ -884,7 +884,7 @@ namespace Fyrion
     template<typename Element, usize BufferSize>
     struct Hash<BasicString<Element, BufferSize>>
     {
-        constexpr static bool HasHash = true;
+        constexpr static bool hasHash = true;
 
         constexpr static usize Value(const BasicStringView<Element>& stringView)
         {

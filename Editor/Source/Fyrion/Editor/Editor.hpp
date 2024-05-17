@@ -4,7 +4,7 @@
 #include "EditorTypes.hpp"
 #include "MenuItem.hpp"
 #include "Fyrion/Resource/ResourceTypes.hpp"
-#include "Scene/SceneEditor.hpp"
+#include "Editor/SceneEditor.hpp"
 
 namespace Fyrion::Editor
 {

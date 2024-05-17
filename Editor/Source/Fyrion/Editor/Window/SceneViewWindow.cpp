@@ -1,7 +1,7 @@
 #include "SceneViewWindow.hpp"
 
 #include "Fyrion/Editor/Editor.hpp"
-#include "Fyrion/Editor/Scene/SceneEditor.hpp"
+#include "Fyrion/Editor/Editor/SceneEditor.hpp"
 #include "Fyrion/ImGui/IconsFontAwesome6.h"
 #include "Fyrion/ImGui/ImGui.hpp"
 #include "Fyrion/ImGui/Lib/ImGuizmo.h"

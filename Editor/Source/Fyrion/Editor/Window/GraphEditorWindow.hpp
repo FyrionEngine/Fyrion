@@ -6,6 +6,7 @@
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Editor/EditorTypes.hpp"
 #include "Fyrion/Editor/MenuItem.hpp"
+#include "Fyrion/Editor/Editor/GraphEditor.hpp"
 #include "Fyrion/Resource/ResourceTypes.hpp"
 
 namespace Fyrion
@@ -20,28 +21,19 @@ namespace Fyrion
     class FY_API GraphEditorWindow : public EditorWindow
     {
     public:
+        GraphEditorWindow();
         void Init(u32 id, VoidPtr userData) override;
         void Draw(u32 id, bool& open) override;
 
         static void OpenGraphWindow(RID graphId);
         static void RegisterType(NativeTypeHandler<GraphEditorWindow>& type);
-
-
-        void AddOutput(TypeHandler* outputType);
-        void AddNode(FunctionHandler* functionHandler);
     private:
-        RID     m_assetId{};
-        RID     m_graph{};
-        TypeID  m_graphTypeId{};
-        String  m_graphName{};
+        GraphEditor m_graphEditor;
+
         VoidPtr m_editorContext{};
         String  m_searchNodeString{};
         Vec2    m_mousePos{};
         Vec2    m_clickMousePos{};
-
-        Array<RID>   m_nodesCache{};
-        Array<RID>   m_linkCache{};
-        HashSet<RID> m_initialized{};
 
         void SetCurrentEditor();
 

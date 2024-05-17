@@ -766,7 +766,7 @@ namespace Fyrion
     template<auto fp, typename Return>
     struct MemberFunctionTemplateDecomposer<fp, Return(*)()>
     {
-        using FuncType = MemberFunctionTemplateDecomposer<fp, Return(*)()>;
+        using FuncType = MemberFunctionTemplateDecomposer;
 
         static decltype(auto) CreateHandler(FunctionBuilder functionBuilder)
         {
@@ -945,12 +945,12 @@ namespace Fyrion
 
 
         template<typename T, typename ...B>
-        inline decltype(auto) Type(const StringView& name)
+        decltype(auto) Type(const StringView& name)
         {
             TypeBuilder typeBuilder = NewType(name, GetTypeInfo<T>());
             (typeBuilder.AddBaseType(GetTypeID<B>(), TypeCaster<B, T>::Cast),...);
 
-            NativeTypeHandler<T> handler = NativeTypeHandler<T>(NewType(name, GetTypeInfo<T>()));
+            NativeTypeHandler<T> handler = NativeTypeHandler<T>(typeBuilder);
 
             if constexpr (HasRegisterType<T>)
             {
@@ -985,7 +985,7 @@ namespace Fyrion
         }
 
         template<auto Func>
-        inline decltype(auto) Function(const StringView& name)
+        decltype(auto) Function(const StringView& name)
         {
             using FuncType = Traits::RemoveConstFunc<decltype(Func)>;
             using DecompType = MemberFunctionTemplateDecomposer<Func, FuncType>;

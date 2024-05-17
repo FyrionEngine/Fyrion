@@ -37,7 +37,12 @@ namespace Fyrion
      bool operator!=(const StructName& b) const { return this->handler != b.handler; }  \
     }
 
-    constexpr u64 Prime = 1099511628211ULL;
+    #define FY_NO_COPY_CONSTRUCTOR(TypeName)                    \
+        TypeName(TypeName&& other) = default;                   \
+        TypeName(const TypeName& other) = delete;               \
+        TypeName& operator=(const TypeName& other) = delete;    \
+
+        constexpr u64 Prime = 1099511628211ULL;
     constexpr u64 OffsetBias = 14695981039346656037ULL;
 }
 

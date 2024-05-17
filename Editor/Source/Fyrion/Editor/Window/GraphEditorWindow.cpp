@@ -23,7 +23,6 @@ namespace ed = ax::NodeEditor;
 
 namespace Fyrion
 {
-
     MenuItemContext GraphEditorWindow::s_menuItemContext = {};
 
     namespace
@@ -66,16 +65,15 @@ namespace Fyrion
         }
     }
 
+    GraphEditorWindow::GraphEditorWindow() : m_graphEditor(Editor::GetAssetTree())
+    {
+    }
+
     void GraphEditorWindow::Init(u32 id, VoidPtr userData)
     {
         if (userData == nullptr) return;
 
-        m_assetId = *static_cast<RID*>(userData);
-
-        ResourceObject asset = Repository::Read(m_assetId);
-        m_graph = asset[Asset::Object].Value<RID>();
-        m_graphName = asset[Asset::Name].Value<String>();
-        m_graphTypeId = Repository::GetResourceTypeId(Repository::GetResourceType(m_graph));
+        m_graphEditor.OpenGraph(*static_cast<RID*>(userData));
 
         ed::Config config{};
         config.SettingsFile = nullptr;
@@ -107,7 +105,7 @@ namespace Fyrion
 
     void GraphEditorWindow::Draw(u32 id, bool& open)
     {
-        if (!m_graph) return;
+        if (!m_graphEditor.IsGraphLoaded()) return;
 
         static ImRect lastRect = {};
 
@@ -115,7 +113,7 @@ namespace Fyrion
 
         ax::NodeEditor::Utilities::BlueprintNodeBuilder builder{nullptr, 64, 64};
 
-        auto& style = ImGui::GetStyle();
+        auto&           style = ImGui::GetStyle();
         ImGui::StyleVar windowPadding(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 
         ImGui::SetNextWindowSize({800 * style.ScaleFactor, 400 * style.ScaleFactor}, ImGuiCond_Once);
@@ -128,62 +126,25 @@ namespace Fyrion
 
         SetCurrentEditor();
 
-        if (m_graphTypeId == GetTypeID<ResourceGraphAsset>())
-        {
-            ResourceObject object = Repository::Read(m_graph);
-            m_nodesCache.Resize(object.GetSubObjectSetCount(ResourceGraphAsset::Nodes));
-            object.GetSubObjectSet(ResourceGraphAsset::Nodes, m_nodesCache);
-
-            m_linkCache.Resize(object.GetSubObjectSetCount(ResourceGraphAsset::Links));
-            object.GetSubObjectSet(ResourceGraphAsset::Links, m_linkCache);
-        }
-
         ed::Begin("Node Graph Editor", ImVec2(0.0, 0.0f));
 
-        for (const RID& node : m_nodesCache)
+        Span<GraphEditorNodePin*> pins = m_graphEditor.GetPins();
+
+
+        for (GraphEditorNode* node : m_graphEditor.GetNodes())
         {
-            ResourceObject nodeObject = Repository::Read(node);
-
-            if (!m_initialized.Has(node))
+            if (!node->initialized)
             {
-                Vec2 pos = nodeObject[GraphNodeAsset::Position].Value<Vec2>();
-                ed::SetNodePosition(ed::NodeId(node.id), ImVec2(pos.x, pos.y));
-                m_initialized.Insert(node);
+                ed::SetNodePosition(node->rid.id, ImVec2(node->position.x, node->position.y));
+                node->initialized = true;
             }
 
-            builder.Begin(ed::NodeId(node.id));
-
-            TypeHandler* typeHandler = nullptr;
-            FunctionHandler* functionHandler = nullptr;
-
-            String label = nodeObject[GraphNodeAsset::Label].Value<String>();
-
-            if (nodeObject.Has(GraphNodeAsset::NodeFunction))
-            {
-                functionHandler = Registry::FindFunctionByName(nodeObject[GraphNodeAsset::NodeFunction].As<String>());
-                builder.Header(GetNodeColor(functionHandler->GetName()));
-            }
-            else if (nodeObject.Has(GraphNodeAsset::NodeOutput))
-            {
-                typeHandler = Registry::FindTypeByName(nodeObject[GraphNodeAsset::NodeOutput].As<String>());
-                builder.Header(GetNodeColor(typeHandler->GetName()));
-            }
+            builder.Begin(node->rid.id);
+            builder.Header(GetNodeColor(node->label));
 
             ImGui::Spring(0);
 
-
-            if (!label.Empty())
-            {
-                ImGui::Text("%s", label.CStr());
-            }
-            else if (typeHandler)
-            {
-                ImGui::Text("%s", FormatName(typeHandler->GetSimpleName()).CStr());
-            }
-            else if (functionHandler)
-            {
-                ImGui::Text("%s", FormatName(functionHandler->GetSimpleName()).CStr());
-            }
+            ImGui::Text("%s", node->label.CStr());
 
             ImGui::Spring(1);
             const float nodeHeaderHeight = 18.0f;
@@ -192,58 +153,32 @@ namespace Fyrion
             builder.EndHeader();
 
 
-            if (typeHandler)
+            for (u32 pinId : node->inputs)
             {
-                Span<FieldHandler*> fields = typeHandler->GetFields();
-                for (FieldHandler* field : fields)
-                {
-                    if (field->HasAttribute<GraphInput>())
-                    {
-                        builder.Input(HashValue(field->GetName())); //TODO wrong, needs a unique ID.
-                        DrawPinIcon(field->GetFieldInfo().typeInfo.typeId, false);
-                        ImGui::Spring(0);
-                        ImGui::TextUnformatted(FormatName(field->GetName()).CStr());
-                        ImGui::Spring(0);
-                        builder.EndInput();
-                    }
-                }
+                const GraphEditorNodePin& input = *pins[pinId];
+                builder.Input(input.pin);
+                DrawPinIcon(input.typeId, false);
+                ImGui::Spring(0);
+                ImGui::TextUnformatted(input.label.CStr());
+                ImGui::Spring(0);
+                builder.EndInput();
             }
-            else if (functionHandler)
-            {
-                Span<ParamHandler> params = functionHandler->GetParams();
-                for (const ParamHandler& param : params)
-                {
-                    if (param.HasAttribute<GraphInput>())
-                    {
-                        builder.Input(HashValue(StringView{param.GetName()})); //TODO wrong, needs a unique ID.
-                        DrawPinIcon(param.GetFieldInfo().typeInfo.typeId, false);
-                        ImGui::Spring(0);
-                        ImGui::TextUnformatted(FormatName(param.GetName()).CStr());
-                        ImGui::Spring(0);
-                        builder.EndInput();
-                    }
-                }
 
-                for (const ParamHandler& param : params)
-                {
-                    if (param.HasAttribute<GraphOutput>())
-                    {
-                        builder.Output(HashValue(StringView{param.GetName()})); //TODO wrong, needs a unique ID.
-                        ImGui::TextUnformatted(FormatName(param.GetName()).CStr());
-                        ImGui::Spring(0);
-                        DrawPinIcon(param.GetFieldInfo().typeInfo.typeId, false);
-                        builder.EndOutput();
-                    }
-                }
+            for (u32 pinId : node->outputs)
+            {
+                const GraphEditorNodePin& output = *pins[pinId];
+                builder.Output(output.pin);
+                ImGui::TextUnformatted(output.label.CStr());
+                ImGui::Spring(0);
+                DrawPinIcon(output.typeId, false);
+                builder.EndOutput();
             }
             builder.End();
         }
 
-        for(const RID& link: m_linkCache)
+        for (GraphEditorLink& link : m_graphEditor.GetLinks())
         {
-            ResourceObject linkObject = Repository::Read(link);
-
-            //ed::Link(link.id, link.inputId, link.outputId, GetTypeColor(link.type),  3.f);
+            ed::Link(link.linkId, link.inputPin, link.outputPin, GetTypeColor(link.linkType), 3.f);
         }
 
         if (ed::BeginCreate())
@@ -253,11 +188,40 @@ namespace Fyrion
             {
                 if (inputPinId && outputPinId && inputPinId != outputPinId)
                 {
-
+                    if (m_graphEditor.ValidateLink(inputPinId.Get(), static_cast<u64>(outputPinId)))
+                    {
+                        if (ed::AcceptNewItem())
+                        {
+                            m_graphEditor.AddLink(inputPinId.Get(), static_cast<u64>(outputPinId));
+                        }
+                    }
+                    else
+                    {
+                        ed::RejectNewItem();
+                    }
                 }
             }
         }
+
         ed::EndCreate();
+
+        if (ed::BeginDelete())
+        {
+
+            ed::NodeId deletedNodeId{};
+            while(ed::QueryDeletedNode(&deletedNodeId))
+            {
+
+            }
+
+            ed::LinkId deletedLinkId{};
+            while (ed::QueryDeletedLink(&deletedLinkId))
+            {
+
+            }
+
+            ed::EndDelete();
+        }
 
         ed::End();
 
@@ -286,42 +250,16 @@ namespace Fyrion
         Editor::OpenWindow(GetTypeID<GraphEditorWindow>(), &graphId);
     }
 
-    void GraphEditorWindow::AddOutput(TypeHandler* outputType)
-    {
-        RID nodeAsset = Repository::CreateResource<GraphNodeAsset>();
-        ResourceObject nodeObject = Repository::Write(nodeAsset);
-        nodeObject[GraphNodeAsset::NodeOutput] = outputType->GetName();
-        nodeObject[GraphNodeAsset::Position] = m_clickMousePos;
-        nodeObject.Commit();
-
-        ResourceObject graphAsset = Repository::Write(m_graph);
-        graphAsset.AddToSubObjectSet(ResourceGraphAsset::Nodes, nodeAsset);
-        graphAsset.Commit();
-    }
-
-    void GraphEditorWindow::AddNode(FunctionHandler* functionHandler)
-    {
-        RID nodeAsset = Repository::CreateResource<GraphNodeAsset>();
-        ResourceObject nodeObject = Repository::Write(nodeAsset);
-        nodeObject[GraphNodeAsset::NodeFunction] = functionHandler->GetName();
-        nodeObject[GraphNodeAsset::Position] = m_clickMousePos;
-        nodeObject.Commit();
-
-        ResourceObject graphAsset = Repository::Write(m_graph);
-        graphAsset.AddToSubObjectSet(ResourceGraphAsset::Nodes, nodeAsset);
-        graphAsset.Commit();
-    }
-
     void GraphEditorWindow::AddOutputAction(const MenuItemEventData& eventData)
     {
         GraphEditorWindow* graphEditorWindow = static_cast<GraphEditorWindow*>(eventData.drawData);
-        graphEditorWindow->AddOutput(static_cast<TypeHandler*>(eventData.itemData));
+        graphEditorWindow->m_graphEditor.AddOutput(static_cast<TypeHandler*>(eventData.itemData), graphEditorWindow->m_clickMousePos);
     }
 
     void GraphEditorWindow::AddNodeAction(const MenuItemEventData& eventData)
     {
         GraphEditorWindow* graphEditorWindow = static_cast<GraphEditorWindow*>(eventData.drawData);
-        graphEditorWindow->AddNode(static_cast<FunctionHandler*>(eventData.itemData));
+        graphEditorWindow->m_graphEditor.AddNode(static_cast<FunctionHandler*>(eventData.itemData), graphEditorWindow->m_clickMousePos);
     }
 
     void GraphEditorWindow::OnInitGraphEditor()
@@ -354,7 +292,7 @@ namespace Fyrion
 
     void GraphEditorWindow::RegisterType(NativeTypeHandler<GraphEditorWindow>& type)
     {
-        Event::Bind<OnInit , &OnInitGraphEditor>();
+        Event::Bind<OnInit, &OnInitGraphEditor>();
 
         type.Attribute<EditorWindowProperties>(EditorWindowProperties{
             .dockPosition = DockPosition::Center,

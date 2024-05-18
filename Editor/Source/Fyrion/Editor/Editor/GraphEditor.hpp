@@ -11,21 +11,27 @@ namespace Fyrion
     class AssetTree;
     class TypeHandler;
     class FunctionHandler;
-
+    struct GraphEditorLink;
+    struct GraphEditorNode;
 
     enum class GraphEditorPinKind
     {
         Input,
         Output,
+        AddOutputPin,
+        AddInputPin
     };
 
     struct GraphEditorNodePin
     {
-        RID                node;
+        GraphEditorNode*   node;
         String             label;
         String             name;
         TypeID             typeId;
+        ConstPtr           value;
         GraphEditorPinKind kind;
+        HashSet<RID>       links{};
+        bool               publicValue = false;
     };
 
     struct GraphEditorNodePinLookup
@@ -54,22 +60,22 @@ namespace Fyrion
 
     struct GraphEditorNode
     {
-        RID              rid{};
-        TypeHandler*     typeHandler{};
-        FunctionHandler* functionHandler{};
-        Vec2             position{};
-        String           label{};
-        bool             initialized{};
+        RID                           rid{};
+        TypeHandler*                  typeHandler{};
+        FunctionHandler*              functionHandler{};
+        Vec2                          position{};
+        String                        label{};
+        bool                          initialized{};
+        UniquePtr<GraphEditorNodePin> addInputPin{};
+        UniquePtr<GraphEditorNodePin> addOutputPin{};
 
-        Array<GraphEditorNodePin*>   inputs{};
-        Array<GraphEditorNodePin*>   outputs{};
-        HashSet<RID> links{};
+        Array<GraphEditorNodePin*> inputs{};
+        Array<GraphEditorNodePin*> outputs{};
     };
 
     struct GraphEditorLink
     {
         RID                 rid{};
-        u64                 index{};
         GraphEditorNodePin* inputPin{};
         GraphEditorNodePin* outputPin{};
         TypeID              linkType{};
@@ -77,6 +83,7 @@ namespace Fyrion
 
     using GraphNodeMap = HashMap<RID, UniquePtr<GraphEditorNode>>;
     using GraphNodePinMap = HashMap<GraphEditorNodePinLookup, UniquePtr<GraphEditorNodePin>>;
+    using GraphNodeLinkMap = HashMap<RID, UniquePtr<GraphEditorLink>>;
 
     class GraphEditor
     {
@@ -87,12 +94,13 @@ namespace Fyrion
 
         FY_NO_COPY_CONSTRUCTOR(GraphEditor)
 
-        void                   OpenGraph(RID rid);
-        bool                   IsGraphLoaded() const;
-        GraphNodeMap&          GetNodes() { return m_nodes; }
-        GraphNodePinMap&       GetPins() { return m_pins; }
-        Span<GraphEditorLink*> GetLinks() { return m_linksArray; }
+        void              OpenGraph(RID rid);
+        bool              IsGraphLoaded() const;
+        GraphNodeMap&     GetNodes() { return m_nodes; }
+        GraphNodePinMap&  GetPins() { return m_pins; }
+        GraphNodeLinkMap& GetLinks() { return m_links; }
 
+        void AddInputNode(const Vec2& position);
         void AddOutput(TypeHandler* outputType, const Vec2& position);
         void AddNode(FunctionHandler* functionHandler, const Vec2& position);
         bool ValidateLink(GraphEditorNodePin* inputPin, GraphEditorNodePin* outputPin);
@@ -113,8 +121,7 @@ namespace Fyrion
         GraphNodeMap    m_nodes;
         GraphNodePinMap m_pins;
 
-        HashMap<RID, UniquePtr<GraphEditorLink>> m_links;
-        Array<GraphEditorLink*>                  m_linksArray;
+        GraphNodeLinkMap m_links;
 
         void AddNodeCache(RID node);
         void AddLinkCache(RID link);

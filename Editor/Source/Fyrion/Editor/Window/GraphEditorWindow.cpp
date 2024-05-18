@@ -158,7 +158,7 @@ namespace Fyrion
             for (GraphEditorNodePin* input : node->inputs)
             {
                 builder.Input(ed::PinId(input));
-                DrawPinIcon(input->typeId, false);
+                DrawPinIcon(input->typeId, !input->links.Empty());
                 ImGui::Spring(0);
                 ImGui::TextUnformatted(input->label.CStr());
                 ImGui::Spring(0);
@@ -170,9 +170,19 @@ namespace Fyrion
                 builder.Output(ed::PinId(output));
                 ImGui::TextUnformatted(output->label.CStr());
                 ImGui::Spring(0);
-                DrawPinIcon(output->typeId, false);
+                DrawPinIcon(output->typeId, !output->links.Empty());
                 builder.EndOutput();
             }
+
+            if (node->addOutputPin)
+            {
+                builder.Output(ed::PinId(node->addOutputPin.Get()));
+                ImGui::TextUnformatted("+");
+                ImGui::Spring(0);
+                DrawPinIcon(0, false);
+                builder.EndOutput();
+            }
+
             builder.End();
 
             ImVec2 pos = ed::GetNodePosition(node->rid.id);
@@ -182,9 +192,9 @@ namespace Fyrion
             }
         }
 
-        for (GraphEditorLink* link : m_graphEditor.GetLinks())
+        for (const auto& it : m_graphEditor.GetLinks())
         {
-            ed::Link(link->rid.id, ed::PinId(link->inputPin), ed::PinId(link->outputPin), GetTypeColor(link->linkType), 3.f);
+            ed::Link(it.second->rid.id, ed::PinId(it.second->inputPin), ed::PinId(it.second->outputPin), GetTypeColor(it.second->linkType), 3.f);
         }
 
         if (ed::BeginCreate())
@@ -275,6 +285,16 @@ namespace Fyrion
 
     void GraphEditorWindow::OnInitGraphEditor()
     {
+        s_menuItemContext.AddMenuItem(MenuItemCreation{
+            .itemName = "Graph/Input",
+            .priority = 10,
+            .action = [](const MenuItemEventData& eventData)
+            {
+                GraphEditorWindow* graphEditorWindow = static_cast<GraphEditorWindow*>(eventData.drawData);
+                graphEditorWindow->m_graphEditor.AddInputNode(graphEditorWindow->m_clickMousePos);
+            }
+        });
+
         Span<TypeHandler*> outputs = Registry::FindTypesByAttribute<ResourceGraphOutput>();
         for (TypeHandler* outputType : outputs)
         {

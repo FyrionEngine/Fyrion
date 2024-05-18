@@ -15,6 +15,14 @@ namespace Fyrion
     {
         ResourceObject nodeObject = Repository::Read(node);
 
+        Array<RID> inputValues = nodeObject.GetSubObjectSetAsArray(GraphNodeAsset::InputValues);
+        HashMap<String, RID> inputCache;
+
+        for (RID input : inputValues)
+        {
+            ResourceObject valueObject = Repository::Read(input);
+            inputCache.Insert(valueObject[GraphNodeValue::Input].Value<String>(), input);
+        }
 
         GraphEditorNode* graphEditorNode = m_nodes.Emplace(node, MakeUnique<GraphEditorNode>(GraphEditorNode{
                                                                .rid = node,
@@ -41,7 +49,7 @@ namespace Fyrion
                                                                  .node = node,
                                                                  .name = param.GetName()
                                                              }, MakeUnique<GraphEditorNodePin>(GraphEditorNodePin{
-                                                                 .node = node,
+                                                                 .node = graphEditorNode,
                                                                  .label = FormatName(param.GetName()),
                                                                  .name = param.GetName(),
                                                                  .typeId = param.GetFieldInfo().typeInfo.typeId,
@@ -60,12 +68,13 @@ namespace Fyrion
                                                                  .node = node,
                                                                  .name = param.GetName(),
                                                              }, MakeUnique<GraphEditorNodePin>(GraphEditorNodePin{
-                                                                 .node = node,
+                                                                 .node = graphEditorNode,
                                                                  .label = FormatName(param.GetName()),
                                                                  .name = param.GetName(),
                                                                  .typeId = param.GetFieldInfo().typeInfo.typeId,
                                                                  .kind = GraphEditorPinKind::Output
                                                              })).first->second.Get();
+
                     graphEditorNode->outputs.EmplaceBack(pin);
                 }
             }
@@ -87,7 +96,7 @@ namespace Fyrion
                                                                  .node = node,
                                                                  .name = field->GetName(),
                                                              }, MakeUnique<GraphEditorNodePin>(GraphEditorNodePin{
-                                                                 .node = node,
+                                                                 .node = graphEditorNode,
                                                                  .label = FormatName(field->GetName()),
                                                                  .name = field->GetName(),
                                                                  .typeId = field->GetFieldInfo().typeInfo.typeId,
@@ -100,6 +109,35 @@ namespace Fyrion
         }
         else
         {
+            graphEditorNode->addOutputPin = MakeUnique<GraphEditorNodePin>(GraphEditorNodePin{
+                .node = graphEditorNode,
+                .kind = GraphEditorPinKind::AddOutputPin
+            });
+
+            for (RID inputValue : inputValues)
+            {
+                ResourceObject valueObject = Repository::Read(inputValue);
+
+                String name = valueObject[GraphNodeValue::Input].Value<String>();
+                RID valueSuboject = valueObject.GetSubObject(GraphNodeValue::Value);
+
+                GraphEditorNodePin* pin = m_pins.Emplace(GraphEditorNodePinLookup{
+                                                             .node = node,
+                                                             .name = name,
+                                                         }, MakeUnique<GraphEditorNodePin>(GraphEditorNodePin{
+                                                             .node = graphEditorNode,
+                                                             .label = FormatName(name),
+                                                             .name = name,
+                                                           //  .typeId = Repository::GetResourceTypeHandler(valueSuboject)->GetTypeInfo().typeId,
+                                                             .value = Repository::ReadData(valueSuboject),
+                                                             .kind = GraphEditorPinKind::Output,
+                                                             .publicValue = valueObject[GraphNodeValue::PublicValue].Value<bool>()
+                                                         })).first->second.Get();
+
+                graphEditorNode->outputs.EmplaceBack(pin);
+            }
+
+
             if (graphEditorNode->label.Empty())
             {
                 graphEditorNode->label = "Input";
@@ -118,25 +156,15 @@ namespace Fyrion
             return;
         }
 
-        GraphEditorLink* editorLink = m_links.Emplace(link, MakeUnique<GraphEditorLink>(GraphEditorLink{
+        m_links.Emplace(link, MakeUnique<GraphEditorLink>(GraphEditorLink{
             .rid = link,
-            .index = m_linksArray.Size(),
             .inputPin = inputPin,
             .outputPin = outputPin,
             .linkType = outputPin->typeId
-        })).first->second.Get();
+        }));
 
-        m_linksArray.EmplaceBack(editorLink);
-
-        if (const auto& it = m_nodes.Find(inputPin->node))
-        {
-            it->second->links.Insert(link);
-        }
-
-        if (const auto& it = m_nodes.Find(outputPin->node))
-        {
-            it->second->links.Insert(link);
-        }
+        inputPin->links.Emplace(link);
+        outputPin->links.Emplace(link);
     }
 
     GraphEditorNodePin* GraphEditor::GetPin(GraphEditorNodePin* left, GraphEditorNodePin* right, GraphEditorPinKind disiredKind)
@@ -188,6 +216,23 @@ namespace Fyrion
         {
             AddLinkCache(link);
         }
+    }
+
+    void GraphEditor::AddInputNode(const Vec2& position)
+    {
+        RID nodeAsset = Repository::CreateResource<GraphNodeAsset>();
+
+        ResourceObject nodeObject = Repository::Write(nodeAsset);
+        nodeObject[GraphNodeAsset::Position] = position;
+        nodeObject.Commit();
+
+        ResourceObject graphAsset = Repository::Write(m_graph);
+        graphAsset.AddToSubObjectSet(ResourceGraphAsset::Nodes, nodeAsset);
+        graphAsset.Commit();
+
+        Repository::SetUUID(nodeAsset, UUID::RandomUUID());
+        AddNodeCache(nodeAsset);
+        m_assetTree.MarkDirty();
     }
 
     void GraphEditor::AddOutput(TypeHandler* outputType, const Vec2& position)
@@ -265,6 +310,13 @@ namespace Fyrion
     void GraphEditor::DeleteLink(RID link)
     {
         Repository::DestroyResource(link);
+
+        if (const auto& it = m_links.Find(link))
+        {
+            it->second->inputPin->links.Erase(link);
+            it->second->outputPin->links.Erase(link);
+        }
+
         m_links.Erase(link);
         m_assetTree.MarkDirty();
     }
@@ -296,7 +348,7 @@ namespace Fyrion
     void GraphEditor::DeletePin(GraphEditorNodePin* pin)
     {
         m_pins.Erase(GraphEditorNodePinLookup{
-            .node = pin->node,
+            .node = pin->node->rid,
             .name = pin->name,
         });
     }

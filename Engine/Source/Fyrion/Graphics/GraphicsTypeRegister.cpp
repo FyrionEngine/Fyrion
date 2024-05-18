@@ -8,5 +8,9 @@ namespace Fyrion
         Registry::Type<ShaderStageInfo>();
         Registry::Type<Array<ShaderStageInfo>>();
         Registry::Type<ShaderInfo>();
+        Registry::Type<Buffer>();
+
+
+        Registry::Type<BufferUsage>();
     }
 }

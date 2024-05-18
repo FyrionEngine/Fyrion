@@ -1,4 +1,4 @@
-#include "doctest.h"
+#include "Fyrion/DocTest.hpp"
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Assets/AssetTypes.hpp"
 #include "Fyrion/Core/GraphTypes.hpp"

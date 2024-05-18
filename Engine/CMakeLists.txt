@@ -22,7 +22,7 @@ add_executable(FyrionEngineTests ${FYRION_ENGINE_TESTS_SOURCES})
 target_link_libraries(FyrionEngineTests PUBLIC FyrionEngine)
 
 target_include_directories(FyrionEngineTests PUBLIC ThirdParty/doctest)
-target_include_directories(FyrionEngineTests PUBLIC Tests)
+target_include_directories(FyrionEngineTests PUBLIC Test)
 target_compile_definitions(FyrionEngineTests PRIVATE FY_TEST_FILES="${CMAKE_CURRENT_SOURCE_DIR}/Test/Files")
 
 add_test(NAME FyrionEngineTests COMMAND FyrionEngineTests)

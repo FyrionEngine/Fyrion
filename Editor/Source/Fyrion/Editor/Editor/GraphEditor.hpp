@@ -1,5 +1,6 @@
 #pragma once
 #include "Fyrion/Core/HashMap.hpp"
+#include "Fyrion/Core/HashSet.hpp"
 #include "Fyrion/Core/Math.hpp"
 #include "Fyrion/Core/String.hpp"
 #include "Fyrion/Core/UniquePtr.hpp"
@@ -21,7 +22,6 @@ namespace Fyrion
     struct GraphEditorNodePin
     {
         RID                node;
-        u64                pin;
         String             label;
         String             name;
         TypeID             typeId;
@@ -30,8 +30,8 @@ namespace Fyrion
 
     struct GraphEditorNodePinLookup
     {
-        RID                node;
-        String             name;
+        RID    node;
+        String name;
 
         friend bool operator==(const GraphEditorNodePinLookup& lhs, const GraphEditorNodePinLookup& rhs)
         {
@@ -39,7 +39,7 @@ namespace Fyrion
         }
     };
 
-    template<>
+    template <>
     struct Hash<GraphEditorNodePinLookup>
     {
         constexpr static bool hasHash = true;
@@ -54,24 +54,29 @@ namespace Fyrion
 
     struct GraphEditorNode
     {
-        RID              rid;
-        TypeHandler*     typeHandler;
-        FunctionHandler* functionHandler;
-        Vec2             position;
-        String           label;
-        bool             initialized;
+        RID              rid{};
+        TypeHandler*     typeHandler{};
+        FunctionHandler* functionHandler{};
+        Vec2             position{};
+        String           label{};
+        bool             initialized{};
 
-        Array<u32> inputs;
-        Array<u32> outputs;
+        Array<GraphEditorNodePin*>   inputs{};
+        Array<GraphEditorNodePin*>   outputs{};
+        HashSet<RID> links{};
     };
 
     struct GraphEditorLink
     {
-        u64    linkId{};
-        u64    inputPin{};
-        u64    outputPin{};
-        TypeID linkType{};
+        RID                 rid{};
+        u64                 index{};
+        GraphEditorNodePin* inputPin{};
+        GraphEditorNodePin* outputPin{};
+        TypeID              linkType{};
     };
+
+    using GraphNodeMap = HashMap<RID, UniquePtr<GraphEditorNode>>;
+    using GraphNodePinMap = HashMap<GraphEditorNodePinLookup, UniquePtr<GraphEditorNodePin>>;
 
     class GraphEditor
     {
@@ -82,16 +87,19 @@ namespace Fyrion
 
         FY_NO_COPY_CONSTRUCTOR(GraphEditor)
 
-        void                      OpenGraph(RID rid);
-        bool                      IsGraphLoaded() const;
-        Span<GraphEditorNode*>    GetNodes() { return m_nodesArray; }
-        Span<GraphEditorNodePin*> GetPins() { return m_pinsArray; }
-        Span<GraphEditorLink>     GetLinks() { return m_links; }
+        void                   OpenGraph(RID rid);
+        bool                   IsGraphLoaded() const;
+        GraphNodeMap&          GetNodes() { return m_nodes; }
+        GraphNodePinMap&       GetPins() { return m_pins; }
+        Span<GraphEditorLink*> GetLinks() { return m_linksArray; }
 
         void AddOutput(TypeHandler* outputType, const Vec2& position);
         void AddNode(FunctionHandler* functionHandler, const Vec2& position);
-        bool ValidateLink(u64 inputPin, u64 outputPin);
-        void AddLink(u64 inputPin, u64 outputPin);
+        bool ValidateLink(GraphEditorNodePin* inputPin, GraphEditorNodePin* outputPin);
+        void AddLink(GraphEditorNodePin* inputPin, GraphEditorNodePin* outputPin);
+
+        void DeleteLink(RID link);
+        void DeleteNode(RID node);
 
     private:
         AssetTree& m_assetTree;
@@ -100,19 +108,18 @@ namespace Fyrion
         TypeID     m_graphTypeId{};
         String     m_graphName{};
 
-        Array<GraphEditorNode*>                  m_nodesArray;
-        HashMap<RID, UniquePtr<GraphEditorNode>> m_nodes;
+        GraphNodeMap    m_nodes;
+        GraphNodePinMap m_pins;
 
-        Array<GraphEditorNodePin*> m_pinsArray;
-        HashMap<GraphEditorNodePinLookup, UniquePtr<GraphEditorNodePin>> m_pins;
-
-        Array<GraphEditorLink> m_links;
+        HashMap<RID, UniquePtr<GraphEditorLink>> m_links;
+        Array<GraphEditorLink*>                  m_linksArray;
 
         void AddNodeCache(RID node);
         void AddLinkCache(RID link);
 
-        GraphEditorNodePin* GetPin(u64 left, u64 right, GraphEditorPinKind disiredKind);
+        GraphEditorNodePin* GetPin(GraphEditorNodePin* left, GraphEditorNodePin* right, GraphEditorPinKind disiredKind);
 
         GraphEditorNodePin* FindPin(RID node, const StringView& pin, GraphEditorPinKind graphEditorPinKind);
+        void                DeletePin(GraphEditorNodePin* pin);
     };
 }

@@ -151,6 +151,15 @@ namespace Fyrion
         }
     }
 
+    template<typename Type, typename Owner, typename Return, typename ...Args, typename ...Params>
+    void ForEach(Type* begin, Type* end, Owner* owner, Return(Owner::*func)(Args...), Params&& ... args)
+    {
+        for (Type* it = begin; it != end; ++it)
+        {
+            (owner->*func)(Traits::Forward<Args>(*it)...);
+        }
+    }
+
     template<typename Type>
     constexpr inline Type Sum(Type* begin, Type* end)
     {

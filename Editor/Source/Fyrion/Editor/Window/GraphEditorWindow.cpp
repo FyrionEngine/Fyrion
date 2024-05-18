@@ -128,11 +128,10 @@ namespace Fyrion
 
         ed::Begin("Node Graph Editor", ImVec2(0.0, 0.0f));
 
-        Span<GraphEditorNodePin*> pins = m_graphEditor.GetPins();
-
-
-        for (GraphEditorNode* node : m_graphEditor.GetNodes())
+        for (auto& itNode : m_graphEditor.GetNodes())
         {
+            GraphEditorNode* node = itNode.second.Get();
+
             if (!node->initialized)
             {
                 ed::SetNodePosition(node->rid.id, ImVec2(node->position.x, node->position.y));
@@ -153,32 +152,30 @@ namespace Fyrion
             builder.EndHeader();
 
 
-            for (u32 pinId : node->inputs)
+            for (GraphEditorNodePin* input : node->inputs)
             {
-                const GraphEditorNodePin& input = *pins[pinId];
-                builder.Input(input.pin);
-                DrawPinIcon(input.typeId, false);
+                builder.Input(ed::PinId(input));
+                DrawPinIcon(input->typeId, false);
                 ImGui::Spring(0);
-                ImGui::TextUnformatted(input.label.CStr());
+                ImGui::TextUnformatted(input->label.CStr());
                 ImGui::Spring(0);
                 builder.EndInput();
             }
 
-            for (u32 pinId : node->outputs)
+            for (GraphEditorNodePin* output : node->outputs)
             {
-                const GraphEditorNodePin& output = *pins[pinId];
-                builder.Output(output.pin);
-                ImGui::TextUnformatted(output.label.CStr());
+                builder.Output(ed::PinId(output));
+                ImGui::TextUnformatted(output->label.CStr());
                 ImGui::Spring(0);
-                DrawPinIcon(output.typeId, false);
+                DrawPinIcon(output->typeId, false);
                 builder.EndOutput();
             }
             builder.End();
         }
 
-        for (GraphEditorLink& link : m_graphEditor.GetLinks())
+        for (GraphEditorLink* link : m_graphEditor.GetLinks())
         {
-            ed::Link(link.linkId, link.inputPin, link.outputPin, GetTypeColor(link.linkType), 3.f);
+            ed::Link(link->rid.id, ed::PinId(link->inputPin), ed::PinId(link->outputPin), GetTypeColor(link->linkType), 3.f);
         }
 
         if (ed::BeginCreate())
@@ -188,11 +185,11 @@ namespace Fyrion
             {
                 if (inputPinId && outputPinId && inputPinId != outputPinId)
                 {
-                    if (m_graphEditor.ValidateLink(inputPinId.Get(), static_cast<u64>(outputPinId)))
+                    if (m_graphEditor.ValidateLink(inputPinId.AsPointer<GraphEditorNodePin>(), outputPinId.AsPointer<GraphEditorNodePin>()))
                     {
                         if (ed::AcceptNewItem())
                         {
-                            m_graphEditor.AddLink(inputPinId.Get(), static_cast<u64>(outputPinId));
+                            m_graphEditor.AddLink(inputPinId.AsPointer<GraphEditorNodePin>(), outputPinId.AsPointer<GraphEditorNodePin>());
                         }
                     }
                     else
@@ -207,17 +204,22 @@ namespace Fyrion
 
         if (ed::BeginDelete())
         {
-
             ed::NodeId deletedNodeId{};
-            while(ed::QueryDeletedNode(&deletedNodeId))
+            while (ed::QueryDeletedNode(&deletedNodeId))
             {
-
+                if (ed::AcceptDeletedItem())
+                {
+                    m_graphEditor.DeleteNode(RID{.id = deletedNodeId.Get()});
+                }
             }
 
             ed::LinkId deletedLinkId{};
             while (ed::QueryDeletedLink(&deletedLinkId))
             {
-
+                if (ed::AcceptDeletedItem())
+                {
+                    m_graphEditor.DeleteLink(RID{.id = deletedLinkId.Get()});
+                }
             }
 
             ed::EndDelete();

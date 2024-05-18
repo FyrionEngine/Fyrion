@@ -101,6 +101,8 @@ namespace Fyrion
         void DeleteLink(RID link);
         void DeleteNode(RID node);
 
+        void MoveNode(GraphEditorNode* node, Vec2 newPos);
+
     private:
         AssetTree& m_assetTree;
         RID        m_asset{};

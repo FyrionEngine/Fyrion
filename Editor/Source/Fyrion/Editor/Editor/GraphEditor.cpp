@@ -282,6 +282,17 @@ namespace Fyrion
         m_assetTree.MarkDirty();
     }
 
+    void GraphEditor::MoveNode(GraphEditorNode* node, Vec2 newPos)
+    {
+        node->position = newPos;
+
+        ResourceObject nodeObject = Repository::Write(node->rid);
+        nodeObject[GraphNodeAsset::Position] = node->position;
+        nodeObject.Commit();
+
+        m_assetTree.MarkDirty();
+    }
+
     void GraphEditor::DeletePin(GraphEditorNodePin* pin)
     {
         m_pins.Erase(GraphEditorNodePinLookup{

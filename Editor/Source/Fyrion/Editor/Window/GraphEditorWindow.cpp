@@ -11,9 +11,7 @@
 #include "imgui_node_editor_internal.h"
 #include "widgets.h"
 #include "Fyrion/Engine.hpp"
-#include "Fyrion/Assets/AssetTypes.hpp"
 #include "Fyrion/Core/Event.hpp"
-#include "Fyrion/Core/GraphTypes.hpp"
 #include "Fyrion/Core/StringUtils.hpp"
 #include "Fyrion/Resource/Repository.hpp"
 #include "Fyrion/Resource/ResourceGraph.hpp"
@@ -62,6 +60,11 @@ namespace Fyrion
         {
             ax::Drawing::IconType iconType = ax::Drawing::IconType::Circle;
             ax::Widgets::Icon(ImVec2(static_cast<float>(pinIconSize), static_cast<float>(pinIconSize)), iconType, connected, GetTypeColor(typeId), ImColor(32, 32, 32, 255));
+        }
+
+        ed::Detail::EditorContext* CastEditorContext(VoidPtr editorContext)
+        {
+            return static_cast<ed::Detail::EditorContext*>(editorContext);
         }
     }
 
@@ -171,6 +174,12 @@ namespace Fyrion
                 builder.EndOutput();
             }
             builder.End();
+
+            ImVec2 pos = ed::GetNodePosition(node->rid.id);
+            if (ImGui::IsMouseReleased(ImGuiMouseButton_Left) && pos != ImVec2(node->position.x, node->position.y))
+            {
+                m_graphEditor.MoveNode(node, Vec2{pos.x, pos.y});
+            }
         }
 
         for (GraphEditorLink* link : m_graphEditor.GetLinks())

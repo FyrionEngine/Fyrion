@@ -151,11 +151,21 @@ namespace Fyrion
         	auto diffCursor = cursor - initCursor;
         	size -= diffCursor;
         	Rect bb{(i32)cursor.x, (i32)cursor.y, u32(cursor.x + size.x), u32(cursor.y + size.y)};
-//	        m_viewportRenderer.SetSize(Extent{(u32)size.x, (u32)size.y});
+
+        	Extent extent = {static_cast<u32>(size.x), static_cast<u32>(size.y)};
+
+	        if (m_renderGraph == nullptr)
+	        {
+		        m_renderGraph = RenderGraph::Create(extent, {});
+	        }
+	        else if (extent != m_renderGraph->GetViewportExtent())
+	        {
+		        m_renderGraph->Resize(extent);
+	        }
 
         	if (open)
         	{
-        		//ImGui::DrawImage(m_viewportRenderer.GetColorAttachmentOutput(), bb);
+        		ImGui::DrawImage(m_renderGraph->GetColorOutput(), bb);
         	}
 
         }

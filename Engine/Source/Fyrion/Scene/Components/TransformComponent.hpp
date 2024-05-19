@@ -38,7 +38,7 @@ namespace Fyrion
         FY_FINLINE const Vec3& GetPosition() const { return m_position; }
         FY_FINLINE const Quat& GetRotation() const { return m_rotation; }
         FY_FINLINE const Vec3& GetScale() const { return m_scale; }
-        FY_FINLINE const Mat4& GetGlobalTransform() const { return m_globalTransform; }
+        FY_FINLINE const Mat4& GetWorldTransform() const { return m_worldTransform; }
 
         void OnNotify(i64 type) override;
 
@@ -50,7 +50,7 @@ namespace Fyrion
         Quat m_rotation{0, 0, 0, 1};
         Vec3 m_scale{1, 1, 1};
 
-        Mat4 m_globalTransform{1.0};
+        Mat4 m_worldTransform{1.0};
 
         void NotifyTransformChange() const;
     };

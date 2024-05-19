@@ -11,6 +11,7 @@
 #include "Fyrion/Resource/ResourceAssets.hpp"
 #include "Fyrion/Resource/Repository.hpp"
 #include "Fyrion/Engine.hpp"
+#include "Fyrion/Graphics/RenderGraph.hpp"
 #include "Fyrion/Resource/ResourceGraph.hpp"
 #include "Fyrion/Scene/SceneAssets.hpp"
 
@@ -375,7 +376,7 @@ namespace Fyrion
                                     {
                                         Editor::GetSceneEditor().LoadScene(node->rid);
                                     }
-                                    else if (node->objectType == GetTypeID<ResourceGraphAsset>())
+                                    else if (node->objectType == GetTypeID<ResourceGraphAsset>() || node->objectType == GetTypeID<RenderGraphAsset>())
                                     {
                                         GraphEditorWindow::OpenGraphWindow(node->rid);
                                     }
@@ -509,6 +510,15 @@ namespace Fyrion
         ImGui::RenameContentSelected(CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
     }
 
+    void ProjectBrowserWindow::AssetNewRenderGraph(const MenuItemEventData& eventData)
+    {
+        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
+        RID newAsset = projectBrowserWindow->m_assetTree.NewAsset(projectBrowserWindow->m_openFolder, Repository::CreateResource<RenderGraphAsset>(), "New Render Graph");
+
+        ImGui::SelectContentItem(Hash<RID>::Value(newAsset), CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
+        ImGui::RenameContentSelected(CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
+    }
+
     void ProjectBrowserWindow::AddMenuItem(const MenuItemCreation& menuItem)
     {
         s_menuItemContext.AddMenuItem(menuItem);
@@ -532,6 +542,7 @@ namespace Fyrion
         AddMenuItem(MenuItemCreation{.itemName="Create New Asset", .icon=ICON_FA_PLUS, .priority = 150});
         AddMenuItem(MenuItemCreation{.itemName="Create New Asset/Resource Graph", .icon=ICON_FA_DIAGRAM_PROJECT, .priority = 10, .action = AssetNewResourceGraph});
         AddMenuItem(MenuItemCreation{.itemName="Create New Asset/Behavior Graph", .icon=ICON_FA_DIAGRAM_PROJECT, .priority = 20});
+        AddMenuItem(MenuItemCreation{.itemName="Create New Asset/Render Graph", .icon=ICON_FA_DIAGRAM_PROJECT, .priority = 30, .action = AssetNewRenderGraph});
 
         type.Function<&ProjectBrowserWindow::SetOpenFolder>("SetOpenFolder");
         type.Attribute<EditorWindowProperties>(EditorWindowProperties{

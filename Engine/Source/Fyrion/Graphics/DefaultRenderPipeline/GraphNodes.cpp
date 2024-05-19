@@ -1,4 +1,4 @@
-#include "DefaultRenderPipelineNodes.hpp"
+#include "GraphNodes.hpp"
 
 #include "Fyrion/Core/GraphTypes.hpp"
 #include "Fyrion/Core/Registry.hpp"

@@ -218,6 +218,8 @@ namespace ImGui
 
     void DrawImage(Texture texture, const Rect& rect, const ImVec4& tintCol)
     {
+        if (!texture) return;
+
         ImDrawList* drawList = GetWindowDrawList();
 
         drawList->AddImage(

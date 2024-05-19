@@ -290,9 +290,9 @@ namespace Fyrion
         RID linkAsset = Repository::CreateResource<GraphNodeLinkAsset>();
 
         ResourceObject linkObject = Repository::Write(linkAsset);
-        linkObject[GraphNodeLinkAsset::InputNode] = input->node;
+        linkObject[GraphNodeLinkAsset::InputNode] = input->node->rid;
         linkObject[GraphNodeLinkAsset::InputPin] = input->name;
-        linkObject[GraphNodeLinkAsset::OutputNode] = output->node;
+        linkObject[GraphNodeLinkAsset::OutputNode] = output->node->rid;
         linkObject[GraphNodeLinkAsset::OutputPin] = output->name;
         linkObject.Commit();
 
@@ -302,9 +302,10 @@ namespace Fyrion
 
         Repository::SetUUID(linkAsset, UUID::RandomUUID());
 
+        AddLinkCache(linkAsset);
+
         m_assetTree.MarkDirty();
 
-        AddLinkCache(linkAsset);
     }
 
     void GraphEditor::DeleteLink(RID link)

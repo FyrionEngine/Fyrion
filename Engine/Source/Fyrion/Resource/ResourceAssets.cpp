@@ -254,13 +254,6 @@ namespace Fyrion
                 String newAbsolutePath = MakeAssetAbsolutePath(asset);
                 if (!newAbsolutePath.Empty())
                 {
-                    bool oldPathExists = FileSystem::GetFileStatus(info.absolutePath).exists;
-                    if (oldPathExists)
-                    {
-                        FileSystem::Remove(info.absolutePath);
-                        logger.Debug("Asset {} Removed from {} ", rid.id, info.absolutePath);
-                    }
-
                     String parentPath = Path::Parent(newAbsolutePath);
                     if (!FileSystem::GetFileStatus(parentPath).exists)
                     {
@@ -313,6 +306,12 @@ namespace Fyrion
                                 streamObject->MapTo(streamPath, 0);
                             }
                         }
+                    }
+
+                    if (newAbsolutePath != info.absolutePath && FileSystem::GetFileStatus(info.absolutePath).exists)
+                    {
+                        FileSystem::Remove(info.absolutePath);
+                        logger.Debug("Asset {} Removed from {} ", rid.id, info.absolutePath);
                     }
 
                     String oldPath = info.absolutePath;

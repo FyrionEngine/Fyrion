@@ -48,6 +48,7 @@ namespace Fyrion
         static void AssetRename(const MenuItemEventData& eventData);
         static void AssetShowInExplorer(const MenuItemEventData& eventData);
         static void AssetNewResourceGraph(const MenuItemEventData& eventData);
+        static void AssetNewRenderGraph(const MenuItemEventData& eventData);
     };
 
 }

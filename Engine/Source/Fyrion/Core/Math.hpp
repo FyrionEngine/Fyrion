@@ -31,6 +31,17 @@ namespace Fyrion
         constexpr Extent operator*(const Extent& b) const;
         constexpr Extent operator*(const u32& b) const;
         constexpr Extent operator*(const Vec2& b) const;
+
+        friend bool operator==(const Extent& lhs, const Extent& rhs)
+        {
+            return lhs.width == rhs.width
+                && lhs.height == rhs.height;
+        }
+
+        friend bool operator!=(const Extent& lhs, const Extent& rhs)
+        {
+            return !(lhs == rhs);
+        }
     };
 
     struct Extent3D

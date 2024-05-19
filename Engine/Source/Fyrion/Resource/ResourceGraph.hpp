@@ -22,6 +22,12 @@ namespace Fyrion
 
     class ResourceGraph;
 
+    struct GraphInstanceAsset
+    {
+        constexpr static u32 Graph = 0;
+        constexpr static u32 Inputs = 0;
+    };
+
     struct ResourceGraphAsset
     {
         constexpr static u32 Nodes = 0;
@@ -51,7 +57,6 @@ namespace Fyrion
         u32    inputNodeId{};
         String inputPin{};
     };
-
 
     struct ResourceGraphNodeParamData
     {

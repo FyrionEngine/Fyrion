@@ -38,6 +38,33 @@ namespace Fyrion
         m_name = name;
     }
 
+    ValueHandler::ValueHandler(const String& valueDesc) : m_valueDesc(valueDesc)
+    {
+    }
+
+    StringView ValueHandler::GetDesc() const
+    {
+        return m_valueDesc;
+    }
+
+    ConstPtr ValueHandler::GetValue() const
+    {
+        if (m_fnGetValue)
+        {
+            return m_fnGetValue(this);
+        }
+        return nullptr;
+    }
+
+    i64 ValueHandler::GetCode() const
+    {
+        if (m_fnGetCode)
+        {
+            return m_fnGetCode(this);
+        }
+        return I64_MIN;
+    }
+
     ConstPtr AttributeHandler::GetAttribute(TypeID attributeId) const
     {
         if (auto it = m_attributes.Find(attributeId))
@@ -226,6 +253,29 @@ namespace Fyrion
         return m_functionArray;
     }
 
+    ValueHandler* TypeHandler::FindValueByName(const StringView& valueName) const
+    {
+        if(auto it = m_values.Find(valueName))
+        {
+            return it->second.Get();
+        }
+        return nullptr;
+    }
+
+    ValueHandler* TypeHandler::FindValueByCode(i64 code) const
+    {
+        if(auto it = m_valuesByCode.Find(code))
+        {
+            return it->second;
+        }
+        return nullptr;
+    }
+
+    Array<ValueHandler*> TypeHandler::GetValues() const
+    {
+        return m_valuesArray;
+    }
+
     Span<DerivedType> TypeHandler::GetDerivedTypes() const
     {
         return m_derivedTypes;
@@ -335,6 +385,20 @@ namespace Fyrion
             m_attributeHandler.OnAttributeCreated(attributeId);
         }
         return *it->second;
+    }
+
+    ValueBuilder::ValueBuilder(ValueHandler& valueHandler) : valueHandler(valueHandler)
+    {
+    }
+
+    void ValueBuilder::SetFnGetValue(ValueHandler::FnGetValue fnGetValue)
+    {
+        valueHandler.m_fnGetValue = fnGetValue;
+    }
+
+    void ValueBuilder::SerFnGetCode(ValueHandler::FnGetCode fnGetCode)
+    {
+        valueHandler.m_fnGetCode = fnGetCode;
     }
 
     ConstructorBuilder::ConstructorBuilder(ConstructorHandler& constructorHandler) : m_constructorHandler(constructorHandler)
@@ -472,6 +536,18 @@ namespace Fyrion
             m_typeHandler.m_fieldArray.EmplaceBack(it->second.Get());
         }
         return FieldBuilder{*it->second};
+    }
+
+    ValueBuilder TypeBuilder::NewValue(const StringView& valueDesc, i64 code)
+    {
+        auto it = m_typeHandler.m_values.Find(valueDesc);
+        if (it == m_typeHandler.m_values.end())
+        {
+            it = m_typeHandler.m_values.Emplace(valueDesc, MakeShared<ValueHandler>(valueDesc)).first;
+            m_typeHandler.m_valuesArray.EmplaceBack(it->second.Get());
+            m_typeHandler.m_valuesByCode.Emplace(code, it->second.Get());
+        }
+        return ValueBuilder{*it->second};
     }
 
     FunctionBuilder TypeBuilder::NewFunction(const FunctionHandlerCreation& creation)

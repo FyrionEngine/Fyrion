@@ -13,6 +13,7 @@ namespace Fyrion
 {
 
     class TypeBuilder;
+    class ValueBuilder;
     class FunctionBuilder;
     class ConstructorBuilder;
     class FieldBuilder;
@@ -135,6 +136,26 @@ namespace Fyrion
     private:
         FieldInfo   m_fieldInfo{};
         String      m_name{};
+    };
+
+    class FY_API ValueHandler
+    {
+        typedef ConstPtr (*FnGetValue)(const ValueHandler* valueHandler);
+        typedef i64 (*     FnGetCode)(const ValueHandler* valueHandler);
+
+    public:
+        ValueHandler(const String& valueDesc);
+
+        StringView GetDesc() const;
+        ConstPtr   GetValue() const;
+        i64        GetCode() const;
+
+
+        friend class ValueBuilder;
+    private:
+        String     m_valueDesc{};
+        FnGetValue m_fnGetValue{};
+        FnGetCode  m_fnGetCode{};
     };
 
 
@@ -265,6 +286,9 @@ namespace Fyrion
         Array<FieldHandler*>                          m_fieldArray{};
         HashMap<String, SharedPtr<FunctionHandler>>   m_functions{};
         Array<FunctionHandler*>                       m_functionArray{};
+        HashMap<String, SharedPtr<ValueHandler>>      m_values{};
+        HashMap<i64, ValueHandler*>                   m_valuesByCode{};
+        Array<ValueHandler*>                          m_valuesArray{};
 
         HashMap<TypeID, FnCast>                       m_baseTypes{};
         Array<TypeID>                                 m_baseTypesArray{};
@@ -280,6 +304,10 @@ namespace Fyrion
 
         FunctionHandler*                FindFunction(const StringView& functionName) const;
         Span<FunctionHandler*>          GetFunctions() const;
+
+        ValueHandler*                   FindValueByName(const StringView& valueName) const;
+        ValueHandler*                   FindValueByCode(i64 code) const;
+        Array<ValueHandler*>            GetValues() const;
 
         Span<DerivedType>               GetDerivedTypes() const;
         Array<TypeID>                   GetBaseTypes() const;
@@ -356,6 +384,18 @@ namespace Fyrion
         AttributeInfo& NewAttribute(TypeID attributeId);
     };
 
+    class FY_API ValueBuilder
+    {
+    public:
+        ValueBuilder(ValueHandler& valueHandler);
+
+        void SetFnGetValue(ValueHandler::FnGetValue fnGetValue);
+        void SerFnGetCode(ValueHandler::FnGetCode fnGetCode);
+
+    private:
+        ValueHandler& valueHandler;
+    };
+
 
     class FY_API ConstructorBuilder
     {
@@ -411,6 +451,7 @@ namespace Fyrion
         ConstructorBuilder NewConstructor(TypeID* ids, FieldInfo* params, usize size);
         FieldBuilder       NewField(const StringView& fieldName);
         FunctionBuilder    NewFunction(const FunctionHandlerCreation& creation);
+        ValueBuilder       NewValue(const StringView& valueDesc, i64 code);
         void               AddBaseType(TypeID typeId, FnCast fnCast);
 
         TypeHandler& GetTypeHandler() const;
@@ -507,6 +548,35 @@ namespace Fyrion
         }
     private:
         ParamHandler& m_paramHandler;
+    };
+
+    template<auto Value, typename Type, typename Owner, typename Enable = void>
+    class NativeValue
+    {
+        static_assert(Traits::AlwaysFalse<Owner>, "Owner is not from a enum");
+    };
+
+    template<auto Value, typename Type, typename Owner>
+    class NativeValue<Value, Type, Owner, Traits::EnableIf<Traits::IsEnum<Owner>>>
+    {
+    public:
+        NativeValue(ValueBuilder valueBuilder)
+        {
+            valueBuilder.SetFnGetValue(&FnGetValueImpl);
+            valueBuilder.SerFnGetCode(&FnGetCodeImpl);
+        }
+    private:
+        static constexpr Type c_value = Value;
+
+        static ConstPtr FnGetValueImpl(const ValueHandler* valueHandler)
+        {
+            return &c_value;
+        }
+
+        static i64 FnGetCodeImpl(const ValueHandler* valueHandler)
+        {
+            return static_cast<i64>(c_value);
+        }
     };
 
 
@@ -933,6 +1003,12 @@ namespace Fyrion
             using FuncType = Traits::RemoveConstFunc<decltype(mfp)>;
             using DecompType = MemberFunctionTemplateDecomposer<mfp, FuncType>;
             return DecompType::CreateHandler(m_typeBuilder.NewFunction(DecompType::MakeCreation(name)));
+        }
+
+        template <auto value>
+        auto Value(const StringView& valueName)
+        {
+            return NativeValue<value, decltype(value), Type>(m_typeBuilder.NewValue(valueName, static_cast<i64>(value)));
         }
     };
 

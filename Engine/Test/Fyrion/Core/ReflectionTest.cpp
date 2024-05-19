@@ -5,7 +5,18 @@
 
 using namespace Fyrion;
 
-namespace
+namespace ReflectionTest
+{
+	class ReflectionTestClass;
+}
+
+template<>
+struct Fyrion::ReleaseHandler<ReflectionTest::ReflectionTestClass>
+{
+	static void Release(ReflectionTest::ReflectionTestClass&);
+};
+
+namespace ReflectionTest
 {
 	struct IncompleteType;
 
@@ -34,6 +45,8 @@ namespace
 
 		static i32 constructorCalls;
 		static i32 destructorCalls;
+
+		i32 releaseCount = 0;
 
 		ReflectionTestClass() : m_int(10), m_string("Empty")
 		{
@@ -183,6 +196,8 @@ namespace
 			CHECK(test.GetInt() == 123);
 			CHECK(test.GetString() == "TestStr");
 
+			testClass->Release(instance);
+			CHECK(test.releaseCount == 1);
 			testClass->Destroy(instance);
 			CHECK(ReflectionTestClass::destructorCalls == 1);
 
@@ -198,6 +213,8 @@ namespace
 			CHECK(test.GetInt() == 10);
 			CHECK(test.GetString() == "Empty");
 
+			testClass->Release(instance);
+			CHECK(test.releaseCount == 1);
 			testClass->Destroy(instance);
 			CHECK(ReflectionTestClass::destructorCalls == 1);
 			ReflectionTestClass::ResetCount();
@@ -405,3 +422,10 @@ namespace
 
 	}
 }
+
+
+void ReleaseHandler<ReflectionTest::ReflectionTestClass>::Release(ReflectionTest::ReflectionTestClass& value)
+{
+	value.releaseCount++;
+}
+

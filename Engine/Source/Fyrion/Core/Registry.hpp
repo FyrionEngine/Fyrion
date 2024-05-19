@@ -22,6 +22,16 @@ namespace Fyrion
 
     typedef VoidPtr (*FnCast)(const TypeHandler* typeHandler, VoidPtr derived);
 
+
+    template<typename T>
+    struct ReleaseHandler
+    {
+        static void Release(T& value)
+        {
+        }
+    };
+
+
     struct FunctionInfo
     {
         TypeID functionId{};
@@ -236,10 +246,9 @@ namespace Fyrion
         typedef void (*FnDestructor)(const TypeHandler* typeHandler, VoidPtr instance);
         typedef void (*FnCopy)(const TypeHandler* typeHandler, ConstPtr source, VoidPtr dest);
         typedef void (*FnMove)(const TypeHandler* typeHandler, VoidPtr source, VoidPtr dest);
-
+        typedef void (*FnRelease)(const TypeHandler* typeHandler, VoidPtr instance);
         friend class TypeBuilder;
     private:
-
         String       m_name{};
         String       m_simpleName{};
         TypeInfo     m_typeInfo{};
@@ -248,6 +257,7 @@ namespace Fyrion
         FnCopy       m_fnCopy{};
         FnDestructor m_fnDestructor{};
         FnMove       m_fnMove{};
+        FnRelease    m_fnRelease{};
 
         HashMap<usize, SharedPtr<ConstructorHandler>> m_constructors{};
         Array<ConstructorHandler*>                    m_constructorArray{};
@@ -280,11 +290,12 @@ namespace Fyrion
         const TypeInfo&     GetTypeInfo() const;
         u32                 GetVersion() const;
 
-        void                Destroy(VoidPtr instance, Allocator& allocator = MemoryGlobals::GetDefaultAllocator()) const;
-        void                Destructor(VoidPtr instance) const;
-        void                Copy(ConstPtr source, VoidPtr dest) const;
-        void                Move(VoidPtr source, VoidPtr dest) const;
-        VoidPtr             Cast(TypeID  typeId, VoidPtr instance) const;
+        void    Destroy(VoidPtr instance, Allocator& allocator = MemoryGlobals::GetDefaultAllocator()) const;
+        void    Release(VoidPtr instance) const;
+        void    Destructor(VoidPtr instance) const;
+        void    Copy(ConstPtr source, VoidPtr dest) const;
+        void    Move(VoidPtr source, VoidPtr dest) const;
+        VoidPtr Cast(TypeID typeId, VoidPtr instance) const;
 
         VoidPtr NewInstance(Allocator& allocator = MemoryGlobals::GetDefaultAllocator()) const
         {
@@ -392,15 +403,15 @@ namespace Fyrion
     public:
         TypeBuilder(TypeHandler& typeHandler);
 
-        void                    SetFnDestroy(TypeHandler::FnDestroy fnDestroy);
-        void                    SetFnCopy(TypeHandler::FnCopy fnCopy);
-        void                    SetFnDestructor(TypeHandler::FnDestructor destructor);
-        void                    SetFnMove(TypeHandler::FnMove fnMove);
-
-        ConstructorBuilder      NewConstructor(TypeID* ids, FieldInfo* params, usize size);
-        FieldBuilder            NewField(const StringView& fieldName);
-        FunctionBuilder         NewFunction(const FunctionHandlerCreation& creation);
-        void                    AddBaseType(TypeID typeId, FnCast fnCast);
+        void               SetFnDestroy(TypeHandler::FnDestroy fnDestroy);
+        void               SetFnCopy(TypeHandler::FnCopy fnCopy);
+        void               SetFnDestructor(TypeHandler::FnDestructor destructor);
+        void               SetFnMove(TypeHandler::FnMove fnMove);
+        void               SetFnRelease(TypeHandler::FnRelease fnRelease);
+        ConstructorBuilder NewConstructor(TypeID* ids, FieldInfo* params, usize size);
+        FieldBuilder       NewField(const StringView& fieldName);
+        FunctionBuilder    NewFunction(const FunctionHandlerCreation& creation);
+        void               AddBaseType(TypeID typeId, FnCast fnCast);
 
         TypeHandler& GetTypeHandler() const;
 
@@ -815,6 +826,7 @@ namespace Fyrion
         static void CopyImpl(const TypeHandler* typeHandler, ConstPtr source, VoidPtr dest) {};
         static void DestructorImpl(const TypeHandler* typeHandler, VoidPtr instance){};
         static void MoveImpl(const TypeHandler* typeHandler, VoidPtr origin, VoidPtr destination) {};
+        static void ReleaseImpl(const TypeHandler* typeHandler, VoidPtr instance) {};
     };
 
     template<typename Type>
@@ -860,6 +872,11 @@ namespace Fyrion
                 FY_ASSERT(false, "type is not move or copy constructible");
             }
         }
+
+        static void ReleaseImpl(const TypeHandler* typeHandler, VoidPtr instance)
+        {
+            ReleaseHandler<Type>::Release(*static_cast<Type*>(instance));
+        }
     };
 
 
@@ -879,6 +896,7 @@ namespace Fyrion
             typeBuilder.SetFnCopy(&NativeTypeHandlerFuncs<Type>::CopyImpl);
             typeBuilder.SetFnDestructor(&NativeTypeHandlerFuncs<Type>::DestructorImpl);
             typeBuilder.SetFnMove(&NativeTypeHandlerFuncs<Type>::MoveImpl);
+            typeBuilder.SetFnRelease(&NativeTypeHandlerFuncs<Type>::ReleaseImpl);
         }
 
         auto Constructor()

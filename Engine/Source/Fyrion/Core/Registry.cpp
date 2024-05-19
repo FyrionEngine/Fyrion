@@ -264,6 +264,14 @@ namespace Fyrion
         }
     }
 
+    void TypeHandler::Release(VoidPtr instance) const
+    {
+        if (m_fnRelease)
+        {
+            m_fnRelease(this, instance);
+        }
+    }
+
     void TypeHandler::Destructor(VoidPtr instance) const
     {
         if (m_fnDestructor)
@@ -430,6 +438,11 @@ namespace Fyrion
     void TypeBuilder::SetFnDestructor(TypeHandler::FnDestructor destructor)
     {
         m_typeHandler.m_fnDestructor = destructor;
+    }
+
+    void TypeBuilder::SetFnRelease(TypeHandler::FnRelease fnRelease)
+    {
+        m_typeHandler.m_fnRelease = fnRelease;
     }
 
     void TypeBuilder::SetFnMove(TypeHandler::FnMove fnMove)

@@ -16,12 +16,12 @@ namespace Fyrion
         ResourceObject nodeObject = Repository::Read(node);
 
         Array<RID> inputValues = nodeObject.GetSubObjectSetAsArray(GraphNodeAsset::InputValues);
-        HashMap<String, RID> inputCache;
+        HashMap<String, Pair<RID, RID>> inputCache;
 
         for (RID input : inputValues)
         {
             ResourceObject valueObject = Repository::Read(input);
-            inputCache.Insert(valueObject[GraphNodeValue::Input].Value<String>(), input);
+            inputCache.Insert(valueObject[GraphNodeValue::Input].Value<String>(), MakePair(input, valueObject[GraphNodeValue::Value].Value<RID>()));
         }
 
         GraphEditorNode* graphEditorNode = m_nodes.Emplace(node, MakeUnique<GraphEditorNode>(GraphEditorNode{
@@ -45,6 +45,15 @@ namespace Fyrion
             {
                 if (param.HasAttribute<GraphInput>())
                 {
+                    RID value = {};
+                    RID valueAsset = {};
+
+                    if (auto itValue = inputCache.Find(param.GetName()))
+                    {
+                        value = itValue->second.second;
+                        valueAsset = itValue->second.first;
+                    }
+
                     GraphEditorNodePin* pin = m_pins.Emplace(GraphEditorNodePinLookup{
                                                                  .node = node,
                                                                  .name = param.GetName()
@@ -53,6 +62,8 @@ namespace Fyrion
                                                                  .label = FormatName(param.GetName()),
                                                                  .name = param.GetName(),
                                                                  .typeId = param.GetFieldInfo().typeInfo.typeId,
+                                                                 .value = value,
+                                                                 .valueAsset = valueAsset,
                                                                  .kind = GraphEditorPinKind::Input
                                                              })).first->second.Get();
 

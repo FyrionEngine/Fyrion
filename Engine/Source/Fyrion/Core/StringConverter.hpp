@@ -5,6 +5,8 @@
 
 namespace Fyrion
 {
+    template<typename Type>
+    constexpr static TypeID GetTypeID();
 
     namespace Converters
     {
@@ -21,6 +23,11 @@ namespace Fyrion
         FY_API i64 I64FromString(const char* str);
         FY_API f32 F32FromString(const char* str);
         FY_API f64 F64FromString(const char* str);
+
+        FY_API usize EnumStringSize(TypeID enumid, i64 code);
+        FY_API usize EnumToString(TypeID enumid, i64 code, char* buffer, usize pos);
+        FY_API i64   EnumFromString(TypeID enumid, const char* desc, usize size);
+
     }
 
     template<typename Type, typename Enable = void>
@@ -228,8 +235,30 @@ namespace Fyrion
 
         static void FromString(const char* str, usize size, char* ch)
         {
-
         }
     };
+
+    template<typename T >
+    struct StringConverter<T, Traits::EnableIf<Traits::IsEnum<T>>>
+    {
+        constexpr static bool hasConverter = true;
+        constexpr static usize bufferCount = 0;
+
+        static usize Size(const T& value)
+        {
+            return Converters::EnumStringSize(GetTypeID<T>(), static_cast<i64>(value));
+        }
+
+        static usize ToString(char* buffer, usize pos, const T& value)
+        {
+            return Converters::EnumToString(GetTypeID<T>(), static_cast<i64>(value), buffer, pos);
+        }
+
+        static void FromString(const char* str, usize size, T& value)
+        {
+           value = static_cast<T>(Converters::EnumFromString(GetTypeID<T>(), str, size));
+        }
+    };
+
 
 }

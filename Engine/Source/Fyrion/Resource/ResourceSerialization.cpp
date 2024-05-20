@@ -246,7 +246,11 @@ namespace Fyrion::ResourceSerialization
 
                 if (CheckString(context))
                 {
-                    if (field && instance)
+                    if (typeHandler && context.identifier == "_value" && typeHandler->GetTypeInfo().fromString)
+                    {
+                        typeHandler->GetTypeInfo().fromString(instance, context.value);
+                    }
+                    else if (field && instance)
                     {
                         FieldInfo fieldInfo = field->GetFieldInfo();
                         if (fieldInfo.typeInfo.typeId == GetTypeID<RID>())
@@ -256,7 +260,6 @@ namespace Fyrion::ResourceSerialization
                         }
                         else if (fieldInfo.typeInfo.fromString != nullptr)
                         {
-
                             fieldInfo.typeInfo.fromString(field->GetFieldPointer(instance), context.value);
                         }
                     }
@@ -611,6 +614,21 @@ namespace Fyrion::ResourceSerialization
                 buffer.Append(indentChar);
             }
         }
+
+        void AppendString(const StringView& str)
+        {
+            buffer.Append("\"");
+            buffer.Reserve(buffer.Size() + str.Size());
+            for (const auto c: str)
+            {
+                if (c == '\"' || c == '\\')
+                {
+                    buffer.Append("\\");
+                }
+                buffer.Append(c);
+            }
+            buffer.Append("\"");
+        }
     };
 
     void WriteObject(WriterContext& context, VoidPtr instance, TypeHandler* handler);
@@ -632,20 +650,10 @@ namespace Fyrion::ResourceSerialization
         }
         else if (typeInfo.toString && typeInfo.stringSize)
         {
-            context.buffer.Append("\"");
             u32 size = typeInfo.stringSize(pointer);
             String str(size);
             typeInfo.toString(pointer, str.begin());
-            context.buffer.Reserve(context.buffer.Size() + size);
-            for (const auto c: str)
-            {
-                if (c == '\"' || c == '\\')
-                {
-                    context.buffer.Append("\\");
-                }
-                context.buffer.Append(c);
-            }
-            context.buffer.Append("\"");
+            context.AppendString(str);
         }
         else if (typeInfo.apiId == GetTypeID<ArrayApi>())
         {
@@ -689,17 +697,34 @@ namespace Fyrion::ResourceSerialization
 
     void WriteObject(WriterContext& context, VoidPtr instance, TypeHandler* handler)
     {
-        Span<FieldHandler*> fields = handler->GetFields();
-        for (FieldHandler* field: fields)
-        {
-            //if (field.HasAttribute<SerializationIgnore>()) continue;
+        TypeInfo typeInfo = handler->GetTypeInfo();
 
+        if (typeInfo.toString && typeInfo.fromString && typeInfo.stringSize)
+        {
             context.Indent();
-            context.buffer.Append(field->GetName());
+            context.buffer.Append("_value");
             context.buffer.Append(": ");
-            TypeInfo typeInfo = field->GetFieldInfo().typeInfo;
-            WriteField(context, field->GetFieldPointer(instance), typeInfo, field);
+
+            u32 size = typeInfo.stringSize(instance);
+            String str(size);
+            typeInfo.toString(instance, str.begin());
+            context.AppendString(str);
             context.buffer.Append("\n");
+        }
+        else
+        {
+            Span<FieldHandler*> fields = handler->GetFields();
+            for (FieldHandler* field: fields)
+            {
+                //if (field.HasAttribute<SerializationIgnore>()) continue;
+
+                context.Indent();
+                context.buffer.Append(field->GetName());
+                context.buffer.Append(": ");
+                TypeInfo typeInfo = field->GetFieldInfo().typeInfo;
+                WriteField(context, field->GetFieldPointer(instance), typeInfo, field);
+                context.buffer.Append("\n");
+            }
         }
     }    
     

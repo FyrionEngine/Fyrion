@@ -152,7 +152,7 @@ namespace Fyrion
             }
 
             builder.Begin(node->rid.id);
-            builder.Header(GetNodeColor(node->label));
+            builder.Header(GetNodeColor(node->name));
 
             ImGui::Spring(0);
 
@@ -247,6 +247,13 @@ namespace Fyrion
                         if (ed::AcceptNewItem())
                         {
                             m_graphEditor.AddLink(inputPinId.AsPointer<GraphEditorNodePin>(), outputPinId.AsPointer<GraphEditorNodePin>());
+                        }
+                    }
+                    else if (m_graphEditor.ValidateNewInput(inputPinId.AsPointer<GraphEditorNodePin>(), outputPinId.AsPointer<GraphEditorNodePin>()))
+                    {
+                        if (ed::AcceptNewItem())
+                        {
+                            m_graphEditor.AddNewInput(inputPinId.AsPointer<GraphEditorNodePin>(), outputPinId.AsPointer<GraphEditorNodePin>());
                         }
                     }
                     else

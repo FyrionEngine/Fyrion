@@ -8,6 +8,12 @@
 
 namespace Fyrion
 {
+
+    void DCCMeshLoader(RID mesh, Array<u8>& vertexData, Array<u8>& indexData)
+    {
+
+    }
+
     void CreateBuffer(const Array<u8>& data, const BufferUsage& usage, Buffer& buffer)
     {
         buffer = Graphics::CreateBuffer(BufferCreation{
@@ -36,5 +42,11 @@ namespace Fyrion
         uploadGPUBuffer.Param<1>("usage").Attribute<GraphInput>();
         uploadGPUBuffer.Param<2>("buffer").Attribute<GraphOutput>();
         uploadGPUBuffer.Attribute<ResourceGraphNode>("Render/Create Buffer");
+
+        auto dccMeshLoader = Registry::Function<DCCMeshLoader>("Fyrion::DCCMeshLoader");
+        dccMeshLoader.Param<0>("mesh").Attribute<GraphInput>();
+        dccMeshLoader.Param<1>("vertexData").Attribute<GraphOutput>();
+        dccMeshLoader.Param<2>("indexData").Attribute<GraphOutput>();
+        dccMeshLoader.Attribute<ResourceGraphNode>("Render/DCC Mesh Loader");
     }
 }

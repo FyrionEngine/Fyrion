@@ -66,6 +66,7 @@ namespace Fyrion
         FunctionHandler*              functionHandler{};
         Vec2                          position{};
         String                        label{};
+        String                        name{};
         bool                          initialized{};
         UniquePtr<GraphEditorNodePin> addInputPin{};
         UniquePtr<GraphEditorNodePin> addOutputPin{};
@@ -105,6 +106,8 @@ namespace Fyrion
         void AddOutput(TypeHandler* outputType, const Vec2& position);
         void AddNode(FunctionHandler* functionHandler, const Vec2& position);
         bool ValidateLink(GraphEditorNodePin* inputPin, GraphEditorNodePin* outputPin);
+        bool ValidateNewInput(GraphEditorNodePin* inputPin, GraphEditorNodePin* outputPin);
+        void AddNewInput(GraphEditorNodePin* inputPin, GraphEditorNodePin* outputPin);
         void AddLink(GraphEditorNodePin* inputPin, GraphEditorNodePin* outputPin);
         void SetPinValue(GraphEditorNodePin* input, ConstPtr value);
 
@@ -132,5 +135,7 @@ namespace Fyrion
 
         GraphEditorNodePin* FindPin(RID node, const StringView& pin, GraphEditorPinKind graphEditorPinKind);
         void                DeletePin(GraphEditorNodePin* pin);
+
+        void AddOutputPinCache(RID value, GraphEditorNode* node);
     };
 }

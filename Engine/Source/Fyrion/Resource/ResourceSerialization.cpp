@@ -796,6 +796,9 @@ namespace Fyrion::ResourceSerialization
 
     void WriteResource(WriterContext& context, RID rid)
     {
+        if(!Repository::GetUUID(rid)) return;
+
+
         ResourceType* resourceType = Repository::GetResourceType(rid);
         if (resourceType)
         {

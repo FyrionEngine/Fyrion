@@ -129,7 +129,7 @@ namespace Fyrion
                                                              .label = FormatName(name),
                                                              .name = name,
                                                            //  .typeId = Repository::GetResourceTypeHandler(valueSuboject)->GetTypeInfo().typeId,
-                                                             .value = Repository::ReadData(valueSuboject),
+                                                             .value = valueSuboject,
                                                              .kind = GraphEditorPinKind::Output,
                                                              .publicValue = valueObject[GraphNodeValue::PublicValue].Value<bool>()
                                                          })).first->second.Get();
@@ -306,6 +306,25 @@ namespace Fyrion
 
         m_assetTree.MarkDirty();
 
+    }
+
+    void GraphEditor::SetPinValue(GraphEditorNodePin* input, ConstPtr value)
+    {
+        if (!input->value)
+        {
+            input->value = Repository::CreateResource(input->typeId);
+            input->valueAsset = Repository::CreateResource<GraphNodeValue>();
+
+            ResourceObject valueObject = Repository::Write(input->valueAsset);
+            valueObject[GraphNodeValue::Input] = input->name;
+            valueObject.SetSubObject(GraphNodeValue::Value, input->value);
+            valueObject.Commit();
+
+            ResourceObject nodeObject = Repository::Write(input->node->rid);
+            nodeObject.AddToSubObjectSet(GraphNodeAsset::InputValues, input->valueAsset);
+            nodeObject.Commit();
+        }
+        Repository::Commit(input->value, value);
     }
 
     void GraphEditor::DeleteLink(RID link)

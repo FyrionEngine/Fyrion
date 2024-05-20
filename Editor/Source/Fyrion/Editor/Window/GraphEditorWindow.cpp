@@ -30,6 +30,16 @@ namespace Fyrion
             return a.Min.x == b.Min.x && a.Min.y == b.Min.y && a.Max.x == b.Max.x && a.Max.y == b.Max.y;
         }
 
+        Vec2 Cast(ImVec2 vec)
+        {
+            return {vec.x, vec.y};
+        }
+
+        ImVec2 Cast(Vec2 vec)
+        {
+            return ImVec2(vec.x, vec.y);
+        }
+
 
         const int pinIconSize = 24;
 
@@ -161,6 +171,7 @@ namespace Fyrion
                 DrawPinIcon(input->typeId, !input->links.Empty());
                 ImGui::Spring(0);
                 ImGui::TextUnformatted(input->label.CStr());
+                DrawPinInputField(input);
                 ImGui::Spring(0);
                 builder.EndInput();
             }
@@ -184,6 +195,33 @@ namespace Fyrion
             }
 
             builder.End();
+
+            ed::Suspend();
+
+            if(m_openPopup)
+            {
+                m_openPopup = false;
+                ImGui::OpenPopup("GraphEditorComboPopup");
+            }
+
+            if (m_comboPin && m_comboPin->node == node && ImGui::IsPopupOpen("GraphEditorComboPopup"))
+            {
+                ImGui::SetNextWindowPos(Cast(m_comboOpenPos), ImGuiCond_Always);
+                if (ImGui::BeginPopup("GraphEditorComboPopup"))
+                {
+                    for (ValueHandler* value : m_comboOpenType->GetValues())
+                    {
+                        if (ImGui::Selectable(value->GetDesc().CStr()))
+                        {
+                            m_graphEditor.SetPinValue(m_comboPin, value->GetValue());
+                            ImGui::CloseCurrentPopup();
+                        }
+                    }
+                    ImGui::EndPopup();
+                }
+            }
+
+            ed::Resume();
 
             ImVec2 pos = ed::GetNodePosition(node->rid.id);
             if (ImGui::IsMouseReleased(ImGuiMouseButton_Left) && pos != ImVec2(node->position.x, node->position.y))
@@ -281,6 +319,49 @@ namespace Fyrion
     {
         GraphEditorWindow* graphEditorWindow = static_cast<GraphEditorWindow*>(eventData.drawData);
         graphEditorWindow->m_graphEditor.AddNode(static_cast<FunctionHandler*>(eventData.itemData), graphEditorWindow->m_clickMousePos);
+    }
+
+    void GraphEditorWindow::DrawPinInputField(GraphEditorNodePin* pin)
+    {
+        String id = "###";
+        id.Append(reinterpret_cast<usize>(pin));
+
+        if (TypeHandler* typeHandler = Registry::FindTypeById(pin->typeId))
+        {
+            Span<ValueHandler*> values = typeHandler->GetValues();
+            if (!values.Empty())
+            {
+                ImGui::Spring(0);
+                ImGui::PushItemWidth(150.0f * ImGui::GetStyle().ScaleFactor);
+
+                m_comboOpenPos = Cast(ed::CanvasToScreen(ImGui::GetCursorPos()));
+
+                String previewValue{};
+                if (pin->value)
+                {
+                    ConstPtr value = Repository::ReadData(pin->value);
+
+                    for(ValueHandler* valueHandler : values)
+                    {
+                        if (valueHandler->Compare(value))
+                        {
+                            previewValue = valueHandler->GetDesc();
+                            break;
+                        }
+                    }
+                }
+
+                if (ImGui::BeginCombo(id.CStr(), previewValue.CStr()))
+                {
+                    m_openPopup = true;
+                    m_comboOpenType = typeHandler;
+                    m_comboPin = pin;
+                    ImGui::EndCombo();
+                }
+
+                ImGui::PopItemWidth();
+            }
+        }
     }
 
     void GraphEditorWindow::OnInitGraphEditor()

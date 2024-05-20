@@ -28,7 +28,8 @@ namespace Fyrion
         String             label;
         String             name;
         TypeID             typeId;
-        ConstPtr           value;
+        RID                value;
+        RID                valueAsset;
         GraphEditorPinKind kind;
         HashSet<RID>       links{};
         bool               publicValue = false;
@@ -105,6 +106,7 @@ namespace Fyrion
         void AddNode(FunctionHandler* functionHandler, const Vec2& position);
         bool ValidateLink(GraphEditorNodePin* inputPin, GraphEditorNodePin* outputPin);
         void AddLink(GraphEditorNodePin* inputPin, GraphEditorNodePin* outputPin);
+        void SetPinValue(GraphEditorNodePin* input, ConstPtr value);
 
         void DeleteLink(RID link);
         void DeleteNode(RID node);

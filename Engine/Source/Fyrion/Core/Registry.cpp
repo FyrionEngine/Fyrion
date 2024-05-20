@@ -65,6 +65,15 @@ namespace Fyrion
         return I64_MIN;
     }
 
+    bool ValueHandler::Compare(ConstPtr value) const
+    {
+        if (m_fnCompare)
+        {
+            return m_fnCompare(this, value);
+        }
+        return false;
+    }
+
     ConstPtr AttributeHandler::GetAttribute(TypeID attributeId) const
     {
         if (auto it = m_attributes.Find(attributeId))
@@ -271,7 +280,7 @@ namespace Fyrion
         return nullptr;
     }
 
-    Array<ValueHandler*> TypeHandler::GetValues() const
+    Span<ValueHandler*> TypeHandler::GetValues() const
     {
         return m_valuesArray;
     }
@@ -399,6 +408,12 @@ namespace Fyrion
     void ValueBuilder::SerFnGetCode(ValueHandler::FnGetCode fnGetCode)
     {
         valueHandler.m_fnGetCode = fnGetCode;
+    }
+
+    void ValueBuilder::SetFnCompare(ValueHandler::FnCompare fnCompare)
+    {
+
+        valueHandler.m_fnCompare = fnCompare;
     }
 
     ConstructorBuilder::ConstructorBuilder(ConstructorHandler& constructorHandler) : m_constructorHandler(constructorHandler)

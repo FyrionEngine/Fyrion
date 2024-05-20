@@ -27,6 +27,7 @@ namespace Fyrion
 
         static void OpenGraphWindow(RID graphId);
         static void RegisterType(NativeTypeHandler<GraphEditorWindow>& type);
+
     private:
         GraphEditor m_graphEditor;
 
@@ -35,6 +36,11 @@ namespace Fyrion
         Vec2    m_mousePos{};
         Vec2    m_clickMousePos{};
 
+        Vec2                m_comboOpenPos{};
+        bool                m_openPopup{};
+        TypeHandler*        m_comboOpenType{};
+        GraphEditorNodePin* m_comboPin{};
+
         void SetCurrentEditor();
 
         static MenuItemContext s_menuItemContext;
@@ -42,5 +48,7 @@ namespace Fyrion
 
         static void AddOutputAction(const MenuItemEventData& eventData);
         static void AddNodeAction(const MenuItemEventData& eventData);
+
+        void DrawPinInputField(GraphEditorNodePin* pin);
     };
 }

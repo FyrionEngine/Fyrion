@@ -141,7 +141,8 @@ namespace Fyrion
     class FY_API ValueHandler
     {
         typedef ConstPtr (*FnGetValue)(const ValueHandler* valueHandler);
-        typedef i64 (*     FnGetCode)(const ValueHandler* valueHandler);
+        typedef i64 (*FnGetCode)(const ValueHandler* valueHandler);
+        typedef bool (*FnCompare)(const ValueHandler* valueHandler, ConstPtr value);
 
     public:
         ValueHandler(const String& valueDesc);
@@ -149,13 +150,14 @@ namespace Fyrion
         StringView GetDesc() const;
         ConstPtr   GetValue() const;
         i64        GetCode() const;
-
+        bool       Compare(ConstPtr value) const;
 
         friend class ValueBuilder;
     private:
         String     m_valueDesc{};
         FnGetValue m_fnGetValue{};
         FnGetCode  m_fnGetCode{};
+        FnCompare  m_fnCompare{};
     };
 
 
@@ -307,7 +309,7 @@ namespace Fyrion
 
         ValueHandler*                   FindValueByName(const StringView& valueName) const;
         ValueHandler*                   FindValueByCode(i64 code) const;
-        Array<ValueHandler*>            GetValues() const;
+        Span<ValueHandler*>             GetValues() const;
 
         Span<DerivedType>               GetDerivedTypes() const;
         Array<TypeID>                   GetBaseTypes() const;
@@ -391,6 +393,7 @@ namespace Fyrion
 
         void SetFnGetValue(ValueHandler::FnGetValue fnGetValue);
         void SerFnGetCode(ValueHandler::FnGetCode fnGetCode);
+        void SetFnCompare(ValueHandler::FnCompare fnCompare);
 
     private:
         ValueHandler& valueHandler;
@@ -564,6 +567,7 @@ namespace Fyrion
         {
             valueBuilder.SetFnGetValue(&FnGetValueImpl);
             valueBuilder.SerFnGetCode(&FnGetCodeImpl);
+            valueBuilder.SetFnCompare(&FnCompareImpl);
         }
     private:
         static constexpr Type c_value = Value;
@@ -576,6 +580,11 @@ namespace Fyrion
         static i64 FnGetCodeImpl(const ValueHandler* valueHandler)
         {
             return static_cast<i64>(c_value);
+        }
+
+        static bool FnCompareImpl(const ValueHandler* valueHandler, ConstPtr value)
+        {
+            return *static_cast<const Type*>(valueHandler->GetValue()) == *static_cast<const Type*>(value);
         }
     };
 

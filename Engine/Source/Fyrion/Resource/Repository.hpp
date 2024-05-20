@@ -14,6 +14,7 @@ namespace Fyrion
     {
         FY_API void             CreateResourceType(const ResourceTypeCreation& resourceTypeCreation);
         FY_API ResourceType*    GetResourceTypeByName(const StringView& typeName);
+        FY_API ResourceType*    GetResourceTypeById(TypeID typeId);
         FY_API TypeID           GetResourceTypeId(ResourceType* resourceType);
         FY_API StringView       GetResourceTypeName(ResourceType* resourceType);
         FY_API StringView       GetResourceTypeSimpleName(ResourceType* resourceType);
@@ -70,7 +71,6 @@ namespace Fyrion
         {
             return *static_cast<const T*>(ReadData(rid));
         }
-
     }
 }
 

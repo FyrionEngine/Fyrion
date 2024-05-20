@@ -28,7 +28,9 @@ namespace Fyrion
     {
         constexpr static u32 Input = 0;
         constexpr static u32 PublicValue = 1;
-        constexpr static u32 Value = 2;
+        constexpr static u32 Type = 2;
+        constexpr static u32 ResourceType = 3;
+        constexpr static u32 Value = 4;
     };
 
     struct GraphNodeAsset
@@ -46,5 +48,10 @@ namespace Fyrion
         constexpr static u32 InputPin = 1;
         constexpr static u32 OutputNode = 2;
         constexpr static u32 OutputPin = 3;
+    };
+
+    struct DCCMesh
+    {
+
     };
 }

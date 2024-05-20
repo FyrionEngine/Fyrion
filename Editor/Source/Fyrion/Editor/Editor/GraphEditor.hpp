@@ -33,6 +33,7 @@ namespace Fyrion
         GraphEditorPinKind kind;
         HashSet<RID>       links{};
         bool               publicValue = false;
+        TypeID             resourceType;
     };
 
     struct GraphEditorNodePinLookup

@@ -1,5 +1,6 @@
 #include "GraphNodes.hpp"
 
+#include "Fyrion/Assets/AssetTypes.hpp"
 #include "Fyrion/Core/GraphTypes.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Graphics/Graphics.hpp"
@@ -36,7 +37,6 @@ namespace Fyrion
         geometryRender.Field<&GeometryRender::indexBuffer>("indexBuffer").Attribute<GraphInput>();
         geometryRender.Attribute<ResourceGraphOutput>("Outputs/Geometry Render");
 
-
         auto uploadGPUBuffer = Registry::Function<CreateBuffer>("Fyrion::CreateBuffer");
         uploadGPUBuffer.Param<0>("data").Attribute<GraphInput>();
         uploadGPUBuffer.Param<1>("usage").Attribute<GraphInput>();
@@ -44,7 +44,7 @@ namespace Fyrion
         uploadGPUBuffer.Attribute<ResourceGraphNode>("Render/Create Buffer");
 
         auto dccMeshLoader = Registry::Function<DCCMeshLoader>("Fyrion::DCCMeshLoader");
-        dccMeshLoader.Param<0>("mesh").Attribute<GraphInput>();
+        dccMeshLoader.Param<0>("mesh").Attribute<GraphInput>(GraphInput{.typeId = GetTypeID<DCCMesh>()});
         dccMeshLoader.Param<1>("vertexData").Attribute<GraphOutput>();
         dccMeshLoader.Param<2>("indexData").Attribute<GraphOutput>();
         dccMeshLoader.Attribute<ResourceGraphNode>("Render/DCC Mesh Loader");

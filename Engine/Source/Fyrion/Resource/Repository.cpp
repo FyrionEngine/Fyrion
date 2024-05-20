@@ -466,6 +466,15 @@ namespace Fyrion
         return nullptr;
     }
 
+    ResourceType* Repository::GetResourceTypeById(TypeID typeId)
+    {
+        if (const auto it = resourceTypes.Find(typeId))
+        {
+            return it->second.Get();
+        }
+        return nullptr;
+    }
+
     TypeID Repository::GetResourceTypeId(ResourceType* resourceType)
     {
         return resourceType->typeId;

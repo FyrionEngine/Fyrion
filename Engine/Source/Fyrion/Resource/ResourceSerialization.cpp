@@ -779,19 +779,16 @@ namespace Fyrion::ResourceSerialization
             context.buffer.Append("\n");
         }
 
-        if (!Repository::IsEmpty(rid))
-        {
-            context.Indent();
-            context.buffer.Append("_object: {\n");
-            context.AddIndentation();
-            context.AddIndentation();
-            WriteResource(context, rid);
-            context.RemoveIndentation();
-            context.RemoveIndentation();
-            context.Indent();
-            context.buffer.Append("}");
-            context.buffer.Append("\n");
-        }
+        context.Indent();
+        context.buffer.Append("_object: {\n");
+        context.AddIndentation();
+        context.AddIndentation();
+        WriteResource(context, rid);
+        context.RemoveIndentation();
+        context.RemoveIndentation();
+        context.Indent();
+        context.buffer.Append("}");
+        context.buffer.Append("\n");
     }
 
     void WriteResource(WriterContext& context, RID rid)

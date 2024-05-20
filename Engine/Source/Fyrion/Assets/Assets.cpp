@@ -12,6 +12,8 @@ namespace Fyrion
         ResourceTypeBuilder<GraphNodeValue>::Builder()
             .Value<GraphNodeValue::Input, String>("NodeType")
             .Value<GraphNodeValue::PublicValue, bool>("PublicValue")
+            .Value<GraphNodeValue::Type, String>("Type")
+            .Value<GraphNodeValue::ResourceType, String>("ResourceType")
             .SubObject<GraphNodeValue::Value>("Value")
             .Build();
 
@@ -28,6 +30,9 @@ namespace Fyrion
             .Value<GraphNodeAsset::Position, Vec2>("Position")
             .SubObjectSet<GraphNodeAsset::InputValues>("InputValues")
             .Value<GraphNodeAsset::Label, Vec2>("Label")
+            .Build();
+
+        ResourceTypeBuilder<DCCMesh>::Builder()
             .Build();
     }
 

@@ -17,23 +17,32 @@ namespace Fyrion
         ResourceObject valueObject = Repository::Read(value);
 
         String name = valueObject[GraphNodeValue::Input].Value<String>();
+        String typeName = valueObject[GraphNodeValue::Type].Value<String>();
+        String resourceTypeName = valueObject[GraphNodeValue::ResourceType].Value<String>();
 
         TypeID typeId = 0;
-        if (valueObject.Has(GraphNodeValue::Value))
+        TypeID resourceTypeId = 0;
+
+        if (TypeHandler* typeHandler = Registry::FindTypeByName(typeName))
         {
-            RID valueSuboject = valueObject.GetSubObject(GraphNodeValue::Value);
-            if (TypeHandler* typeHandler = Repository::GetResourceTypeHandler(valueSuboject))
-            {
-                typeId = typeHandler->GetTypeInfo().typeId;
-            }
+            typeId = typeHandler->GetTypeInfo().typeId;
         }
+
+        if (TypeHandler* typeHandler = Registry::FindTypeByName(resourceTypeName))
+        {
+            resourceTypeId = typeHandler->GetTypeInfo().typeId;
+        }
+        else if (ResourceType* resourceType = Repository::GetResourceTypeByName(resourceTypeName))
+        {
+            resourceTypeId = Repository::GetResourceTypeId(resourceType);
+        }
+
+
 
         GraphEditorNodePinLookup lookup = GraphEditorNodePinLookup{
             .node = node->rid,
             .name = name,
         };
-
-        m_pins.Erase(lookup);
 
         GraphEditorNodePin* pin = m_pins.Emplace(lookup, MakeUnique<GraphEditorNodePin>(GraphEditorNodePin{
                                                      .node = node,
@@ -41,7 +50,8 @@ namespace Fyrion
                                                      .name = name,
                                                      .typeId = typeId,
                                                      .kind = GraphEditorPinKind::Output,
-                                                     .publicValue = valueObject[GraphNodeValue::PublicValue].Value<bool>()
+                                                     .publicValue = valueObject[GraphNodeValue::PublicValue].Value<bool>(),
+                                                     .resourceType = resourceTypeId
                                                  })).first->second.Get();
 
         node->outputs.EmplaceBack(pin);
@@ -85,6 +95,8 @@ namespace Fyrion
             {
                 if (param.HasAttribute<GraphInput>())
                 {
+                    const GraphInput* graphInput = param.GetAttribute<GraphInput>();
+
                     RID value = {};
                     RID valueAsset = {};
 
@@ -104,7 +116,8 @@ namespace Fyrion
                                                                  .typeId = param.GetFieldInfo().typeInfo.typeId,
                                                                  .value = value,
                                                                  .valueAsset = valueAsset,
-                                                                 .kind = GraphEditorPinKind::Input
+                                                                 .kind = GraphEditorPinKind::Input,
+                                                                 .resourceType = graphInput->typeId
                                                              })).first->second.Get();
 
                     graphEditorNode->inputs.EmplaceBack(pin);
@@ -115,6 +128,9 @@ namespace Fyrion
             {
                 if (param.HasAttribute<GraphOutput>())
                 {
+                    const GraphOutput* graphOutput = param.GetAttribute<GraphOutput>();
+
+
                     GraphEditorNodePin* pin = m_pins.Emplace(GraphEditorNodePinLookup{
                                                                  .node = node,
                                                                  .name = param.GetName(),
@@ -123,7 +139,8 @@ namespace Fyrion
                                                                  .label = FormatName(param.GetName()),
                                                                  .name = param.GetName(),
                                                                  .typeId = param.GetFieldInfo().typeInfo.typeId,
-                                                                 .kind = GraphEditorPinKind::Output
+                                                                 .kind = GraphEditorPinKind::Output,
+                                                                 .resourceType = graphOutput->typeId
                                                              })).first->second.Get();
 
                     graphEditorNode->outputs.EmplaceBack(pin);
@@ -346,12 +363,20 @@ namespace Fyrion
             RID valueAsset = Repository::CreateResource<GraphNodeValue>();
             Repository::SetUUID(valueAsset, UUID::RandomUUID());
 
-            RID value =  Repository::CreateResource(input->typeId);
-            Repository::SetUUID(value, UUID::RandomUUID());
+            //input->typeId
 
             ResourceObject valueObject = Repository::Write(valueAsset);
             valueObject[GraphNodeValue::Input] = input->name;
-            valueObject.SetSubObject(GraphNodeValue::Value, value);
+            valueObject[GraphNodeValue::Type] = Registry::FindTypeById(input->typeId)->GetName();
+            if (TypeHandler* resourceTypeHandler = Registry::FindTypeById(input->resourceType))
+            {
+                valueObject[GraphNodeValue::ResourceType] = resourceTypeHandler->GetName();
+            }
+            else if (ResourceType* resourceType = Repository::GetResourceTypeById(input->resourceType))
+            {
+                valueObject[GraphNodeValue::ResourceType] = Repository::GetResourceTypeName(resourceType);
+            }
+
             valueObject.Commit();
 
             ResourceObject nodeObject = Repository::Write(addOutput->node->rid);
@@ -411,7 +436,9 @@ namespace Fyrion
         if (!input->value)
         {
             input->value = Repository::CreateResource(input->typeId);
+            Repository::SetUUID(input->value, UUID::RandomUUID());
             input->valueAsset = Repository::CreateResource<GraphNodeValue>();
+            Repository::SetUUID(input->valueAsset, UUID::RandomUUID());
 
             ResourceObject valueObject = Repository::Write(input->valueAsset);
             valueObject[GraphNodeValue::Input] = input->name;
@@ -423,6 +450,8 @@ namespace Fyrion
             nodeObject.Commit();
         }
         Repository::Commit(input->value, value);
+
+        m_assetTree.MarkDirty();
     }
 
     void GraphEditor::DeleteLink(RID link)

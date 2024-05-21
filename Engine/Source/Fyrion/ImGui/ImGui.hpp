@@ -72,6 +72,7 @@ namespace ImGui
         bool          hasChanged{};
         bool          showResourceSelection{};
         TypeID        resourceTypeSelection{};
+        FieldHandler* fieldShowSelection{};
         Array<TypeID> graphOutputs{};
     };
 

@@ -12,6 +12,7 @@
 #include "Fyrion/Core/UniquePtr.hpp"
 #include "Fyrion/ImGui/Lib/imgui_internal.h"
 #include "Fyrion/ImGui/Lib/ImGuizmo.h"
+#include "Fyrion/Resource/ResourceGraph.hpp"
 
 using namespace Fyrion;
 
@@ -977,7 +978,7 @@ namespace ImGui
         RegisterFieldRenderers();
     }
 
-    void DrawResourceSelection(bool& open)
+    void DrawResourceSelection(DrawTypeContent* drawTypeContent)
     {
         auto& style = ImGui::GetStyle();
         auto& io = ImGui::GetIO();
@@ -998,7 +999,7 @@ namespace ImGui
             ImGui::SetNextWindowSize(ImVec2(960 * ImGui::GetStyle().ScaleFactor, 540 * ImGui::GetStyle().ScaleFactor), ImGuiCond_Appearing);
         }
 
-        if (ImGui::BeginPopupModal("Resources", &open))
+        if (ImGui::BeginPopupModal("Resources", &drawTypeContent->showResourceSelection))
         {
             {
                 ImGui::StyleVar windowPadding2(ImGuiStyleVar_WindowPadding, originalPadding);
@@ -1028,54 +1029,61 @@ namespace ImGui
                 {
                     if (ImGui::BeginContentTable(10010, zoom * 112 * style.ScaleFactor))
                     {
-                        ImGui::ContentItemDesc contentItem{};
-                        contentItem.ItemId = ImHashStr("None-Id");
-                        contentItem.ShowDetails = false;
-                        contentItem.Label = "None";
-                        contentItem.CanRename = false;
-
-                        if (ImGui::DrawContentItem(contentItem))
                         {
+                            ImGui::ContentItemDesc contentItem{};
+                            contentItem.ItemId = ImHashStr("None-Id");
+                            contentItem.ShowDetails = false;
+                            contentItem.Label = "None";
+                            contentItem.CanRename = false;
 
-                        	//selector.callback(selector.userData, RID{});
-                        	open = false;
+                            if (ImGui::DrawContentItem(contentItem))
+                            {
+                                if (drawTypeContent->desc.callback)
+                                {
+                                    drawTypeContent->fieldShowSelection->SetValueAs(drawTypeContent->instance, RID{});
+                                    drawTypeContent->desc.callback(drawTypeContent->desc, drawTypeContent->instance);
+                                }
+                                drawTypeContent->showResourceSelection = false;
+                            }
                         }
 
+                        //bool isResourceGraph = drawTypeContent->resourceTypeSelection == GetTypeID<ResourceGraphAsset>();
 
-                        //Repository::Get
+                        Array<RID> resources = Repository::GetResourcesByType(drawTypeContent->resourceTypeSelection);
+                        for(RID rid: resources)
+                        {
+                            RID parent = Repository::GetParent(rid);
+                            if (parent && Repository::GetResourceTypeId(Repository::GetResourceType(parent)) == GetTypeID<Asset>())
+                            {
+                                String resourceName = "";
 
+                                if (ResourceType* resourceType = Repository::GetResourceType(rid))
+                                {
+                                    resourceName = Repository::GetResourceTypeName(resourceType);
+                                }
+                                else if (TypeHandler* typeHandler = Repository::GetResourceTypeHandler(rid))
+                                {
+                                    resourceName = typeHandler->GetSimpleName();
+                                }
 
+                                ResourceObject assetObject = Repository::Read(parent);
+                                String name = assetObject[Asset::Name].Value<String>();
 
-                        //
-                        // Span<RID> rids = ResourceServer::GetByType(selector.typeId);
-                        // for (const auto& rid: rids)
-                        // {
-                        // 	//if (selector.ignored.Has(assetId)) continue;
-                        // 	StringView assetName = ResourceServer::GetName(rid);
-                        //
-                        // 	if (!searchText.Empty())
-                        // 	{
-                        // 		String nameUpper = assetName;
-                        // 		ToUpper(nameUpper.begin(), nameUpper.end());
-                        // 		if (!Has(nameUpper.begin(), nameUpper.end(), searchText))
-                        // 		{
-                        // 			continue;
-                        // 		}
-                        // 	}
-                        //
-                        // 	ImGui::UIContentItem contentItem{};
-                        // 	contentItem.itemId = HashValue(rid);
-                        // 	contentItem.showDetails = true;
-                        // 	contentItem.label = assetName.CStr();
-                        // 	contentItem.canRename = false;
-                        // 	contentItem.detailsDesc = assetType.CStr();
-                        //
-                        // 	if (ImGui::ContentItem(contentItem))
-                        // 	{
-                        // 		selector.callback(selector.userData, rid);
-                        // 		open = false;
-                        // 	}
-                        // }
+                                ImGui::ContentItemDesc contentItem{};
+                                contentItem.ItemId = rid.id;
+                                contentItem.ShowDetails = false;
+                                contentItem.Label = name.CStr();
+                                contentItem.CanRename = false;
+                                contentItem.DetailsDesc = resourceName.CStr();
+
+                                if (ImGui::DrawContentItem(contentItem))
+                                {
+                                    drawTypeContent->fieldShowSelection->SetValueAs(drawTypeContent->instance, rid);
+                                    drawTypeContent->desc.callback(drawTypeContent->desc, drawTypeContent->instance);
+                                    drawTypeContent->showResourceSelection = false;
+                                }
+                            }
+                        }
                         ImGui::EndContentTable();
                     }
                     ImGui::EndChild();
@@ -1086,7 +1094,7 @@ namespace ImGui
             ImGui::EndPopup();
         }
 
-        if (!open)
+        if (!drawTypeContent->showResourceSelection)
         {
             searchResoruceString.Clear();
             popupOpen = false;
@@ -1116,7 +1124,7 @@ namespace ImGui
 
             if (it.second->showResourceSelection)
             {
-                DrawResourceSelection(it.second->showResourceSelection);
+                DrawResourceSelection(it.second.Get());
             }
 
             if (it.second->lastFrameUsage + 60 < frame)

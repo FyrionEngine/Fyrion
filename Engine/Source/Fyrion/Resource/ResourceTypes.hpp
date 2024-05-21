@@ -88,6 +88,12 @@ namespace Fyrion
         Span<ResourceFieldCreation> fields{};
     };
 
+    struct ResourceReference
+    {
+        TypeID resourceType{};
+        TypeID graphOutput{};
+    };
+
 
     struct AssetRoot
     {

@@ -11,6 +11,6 @@ namespace Fyrion
         void        OnStart() override;
         static void RegisterType(NativeTypeHandler<RenderComponent>& type);
     private:
-        RID m_resourceGraph;
+        RID m_resourceGraph{};
     };
 }

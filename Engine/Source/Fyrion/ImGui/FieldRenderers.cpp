@@ -14,12 +14,13 @@ namespace Fyrion
         auto id = HashValue(idStr);
 
         RID rid = *static_cast<RID*>(value);
-        ResourceObject resourceObject = Repository::Read(rid);
+        RID parent = Repository::GetParent(rid);
 
         String name;
-        if (resourceObject)
+        if (parent &&  Repository::GetResourceTypeId(Repository::GetResourceType(parent)) == GetTypeID<Asset>())
         {
-            name = Traits::Move(resourceObject[Asset::Name].Value<String>());
+            ResourceObject assetObject = Repository::Read(parent);
+            name = Traits::Move(assetObject[Asset::Name].Value<String>());
         }
 
         ImGui::SetNextItemWidth(-22 * ImGui::GetStyle().ScaleFactor);
@@ -30,7 +31,13 @@ namespace Fyrion
         auto size = ImGui::GetItemRectSize();
         if (ImGui::Button(ICON_FA_CIRCLE_DOT, ImVec2{size.y, size.y}))
         {
-            context->showResourceSelection = true;
+            if (const ResourceReference* resourceReference = fieldHandler->GetAttribute<ResourceReference>())
+            {
+                context->showResourceSelection = true;
+                context->resourceTypeSelection = resourceReference->resourceType;
+                context->fieldShowSelection = fieldHandler;
+                //context->graphOutputSelection = resourceReference->graphOutput;
+            }
         }
         ImGui::PopID();
     }

@@ -640,7 +640,6 @@ namespace Fyrion::ResourceSerialization
     {
         if (typeInfo.typeId == GetTypeID<RID>())
         {
-            bool subobjectField = false;
             RID rid = *static_cast<const RID*>(pointer);
             context.buffer.Append("\"");
             char buffer[StringConverter<UUID>::bufferCount + 1] = {};

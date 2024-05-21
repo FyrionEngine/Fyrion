@@ -99,6 +99,7 @@ namespace Fyrion
     {
         RID rid{};
         UUID uuid{};
+        TypeID typeId{};
         ResourceType* resourceType{};
         std::atomic<ResourceData*> data{};
         ResourceStorage* prototype{};
@@ -127,7 +128,7 @@ namespace Fyrion
     {
         Allocator& allocator = MemoryGlobals::GetDefaultAllocator();
 
-        Logger& logger = Logger::GetLogger("Fyrion::Repository");
+        Logger&                                  logger = Logger::GetLogger("Fyrion::Repository");
         HashMap<TypeID, SharedPtr<ResourceType>> resourceTypes{};
         HashMap<String, SharedPtr<ResourceType>> resourceTypesByName{};
 
@@ -141,6 +142,9 @@ namespace Fyrion
 
         std::mutex           byPathMutex{};
         HashMap<String, RID> byPath{};
+
+        std::mutex                  resourcesByTypeMutex{};
+        HashMap<TypeID, Array<RID>> resourcesByType{};
 
         moodycamel::ConcurrentQueue<ToDestroyResourceData> toCollectItems = moodycamel::ConcurrentQueue<ToDestroyResourceData>(100);
 
@@ -370,6 +374,7 @@ namespace Fyrion
         new(PlaceHolder(), resourceStorage) ResourceStorage{
             .rid = rid,
             .uuid = uuid,
+            .typeId = typeId,
             .data = {}
         };
 
@@ -380,6 +385,18 @@ namespace Fyrion
         else if (TypeHandler* typeHandler = Registry::FindTypeById(typeId))
         {
             resourceStorage->typeHandler = typeHandler;
+        }
+
+        if (typeId != 0)
+        {
+            std::unique_lock lock(resourcesByTypeMutex);
+            auto it = resourcesByType.Find(typeId);
+
+            if (it == resourcesByType.end())
+            {
+                it = resourcesByType.Insert(typeId, {}).first;
+            }
+            it->second.EmplaceBack(rid);
         }
 
         return rid;
@@ -524,8 +541,13 @@ namespace Fyrion
         }
     }
 
-    Span<RID> Repository::GetResourceByType(TypeID typeId)
+    Array<RID> Repository::GetResourcesByType(TypeID typeId)
     {
+        std::unique_lock lock(resourcesByTypeMutex);
+        if (auto it = resourcesByType.Find(typeId))
+        {
+            return it->second;
+        }
         return {};
     }
 
@@ -549,10 +571,24 @@ namespace Fyrion
         new(PlaceHolder(), resourceStorage) ResourceStorage{
             .rid = rid,
             .uuid = uuid,
+            .typeId = resourceStorage->typeId,
             .resourceType = prototypeStorage->resourceType,
             .data = data,
             .prototype = prototypeStorage
         };
+
+        if (resourceStorage->typeId)
+        {
+            std::unique_lock lock(resourcesByTypeMutex);
+            auto it = resourcesByType.Find(resourceStorage->typeId);
+
+            if (it == resourcesByType.end())
+            {
+                it = resourcesByType.Insert(resourceStorage->typeId, {}).first;
+            }
+            it->second.EmplaceBack(rid);
+        }
+
         return rid;
     }
 

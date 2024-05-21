@@ -33,6 +33,14 @@ namespace Fyrion
             return m_lastGraphEditorSelected;
         }
 
+        ~GraphEditorWindow() override
+        {
+            if (m_lastGraphEditorSelected == &this->m_graphEditor)
+            {
+                m_lastGraphEditorSelected = nullptr;
+            }
+        }
+
     private:
         GraphEditor m_graphEditor;
 

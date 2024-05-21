@@ -30,7 +30,7 @@ namespace Fyrion
         void          AddComponent(RID object, TypeHandler* typeHandler);
         void          RemoveComponent(RID object, RID component);
         void          ResetComponent(RID component);
-        void          UpdateComponent(RID component, VoidPtr value);
+        void          UpdateComponent(RID component, ConstPtr value);
 
     private:
         RID          m_rootObject{};

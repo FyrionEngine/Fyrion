@@ -204,7 +204,7 @@ namespace Fyrion
         Editor::GetAssetTree().MarkDirty();
     }
 
-    void SceneEditor::UpdateComponent(RID component, VoidPtr value)
+    void SceneEditor::UpdateComponent(RID component, ConstPtr value)
     {
         Repository::Commit(component, value);
         Editor::GetAssetTree().MarkDirty();

@@ -32,7 +32,9 @@ typedef u32 ImGuiDrawTypeFlags;
 
 namespace ImGui
 {
-    typedef void (*FieldRendererFn)(FieldHandler* fieldHandler, VoidPtr value, bool* hasChanged);
+
+    struct DrawTypeDesc;
+    typedef void (*DrawTypeCallbackFn)(DrawTypeDesc& desc, ConstPtr newValue);
 
     struct ContentItemDesc
     {
@@ -49,6 +51,31 @@ namespace ImGui
         const char*     SetPayload{};
         const char*     TooltipText{};
     };
+
+    struct DrawTypeDesc
+    {
+        usize              itemId{};
+        RID                rid;
+        TypeHandler*       typeHandler{};
+        ConstPtr           instance{};
+        ImGuiDrawTypeFlags flags{};
+        VoidPtr            userData{};
+        DrawTypeCallbackFn callback{};
+    };
+
+    struct DrawTypeContent
+    {
+        DrawTypeDesc  desc{};
+        VoidPtr       instance{};
+        u64           lastFrameUsage{};
+        bool          readOnly{};
+        bool          hasChanged{};
+        bool          showResourceSelection{};
+        TypeID        resourceTypeSelection{};
+        Array<TypeID> graphOutputs{};
+    };
+
+    typedef void (*FieldRendererFn)(DrawTypeContent* context, FieldHandler* fieldHandler, VoidPtr value, bool* hasChanged);
 
     struct StyleColor
     {
@@ -119,8 +146,8 @@ namespace ImGui
     FY_API StringView ContentRenameString();
     FY_API void       EndContentTable();
 
-    FY_API void    AddFieldRenderer(TypeID typeId, FieldRendererFn fieldRendererFn);
-    FY_API VoidPtr DrawType(usize itemId, TypeHandler* typeHandler, ConstPtr instance, ImGuiDrawTypeFlags flags = 0);
+    FY_API void AddFieldRenderer(TypeID typeId, FieldRendererFn fieldRendererFn);
+    FY_API void DrawType(const DrawTypeDesc& drawTypeDesc);
 
     FY_API ImGuiKey GetImGuiKey(Key key);
 

@@ -238,7 +238,39 @@ namespace Fyrion
         }
     };
 
-    template<typename T >
+    template<>
+    struct StringConverter<bool>
+    {
+        constexpr static bool hasConverter = true;
+        constexpr static usize bufferCount = 5;
+
+        static usize Size(const bool value)
+        {
+            return value ? 4 : 5;
+        }
+
+        static usize ToString(char* buffer, usize pos, const bool value)
+        {
+            if (value)
+            {
+                StrCopy(buffer + pos, "true", 4);
+            }
+            else
+            {
+                StrCopy(buffer + pos, "false", 5);
+            }
+
+
+            return value ? 4 : 5;
+        }
+
+        static void FromString(const char* str, usize size, bool& value)
+        {
+            value = StrCmp(str, "true") == 0 || StrCmp(str, "True") == 0 || StrCmp(str, "TRUE") == 0;
+        }
+    };
+
+    template<typename T>
     struct StringConverter<T, Traits::EnableIf<Traits::IsEnum<T>>>
     {
         constexpr static bool hasConverter = true;

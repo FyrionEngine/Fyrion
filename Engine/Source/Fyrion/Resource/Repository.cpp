@@ -524,6 +524,11 @@ namespace Fyrion
         }
     }
 
+    Span<RID> Repository::GetResourceByType(TypeID typeId)
+    {
+        return {};
+    }
+
     RID Repository::CreateFromPrototype(RID prototype)
     {
         return CreateFromPrototype(prototype, {});

@@ -10,7 +10,7 @@ namespace Fyrion
     void RegisterAssetTypes()
     {
         ResourceTypeBuilder<GraphNodeValue>::Builder()
-            .Value<GraphNodeValue::Input, String>("NodeType")
+            .Value<GraphNodeValue::Name, String>("NodeType")
             .Value<GraphNodeValue::PublicValue, bool>("PublicValue")
             .Value<GraphNodeValue::Type, String>("Type")
             .Value<GraphNodeValue::ResourceType, String>("ResourceType")
@@ -29,7 +29,7 @@ namespace Fyrion
             .Value<GraphNodeAsset::NodeOutput, String>("NodeOutput")
             .Value<GraphNodeAsset::Position, Vec2>("Position")
             .SubObjectSet<GraphNodeAsset::InputValues>("InputValues")
-            .Value<GraphNodeAsset::Label, Vec2>("Label")
+            .Value<GraphNodeAsset::Label, String>("Label")
             .Build();
 
         ResourceTypeBuilder<DCCMesh>::Builder()

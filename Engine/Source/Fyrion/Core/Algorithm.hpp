@@ -66,6 +66,13 @@ namespace Fyrion
         return 0;
     }
 
+    constexpr i32 StrCmp(const char* r, const char* l)
+    {
+        const char* it = r;
+        for (; *it && *l && (*it == *l); ++it, ++l);
+        return *it - *l;
+    }
+
     template<typename T>
     inline constexpr void Swap(T& a, T& b)
     {

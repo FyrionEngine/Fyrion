@@ -339,7 +339,7 @@ namespace Fyrion
 
                 RID valueSuboject = valueObject.GetSubObject(GraphNodeValue::Value);
                 nodeInfo.values.EmplaceBack(ResourceGraphNodeValue{
-                    .name = valueObject[GraphNodeValue::Input].Value<String>(),
+                    .name = valueObject[GraphNodeValue::Name].Value<String>(),
                     .typeHandler = Repository::GetResourceTypeHandler(valueSuboject),
                     .value = Repository::ReadData(valueSuboject),
                     .publicValue = valueObject[GraphNodeValue::PublicValue].Value<bool>(),

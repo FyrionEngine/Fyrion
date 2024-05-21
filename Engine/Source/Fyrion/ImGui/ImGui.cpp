@@ -9,6 +9,7 @@
 #include "IconsFontAwesome6.h"
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Core/StringUtils.hpp"
+#include "Fyrion/Core/UniquePtr.hpp"
 #include "Fyrion/ImGui/Lib/imgui_internal.h"
 #include "Fyrion/ImGui/Lib/ImGuizmo.h"
 
@@ -17,45 +18,36 @@ using namespace Fyrion;
 namespace Fyrion
 {
     RenderDevice& GetRenderDevice();
-    void RegisterFieldRenderers();
+    void          RegisterFieldRenderers();
 }
 
 namespace ImGui
 {
     struct ContentTable
     {
-        f32 thumbnailSize{};
-        u32 selectedItem{};
-        u32 hoveredItem{};
-        bool renamingSelected{};
-        u32 renamingId{};
+        f32    thumbnailSize{};
+        u32    selectedItem{};
+        u32    hoveredItem{};
+        bool   renamingSelected{};
+        u32    renamingId{};
         String renamingStringCache{};
-        u32 renamedItem{};
-        u32 renamedCancelled{};
-        bool renamingFocus{};
-        bool selectionNoFocus{};
-        u32 acceptPayloadItem{U32_MAX};
-        u32 beginPayloadItem{U32_MAX};
-    };
-
-    struct DrawTypeContent
-    {
-        TypeHandler* typeHandler{};
-        VoidPtr      instance{};
-        ConstPtr     originalData{};
-        u64          lastFrameUsage{};
-        bool         readOnly{};
+        u32    renamedItem{};
+        u32    renamedCancelled{};
+        bool   renamingFocus{};
+        bool   selectionNoFocus{};
+        u32    acceptPayloadItem{U32_MAX};
+        u32    beginPayloadItem{U32_MAX};
     };
 
     namespace
     {
-        f32 scaleFactor = 1.0;
+        f32      scaleFactor = 1.0;
         ImGuiKey keys[static_cast<u32>(Key::MAX)];
 
-        HashMap<ImGuiID, ContentTable> contentTables{};
-        ImGuiID currentContentTable{U32_MAX};
-        HashMap<usize, DrawTypeContent> drawTypes{};
-        HashMap<TypeID, FieldRendererFn> fieldRenders{};
+        HashMap<ImGuiID, ContentTable>             contentTables{};
+        ImGuiID                                    currentContentTable{U32_MAX};
+        HashMap<usize, UniquePtr<DrawTypeContent>> drawTypes{};
+        HashMap<TypeID, FieldRendererFn>           fieldRenders{};
     }
 
     struct InputTextCallback_UserData
@@ -65,7 +57,7 @@ namespace ImGui
 
     static int InputTextCallback(ImGuiInputTextCallbackData* data)
     {
-        auto userData = (InputTextCallback_UserData*) data->UserData;
+        auto userData = (InputTextCallback_UserData*)data->UserData;
         if (data->BufTextLen >= (userData->str.Capacity() - 1))
         {
             auto newSize = userData->str.Capacity() + (userData->str.Capacity() * 2) / 3;
@@ -81,7 +73,7 @@ namespace ImGui
         static ImGuiDockNodeFlags dockNodeFlags = ImGuiDockNodeFlags_None;
 
         ImGuiWindowFlags windowFlags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
-        auto viewport = ImGui::GetMainViewport();
+        auto             viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos(viewport->WorkPos);
         ImGui::SetNextWindowSize(viewport->WorkSize);
         ImGui::SetNextWindowViewport(viewport->ID);
@@ -100,8 +92,8 @@ namespace ImGui
         ImGuiStyle& style = ImGui::GetStyle();
         ImGui::DockSpace(dockSpaceId, ImVec2(0.0f, viewport->WorkSize.y - 40 * style.ScaleFactor), dockNodeFlags);
 
-//		auto* drawList = ImGui::GetWindowDrawList();
-//		drawList->AddLine(ImVec2(0.0f, viewport->WorkSize.y - 30), ImVec2(viewport->WorkSize.x, viewport->WorkSize.y), IM_COL32(0, 0, 0, 255), 1.f * style.ScaleFactor);
+        //		auto* drawList = ImGui::GetWindowDrawList();
+        //		drawList->AddLine(ImVec2(0.0f, viewport->WorkSize.y - 30), ImVec2(viewport->WorkSize.x, viewport->WorkSize.y), IM_COL32(0, 0, 0, 255), 1.f * style.ScaleFactor);
     }
 
     bool Begin(u32 id, const char* name, bool* pOpen, ImGuiWindowFlags flags)
@@ -152,7 +144,7 @@ namespace ImGui
         if (ImGui::IsItemFocused())
         {
             drawList->AddRect(rect.Min, ImVec2(rect.Max.x - ImGui::GetStyle().ScaleFactor, rect.Max.y), IM_COL32(66, 140, 199, 255), ImGui::GetStyle().FrameRounding, 0,
-                1 * ImGui::GetStyle().ScaleFactor);
+                              1 * ImGui::GetStyle().ScaleFactor);
         }
 
         return ret;
@@ -162,11 +154,11 @@ namespace ImGui
     {
         const auto searching = !string.Empty();
 
-        auto& style = ImGui::GetStyle();
+        auto&       style = ImGui::GetStyle();
         const float newPadding = 28.0f * ImGui::GetStyle().ScaleFactor;
-        auto& context = *ImGui::GetCurrentContext();
-        auto* drawList = ImGui::GetWindowDrawList();
-        auto& rect = context.LastItemData.Rect;
+        auto&       context = *ImGui::GetCurrentContext();
+        auto*       drawList = ImGui::GetWindowDrawList();
+        auto&       rect = context.LastItemData.Rect;
 
         ImGui::StyleVar styleVar{ImGuiStyleVar_FramePadding, ImVec2(newPadding, style.FramePadding.y)};
 
@@ -204,7 +196,7 @@ namespace ImGui
             ImGuiTreeNodeFlags_SpanAvailWidth |
             ImGuiTreeNodeFlags_SpanFullWidth;
 
-        return ImGui::TreeNodeEx((void*) (usize) id, flags, "%s", label);
+        return ImGui::TreeNodeEx((void*)(usize)id, flags, "%s", label);
     }
 
     bool TreeLeaf(u32 id, const char* label, ImGuiTreeNodeFlags flags)
@@ -213,7 +205,7 @@ namespace ImGui
             ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_Leaf |
             ImGuiTreeNodeFlags_SpanFullWidth |
             ImGuiTreeNodeFlags_NoTreePushOnOpen;
-        return ImGui::TreeNodeEx((void*) (usize) id, flags, "%s", label);
+        return ImGui::TreeNodeEx((void*)(usize)id, flags, "%s", label);
     }
 
     void DrawImage(Texture texture, const Rect& rect, const ImVec4& tintCol)
@@ -268,7 +260,7 @@ namespace ImGui
 
     bool BorderedButton(const char* label, const ImVec2& size)
     {
-        ImGui::StyleColor border(ImGuiCol_Border,  ImVec4(0.46f, 0.49f, 0.50f, 0.67f));
+        ImGui::StyleColor border(ImGuiCol_Border, ImVec4(0.46f, 0.49f, 0.50f, 0.67f));
         return ImGui::Button(label, size);
     }
 
@@ -326,7 +318,6 @@ namespace ImGui
 
     bool BeginContentTable(u32 id, f32 ThumbnailSize, ImGuiContentTableFlags flags)
     {
-
         auto& contentTable = contentTables[id];
         contentTable.thumbnailSize = ThumbnailSize;
         currentContentTable = id;
@@ -341,7 +332,7 @@ namespace ImGui
         }
 
         static ImGuiTableFlags tableFlags = ImGuiTableFlags_SizingFixedSame;
-        auto cellPadding = ImGui::GetStyle().CellPadding;
+        auto                   cellPadding = ImGui::GetStyle().CellPadding;
 
         auto totalThumbnailSize = ThumbnailSize + cellPadding.x;
 
@@ -353,7 +344,6 @@ namespace ImGui
         {
             for (int i = 0; i < columns; ++i)
             {
-
                 char buffer[20]{};
                 StringConverter<i32>::ToString(buffer, 0, i);
                 ImGui::TableSetupColumn(buffer, ImGuiTableColumnFlags_WidthFixed, ThumbnailSize);
@@ -367,14 +357,14 @@ namespace ImGui
         FY_ASSERT(currentContentTable != U32_MAX, "missing BeginContentTable");
 
         auto& contentTable = contentTables[currentContentTable];
-        auto ThumbnailSize = contentTable.thumbnailSize;
+        auto  ThumbnailSize = contentTable.thumbnailSize;
         contentTable.acceptPayloadItem = U32_MAX;
         contentTable.beginPayloadItem = U32_MAX;
 
         ImGui::TableNextColumn();
 
         auto* drawList = ImGui::GetWindowDrawList();
-        auto cursorPos = ImGui::GetCursorScreenPos();
+        auto  cursorPos = ImGui::GetCursorScreenPos();
         cursorPos.x += 2;
         auto table = ImGui::GetCurrentTable();
         auto width = table->Columns.Data->WidthGiven;
@@ -383,7 +373,7 @@ namespace ImGui
         auto bottomRight = ImVec2(cursorPos.x + width, cursorPos.y + contentInfoSize);
         auto bottomIcon = ImVec2(cursorPos.x + width, cursorPos.y + ThumbnailSize);
 
-//        auto topIcon = ImVec2(cursorPos.x + width - 1, cursorPos.y + 13 * ImGui::GetStyle().ScaleFactor);
+        //        auto topIcon = ImVec2(cursorPos.x + width - 1, cursorPos.y + 13 * ImGui::GetStyle().ScaleFactor);
 
         ImGui::ItemAdd(ImRect(cursorPos, bottomRight), contentItemDesc.ItemId);
         ImGui::PushID(contentItemDesc.ItemId);
@@ -392,11 +382,11 @@ namespace ImGui
         bool windowHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows);
         bool isHovered = ImGui::IsItemHovered();
         bool isSelected = contentTable.selectedItem == contentItemDesc.ItemId;
-        i32 mouseCount = ImGui::GetMouseClickedCount(ImGuiMouseButton_Left);
+        i32  mouseCount = ImGui::GetMouseClickedCount(ImGuiMouseButton_Left);
         bool isDoubleClicked = mouseCount >= 2 && (mouseCount % 2) == 0 && isHovered;
         bool isEnter =
             (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter)) || ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_KeypadEnter))) && ContentItemFocused(contentItemDesc.ItemId) &&
-                !contentTable.renamingSelected && windowHovered;
+            !contentTable.renamingSelected && windowHovered;
         bool isClicked = (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)) && isHovered;
 
         auto scaleFactor = ImGui::GetStyle().ScaleFactor;
@@ -417,33 +407,31 @@ namespace ImGui
         {
             //shadow
             drawList->AddRect(ImVec2(cursorPos.x + 1.5 * ImGui::GetStyle().ScaleFactor, cursorPos.y + 1.5 * ImGui::GetStyle().ScaleFactor),
-                ImVec2(bottomRight.x + 1.5 * ImGui::GetStyle().ScaleFactor, bottomRight.y + 1.5 * ImGui::GetStyle().ScaleFactor),
-                IM_COL32(2, 4, 6, 255),
-                6.0f, 0, 3);
+                              ImVec2(bottomRight.x + 1.5 * ImGui::GetStyle().ScaleFactor, bottomRight.y + 1.5 * ImGui::GetStyle().ScaleFactor),
+                              IM_COL32(2, 4, 6, 255),
+                              6.0f, 0, 3);
 
             drawList->AddRectFilled(cursorPos, bottomIcon, IM_COL32(20, 21, 23, 255), 6, ImDrawFlags_RoundCornersTop);
 
             //bottom color
             drawList->AddRectFilled(ImVec2(cursorPos.x, cursorPos.y + ThumbnailSize),
-                ImVec2(bottomRight.x, bottomRight.y),
-                IM_COL32(32, 33, 35, 255), 6, ImDrawFlags_RoundCornersBottom);
-
+                                    ImVec2(bottomRight.x, bottomRight.y),
+                                    IM_COL32(32, 33, 35, 255), 6, ImDrawFlags_RoundCornersBottom);
         }
         else if (isHovered || isSelected)
         {
-
             //shadow
             drawList->AddRect(ImVec2(cursorPos.x + 1, cursorPos.y + 1), ImVec2(bottomRight.x + 1 * ImGui::GetStyle().ScaleFactor, bottomRight.y + 1 * ImGui::GetStyle().ScaleFactor),
-                IM_COL32(2, 4, 6, 255),
-                6.0f, 0, 3);
+                              IM_COL32(2, 4, 6, 255),
+                              6.0f, 0, 3);
 
             drawList->AddRectFilled(cursorPos, bottomRight,
-                IM_COL32(40, 41, 43, 255),
-                6.0f, 0);
+                                    IM_COL32(40, 41, 43, 255),
+                                    6.0f, 0);
         }
 
         ImVec2 oldCursor = ImGui::GetCursorPos();
-        char str[50];
+        char   str[50];
         sprintf(str, "###invisibebutton_%d", contentItemDesc.ItemId);
 
         ImGui::SetCursorPos(ImVec2(oldCursor.x + 4, oldCursor.y));
@@ -473,17 +461,19 @@ namespace ImGui
         //drawImage(contentItemDesc.texture, {cursorPos.x, cursorPos.y, cursorPos.x + width, cursorPos.y + ThumbnailSize});
         if (contentItemDesc.Texture)
         {
-            DrawImage(contentItemDesc.Texture, {(i32) cursorPos.x,
-                                                (i32) cursorPos.y,
-                                                (u32) (cursorPos.x + width),
-                                                (u32) (cursorPos.y + ThumbnailSize)});
+            DrawImage(contentItemDesc.Texture, {
+                          (i32)cursorPos.x,
+                          (i32)cursorPos.y,
+                          (u32)(cursorPos.x + width),
+                          (u32)(cursorPos.y + ThumbnailSize)
+                      });
         }
 
         if (contentItemDesc.ShowDetails)
         {
             drawList->AddRectFilled(ImVec2(cursorPos.x, cursorPos.y - separatorLineSize + ThumbnailSize),
-                ImVec2(bottomRight.x + 1, cursorPos.y + ThumbnailSize),
-                contentItemDesc.Color != nullptr ? *contentItemDesc.Color : TextToColor(contentItemDesc.DetailsDesc), 0, 0);
+                                    ImVec2(bottomRight.x + 1, cursorPos.y + ThumbnailSize),
+                                    contentItemDesc.Color != nullptr ? *contentItemDesc.Color : TextToColor(contentItemDesc.DetailsDesc), 0, 0);
 
             if (isHovered && !isSelected)
             {
@@ -494,12 +484,12 @@ namespace ImGui
         if (isSelected)
         {
             drawList->AddRect(ImVec2(cursorPos.x - 1, cursorPos.y - 1), ImVec2(bottomRight.x + 1, bottomRight.y + 1),
-                ImGui::ColorConvertFloat4ToU32(ImVec4(0.26f, 0.59f, 0.98f, 1.0f)),
-                6.0f, 0, 1);
+                              ImGui::ColorConvertFloat4ToU32(ImVec4(0.26f, 0.59f, 0.98f, 1.0f)),
+                              6.0f, 0, 1);
 
-//			drawList->AddRect(ImVec2(cursorPos.x - 1, cursorPos.y - 1), ImVec2(bottomRight.x + 1, bottomRight.y + 1),
-//				IM_COL32(213, 124, 22, 255),
-//				6.0f, 0, 1);
+            //			drawList->AddRect(ImVec2(cursorPos.x - 1, cursorPos.y - 1), ImVec2(bottomRight.x + 1, bottomRight.y + 1),
+            //				IM_COL32(213, 124, 22, 255),
+            //				6.0f, 0, 1);
         }
 
         //separator size
@@ -511,14 +501,12 @@ namespace ImGui
 
             ImGui::Spring();
             {
-
                 auto cursor = ImGui::GetCursorScreenPos();
 
                 auto textSize = ImGui::CalcTextSize(contentItemDesc.Label);
 
                 if (contentTable.renamingSelected && isSelected)
                 {
-
                     auto magicNumber = 8.f;
 
                     ImGui::SetNextItemWidth(width - magicNumber);
@@ -548,7 +536,6 @@ namespace ImGui
                         contentTable.renamingSelected = false;
                         contentTable.renamingFocus = false;
                         ImGui::SetFocusID(Math::Max(contentItemDesc.ItemId, 1u), ImGui::GetCurrentWindow());
-
                     }
                     else if (!contentTable.renamingFocus)
                     {
@@ -562,14 +549,14 @@ namespace ImGui
                     //TODO PushTextWrapPos + PushClipRect is messing with the CursorPos if the text is too large.
                     ImGui::PushClipRect(cursor, rect, true);
 
-//                    ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + width - 15);
+                    //                    ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + width - 15);
 
                     const float textWidth = Math::Min(textSize.x, width);
 
                     ImGui::SetNextItemWidth(textWidth);
                     ImGui::Text("%s%s", contentItemDesc.PreLabel != nullptr ? contentItemDesc.PreLabel : "", contentItemDesc.Label);
 
-//                    ImGui::PopTextWrapPos();
+                    //                    ImGui::PopTextWrapPos();
 
                     ImGui::PopClipRect();
                 }
@@ -730,8 +717,8 @@ namespace ImGui
         keys[static_cast<u32>(Key::Backslash)] = ImGuiKey_Backslash;
         keys[static_cast<u32>(Key::RightBracket)] = ImGuiKey_RightBracket;
         keys[static_cast<u32>(Key::GraveAccent)] = ImGuiKey_GraveAccent;
-//		keys[static_cast<u32>(Key::World1)] = ImGuiKey_World1;
-//		keys[static_cast<u32>(Key::World2)] = ImGuiKey_World2;
+        //		keys[static_cast<u32>(Key::World1)] = ImGuiKey_World1;
+        //		keys[static_cast<u32>(Key::World2)] = ImGuiKey_World2;
         keys[static_cast<u32>(Key::Escape)] = ImGuiKey_Escape;
         keys[static_cast<u32>(Key::Enter)] = ImGuiKey_Enter;
         keys[static_cast<u32>(Key::Tab)] = ImGuiKey_Tab;
@@ -806,7 +793,7 @@ namespace ImGui
     void ApplyDefaultStyle()
     {
         ImGuiStyle& style = ImGui::GetStyle();
-        ImVec4* colors = style.Colors;
+        ImVec4*     colors = style.Colors;
 
         colors[ImGuiCol_Text] = ImVec4(0.71f, 0.72f, 0.71f, 1.00f);
         colors[ImGuiCol_TextDisabled] = ImVec4(0.40f, 0.40f, 0.40f, 1.00f);
@@ -901,19 +888,19 @@ namespace ImGui
         }
         style.ScaleAllSizes(scaleFactor);
 
-//       guizmo
-		f32 guizmoScaleFactor = scaleFactor * 1.1;
-		auto& guizmoSize  = ImGuizmo::GetStyle();
-		new (&guizmoSize)  ImGuizmo::Style{};
-//
-		guizmoSize.CenterCircleSize = guizmoSize.CenterCircleSize * guizmoScaleFactor;
-		guizmoSize.HatchedAxisLineThickness = guizmoSize.HatchedAxisLineThickness * guizmoScaleFactor;
-		guizmoSize.RotationLineThickness = guizmoSize.RotationLineThickness * guizmoScaleFactor;
-		guizmoSize.RotationOuterLineThickness = guizmoSize.RotationOuterLineThickness * guizmoScaleFactor;
-		guizmoSize.ScaleLineCircleSize = guizmoSize.ScaleLineCircleSize * guizmoScaleFactor;
-		guizmoSize.ScaleLineThickness = guizmoSize.ScaleLineThickness * guizmoScaleFactor;
-		guizmoSize.TranslationLineArrowSize = guizmoSize.TranslationLineArrowSize * guizmoScaleFactor;
-		guizmoSize.TranslationLineThickness = guizmoSize.TranslationLineThickness * guizmoScaleFactor;
+        //       guizmo
+        f32   guizmoScaleFactor = scaleFactor * 1.1;
+        auto& guizmoSize = ImGuizmo::GetStyle();
+        new(&guizmoSize) ImGuizmo::Style{};
+        //
+        guizmoSize.CenterCircleSize = guizmoSize.CenterCircleSize * guizmoScaleFactor;
+        guizmoSize.HatchedAxisLineThickness = guizmoSize.HatchedAxisLineThickness * guizmoScaleFactor;
+        guizmoSize.RotationLineThickness = guizmoSize.RotationLineThickness * guizmoScaleFactor;
+        guizmoSize.RotationOuterLineThickness = guizmoSize.RotationOuterLineThickness * guizmoScaleFactor;
+        guizmoSize.ScaleLineCircleSize = guizmoSize.ScaleLineCircleSize * guizmoScaleFactor;
+        guizmoSize.ScaleLineThickness = guizmoSize.ScaleLineThickness * guizmoScaleFactor;
+        guizmoSize.TranslationLineArrowSize = guizmoSize.TranslationLineArrowSize * guizmoScaleFactor;
+        guizmoSize.TranslationLineThickness = guizmoSize.TranslationLineThickness * guizmoScaleFactor;
     }
 
     void ApplyFonts()
@@ -931,7 +918,7 @@ namespace ImGui
             font.SizePixels = fontSize * scaleFactor;
             memcpy(font.Name, "NotoSans", 10);
             font.FontDataOwnedByAtlas = false;
-            io.Fonts->AddFontFromMemoryTTF((void*) dejaVuSansBytes.Data(), dejaVuSansBytes.Size(), font.SizePixels, &font);
+            io.Fonts->AddFontFromMemoryTTF((void*)dejaVuSansBytes.Data(), dejaVuSansBytes.Size(), font.SizePixels, &font);
         }
         else
         {
@@ -955,7 +942,7 @@ namespace ImGui
             memcpy(config.Name, "FontAwesome", 11);
 
             const Array<u8>& faSolidBytes = faSolid.GetValue<Array<u8>>(UIFont::FontBytes);
-            io.Fonts->AddFontFromMemoryTTF((void*) faSolidBytes.Data(), faSolidBytes.Size(), config.SizePixels, &config, icon_ranges);
+            io.Fonts->AddFontFromMemoryTTF((void*)faSolidBytes.Data(), faSolidBytes.Size(), config.SizePixels, &config, icon_ranges);
         }
     }
 
@@ -990,6 +977,122 @@ namespace ImGui
         RegisterFieldRenderers();
     }
 
+    void DrawResourceSelection(bool& open)
+    {
+        auto& style = ImGui::GetStyle();
+        auto& io = ImGui::GetIO();
+
+        static String searchResoruceString = "";
+        static bool popupOpen = false;
+
+        auto originalPadding = ImGui::GetStyle().WindowPadding;
+
+        ImGui::StyleVar windowPadding(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+
+        if (!popupOpen)
+        {
+            popupOpen = true;
+            ImGui::OpenPopup("Resources");
+
+            ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+            ImGui::SetNextWindowSize(ImVec2(960 * ImGui::GetStyle().ScaleFactor, 540 * ImGui::GetStyle().ScaleFactor), ImGuiCond_Appearing);
+        }
+
+        if (ImGui::BeginPopupModal("Resources", &open))
+        {
+            {
+                ImGui::StyleVar windowPadding2(ImGuiStyleVar_WindowPadding, originalPadding);
+                ImGui::BeginChild(1000, ImVec2(0, (25 * style.ScaleFactor) + originalPadding.y), false, ImGuiWindowFlags_AlwaysUseWindowPadding | ImGuiWindowFlags_NoScrollbar);
+
+                ImGui::SetNextItemWidth(-1);
+                ImGui::SearchInputText(12471247, searchResoruceString);
+                ImGui::EndChild();
+            }
+
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + originalPadding.y);
+            auto  p1 = ImGui::GetCursorScreenPos();
+            auto  p2 = ImVec2(ImGui::GetContentRegionAvail().x + p1.x, p1.y);
+            auto* drawList = ImGui::GetWindowDrawList();
+            drawList->AddLine(p1, p2, ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Separator]), 1.f * style.ScaleFactor);
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 1.f * style.ScaleFactor);
+
+            {
+                ImGui::StyleColor childBg(ImGuiCol_ChildBg, IM_COL32(22, 23, 25, 255));
+                ImGui::StyleVar   windowPadding2(ImGuiStyleVar_WindowPadding, originalPadding);
+
+                static f32 zoom = 0.8;
+
+                ImGui::SetWindowFontScale(zoom);
+
+                if (ImGui::BeginChild(10000, ImVec2(0, 0), false, ImGuiWindowFlags_AlwaysUseWindowPadding))
+                {
+                    if (ImGui::BeginContentTable(10010, zoom * 112 * style.ScaleFactor))
+                    {
+                        ImGui::ContentItemDesc contentItem{};
+                        contentItem.ItemId = ImHashStr("None-Id");
+                        contentItem.ShowDetails = false;
+                        contentItem.Label = "None";
+                        contentItem.CanRename = false;
+
+                        if (ImGui::DrawContentItem(contentItem))
+                        {
+
+                        	//selector.callback(selector.userData, RID{});
+                        	open = false;
+                        }
+
+
+                        //Repository::Get
+
+
+
+                        //
+                        // Span<RID> rids = ResourceServer::GetByType(selector.typeId);
+                        // for (const auto& rid: rids)
+                        // {
+                        // 	//if (selector.ignored.Has(assetId)) continue;
+                        // 	StringView assetName = ResourceServer::GetName(rid);
+                        //
+                        // 	if (!searchText.Empty())
+                        // 	{
+                        // 		String nameUpper = assetName;
+                        // 		ToUpper(nameUpper.begin(), nameUpper.end());
+                        // 		if (!Has(nameUpper.begin(), nameUpper.end(), searchText))
+                        // 		{
+                        // 			continue;
+                        // 		}
+                        // 	}
+                        //
+                        // 	ImGui::UIContentItem contentItem{};
+                        // 	contentItem.itemId = HashValue(rid);
+                        // 	contentItem.showDetails = true;
+                        // 	contentItem.label = assetName.CStr();
+                        // 	contentItem.canRename = false;
+                        // 	contentItem.detailsDesc = assetType.CStr();
+                        //
+                        // 	if (ImGui::ContentItem(contentItem))
+                        // 	{
+                        // 		selector.callback(selector.userData, rid);
+                        // 		open = false;
+                        // 	}
+                        // }
+                        ImGui::EndContentTable();
+                    }
+                    ImGui::EndChild();
+                    ImGui::SetWindowFontScale(1);
+                }
+            }
+
+            ImGui::EndPopup();
+        }
+
+        if (!open)
+        {
+            searchResoruceString.Clear();
+            popupOpen = false;
+        }
+    }
+
     void BeginFrame(Window window, f64 deltaTime)
     {
         GetRenderDevice().ImGuiNewFrame();
@@ -1002,11 +1105,25 @@ namespace ImGui
         Array<u64> toErase{};
         for (auto& it : drawTypes)
         {
-            if (it.second.lastFrameUsage + 60 < frame)
+            if (it.second->hasChanged)
             {
-                if (!it.second.readOnly)
+                if (it.second->desc.callback)
                 {
-                    it.second.typeHandler->Destroy(it.second.instance);
+                    it.second->desc.callback(it.second->desc, it.second->instance);
+                }
+                it.second->hasChanged = false;
+            }
+
+            if (it.second->showResourceSelection)
+            {
+                DrawResourceSelection(it.second->showResourceSelection);
+            }
+
+            if (it.second->lastFrameUsage + 60 < frame)
+            {
+                if (!it.second->readOnly)
+                {
+                    it.second->desc.typeHandler->Destroy(it.second->instance);
                 }
                 toErase.EmplaceBack(it.first);
             }
@@ -1041,18 +1158,17 @@ namespace ImGui
         fieldRenders.Emplace(typeId, Traits::Move(fieldRendererFn));
     }
 
-    VoidPtr DrawType(usize itemId, TypeHandler* typeHandler, ConstPtr instance, ImGuiDrawTypeFlags flags)
+    void DrawType(const ImGui::DrawTypeDesc& desc)
     {
+        bool readOnly = desc.flags & ImGuiDrawTypeFlags_ReadOnly;
 
-        bool readOnly = flags & ImGuiDrawTypeFlags_ReadOnly;
+        auto it = drawTypes.Find(desc.itemId);
 
-        auto it = drawTypes.Find(itemId);
-
-        if (it != drawTypes.end() && it->second.typeHandler->GetTypeInfo().typeId != typeHandler->GetTypeInfo().typeId)
+        if (it != drawTypes.end() && it->second->desc.typeHandler->GetTypeInfo().typeId != desc.typeHandler->GetTypeInfo().typeId)
         {
-            if (!it->second.readOnly && it->second.instance != nullptr)
+            if (!it->second->readOnly && it->second->instance != nullptr)
             {
-                it->second.typeHandler->Destroy(it->second.instance);
+                it->second->desc.typeHandler->Destroy(it->second->instance);
             }
             drawTypes.Erase(it);
         }
@@ -1060,33 +1176,33 @@ namespace ImGui
         if (it == drawTypes.end())
         {
             it = drawTypes.Emplace(
-                itemId,
-                DrawTypeContent{
-                    .typeHandler = typeHandler,
-                    .instance = !readOnly ? typeHandler->NewInstance() : const_cast<VoidPtr>(instance),
-                    .originalData = instance,
-                    .readOnly = readOnly
-                }).first;
+                desc.itemId,
+                MakeUnique<DrawTypeContent>(
+                    DrawTypeContent{
+                        .desc = desc,
+                        .instance = !readOnly ? desc.typeHandler->NewInstance() : const_cast<VoidPtr>(desc.instance),
+                        .readOnly = readOnly
+                    })).first;
 
-            typeHandler->Copy(instance, it->second.instance);
+            desc.typeHandler->Copy(desc.instance, it->second->instance);
         }
-        DrawTypeContent& content = it->second;
 
-        if (instance != content.originalData)
+        DrawTypeContent* content = it->second.Get();
+
+        if (desc.instance != content->desc.instance)
         {
-            typeHandler->Copy(instance, it->second.instance);
-            content.originalData = instance;
+            desc.typeHandler->Copy(desc.instance, it->second->instance);
+            content->desc.instance = desc.instance;
         }
 
-        content.lastFrameUsage = Engine::GetFrame();
-        bool hasChanged = false;
+        content->lastFrameUsage = Engine::GetFrame();
 
         if (BeginTable("##component-table", 2))
         {
             TableSetupColumn("Label", ImGuiTableColumnFlags_WidthStretch, 0.4f);
             TableSetupColumn("Item", ImGuiTableColumnFlags_WidthStretch);
 
-            for (FieldHandler* field : content.typeHandler->GetFields())
+            for (FieldHandler* field : content->desc.typeHandler->GetFields())
             {
                 BeginDisabled(readOnly);
 
@@ -1101,16 +1217,12 @@ namespace ImGui
 
                 if (const auto& it = fieldRenders.Find(field->GetFieldInfo().typeInfo.typeId))
                 {
-                    it->second(field, field->GetFieldPointer(content.instance), &hasChanged);
+                    it->second(content, field, field->GetFieldPointer(content->instance), &content->hasChanged);
                 }
 
                 EndDisabled();
             }
             EndTable();
         }
-
-        return !hasChanged ? nullptr : content.instance;
     }
 }
-
-

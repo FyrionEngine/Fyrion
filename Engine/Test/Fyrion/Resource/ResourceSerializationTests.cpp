@@ -248,6 +248,7 @@ namespace
                 }
 
                 write.Commit();
+                Repository::SetUUID(rid, UUID::RandomUUID());
                 str = ResourceSerialization::WriteResource(rid);
                 CHECK(!str.Empty());
             }
@@ -281,7 +282,9 @@ namespace
                 write.RemoveFromPrototypeSubObjectSet(SerializationResourceBasics::SubobjectSet, Repository::GetByUUID(UUID::FromString("ebb81da8-04f5-4b8f-ba52-6b5e45473c2c")));
                 write.Commit();
 
+                Repository::SetUUID(prototype, UUID::RandomUUID());
                 prototype2Str = ResourceSerialization::WriteResource(prototype);
+                CHECK(!prototype2Str.Empty());
 
             }
             Engine::Destroy();

@@ -34,6 +34,7 @@ namespace Fyrion
         HashSet<RID>       links{};
         bool               publicValue = false;
         TypeID             resourceType;
+        bool               editable = false;
     };
 
     struct GraphEditorNodePinLookup
@@ -114,9 +115,12 @@ namespace Fyrion
 
         void DeleteLink(RID link);
         void DeleteNode(RID node);
+        void DeletePin(GraphEditorNodePin* pin);
 
         void MoveNode(GraphEditorNode* node, Vec2 newPos);
         void RenameNode(GraphEditorNode* node, StringView newLabel);
+        void RenamePin(GraphEditorNodePin* pin, StringView newName);
+        void ChangePinVisibility(GraphEditorNodePin* pin, bool publicValue);
 
         GraphEditorNode* GetNodeByRID(RID rid);
 
@@ -140,7 +144,7 @@ namespace Fyrion
         GraphEditorNodePin* GetPin(GraphEditorNodePin* left, GraphEditorNodePin* right, GraphEditorPinKind disiredKind);
 
         GraphEditorNodePin* FindPin(RID node, const StringView& pin, GraphEditorPinKind graphEditorPinKind);
-        void                DeletePin(GraphEditorNodePin* pin);
+        void                DeletePinCache(GraphEditorNodePin* pin);
 
         void AddOutputPinCache(RID value, GraphEditorNode* node);
     };

@@ -1,9 +1,41 @@
+#include "IconsFontAwesome6.h"
 #include "ImGui.hpp"
 #include "Fyrion/Core/Registry.hpp"
+#include "Fyrion/Core/StringUtils.hpp"
+#include "Fyrion/Resource/Repository.hpp"
 #include "Lib/imgui_internal.h"
 
 namespace Fyrion
 {
+    void DrawRID(ImGui::DrawTypeContent* context, FieldHandler* fieldHandler, VoidPtr value, bool* hasChanged)
+    {
+        String formattedName = FormatName(fieldHandler->GetName());
+        auto idStr = "###string_" + formattedName;
+        auto id = HashValue(idStr);
+
+        RID rid = *static_cast<RID*>(value);
+        ResourceObject resourceObject = Repository::Read(rid);
+
+        String name;
+        if (resourceObject)
+        {
+            name = Traits::Move(resourceObject[Asset::Name].Value<String>());
+        }
+
+        ImGui::SetNextItemWidth(-22 * ImGui::GetStyle().ScaleFactor);
+
+        ImGui::InputText(id, name, ImGuiInputTextFlags_ReadOnly);
+        ImGui::SameLine(0, 0);
+        ImGui::PushID(id);
+        auto size = ImGui::GetItemRectSize();
+        if (ImGui::Button(ICON_FA_CIRCLE_DOT, ImVec2{size.y, size.y}))
+        {
+            context->showResourceSelection = true;
+        }
+        ImGui::PopID();
+    }
+
+
     void DrawVecField(const String compName, const char* fieldName, float& value, bool* hasChanged, u32 color = 0, f32 speed = 0.005f)
     {
         ImGui::TableNextColumn();
@@ -32,7 +64,7 @@ namespace Fyrion
         ImGui::EndHorizontal();
     }
 
-    void Vec3Renderer(FieldHandler* fieldHandler, VoidPtr value, bool* hasChanged)
+    void Vec3Renderer(ImGui::DrawTypeContent* context, FieldHandler* fieldHandler, VoidPtr value, bool* hasChanged)
     {
         f32    speed = 0.005f;
         String compName = ToString(reinterpret_cast<usize>(value));
@@ -47,7 +79,7 @@ namespace Fyrion
     }
 
 
-    void QuatRenderer(FieldHandler* fieldHandler, VoidPtr value, bool* hasChanged)
+    void QuatRenderer(ImGui::DrawTypeContent* context, FieldHandler* fieldHandler, VoidPtr value, bool* hasChanged)
     {
         static int rotationMode = 0;
 
@@ -115,6 +147,7 @@ namespace Fyrion
 
     void RegisterFieldRenderers()
     {
+        ImGui::AddFieldRenderer(GetTypeID<RID>(), DrawRID);
         ImGui::AddFieldRenderer(GetTypeID<Vec3>(), Vec3Renderer);
         ImGui::AddFieldRenderer(GetTypeID<Quat>(), QuatRenderer);
     }

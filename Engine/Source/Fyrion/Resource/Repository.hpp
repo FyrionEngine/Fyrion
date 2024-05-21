@@ -20,6 +20,7 @@ namespace Fyrion
         FY_API StringView       GetResourceTypeSimpleName(ResourceType* resourceType);
         FY_API void             AddResourceTypeEvent(TypeID typeId, VoidPtr userData, ResourceEventType eventType, FnResourceEvent event);
         FY_API void             RemoveResourceTypeEvent(TypeID typeId, VoidPtr userData, FnResourceEvent event);
+        FY_API Span<RID>        GetResourceByType(TypeID typeId);
 
         FY_API RID              CreateResource(TypeID typeId);
         FY_API RID              CreateResource(TypeID typeId, const UUID& uuid);

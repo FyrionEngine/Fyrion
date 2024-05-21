@@ -1,6 +1,7 @@
 #include "PropertiesWindow.hpp"
 
 #include "GraphEditorWindow.hpp"
+#include "imgui_internal.h"
 #include "Fyrion/Assets/AssetTypes.hpp"
 #include "Fyrion/Core/StringUtils.hpp"
 #include "Fyrion/Editor/Editor.hpp"
@@ -18,6 +19,8 @@ namespace Fyrion
 
     void PropertiesWindow::Draw(u32 id, bool& open)
     {
+        m_idCount = id;
+
         ImGui::Begin(id, ICON_FA_CIRCLE_INFO " Properties", &open, ImGuiWindowFlags_NoScrollbar);
 
         //TODO temporary
@@ -77,7 +80,7 @@ namespace Fyrion
 
             if (ImGui::InputText(hash, m_stringCache, nameFlags))
             {
-                m_renamingCache = objectName;
+                m_renamingCache = m_stringCache;
                 m_renamingFocus = true;
                 m_renamingObject = rid;
             }
@@ -163,11 +166,18 @@ namespace Fyrion
                 if (open)
                 {
                     ImGui::Indent();
-                    ConstPtr ptr = Repository::ReadData(component);
-                    if (VoidPtr newValue = ImGui::DrawType(HashValue(component), typeHandler, ptr, readOnly ? ImGuiDrawTypeFlags_ReadOnly : 0))
-                    {
-                        m_sceneEditor.UpdateComponent(component, newValue);
-                    }
+                    ImGui::DrawType(ImGui::DrawTypeDesc{
+                        .itemId = component.id,
+                        .rid = component,
+                        .typeHandler = typeHandler,
+                        .instance = Repository::ReadData(component),
+                        .flags = readOnly ? ImGuiDrawTypeFlags_ReadOnly : 0u,
+                        .userData = &m_sceneEditor,
+                        .callback = [](ImGui::DrawTypeDesc& desc, ConstPtr newValue)
+                        {
+                            static_cast<SceneEditor*>(desc.userData)->UpdateComponent(desc.rid, newValue);
+                        }
+                    });
                     ImGui::Unindent();
                 }
             }
@@ -258,16 +268,15 @@ namespace Fyrion
             ImGui::SetNextItemWidth(-1);
 
             m_stringCache = graphNode->label;
-            u32 hash = HashValue(node);
 
-            if (ImGui::InputText(hash, m_stringCache, nameFlags))
+            if (ImGui::InputText(PushId(), m_stringCache, nameFlags))
             {
-                m_renamingCache = graphNode->label;
+                m_renamingCache = m_stringCache;
                 m_renamingFocus = true;
                 m_renamingObject = node;
             }
 
-            if (!ImGui::IsItemActive() && m_renamingFocus)
+            if (!ImGui::IsItemActive() && m_renamingFocus && m_renamingObject == node)
             {
                 graphEditor->RenameNode(graphNode, m_renamingCache);
                 m_renamingObject = {};
@@ -281,7 +290,7 @@ namespace Fyrion
             ImGui::TableNextColumn();
             ImGui::SetNextItemWidth(-1);
             String uuid = ToString(Repository::GetUUID(node));
-            ImGui::InputText(hash + 10, uuid, ImGuiInputTextFlags_ReadOnly);
+            ImGui::InputText(PushId(), uuid, ImGuiInputTextFlags_ReadOnly);
 
             ImGui::EndDisabled();
             ImGui::EndTable();
@@ -292,13 +301,21 @@ namespace Fyrion
 
         }
 
+        bool openPopup = false;
+
         for (GraphEditorNodePin* pin : graphNode->outputs)
         {
+            ImGui::BeginDisabled(!pin->editable);
             TypeHandler* typeHandler = Registry::FindTypeById(pin->typeId);
             if (typeHandler)
             {
                 bool propClicked = false;
                 bool open = ImGui::CollapsingHeaderProps(reinterpret_cast<usize>(pin), pin->label.CStr(), &propClicked);
+                if (propClicked)
+                {
+                    openPopup = true;
+                    m_selectedNodePin = pin;
+                }
 
                 if (open)
                 {
@@ -317,52 +334,56 @@ namespace Fyrion
                         ImGui::SetNextItemWidth(-1);
 
                         m_stringCache = pin->label;
-                        u32 hash = HashValue(reinterpret_cast<usize>(pin));
 
-                        if (ImGui::InputText(hash, m_stringCache, nameFlags))
+                        if (ImGui::InputText(PushId(), m_stringCache, nameFlags))
                         {
-                            m_renamingCache = graphNode->label;
+                            m_renamingCache = m_stringCache;
                             m_renamingFocus = true;
-                            m_renamingObject = node;
+                            m_renmaingPin = pin;
                         }
 
-                        if (!ImGui::IsItemActive() && m_renamingFocus)
+                        if (!ImGui::IsItemActive() && m_renamingFocus && m_renmaingPin == pin)
                         {
-                           //graphEditor->RenameNode(graphNode, m_renamingCache);
-                            m_renamingObject = {};
+                            graphEditor->RenamePin(pin, m_renamingCache);
+                            m_renmaingPin = {};
                             m_renamingFocus = false;
                             m_renamingCache.Clear();
                         }
 
+                        ImGui::TableNextColumn();
+                        ImGui::Text("Public Value");
+                        ImGui::TableNextColumn();
+
+                        bool publicValue = pin->publicValue;
+
+                        if (ImGui::Checkbox("###aaaaa", &publicValue))
+                        {
+                            graphEditor->ChangePinVisibility(pin, publicValue);
+                        }
 
                         ImGui::EndDisabled();
-
-
-                        // for (FieldHandler* field : content.typeHandler->GetFields())
-                        // {
-                        //     BeginDisabled(readOnly);
-                        //
-                        //     TableNextColumn();
-                        //     AlignTextToFramePadding();
-                        //
-                        //     String formattedName = FormatName(field->GetName());
-                        //     String idStr = "###string_" + formattedName;
-                        //
-                        //     Text("%s", formattedName.CStr());
-                        //     TableNextColumn();
-                        //
-                        //     if (const auto& it = fieldRenders.Find(field->GetFieldInfo().typeInfo.typeId))
-                        //     {
-                        //         it->second(field, field->GetFieldPointer(content.instance), &hasChanged);
-                        //     }
-                        //
-                        //     EndDisabled();
-                        // }
                         ImGui::EndTable();
                     }
                 }
             }
+            ImGui::EndDisabled();
         }
+
+        if (openPopup)
+        {
+            ImGui::OpenPopup("open-node-settings");
+        }
+
+        bool popupOpenSettings = ImGui::BeginPopupMenu("open-node-settings", 0, false);
+        if (popupOpenSettings)
+        {
+            if (ImGui::MenuItem("Remove"))
+            {
+                graphEditor->DeletePin(m_selectedNodePin);
+                ImGui::CloseCurrentPopup();
+            }
+        }
+        ImGui::EndPopupMenu(popupOpenSettings);
     }
 
     void PropertiesWindow::RegisterType(NativeTypeHandler<PropertiesWindow>& type)

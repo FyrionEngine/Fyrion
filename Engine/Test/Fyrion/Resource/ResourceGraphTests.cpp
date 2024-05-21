@@ -87,7 +87,7 @@ namespace
                         String vl = "valuevalue1";
                         Repository::Commit(value, &vl);
                         ResourceObject object = Repository::Write(vl1);
-                        object[GraphNodeValue::Input] = "input1";
+                        object[GraphNodeValue::Name] = "input1";
                         object.SetSubObject(GraphNodeValue::Value, value);
                         object.Commit();
                     }
@@ -99,7 +99,7 @@ namespace
                         String vl = "valuevalue2";
                         Repository::Commit(value, &vl);
                         ResourceObject object = Repository::Write(vl2);
-                        object[GraphNodeValue::Input] = "input2";
+                        object[GraphNodeValue::Name] = "input2";
                         object.SetSubObject(GraphNodeValue::Value, value);
                         object.Commit();
                     }

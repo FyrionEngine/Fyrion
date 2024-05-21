@@ -132,6 +132,11 @@ namespace Fyrion
         ImGui::SetNextWindowSize({800 * style.ScaleFactor, 400 * style.ScaleFactor}, ImGuiCond_Once);
         ImGui::Begin(id, ICON_FA_DIAGRAM_PROJECT " Graph Editor", &open);
 
+        if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
+        {
+            m_lastGraphEditorSelected = &m_graphEditor;
+        }
+
         if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))
         {
             lastRect = editor->GetViewRect();
@@ -290,6 +295,16 @@ namespace Fyrion
         }
 
         ed::End();
+
+        ed::NodeId node = {};
+        if (ed::GetSelectedNodes(&node, 1))
+        {
+            m_graphEditor.lastNodeSelected = RID{.id = node.Get()};
+        }
+        else
+        {
+            m_graphEditor.lastNodeSelected = {};
+        }
 
         ed::SetCurrentEditor(nullptr);
 

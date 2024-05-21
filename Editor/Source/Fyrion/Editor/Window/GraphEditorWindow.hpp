@@ -28,6 +28,11 @@ namespace Fyrion
         static void OpenGraphWindow(RID graphId);
         static void RegisterType(NativeTypeHandler<GraphEditorWindow>& type);
 
+        static GraphEditor* GetLastGraphEditorSelected()
+        {
+            return m_lastGraphEditorSelected;
+        }
+
     private:
         GraphEditor m_graphEditor;
 
@@ -50,5 +55,7 @@ namespace Fyrion
         static void AddNodeAction(const MenuItemEventData& eventData);
 
         void DrawPinInputField(GraphEditorNodePin* pin);
+
+        inline static GraphEditor* m_lastGraphEditorSelected = nullptr;
     };
 }

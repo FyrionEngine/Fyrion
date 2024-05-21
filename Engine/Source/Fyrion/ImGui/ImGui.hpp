@@ -98,7 +98,7 @@ namespace ImGui
     FY_API void EndPopupMenu(bool closePopup = true);
     FY_API bool SelectionButton(const char* label, bool selected, const ImVec2& sizeArg = ImVec2(0, 0));
     FY_API bool BorderedButton(const char* label, const ImVec2& size = ImVec2(0, 0));
-
+    FY_API bool CollapsingHeaderProps(i32 id, const char* label, bool* buttonClicked);
 
     FY_API ImU32 TextToColor(const char* str);
 

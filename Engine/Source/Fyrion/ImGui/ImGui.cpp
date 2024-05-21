@@ -272,6 +272,40 @@ namespace ImGui
         return ImGui::Button(label, size);
     }
 
+    bool CollapsingHeaderProps(i32 id, const char* label, bool* buttonClicked)
+    {
+        auto& style = ImGui::GetStyle();
+
+        ImGui::PushID(id);
+
+        ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_AllowItemOverlap;
+        ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
+        bool   open = ImGui::CollapsingHeader(label, flags);
+        bool   rightClicked = ImGui::IsItemClicked(ImGuiMouseButton_Right);
+        bool   hovered = ImGui::IsItemHovered();
+        ImVec2 size = ImGui::GetItemRectSize();
+
+        ImGui::SameLine(ImGui::GetContentRegionAvail().x - 20 * style.ScaleFactor);
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 2 * style.ScaleFactor);
+        {
+            ImGui::StyleColor colBorder(ImGuiCol_Border, IM_COL32(0, 0, 0, 0));
+            if (hovered)
+            {
+                ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_HeaderHovered));
+            }
+            if (ImGui::Button(ICON_FA_ELLIPSIS_VERTICAL, ImVec2{size.y, size.y - 4 * style.ScaleFactor}) || rightClicked)
+            {
+                *buttonClicked = true;
+            }
+            if (hovered)
+            {
+                ImGui::PopStyleColor(1);
+            }
+        }
+        ImGui::PopID();
+
+        return open;
+    }
 
     ImU32 TextToColor(const char* str)
     {

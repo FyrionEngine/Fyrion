@@ -363,10 +363,10 @@ namespace Fyrion
             RID valueAsset = Repository::CreateResource<GraphNodeValue>();
             Repository::SetUUID(valueAsset, UUID::RandomUUID());
 
-            //input->typeId
 
             ResourceObject valueObject = Repository::Write(valueAsset);
             valueObject[GraphNodeValue::Input] = input->name;
+            valueObject[GraphNodeValue::PublicValue] = true;
             valueObject[GraphNodeValue::Type] = Registry::FindTypeById(input->typeId)->GetName();
             if (TypeHandler* resourceTypeHandler = Registry::FindTypeById(input->resourceType))
             {
@@ -490,6 +490,20 @@ namespace Fyrion
         nodeObject.Commit();
 
         m_assetTree.MarkDirty();
+    }
+
+    void GraphEditor::RenameNode(GraphEditorNode* node, StringView newLabel)
+    {
+        node->label = newLabel;
+    }
+
+    GraphEditorNode* GraphEditor::GetNodeByRID(RID rid)
+    {
+        if (const auto it = m_nodes.Find(rid))
+        {
+            return it->second.Get();
+        }
+        return nullptr;
     }
 
     void GraphEditor::DeletePin(GraphEditorNodePin* pin)

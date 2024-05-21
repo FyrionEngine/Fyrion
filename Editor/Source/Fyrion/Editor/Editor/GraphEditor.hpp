@@ -116,6 +116,11 @@ namespace Fyrion
         void DeleteNode(RID node);
 
         void MoveNode(GraphEditorNode* node, Vec2 newPos);
+        void RenameNode(GraphEditorNode* node, StringView newLabel);
+
+        GraphEditorNode* GetNodeByRID(RID rid);
+
+        RID lastNodeSelected{};
 
     private:
         AssetTree& m_assetTree;

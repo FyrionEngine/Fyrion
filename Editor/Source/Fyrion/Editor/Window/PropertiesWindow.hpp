@@ -8,6 +8,7 @@ namespace Fyrion
     struct MenuItemEventData;
     class SceneEditor;
     struct SceneObject;
+    class GraphEditor;
 
     class PropertiesWindow : public EditorWindow
     {
@@ -27,5 +28,6 @@ namespace Fyrion
 
         static void OpenProperties(const MenuItemEventData& eventData);
         void        DrawSceneObject(u32 id, RID rid);
+        void        DrawGraphNode(GraphEditor* graphEditor, RID node);
     };
 }

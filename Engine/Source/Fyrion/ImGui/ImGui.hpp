@@ -71,6 +71,7 @@ namespace ImGui
         bool          readOnly{};
         bool          hasChanged{};
         bool          showResourceSelection{};
+        bool          tableRender{};
         TypeID        resourceTypeSelection{};
         FieldHandler* fieldShowSelection{};
         Array<TypeID> graphOutputs{};

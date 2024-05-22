@@ -1,17 +1,17 @@
 #include "IconsFontAwesome6.h"
 #include "ImGui.hpp"
+#include "Fyrion/Assets/AssetTypes.hpp"
 #include "Fyrion/Core/Registry.hpp"
-#include "Fyrion/Core/StringUtils.hpp"
 #include "Fyrion/Resource/Repository.hpp"
+#include "Fyrion/Resource/ResourceGraph.hpp"
 #include "Lib/imgui_internal.h"
 
 namespace Fyrion
 {
     void DrawRID(ImGui::DrawTypeContent* context, FieldHandler* fieldHandler, VoidPtr value, bool* hasChanged)
     {
-        String formattedName = FormatName(fieldHandler->GetName());
-        auto idStr = "###string_" + formattedName;
-        auto id = HashValue(idStr);
+        const ResourceReference* resourceReference = fieldHandler ? fieldHandler->GetAttribute<ResourceReference>() : nullptr;
+        ImGuiID id = ImHashData(value, sizeof(VoidPtr));
 
         RID rid = *static_cast<RID*>(value);
         RID parent = Repository::GetParent(rid);
@@ -23,6 +23,7 @@ namespace Fyrion
             name = Traits::Move(assetObject[Asset::Name].Value<String>());
         }
 
+
         ImGui::SetNextItemWidth(-22 * ImGui::GetStyle().ScaleFactor);
 
         ImGui::InputText(id, name, ImGuiInputTextFlags_ReadOnly);
@@ -31,7 +32,7 @@ namespace Fyrion
         auto size = ImGui::GetItemRectSize();
         if (ImGui::Button(ICON_FA_CIRCLE_DOT, ImVec2{size.y, size.y}))
         {
-            if (const ResourceReference* resourceReference = fieldHandler->GetAttribute<ResourceReference>())
+            if (resourceReference)
             {
                 context->showResourceSelection = true;
                 context->resourceTypeSelection = resourceReference->resourceType;
@@ -40,6 +41,84 @@ namespace Fyrion
             }
         }
         ImGui::PopID();
+
+        if (rid && resourceReference && resourceReference->resourceType == GetTypeID<ResourceGraphAsset>())
+        {
+            ImGui::EndTable();
+
+
+            ImGui::StyleColor childBg(ImGuiCol_ChildBg, IM_COL32(22, 23, 25, 255));
+            ImGui::StyleVar childRound(ImGuiStyleVar_ChildRounding, ImGui::GetStyle().FrameRounding);
+            if (ImGui::BeginChild("###child", ImVec2(-FLT_MIN, 0.0f), ImGuiChildFlags_AutoResizeY))
+            {
+                ImGui::PushStyleColor(ImGuiCol_BorderShadow, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+                ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+                ImGui::PushStyleColor(ImGuiCol_Header, IM_COL32(0, 0, 0, 0));
+                ImGui::PushStyleColor(ImGuiCol_HeaderActive, IM_COL32(35, 36, 38, 255));
+                ImGui::PushStyleColor(ImGuiCol_HeaderHovered, IM_COL32(35, 36, 38, 255));
+                ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
+
+                String title = name + " (Inputs)";
+                bool open = ImGui::CollapsingHeader(title.CStr());
+                ImGui::PopStyleColor(5);
+                if (open)
+                {
+                    ImGui::Indent();
+
+                    if (ImGui::BeginTable("##child-table", 2))
+                    {
+                        ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthStretch, 0.4f);
+                        ImGui::TableSetupColumn("Item", ImGuiTableColumnFlags_WidthStretch);
+
+                        ImGui::TableNextColumn();
+                        ImGui::AlignTextToFramePadding();
+
+                        ResourceObject graphObject = Repository::Read(rid);
+
+                        Array<RID> nodes = graphObject.GetSubObjectSetAsArray(ResourceGraphAsset::Nodes);
+
+                        for (RID node : nodes)
+                        {
+                            ResourceObject nodeObject = Repository::Read(node);
+                            Array<RID> inputs = nodeObject.GetSubObjectSetAsArray(GraphNodeAsset::InputValues);
+                            for(RID input: inputs)
+                            {
+                                ResourceObject inputObject = Repository::Read(input);
+                                if (inputObject[GraphNodeValue::PublicValue].Value<bool>())
+                                {
+                                    String name = inputObject[GraphNodeValue::Name].Value<String>();
+                                    RID valueRid = inputObject[GraphNodeValue::Value].Value<RID>();
+
+                                    ImGui::Text(name.CStr());
+                                    ImGui::TableNextColumn();
+
+                                    ImGui::DrawType(ImGui::DrawTypeDesc{
+                                        .itemId = input.id,
+                                        .rid = input,
+                                        .typeHandler = Registry::FindTypeByName(inputObject[GraphNodeValue::Type].Value<String>()),
+                                        .instance = valueRid ? Repository::ReadData(input) : nullptr,
+                                        .userData = nullptr,
+                                        .callback = [](ImGui::DrawTypeDesc& desc, ConstPtr newValue)
+                                        {
+
+                                        }
+                                    });
+                                }
+                            }
+                        }
+
+                        ImGui::EndTable();
+                    }
+                    ImGui::Unindent();
+                }
+                ImGui::EndChild();
+            }
+
+            ImGui::BeginTable("##component-table", 2);
+            ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthStretch, 0.4f);
+            ImGui::TableSetupColumn("Item", ImGuiTableColumnFlags_WidthStretch);
+        }
+
     }
 
 

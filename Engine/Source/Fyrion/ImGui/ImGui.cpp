@@ -1189,15 +1189,19 @@ namespace ImGui
                     DrawTypeContent{
                         .desc = desc,
                         .instance = !readOnly ? desc.typeHandler->NewInstance() : const_cast<VoidPtr>(desc.instance),
-                        .readOnly = readOnly
+                        .readOnly = readOnly,
+                        .tableRender = true
                     })).first;
 
-            desc.typeHandler->Copy(desc.instance, it->second->instance);
+            if (desc.instance != nullptr)
+            {
+                desc.typeHandler->Copy(desc.instance, it->second->instance);
+            }
         }
 
         DrawTypeContent* content = it->second.Get();
 
-        if (desc.instance != content->desc.instance)
+        if (desc.instance != nullptr && desc.instance != content->desc.instance)
         {
             desc.typeHandler->Copy(desc.instance, it->second->instance);
             content->desc.instance = desc.instance;
@@ -1205,32 +1209,39 @@ namespace ImGui
 
         content->lastFrameUsage = Engine::GetFrame();
 
-        if (BeginTable("##component-table", 2))
+
+        if (!content->desc.typeHandler->GetFields().Empty())
         {
-            TableSetupColumn("Label", ImGuiTableColumnFlags_WidthStretch, 0.4f);
-            TableSetupColumn("Item", ImGuiTableColumnFlags_WidthStretch);
-
-            for (FieldHandler* field : content->desc.typeHandler->GetFields())
+            if (BeginTable("##component-table", 2))
             {
-                BeginDisabled(readOnly);
+                TableSetupColumn("Label", ImGuiTableColumnFlags_WidthStretch, 0.4f);
+                TableSetupColumn("Item", ImGuiTableColumnFlags_WidthStretch);
 
-                TableNextColumn();
-                AlignTextToFramePadding();
-
-                String formattedName = FormatName(field->GetName());
-                String idStr = "###string_" + formattedName;
-
-                Text("%s", formattedName.CStr());
-                TableNextColumn();
-
-                if (const auto& it = fieldRenders.Find(field->GetFieldInfo().typeInfo.typeId))
+                for (FieldHandler* field : content->desc.typeHandler->GetFields())
                 {
-                    it->second(content, field, field->GetFieldPointer(content->instance), &content->hasChanged);
-                }
+                    BeginDisabled(readOnly);
 
-                EndDisabled();
+                    TableNextColumn();
+                    AlignTextToFramePadding();
+
+                    String formattedName = FormatName(field->GetName());
+                    String idStr = "###string_" + formattedName;
+
+                    Text("%s", formattedName.CStr());
+                    TableNextColumn();
+
+                    if (const auto& it = fieldRenders.Find(field->GetFieldInfo().typeInfo.typeId))
+                    {
+                        it->second(content, field, field->GetFieldPointer(content->instance), &content->hasChanged);
+                    }
+
+                    EndDisabled();
+                }
+                EndTable();
             }
-            EndTable();
+        } else if (const auto& it = fieldRenders.Find(content->desc.typeHandler->GetTypeInfo().typeId))
+        {
+            it->second(content, nullptr, content->instance, &content->hasChanged);
         }
     }
 }

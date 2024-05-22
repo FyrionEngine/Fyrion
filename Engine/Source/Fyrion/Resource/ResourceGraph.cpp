@@ -302,8 +302,8 @@ namespace Fyrion
 
         ResourceObject graphAsset = Repository::Read(assetGraph);
 
-        Array<RID> nodes = graphAsset.GetSubObjectSetAsArray(ResourceGraphAsset::Nodes);
-        Array<RID> links = graphAsset.GetSubObjectSetAsArray(ResourceGraphAsset::Links);
+        Array<RID> nodes = graphAsset.GetSubObjectSetAsArray(GraphAsset::Nodes);
+        Array<RID> links = graphAsset.GetSubObjectSetAsArray(GraphAsset::Links);
 
         Array<ResourceGraphNodeInfo> nodesInfo;
         Array<ResourceGraphLinkInfo> nodeLinks;

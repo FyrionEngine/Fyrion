@@ -256,13 +256,13 @@ namespace Fyrion
 
         ResourceObject object = Repository::Read(m_graph);
 
-        Array<RID> nodes = object.GetSubObjectSetAsArray(ResourceGraphAsset::Nodes);
+        Array<RID> nodes = object.GetSubObjectSetAsArray(GraphAsset::Nodes);
         for (RID node : nodes)
         {
             AddNodeCache(node);
         }
 
-        Array<RID> links = object.GetSubObjectSetAsArray(ResourceGraphAsset::Links);
+        Array<RID> links = object.GetSubObjectSetAsArray(GraphAsset::Links);
         for (RID link : links)
         {
             AddLinkCache(link);
@@ -278,7 +278,7 @@ namespace Fyrion
         nodeObject.Commit();
 
         ResourceObject graphAsset = Repository::Write(m_graph);
-        graphAsset.AddToSubObjectSet(ResourceGraphAsset::Nodes, nodeAsset);
+        graphAsset.AddToSubObjectSet(GraphAsset::Nodes, nodeAsset);
         graphAsset.Commit();
 
         Repository::SetUUID(nodeAsset, UUID::RandomUUID());
@@ -296,7 +296,7 @@ namespace Fyrion
         nodeObject.Commit();
 
         ResourceObject graphAsset = Repository::Write(m_graph);
-        graphAsset.AddToSubObjectSet(ResourceGraphAsset::Nodes, nodeAsset);
+        graphAsset.AddToSubObjectSet(GraphAsset::Nodes, nodeAsset);
         graphAsset.Commit();
 
         Repository::SetUUID(nodeAsset, UUID::RandomUUID());
@@ -316,7 +316,7 @@ namespace Fyrion
         nodeObject.Commit();
 
         ResourceObject graphAsset = Repository::Write(m_graph);
-        graphAsset.AddToSubObjectSet(ResourceGraphAsset::Nodes, nodeAsset);
+        graphAsset.AddToSubObjectSet(GraphAsset::Nodes, nodeAsset);
         graphAsset.Commit();
 
         Repository::SetUUID(nodeAsset, UUID::RandomUUID());
@@ -396,7 +396,7 @@ namespace Fyrion
             linkObject.Commit();
 
             ResourceObject graphAsset = Repository::Write(m_graph);
-            graphAsset.AddToSubObjectSet(ResourceGraphAsset::Links, linkAsset);
+            graphAsset.AddToSubObjectSet(GraphAsset::Links, linkAsset);
             graphAsset.Commit();
 
             Repository::SetUUID(linkAsset, UUID::RandomUUID());
@@ -421,7 +421,7 @@ namespace Fyrion
         linkObject.Commit();
 
         ResourceObject graphAsset = Repository::Write(m_graph);
-        graphAsset.AddToSubObjectSet(ResourceGraphAsset::Links, linkAsset);
+        graphAsset.AddToSubObjectSet(GraphAsset::Links, linkAsset);
         graphAsset.Commit();
 
         Repository::SetUUID(linkAsset, UUID::RandomUUID());
@@ -490,12 +490,12 @@ namespace Fyrion
             Repository::DestroyResource(it.first);
         }
 
-        if (const auto it = std::ranges::find(pin->node->inputs, pin); it != pin->node->inputs.end())
+        if (const auto it = std::find(pin->node->inputs.begin(), pin->node->inputs.end(), pin); it != pin->node->inputs.end())
         {
             pin->node->inputs.Erase(it);
         }
 
-        if (const auto it = std::ranges::find(pin->node->outputs, pin); it != pin->node->outputs.end())
+        if (const auto it = std::find(pin->node->outputs.begin(), pin->node->outputs.end(), pin); it != pin->node->outputs.end())
         {
             pin->node->outputs.Erase(it);
         }

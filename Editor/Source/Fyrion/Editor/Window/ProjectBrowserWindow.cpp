@@ -11,6 +11,7 @@
 #include "Fyrion/Resource/ResourceAssets.hpp"
 #include "Fyrion/Resource/Repository.hpp"
 #include "Fyrion/Engine.hpp"
+#include "Fyrion/Assets/AssetTypes.hpp"
 #include "Fyrion/Graphics/RenderGraph.hpp"
 #include "Fyrion/Resource/ResourceGraph.hpp"
 #include "Fyrion/Scene/SceneAssets.hpp"
@@ -376,7 +377,7 @@ namespace Fyrion
                                     {
                                         Editor::GetSceneEditor().LoadScene(node->rid);
                                     }
-                                    else if (node->objectType == GetTypeID<ResourceGraphAsset>() || node->objectType == GetTypeID<RenderGraphAsset>())
+                                    else if (node->objectType == GetTypeID<GraphAsset>() || node->objectType == GetTypeID<RenderGraphAsset>())
                                     {
                                         GraphEditorWindow::OpenGraphWindow(node->rid);
                                     }
@@ -504,7 +505,7 @@ namespace Fyrion
     void ProjectBrowserWindow::AssetNewResourceGraph(const MenuItemEventData& eventData)
     {
         ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
-        RID newAsset = projectBrowserWindow->m_assetTree.NewAsset(projectBrowserWindow->m_openFolder, Repository::CreateResource<ResourceGraphAsset>(), "New Resource Graph");
+        RID newAsset = projectBrowserWindow->m_assetTree.NewAsset(projectBrowserWindow->m_openFolder, Repository::CreateResource<GraphAsset>(), "New Resource Graph");
 
         ImGui::SelectContentItem(Hash<RID>::Value(newAsset), CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
         ImGui::RenameContentSelected(CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);

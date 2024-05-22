@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Fyrion/Common.hpp"
+#include "Fyrion/Core/Array.hpp"
 #include "Fyrion/Core/StringView.hpp"
 #include "Fyrion/Core/Span.hpp"
 
@@ -91,9 +92,8 @@ namespace Fyrion
     struct ResourceReference
     {
         TypeID resourceType{};
-        TypeID graphOutput{};
+        Array<TypeID> graphOutput{};
     };
-
 
     struct AssetRoot
     {

@@ -50,6 +50,18 @@ namespace Fyrion
         constexpr static u32 OutputPin = 3;
     };
 
+    struct GraphInstanceAsset
+    {
+        constexpr static u32 Graph = 0;
+        constexpr static u32 Inputs = 0;
+    };
+
+    struct GraphAsset
+    {
+        constexpr static u32 Nodes = 0;
+        constexpr static u32 Links = 1;
+    };
+
     struct DCCMesh
     {
 

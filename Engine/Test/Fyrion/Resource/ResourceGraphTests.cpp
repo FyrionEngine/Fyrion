@@ -75,7 +75,7 @@ namespace
         Engine::Init();
         {
             RegisterTypes();
-            RID rid = Repository::CreateResource<ResourceGraphAsset>();
+            RID rid = Repository::CreateResource<GraphAsset>();
 
             //asset
             {
@@ -132,9 +132,9 @@ namespace
 
                 {
                     ResourceObject object = Repository::Write(rid);
-                    object.AddToSubObjectSet(ResourceGraphAsset::Nodes, contentString1);
-                    object.AddToSubObjectSet(ResourceGraphAsset::Nodes, output);
-                    object.AddToSubObjectSet(ResourceGraphAsset::Links, link1);
+                    object.AddToSubObjectSet(GraphAsset::Nodes, contentString1);
+                    object.AddToSubObjectSet(GraphAsset::Nodes, output);
+                    object.AddToSubObjectSet(GraphAsset::Links, link1);
                     object.Commit();
                 }
             }

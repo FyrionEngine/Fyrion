@@ -3,7 +3,6 @@
 #include "Fyrion/Assets/AssetTypes.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Resource/Repository.hpp"
-#include "Fyrion/Resource/ResourceGraph.hpp"
 #include "Lib/imgui_internal.h"
 
 namespace Fyrion
@@ -37,12 +36,11 @@ namespace Fyrion
                 context->showResourceSelection = true;
                 context->resourceTypeSelection = resourceReference->resourceType;
                 context->fieldShowSelection = fieldHandler;
-                //context->graphOutputSelection = resourceReference->graphOutput;
             }
         }
         ImGui::PopID();
 
-        if (rid && resourceReference && resourceReference->resourceType == GetTypeID<ResourceGraphAsset>())
+        if (rid && resourceReference && resourceReference->resourceType == GetTypeID<GraphAsset>())
         {
             ImGui::EndTable();
 
@@ -75,7 +73,7 @@ namespace Fyrion
 
                         ResourceObject graphObject = Repository::Read(rid);
 
-                        Array<RID> nodes = graphObject.GetSubObjectSetAsArray(ResourceGraphAsset::Nodes);
+                        Array<RID> nodes = graphObject.GetSubObjectSetAsArray(GraphAsset::Nodes);
 
                         for (RID node : nodes)
                         {
@@ -100,9 +98,11 @@ namespace Fyrion
                                         .userData = nullptr,
                                         .callback = [](ImGui::DrawTypeDesc& desc, ConstPtr newValue)
                                         {
-
+                                            //TODO - need to create a instance.
                                         }
                                     });
+
+                                    ImGui::TableNextColumn();
                                 }
                             }
                         }
@@ -118,7 +118,6 @@ namespace Fyrion
             ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthStretch, 0.4f);
             ImGui::TableSetupColumn("Item", ImGuiTableColumnFlags_WidthStretch);
         }
-
     }
 
 

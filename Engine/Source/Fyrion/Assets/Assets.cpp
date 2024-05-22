@@ -32,6 +32,11 @@ namespace Fyrion
             .Value<GraphNodeAsset::Label, String>("Label")
             .Build();
 
+        ResourceTypeBuilder<GraphAsset>::Builder("Fyrion::ResourceGraph")
+            .SubObjectSet<GraphAsset::Links>("Links")
+            .SubObjectSet<GraphAsset::Nodes>("Nodes")
+            .Build();
+
         ResourceTypeBuilder<DCCMesh>::Builder()
             .Build();
     }

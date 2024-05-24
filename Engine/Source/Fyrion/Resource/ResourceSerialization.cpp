@@ -1,5 +1,6 @@
 #include "ResourceSerialization.hpp"
 #include "Repository.hpp"
+#include "Fyrion/Core/Any.hpp"
 
 //TODO revisit this in the future
 
@@ -244,7 +245,32 @@ namespace Fyrion::ResourceSerialization
 
                 context.value.Clear();
 
-                if (CheckString(context))
+                if (typeHandler->GetTypeInfo().typeId == GetTypeID<Any>())
+                {
+                    TypeHandler* anyType = nullptr;
+                    if (context.identifier == "_type")
+                    {
+                        RemoveSpaces(context);
+                        context.value.Clear();
+                        CheckString(context);
+                        anyType = Registry::FindTypeByName(context.value);
+                        context.identifier.Clear();
+                        RemoveSpaces(context);
+                    }
+
+                    Any* any = static_cast<Any*>(instance);
+                    any->Set(anyType);
+                    CheckIdentifier(context);
+                    RemoveSpaces(context);
+                    context.value.Clear();
+                    CheckString(context);
+
+                    if (CheckObject(context))
+                    {
+                        ParseObject(context, any->Get(), anyType);
+                    }
+                }
+                else if (CheckString(context))
                 {
                     if (typeHandler && context.identifier == "_value" && typeHandler->GetTypeInfo().fromString)
                     {
@@ -709,6 +735,29 @@ namespace Fyrion::ResourceSerialization
             typeInfo.toString(instance, str.begin());
             context.AppendString(str);
             context.buffer.Append("\n");
+        }
+        else if (typeInfo.typeId == GetTypeID<Any>())
+        {
+            Any* any = static_cast<Any*>(instance);
+            if (any->GetTypeHandler() != nullptr && any->Get() != nullptr)
+            {
+                TypeHandler* anyHandler =  any->GetTypeHandler();
+
+                context.Indent();
+                context.buffer.Append("_type");
+                context.buffer.Append(": \"");
+                context.buffer.Append(anyHandler->GetName());
+                context.buffer.Append("\"\n");
+                context.buffer.Append("_object");
+                context.buffer.Append(": ");
+                context.AddIndentation();
+                context.buffer.Append("{\n");
+                context.Indent();
+                WriteObject(context, any->Get(), any->GetTypeHandler());
+                context.RemoveIndentation();
+                context.Indent();
+                context.buffer.Append("}\n");
+            }
         }
         else
         {

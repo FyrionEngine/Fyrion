@@ -231,7 +231,6 @@ namespace Fyrion
                             {
                                 data->storage->resourceType->fieldsByIndex[i]->typeHandler->Destructor(data->fields[i]);
                             }
-
                             data->fields[i] = nullptr;
                         }
                     }

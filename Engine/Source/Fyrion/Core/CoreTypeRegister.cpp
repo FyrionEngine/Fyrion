@@ -1,4 +1,5 @@
 
+#include "Any.hpp"
 #include "GraphTypes.hpp"
 #include "Math.hpp"
 #include "Registry.hpp"
@@ -27,6 +28,9 @@ namespace Fyrion
         Registry::Type<Array<u8>>("Fyrion::ByteArray");
         Registry::Type<String>("Fyrion::String");
         Registry::Type<StringView>("Fyrion::StringView");
+
+        auto any = Registry::Type<Any>();
+        any.Function<&Any::Get>("Get");
 
         auto uuid = Registry::Type<UUID>();
         uuid.Field<&UUID::firstValue>("firstValue");

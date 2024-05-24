@@ -175,7 +175,9 @@ namespace Fyrion
                 builder.Input(ed::PinId(input));
                 DrawPinIcon(input->typeId, !input->links.Empty());
                 ImGui::Spring(0);
+                //ImGui::PushStyleColor(ImGuiCol_Text, ImColor(201, 79, 79, 255).Value);
                 ImGui::TextUnformatted(input->label.CStr());
+                //ImGui::PopStyleColor(1);
                 DrawPinInputField(input);
                 ImGui::Spring(0);
                 builder.EndInput();
@@ -203,7 +205,7 @@ namespace Fyrion
 
             ed::Suspend();
 
-            if(m_openPopup)
+            if (m_openPopup)
             {
                 m_openPopup = false;
                 ImGui::OpenPopup("GraphEditorComboPopup");
@@ -363,7 +365,7 @@ namespace Fyrion
                 {
                     ConstPtr value = Repository::ReadData(pin->value);
 
-                    for(ValueHandler* valueHandler : values)
+                    for (ValueHandler* valueHandler : values)
                     {
                         if (valueHandler->Compare(value))
                         {

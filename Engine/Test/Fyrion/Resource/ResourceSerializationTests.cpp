@@ -10,22 +10,24 @@
 
 #include <iostream>
 
+#include "Fyrion/Core/Any.hpp"
+
 using namespace Fyrion;
 
 namespace
 {
-
     struct SerializationResourceBasics
     {
-        constexpr static u32 StringValue           = 0;
-        constexpr static u32 AssetValue            = 1;
-        constexpr static u32 StructValue           = 2;
-        constexpr static u32 RIDArray              = 3;
-        constexpr static u32 Text                  = 4;
-        constexpr static u32 Subobject             = 5;
-        constexpr static u32 PrototypeNoOverride   = 6;
-        constexpr static u32 PrototypeWithOverride = 7;
-        constexpr static u32 SubobjectSet          = 8;
+        constexpr static u32 StringValue = 0;
+        constexpr static u32 AnyValue = 1;
+        constexpr static u32 AssetValue = 2;
+        constexpr static u32 StructValue = 3;
+        constexpr static u32 RIDArray = 4;
+        constexpr static u32 Text = 5;
+        constexpr static u32 Subobject = 6;
+        constexpr static u32 PrototypeNoOverride = 7;
+        constexpr static u32 PrototypeWithOverride = 8;
+        constexpr static u32 SubobjectSet = 9;
     };
 
     struct SerializationSubObjectBasics
@@ -90,6 +92,7 @@ namespace
 
         ResourceTypeBuilder<SerializationResourceBasics>::Builder()
             .Value<SerializationResourceBasics::StringValue, String>("StringValue")
+            .Value<SerializationResourceBasics::AnyValue, Any>("AnyValue")
             .Value<SerializationResourceBasics::AssetValue, RID>("AssetValue")
             .Value<SerializationResourceBasics::StructValue, NestedStruct>("StructValue")
             .Value<SerializationResourceBasics::RIDArray, Array<RID>>("RIDArray")
@@ -205,6 +208,7 @@ namespace
 
                 ResourceObject write = Repository::Write(rid);
                 write.SetValue(SerializationResourceBasics::StringValue, String{"blahblah"});
+                write.SetValue(SerializationResourceBasics::AnyValue, MakeAny<NestedStruct>(NestedStruct{.value = 99, .string = "asdasd"}));
                 write.SetValue(SerializationResourceBasics::AssetValue, ridAsset);
                 write.SetValue(SerializationResourceBasics::StructValue, nestedStruct);
                 write.SetValue(SerializationResourceBasics::RIDArray, rids);
@@ -309,6 +313,12 @@ namespace
 
                 ResourceObject read = Repository::Read(rid);
                 CHECK(read.GetValue<String>(SerializationResourceBasics::StringValue) == "blahblah");
+
+                const Any& any = read[SerializationResourceBasics::AnyValue].As<Any>();
+                CHECK(any);
+                CHECK(any.GetAs<NestedStruct>().value == 99);
+                CHECK(any.GetAs<NestedStruct>().string == "asdasd");
+
                 RID assetRid = read.GetValue<RID>(SerializationResourceBasics::AssetValue);
                 CHECK(assetRid);
                 CHECK(Repository::GetUUID(assetRid) == UUID::FromString("8658b8ba-0bcd-4e9d-b940-c6f3290ca917"));

@@ -363,6 +363,17 @@ namespace Fyrion
             }
         }
 
+        template<typename ...Args>
+        void Construct(VoidPtr memory, Args&& ...args) const
+        {
+            TypeID ids[] = {GetTypeID<Args>()...,};
+            if (ConstructorHandler* constructor = FindConstructor(ids, sizeof...(args)))
+            {
+                VoidPtr params[] = {&args...};
+                constructor->Construct(memory, params);
+            }
+        }
+
         template<typename T>
         T* Cast(VoidPtr instance) const
         {

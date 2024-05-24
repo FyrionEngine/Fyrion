@@ -1047,8 +1047,6 @@ namespace ImGui
                             }
                         }
 
-                        //bool isResourceGraph = drawTypeContent->resourceTypeSelection == GetTypeID<ResourceGraphAsset>();
-
                         Array<RID> resources = Repository::GetResourcesByType(drawTypeContent->resourceTypeSelection);
                         for(RID rid: resources)
                         {

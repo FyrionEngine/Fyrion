@@ -176,6 +176,10 @@ namespace Fyrion
                         .callback = [](ImGui::DrawTypeDesc& desc, ConstPtr newValue)
                         {
                             static_cast<SceneEditor*>(desc.userData)->UpdateComponent(desc.rid, newValue);
+                        },
+                        .onCreateSubobject = [](ImGui::DrawTypeDesc& desc, RID subobject)
+                        {
+                            int a = 0;
                         }
                     });
                     ImGui::Unindent();

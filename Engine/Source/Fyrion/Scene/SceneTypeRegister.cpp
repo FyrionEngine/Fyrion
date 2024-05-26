@@ -20,6 +20,7 @@ namespace Fyrion
             .SubObjectSet<SceneObjectAsset::Components>("Components")
             .SubObjectSet<SceneObjectAsset::Children>("Children")
             .Value<SceneObjectAsset::ChildrenSort, Array<RID>>("ChildrenSort")
+            .SubObjectSet<SceneObjectAsset::SubObjects>("SubObjects")
             .Build();
     }
 }

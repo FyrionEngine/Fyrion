@@ -35,6 +35,7 @@ namespace ImGui
 
     struct DrawTypeDesc;
     typedef void (*DrawTypeCallbackFn)(DrawTypeDesc& desc, ConstPtr newValue);
+    typedef void (*OnCreateSubobjectFn)(DrawTypeDesc& desc, RID newSubobject);
 
     struct ContentItemDesc
     {
@@ -54,13 +55,14 @@ namespace ImGui
 
     struct DrawTypeDesc
     {
-        usize              itemId{};
-        RID                rid;
-        TypeHandler*       typeHandler{};
-        ConstPtr           instance{};
-        ImGuiDrawTypeFlags flags{};
-        VoidPtr            userData{};
-        DrawTypeCallbackFn callback{};
+        usize               itemId{};
+        RID                 rid;
+        TypeHandler*        typeHandler{};
+        ConstPtr            instance{};
+        ImGuiDrawTypeFlags  flags{};
+        VoidPtr             userData{};
+        DrawTypeCallbackFn  callback{};
+        OnCreateSubobjectFn onCreateSubobject{};
     };
 
     struct DrawTypeContent

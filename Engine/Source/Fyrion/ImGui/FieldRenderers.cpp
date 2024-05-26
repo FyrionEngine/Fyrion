@@ -73,36 +73,40 @@ namespace Fyrion
 
                         ResourceObject graphObject = Repository::Read(rid);
 
-                        Array<RID> nodes = graphObject.GetSubObjectSetAsArray(GraphAsset::Nodes);
-
-                        for (RID node : nodes)
+                        if(graphObject)
                         {
-                            ResourceObject nodeObject = Repository::Read(node);
-                            Array<RID> inputs = nodeObject.GetSubObjectSetAsArray(GraphNodeAsset::InputValues);
-                            for(RID input: inputs)
+                            Array<RID> nodes = graphObject.GetSubObjectSetAsArray(GraphAsset::Nodes);
+
+                            for (RID node : nodes)
                             {
-                                ResourceObject inputObject = Repository::Read(input);
-                                if (inputObject[GraphNodeValue::PublicValue].Value<bool>())
+                                ResourceObject nodeObject = Repository::Read(node);
+                                Array<RID> inputs = nodeObject.GetSubObjectSetAsArray(GraphNodeAsset::InputValues);
+                                for(RID input: inputs)
                                 {
-                                    String name = inputObject[GraphNodeValue::Name].Value<String>();
-                                    RID valueRid = inputObject[GraphNodeValue::Value].Value<RID>();
+                                    ResourceObject inputObject = Repository::Read(input);
+                                    if (inputObject[GraphNodeValue::PublicValue].Value<bool>())
+                                    {
+                                        String name = inputObject[GraphNodeValue::Name].Value<String>();
+                                        RID valueRid = inputObject[GraphNodeValue::Value].Value<RID>();
 
-                                    ImGui::Text(name.CStr());
-                                    ImGui::TableNextColumn();
+                                        ImGui::Text(name.CStr());
+                                        ImGui::TableNextColumn();
 
-                                    ImGui::DrawType(ImGui::DrawTypeDesc{
-                                        .itemId = input.id,
-                                        .rid = input,
-                                        .typeHandler = Registry::FindTypeByName(inputObject[GraphNodeValue::Type].Value<String>()),
-                                        .instance = valueRid ? Repository::ReadData(input) : nullptr,
-                                        .userData = nullptr,
-                                        .callback = [](ImGui::DrawTypeDesc& desc, ConstPtr newValue)
-                                        {
-                                            //TODO - need to create a instance.
-                                        }
-                                    });
+                                        ImGui::DrawType(ImGui::DrawTypeDesc{
+                                            .itemId = input.id,
+                                            .rid = input,
+                                            .typeHandler = Registry::FindTypeByName(inputObject[GraphNodeValue::Type].Value<String>()),
+                                            .instance = valueRid ? Repository::ReadData(input) : nullptr,
+                                            .userData = nullptr,
+                                            .callback = [](ImGui::DrawTypeDesc& desc, ConstPtr newValue)
+                                            {
+                                                int a= 0;
+                                                //TODO - need to create a instance.
+                                            }
+                                        });
 
-                                    ImGui::TableNextColumn();
+                                        ImGui::TableNextColumn();
+                                    }
                                 }
                             }
                         }

@@ -1,5 +1,4 @@
 #pragma once
-#include "Fyrion/Resource/ResourceTypes.hpp"
 #include "Fyrion/Scene/Component.hpp"
 
 
@@ -11,6 +10,5 @@ namespace Fyrion
         void        OnStart() override;
         static void RegisterType(NativeTypeHandler<RenderComponent>& type);
     private:
-        RID m_resourceGraph{};
     };
 }

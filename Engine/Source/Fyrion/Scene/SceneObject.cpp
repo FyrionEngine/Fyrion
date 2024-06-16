@@ -2,9 +2,7 @@
 
 #include "Component.hpp"
 #include "SceneManager.hpp"
-#include "SceneAssets.hpp"
 #include "Fyrion/Core/Registry.hpp"
-#include "Fyrion/Resource/Repository.hpp"
 
 namespace Fyrion
 {
@@ -53,16 +51,16 @@ namespace Fyrion
         m_sceneGlobals->SceneObjectAdded(this);
     }
 
-    SceneObject::SceneObject(RID asset, SceneObject* parent) : m_asset(asset), m_parent(parent), m_sceneGlobals(m_parent->m_sceneGlobals)
+    SceneObject::SceneObject(SceneObject* parent) : m_parent(parent), m_sceneGlobals(m_parent->m_sceneGlobals)
     {
         m_sceneGlobals->SceneObjectAdded(this);
-        LoadAsset(asset);
+        //LoadAsset(asset);
     }
 
-    SceneObject::SceneObject(StringView name, RID asset, SceneGlobals* sceneGlobals) : m_name(name), m_asset(asset), m_sceneGlobals(sceneGlobals)
+    SceneObject::SceneObject(StringView name, SceneGlobals* sceneGlobals) : m_name(name), m_sceneGlobals(sceneGlobals)
     {
         m_sceneGlobals->SceneObjectAdded(this);
-        LoadAsset(asset);
+        //LoadAsset(asset);
     }
 
     SceneObject::~SceneObject()
@@ -95,12 +93,12 @@ namespace Fyrion
         return sceneObject;
     }
 
-    SceneObject* SceneObject::NewChild(const RID& asset)
-    {
-        SceneObject* sceneObject = MemoryGlobals::GetDefaultAllocator().Alloc<SceneObject>(asset, this);
-        AddChild(sceneObject);
-        return sceneObject;
-    }
+//    SceneObject* SceneObject::NewChild(const RID& asset)
+//    {
+//        SceneObject* sceneObject = MemoryGlobals::GetDefaultAllocator().Alloc<SceneObject>(asset, this);
+//        AddChild(sceneObject);
+//        return sceneObject;
+//    }
 
     SceneObject* SceneObject::Duplicate() const
     {
@@ -142,11 +140,6 @@ namespace Fyrion
     void SceneObject::SetName(const StringView& newName)
     {
         m_name = newName;
-    }
-
-    RID SceneObject::GetAsset() const
-    {
-        return m_asset;
     }
 
     Component& SceneObject::AddComponent(TypeID typeId)
@@ -307,45 +300,6 @@ namespace Fyrion
         MemoryGlobals::GetDefaultAllocator().DestroyAndFree(this);
     }
 
-    void SceneObject::LoadAsset(RID asset)
-    {
-        // if (!asset) return;
-        //
-        // ResourceObject resource = Repository::Read(asset);
-        // if (m_name.Empty() && resource.Has(SceneObjectAsset::Name))
-        // {
-        //     m_name = resource[SceneObjectAsset::Name].As<String>();
-        // }
-        //
-        //
-        //
-        // //TODO find a better way to sort entities, since GetSubObjectSetAsArray is not sorted.
-        //
-        // Array<RID> children = resource.GetSubObjectSetAsArray(SceneObjectAsset::Children);
-        //
-        // Array<SceneObject*> childrenObj{};
-        // childrenObj.Reserve(children.Size());
-        //
-        // for (RID child : children)
-        // {
-        //     SceneObject* childObject = GetSceneGlobals()->FindByRID(child);
-        //     if (childObject == nullptr)
-        //     {
-        //         childObject = MemoryGlobals::GetDefaultAllocator().Alloc<SceneObject>(child, this);
-        //     }
-        //     childrenObj.EmplaceBack(childObject);
-        // }
-        //
-        // Sort(childrenObj.begin(), childrenObj.end(), [](const SceneObject* a, const SceneObject* b)
-        // {
-        //     return a->m_order < b->m_order;
-        // });
-        //
-        // for(SceneObject* child: childrenObj)
-        // {
-        //     AddChild(child);
-        // }
-    }
 
     void SceneObject::RegisterType(NativeTypeHandler<SceneObject>& type)
     {

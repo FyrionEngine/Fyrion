@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "GraphEditor.hpp"
 
 #include "Fyrion/Assets/AssetTypes.hpp"

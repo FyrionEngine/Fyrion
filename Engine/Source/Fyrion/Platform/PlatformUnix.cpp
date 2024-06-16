@@ -7,6 +7,7 @@
 #ifdef FY_UNIX
 
 #include <dlfcn.h>
+#include <ctime>
 
 namespace Fyrion
 {

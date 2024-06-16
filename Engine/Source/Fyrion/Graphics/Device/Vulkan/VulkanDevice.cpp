@@ -7,10 +7,8 @@
 #include "VulkanBindingSet.hpp"
 #include "VulkanPlatform.hpp"
 #include "VulkanUtils.hpp"
-#include "Fyrion/Assets/AssetTypes.hpp"
 #include "Fyrion/Platform/Platform.hpp"
 #include "Fyrion/ImGui/Lib/imgui_impl_vulkan.h"
-#include "Fyrion/Resource/Repository.hpp"
 
 namespace Fyrion
 {
@@ -836,11 +834,11 @@ namespace Fyrion
 
     PipelineState VulkanDevice::CreateGraphicsPipelineState(const GraphicsPipelineCreation& graphicsPipelineCreation)
     {
-        ResourceObject shader = Repository::Read(graphicsPipelineCreation.shader);
+        //ResourceObject shader = Repository::Read(graphicsPipelineCreation.shader);
 
-        Span<u8>              bytes = shader[ShaderAsset::Bytes].As<Span<u8>>();
-        Span<ShaderStageInfo> stages = shader[ShaderAsset::Stages].As<Span<ShaderStageInfo>>();
-        ShaderInfo            shaderInfo = shader[ShaderAsset::Info].As<ShaderInfo>();
+        Span<u8>              bytes =      {};//    shader[ShaderAsset::Bytes].As<Span<u8>>();
+        Span<ShaderStageInfo> stages =     {};//    shader[ShaderAsset::Stages].As<Span<ShaderStageInfo>>();
+        ShaderInfo            shaderInfo = {};//    shader[ShaderAsset::Info].As<ShaderInfo>();
 
         VulkanPipelineState* vulkanPipelineState = allocator.Alloc<VulkanPipelineState>();
         vulkanPipelineState->graphicsPipelineCreation = graphicsPipelineCreation;
@@ -1090,9 +1088,9 @@ namespace Fyrion
         return {};
     }
 
-    BindingSet& VulkanDevice::CreateBindingSet(RID shader, const BindingSetType& bindingSetType)
+    BindingSet& VulkanDevice::CreateBindingSet( const BindingSetType& bindingSetType)
     {
-        return *allocator.Alloc<VulkanBindingSet>(*this, shader, bindingSetType);
+        return *allocator.Alloc<VulkanBindingSet>(*this, bindingSetType);
     }
 
     void VulkanDevice::DestroySwapchain(const Swapchain& swapchain)

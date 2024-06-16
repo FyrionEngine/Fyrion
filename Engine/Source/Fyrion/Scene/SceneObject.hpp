@@ -5,7 +5,6 @@
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Core/String.hpp"
 #include "Fyrion/Core/StringView.hpp"
-#include "Fyrion/Resource/ResourceTypes.hpp"
 
 namespace Fyrion
 {
@@ -44,7 +43,7 @@ namespace Fyrion
     {
     public:
         SceneObject(StringView name, SceneObject* parent);
-        SceneObject(RID asset, SceneObject* parent);
+        SceneObject(SceneObject* parent);
         SceneObject(const SceneObject& other) = delete;
         SceneObject& operator=(const SceneObject& other) = delete;
 
@@ -52,11 +51,9 @@ namespace Fyrion
 
         StringView          GetName() const;
         void                SetName(const StringView& newName);
-        RID                 GetAsset() const;
         SceneGlobals*       GetSceneGlobals() const;
         SceneObject*        GetParent() const;
         SceneObject*        NewChild(const StringView& name);
-        SceneObject*        NewChild(const RID& asset);
         SceneObject*        Duplicate() const;
         SceneObjectIterator GetChildren();
         u64                 GetChildrenCount() const;
@@ -113,7 +110,6 @@ namespace Fyrion
 
     private:
         String        m_name{};
-        RID           m_asset{};
         SceneObject*  m_parent{};
         SceneGlobals* m_sceneGlobals{};
         bool          m_markedToDestroy{};
@@ -128,10 +124,9 @@ namespace Fyrion
 
         HashMap<TypeID, ComponentStorage> m_components{};
 
-        SceneObject(StringView name, RID asset, SceneGlobals* sceneGlobals);
+        SceneObject(StringView name, SceneGlobals* sceneGlobals);
 
         void AddChild(SceneObject* object);
         void DestroyImmediate();
-        void LoadAsset(RID asset);
     };
 }

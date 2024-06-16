@@ -6,7 +6,6 @@
 #include "Fyrion/Core/StringView.hpp"
 #include "Fyrion/Core/Math.hpp"
 #include "Fyrion/Core/Span.hpp"
-#include "Fyrion/Resource/ResourceTypes.hpp"
 
 namespace Fyrion
 {
@@ -321,7 +320,7 @@ namespace Fyrion
 
     struct GraphicsPipelineCreation
     {
-        RID               shader{};
+        //RID               shader{};
         Span<Format>      attachments{};
         Format            depthFormat = Format::Undefined;
         bool              depthWrite{false};
@@ -337,7 +336,7 @@ namespace Fyrion
 
     struct ComputePipelineCreation
     {
-        RID shader{};
+        //RID shader{};
     };
 
 

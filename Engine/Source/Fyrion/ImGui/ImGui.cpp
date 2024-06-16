@@ -3,16 +3,14 @@
 #include "Fyrion/IO/InputTypes.hpp"
 #include "ImGuiPlatform.hpp"
 #include "Fyrion/Graphics/Device/RenderDevice.hpp"
-#include "Fyrion/Resource/ResourceObject.hpp"
-#include "Fyrion/Resource/Repository.hpp"
-#include "Fyrion/Assets/AssetTypes.hpp"
 #include "IconsFontAwesome6.h"
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Core/StringUtils.hpp"
 #include "Fyrion/Core/UniquePtr.hpp"
 #include "Fyrion/ImGui/Lib/imgui_internal.h"
 #include "Fyrion/ImGui/Lib/ImGuizmo.h"
-#include "Fyrion/Resource/ResourceGraph.hpp"
+#include "Fyrion/Core/HashMap.hpp"
+#include "Fyrion/Core/Registry.hpp"
 
 using namespace Fyrion;
 
@@ -906,10 +904,12 @@ namespace ImGui
 
     void ApplyFonts()
     {
+#if 0
         f32 fontSize = 15.f;
 
         ImGuiIO& io = ImGui::GetIO();
         io.Fonts->Clear();
+
         ResourceObject dejaVuSans = Repository::Read(Repository::GetByPath("Fyrion://Fonts/DejaVuSans.ttf"));
         if (dejaVuSans)
         {
@@ -945,6 +945,7 @@ namespace ImGui
             const Array<u8>& faSolidBytes = faSolid.GetValue<Array<u8>>(UIFont::FontBytes);
             io.Fonts->AddFontFromMemoryTTF((void*)faSolidBytes.Data(), faSolidBytes.Size(), config.SizePixels, &config, icon_ranges);
         }
+#endif
     }
 
     void Init(Fyrion::Window window, Fyrion::Swapchain swapchain)
@@ -1040,12 +1041,14 @@ namespace ImGui
                             {
                                 if (drawTypeContent->desc.callback)
                                 {
-                                    drawTypeContent->fieldShowSelection->SetValueAs(drawTypeContent->instance, RID{});
+                                    //drawTypeContent->fieldShowSelection->SetValueAs(drawTypeContent->instance, RID{});
                                     drawTypeContent->desc.callback(drawTypeContent->desc, drawTypeContent->instance);
                                 }
                                 drawTypeContent->showResourceSelection = false;
                             }
                         }
+
+#if 0
 
                         Array<RID> resources = Repository::GetResourcesByType(drawTypeContent->resourceTypeSelection);
                         for(RID rid: resources)
@@ -1083,6 +1086,7 @@ namespace ImGui
                             }
                         }
                         ImGui::EndContentTable();
+#endif
                     }
                     ImGui::EndChild();
                     ImGui::SetWindowFontScale(1);

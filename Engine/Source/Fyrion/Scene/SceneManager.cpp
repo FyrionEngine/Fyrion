@@ -5,32 +5,30 @@
 #include "Fyrion/Core/Event.hpp"
 #include "Fyrion/Core/HashMap.hpp"
 #include "Fyrion/Core/UniquePtr.hpp"
-#include "Fyrion/Resource/Repository.hpp"
-#include "Fyrion/Resource/ResourceObject.hpp"
 
 namespace Fyrion
 {
 
-    SceneGlobals::SceneGlobals(StringView name, RID asset) : m_rootObject(name, asset, this)
+    SceneGlobals::SceneGlobals(StringView name) : m_rootObject(name, this)
     {
     }
 
     void SceneGlobals::SceneObjectAdded(SceneObject* sceneObject)
     {
         m_count++;
-        if (sceneObject->m_asset)
-        {
-            m_objectsByRID.Insert(sceneObject->m_asset, sceneObject);
-        }
+//        if (sceneObject->m_asset)
+//        {
+//            m_objectsByRID.Insert(sceneObject->m_asset, sceneObject);
+//        }
     }
 
     void SceneGlobals::SceneObjectRemoved(SceneObject* sceneObject)
     {
         m_count--;
-        if (sceneObject->m_asset)
-        {
-            m_objectsByRID.Erase(sceneObject->m_asset);
-        }
+//        if (sceneObject->m_asset)
+//        {
+//            m_objectsByRID.Erase(sceneObject->m_asset);
+//        }
     }
 
     SceneObject* SceneGlobals::GetRootObject()
@@ -38,14 +36,14 @@ namespace Fyrion
         return &m_rootObject;
     }
 
-    SceneObject* SceneGlobals::FindByRID(const RID& rid) const
-    {
-        if (const auto& it = m_objectsByRID.Find(rid))
-        {
-            return it->second;
-        }
-        return nullptr;
-    }
+//    SceneObject* SceneGlobals::FindByRID(const RID& rid) const
+//    {
+//        if (const auto& it = m_objectsByRID.Find(rid))
+//        {
+//            return it->second;
+//        }
+//        return nullptr;
+//    }
 
     void SceneGlobals::EnqueueDestroy(SceneObject* sceneObject)
     {
@@ -112,26 +110,26 @@ namespace Fyrion
     {
         SceneObject*                             currentScene{};
         HashMap<String, UniquePtr<SceneGlobals>> scenesByName{};
-        HashMap<RID, UniquePtr<SceneGlobals>>    scenesByAsset{};
+      //  HashMap<RID, UniquePtr<SceneGlobals>>    scenesByAsset{};
     }
 
-    SceneObject* SceneManager::LoadScene(RID rid)
-    {
-        auto it = scenesByAsset.Find(rid);
-        if (it == scenesByAsset.end())
-        {
-            ResourceObject asset = Repository::Read(rid);
-            it = scenesByAsset.Emplace(rid, MakeUnique<SceneGlobals>(asset[Asset::Name].As<String>(), asset[Asset::Object].As<RID>())).first;
-        }
-        return it->second->GetRootObject();
-    }
+//    SceneObject* SceneManager::LoadScene(RID rid)
+//    {
+//        auto it = scenesByAsset.Find(rid);
+//        if (it == scenesByAsset.end())
+//        {
+//            ResourceObject asset = Repository::Read(rid);
+//            it = scenesByAsset.Emplace(rid, MakeUnique<SceneGlobals>(asset[Asset::Name].As<String>(), asset[Asset::Object].As<RID>())).first;
+//        }
+//        return it->second->GetRootObject();
+//    }
 
     SceneObject* SceneManager::CreateScene(const StringView& sceneName)
     {
         auto it = scenesByName.Find(sceneName);
         if (it == scenesByName.end())
         {
-            it = scenesByName.Emplace(sceneName, MakeUnique<SceneGlobals>(sceneName, RID{})).first;
+            it = scenesByName.Emplace(sceneName, MakeUnique<SceneGlobals>(sceneName)).first;
         }
         return it->second->GetRootObject();
     }
@@ -167,7 +165,7 @@ namespace Fyrion
     void SceneManagerShutdown()
     {
         scenesByName.Clear();
-        scenesByAsset.Clear();
+        //scenesByAsset.Clear();
         currentScene = nullptr;
     }
 }

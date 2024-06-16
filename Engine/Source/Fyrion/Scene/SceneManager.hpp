@@ -11,10 +11,8 @@ namespace Fyrion
     class FY_API SceneGlobals
     {
     public:
-        SceneGlobals(StringView name, RID asset);
+        SceneGlobals(StringView name);
         SceneObject* GetRootObject();
-
-        SceneObject* FindByRID(const RID& rid) const;
 
         usize GetObjectCount() const { return m_count; }
 
@@ -23,7 +21,6 @@ namespace Fyrion
         friend class Component;
 
     private:
-        HashMap<RID, SceneObject*> m_objectsByRID{};
         SceneObject                m_rootObject;
         Array<Component*>          m_updatables{};
         std::queue<SceneObject*>   m_objectsToDestroy{};
@@ -47,7 +44,6 @@ namespace Fyrion
     class FY_API SceneManager
     {
     public:
-        static SceneObject* LoadScene(RID rid);
         static SceneObject* CreateScene(const StringView& sceneName);
         static SceneObject* GetCurrentScene();
         static void         SetCurrenScene(SceneObject* newCurrentScene);

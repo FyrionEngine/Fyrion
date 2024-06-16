@@ -1,14 +1,13 @@
 #include "IconsFontAwesome6.h"
 #include "ImGui.hpp"
-#include "Fyrion/Assets/AssetTypes.hpp"
 #include "Fyrion/Core/Registry.hpp"
-#include "Fyrion/Resource/Repository.hpp"
 #include "Lib/imgui_internal.h"
 
 namespace Fyrion
 {
     void DrawRID(ImGui::DrawTypeContent* context, FieldHandler* fieldHandler, VoidPtr value, bool* hasChanged)
     {
+#if 0
         const ResourceReference* resourceReference = fieldHandler ? fieldHandler->GetAttribute<ResourceReference>() : nullptr;
         ImGuiID id = ImHashData(value, sizeof(VoidPtr));
 
@@ -122,6 +121,7 @@ namespace Fyrion
             ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthStretch, 0.4f);
             ImGui::TableSetupColumn("Item", ImGuiTableColumnFlags_WidthStretch);
         }
+#endif
     }
 
 
@@ -236,7 +236,6 @@ namespace Fyrion
 
     void RegisterFieldRenderers()
     {
-        ImGui::AddFieldRenderer(GetTypeID<RID>(), DrawRID);
         ImGui::AddFieldRenderer(GetTypeID<Vec3>(), Vec3Renderer);
         ImGui::AddFieldRenderer(GetTypeID<Quat>(), QuatRenderer);
     }

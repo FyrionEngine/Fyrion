@@ -6,11 +6,9 @@
 #include "Fyrion/Graphics/Graphics.hpp"
 #include "TypeRegister.hpp"
 #include "Fyrion/ImGui/ImGui.hpp"
-#include "Fyrion/Resource/ResourceAssets.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
 #include "Fyrion/IO/Path.hpp"
 #include "Fyrion/Core/ArgParser.hpp"
-#include "Fyrion/Resource/Repository.hpp"
 
 namespace Fyrion
 {
@@ -23,11 +21,6 @@ namespace Fyrion
     void            GraphicsShutdown();
     void            RegistryShutdown();
     void            EventShutdown();
-    void            RepositoryInit();
-    void            RepositoryShutdown();
-    void            ResourceAssetsInit();
-    void            ResourceAssetsShutdown();
-    void            RegisterAssets();
     void            SceneManagerInit();
     void            SceneManagerShutdown();
     void            ShaderManagerInit();
@@ -66,18 +59,15 @@ namespace Fyrion
     {
         args.Parse(argc, argv);
 
-        RepositoryInit();
         TypeRegister();
         ShaderManagerInit();
-        ResourceAssetsInit();
-        RegisterAssets();
         SceneManagerInit();
         DefaultRenderPipelineInit();
     }
 
     void Engine::CreateContext(const EngineContextCreation& contextCreation)
     {
-        ResourceAssets::LoadAssetsFromDirectory("Fyrion", Path::Join(FileSystem::AssetFolder(), "Fyrion"));
+     //   ResourceAssets::LoadAssetsFromDirectory("Fyrion", Path::Join(FileSystem::AssetFolder(), "Fyrion"));
 
         PlatformInit();
 
@@ -166,8 +156,6 @@ namespace Fyrion
 
             GraphicsEndFrame(swapchain);
 
-            Repository::GarbageCollect();
-
             onEndFrameHandler.Invoke();
 
             frame++;
@@ -218,8 +206,6 @@ namespace Fyrion
     {
         DefaultRenderPipelineShutdown();
         SceneManagerShutdown();
-        ResourceAssetsShutdown();
-        RepositoryShutdown();
         ShaderManagerShutdown();
         RegistryShutdown();
         EventShutdown();

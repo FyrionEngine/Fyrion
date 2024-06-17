@@ -4,16 +4,18 @@
 #include "AssetTypes.hpp"
 
 
-namespace Fyrion::AssetDatabase
+namespace Fyrion
 {
-    FY_API AssetDirectory* LoadFromDirectory(const StringView& name, const StringView& directory);
-    FY_API VoidPtr Instantiate(TypeID typeId);
-
-
-    template<typename T>
-    FY_API T* Instantiate()
+    struct FY_API AssetDatabase
     {
-        return static_cast<T*>(Instantiate(GetTypeID<T>()));
-    }
+        static AssetDirectory* LoadFromDirectory(const StringView& name, const StringView& directory);
+        static Asset*          Instantiate(TypeID typeId);
+        static void            Destroy(Asset* asset);
 
+        template <typename T>
+        static T* Instantiate()
+        {
+            return static_cast<T*>(Instantiate(GetTypeID<T>()));
+        }
+    };
 }

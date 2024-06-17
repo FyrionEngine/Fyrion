@@ -5,34 +5,35 @@
 
 namespace Fyrion
 {
-    template <typename T>
-    class SubobjectList
+    class Asset;
+
+    class FY_API Subobject
     {
     public:
-        void Add()
-        {
-        }
+        void Add(Asset* asset);
+        void Add(UUID assetId);
+        void Remove(UUID uuid);
+        void Remove(Asset* asset);
 
-        void Remove()
-        {
-        }
-
-
-        void Clear()
-        {
-        }
+        friend class Asset;
 
     private:
+        Asset* asset = nullptr;
     };
 
 
-    class Asset
+    class FY_API Asset
     {
     public:
         virtual ~Asset() = default;
 
-        virtual void Load() = 0;
-        virtual void Unload() = 0;
+        virtual void Load()
+        {
+        }
+
+        virtual void Unload()
+        {
+        }
 
         UUID GetUniqueId() const
         {
@@ -49,10 +50,15 @@ namespace Fyrion
             return assetType;
         }
 
+        friend class AssetDatabase;
+
     private:
-        UUID         uniqueId;
-        Asset*       prototype;
-        TypeHandler* assetType;
-        u64          version;
+        UUID         uniqueId{};
+        String       path{};
+        Asset*       prototype{};
+        Subobject*   subobjectOf{};
+        TypeHandler* assetType{};
+        u64          version{};
+        String       name{};
     };
 }

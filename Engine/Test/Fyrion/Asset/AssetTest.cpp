@@ -7,16 +7,26 @@ using namespace Fyrion;
 
 namespace
 {
+    class TestAsset : public Asset
+    {
+    public:
+
+    private:
+    };
+
+
     TEST_CASE("Asset::Basic")
     {
         Engine::Init();
         {
-            AssetDirectory* directory = AssetDatabase::Instantiate<AssetDirectory>();
+            AssetDirectory* root = AssetDatabase::Instantiate<AssetDirectory>();
 
-            for (Asset* asset : directory->GetChildren())
-            {
-                asset->GetAssetType()
-            }
+            AssetDirectory* anoterDir = AssetDatabase::Instantiate<AssetDirectory>();
+            root->children.Add(anoterDir);
+
+            TestAsset* testAsset = AssetDatabase::Instantiate<TestAsset>();
+            root->children.Add(testAsset);
+
         }
         Engine::Destroy();
     }

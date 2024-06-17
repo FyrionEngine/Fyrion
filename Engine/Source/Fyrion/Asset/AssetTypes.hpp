@@ -3,15 +3,8 @@
 
 namespace Fyrion
 {
-    class AssetDirectory : public Asset
+    struct AssetDirectory : Asset
     {
-    public:
-        SubobjectList<Asset> GetChildren() const
-        {
-            return children;
-        }
-
-    private:
-        SubobjectList<Asset> children;
+        Subobject children;
     };
 }

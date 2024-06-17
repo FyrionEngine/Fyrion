@@ -27,6 +27,8 @@ namespace Fyrion
     void            ShaderManagerShutdown();
     void            DefaultRenderPipelineInit();
     void            DefaultRenderPipelineShutdown();
+    void            AssetDatabaseInit();
+    void            AssetDatabaseShutdown();
 
 
     namespace
@@ -60,6 +62,7 @@ namespace Fyrion
         args.Parse(argc, argv);
 
         TypeRegister();
+        AssetDatabaseInit();
         ShaderManagerInit();
         SceneManagerInit();
         DefaultRenderPipelineInit();
@@ -207,6 +210,7 @@ namespace Fyrion
         DefaultRenderPipelineShutdown();
         SceneManagerShutdown();
         ShaderManagerShutdown();
+        AssetDatabaseShutdown();
         RegistryShutdown();
         EventShutdown();
     }

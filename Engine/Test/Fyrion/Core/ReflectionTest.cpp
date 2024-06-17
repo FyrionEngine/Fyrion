@@ -453,6 +453,102 @@ namespace ReflectionTest
         Engine::Destroy();
     }
 
+    struct TypeBase
+    {
+        i32 vlBase;
+
+        i32 FuncBase()
+        {
+            return vlBase + 1;
+        }
+
+        static void RegisterType(NativeTypeHandler<TypeBase>& type)
+        {
+            type.Function<&TypeBase::FuncBase>("FuncBase");
+        }
+    };
+
+    struct DerivedOne : TypeBase
+    {
+        FY_BASE_TYPES(TypeBase);
+
+        i32 vlOne;
+
+        i32 FuncDerivedOne()
+        {
+            return vlOne + vlBase + 2;
+        }
+
+        static void RegisterType(NativeTypeHandler<DerivedOne>& type)
+        {
+            type.Function<&DerivedOne::FuncDerivedOne>("FuncDerivedOne");
+        }
+    };
+
+    struct DerivedTwo : DerivedOne
+    {
+        FY_BASE_TYPES(DerivedOne);
+
+        i32 FuncDerivedTwo()
+        {
+            return vlBase + 3;
+        }
+
+        static void RegisterType(NativeTypeHandler<DerivedTwo>& type)
+        {
+            type.Function<&DerivedTwo::FuncDerivedTwo>("FuncDerivedTwo");
+        }
+    };
+
+
+    TEST_CASE("Core::reflectionInheritance")
+    {
+        Engine::Init();
+        {
+            {
+                Registry::Type<TypeBase>();
+                Registry::Type<DerivedOne>();
+                Registry::Type<DerivedTwo>();
+            }
+
+            TypeHandler* type = Registry::FindType<DerivedTwo>();
+            REQUIRE(type);
+
+
+            VoidPtr instance = type->NewInstance();
+            type->Cast<TypeBase>(instance)->vlBase = 10;
+            type->Cast<DerivedOne>(instance)->vlOne = 20;
+
+
+            DerivedTwo* derivedTwo = type->Cast<DerivedTwo>(instance);
+            CHECK(derivedTwo->vlBase == 10);
+            CHECK(derivedTwo->vlOne == 20);
+
+
+            // FunctionHandler* funcBase = type->FindFunction("FuncBase");
+            // FunctionHandler* derivedOne = type->FindFunction("FuncDerivedOne");
+            // FunctionHandler* derivedTwo = type->FindFunction("FuncDerivedTwo");
+            //
+            // REQUIRE(funcBase);
+            // REQUIRE(derivedOne);
+            // REQUIRE(derivedTwo);
+            //
+            // i32 ret{};
+            // funcBase->Invoke(instance, &ret, nullptr);
+            // CHECK(ret == 11);
+            //
+            // derivedOne->Invoke(instance, &ret, nullptr);
+            // CHECK(ret == 33);
+            //
+            // derivedTwo->Invoke(instance, &ret, nullptr);
+            // CHECK(ret == 13);
+
+
+            type->Destroy(instance);
+        }
+        Engine::Destroy();
+    }
+
     TEST_CASE("Core::ReflectionRuntimeTypes")
     {
         //TODO

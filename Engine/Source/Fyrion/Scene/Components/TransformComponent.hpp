@@ -8,6 +8,7 @@ namespace Fyrion
     class FY_API TransformComponent : public Component
     {
     public:
+        FY_BASE_TYPES(Component);
 
         FY_FINLINE void SetPosition(const Vec3& position)
         {

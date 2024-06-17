@@ -50,6 +50,8 @@ namespace Fyrion
             return assetType;
         }
 
+        static void RegisterType(NativeTypeHandler<Asset>& type);
+
         friend class AssetDatabase;
 
     private:

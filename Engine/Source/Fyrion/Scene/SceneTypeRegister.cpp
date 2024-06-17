@@ -10,7 +10,7 @@ namespace Fyrion
     {
         Registry::Type<Component>();
         Registry::Type<SceneObject>();
-        Registry::Type<TransformComponent, Component>();
-        Registry::Type<RenderComponent, Component>();
+        Registry::Type<TransformComponent>();
+        Registry::Type<RenderComponent>();
     }
 }

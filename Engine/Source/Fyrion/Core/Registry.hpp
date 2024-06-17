@@ -478,6 +478,24 @@ namespace Fyrion
     ///------------------------------------------------------------------------------Native Handlers----------------------------------------------------------------------------------------------------
     ///-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+    template<typename ...Types>
+    struct BaseTypes
+    {
+
+    };
+
+    #define FY_BASE_TYPES(...) using Bases = BaseTypes<__VA_ARGS__>
+
+    template <class T, class = void>
+    struct HasBase : Traits::FalseType
+    {
+    };
+
+    template<class T>
+    struct HasBase<T, Traits::VoidType<typename T::Bases>> : Traits::TrueType
+    {
+    };
+
 
     template<typename Base, typename Derived>
     struct TypeCaster
@@ -1045,6 +1063,32 @@ namespace Fyrion
     template<typename T>
     constexpr bool HasRegisterType = HasRegisterTypeImpl<T>::value;
 
+
+    template<typename Type, typename DerivedType, typename Bases>
+    struct AddBaseTypes
+    {
+    };
+
+    template <typename Type, typename DerivedType, typename... Bases>
+    struct AddBaseTypes<Type, DerivedType, BaseTypes<Bases...>>
+    {
+        template <typename Base>
+        static void CheckBase(TypeBuilder& typeBuilder)
+        {
+            if constexpr (HasBase<Base>::value)
+            {
+                AddBaseTypes<Base, DerivedType, typename Base::Bases...>::Register(typeBuilder);
+            }
+        }
+
+        static void Register(TypeBuilder& typeBuilder)
+        {
+            (typeBuilder.AddBaseType(GetTypeID<Bases>(), TypeCaster<Bases, DerivedType>::Cast), ...);
+            (CheckBase<Bases>(typeBuilder), ...);
+        }
+    };
+
+
     namespace Registry
     {
         FY_API TypeBuilder        NewType(const StringView& name, const TypeInfo& typeInfo);
@@ -1058,11 +1102,15 @@ namespace Fyrion
         FY_API Span<FunctionHandler*>   FindFunctionsByAttribute(TypeID typeId);
 
 
-        template<typename T, typename ...B>
+        template<typename T>
         decltype(auto) Type(const StringView& name)
         {
             TypeBuilder typeBuilder = NewType(name, GetTypeInfo<T>());
-            (typeBuilder.AddBaseType(GetTypeID<B>(), TypeCaster<B, T>::Cast),...);
+
+            if constexpr (HasBase<T>::value)
+            {
+                AddBaseTypes<T, T, typename T::Bases>::Register(typeBuilder);
+            }
 
             NativeTypeHandler<T> handler = NativeTypeHandler<T>(typeBuilder);
 

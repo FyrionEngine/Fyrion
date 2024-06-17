@@ -10,7 +10,6 @@ namespace
     class TestAsset : public Asset
     {
     public:
-
     private:
     };
 
@@ -19,6 +18,8 @@ namespace
     {
         Engine::Init();
         {
+            Registry::Type<TestAsset>();
+
             AssetDirectory* root = AssetDatabase::Instantiate<AssetDirectory>();
 
             AssetDirectory* anoterDir = AssetDatabase::Instantiate<AssetDirectory>();

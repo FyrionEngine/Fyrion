@@ -17,4 +17,8 @@ namespace Fyrion
     void Subobject::Remove(Asset* asset)
     {
     }
+
+    void Asset::RegisterType(NativeTypeHandler<Asset>& type)
+    {
+    }
 }

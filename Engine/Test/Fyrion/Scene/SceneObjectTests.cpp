@@ -11,6 +11,8 @@ namespace Fyrion
     class ComponentToRemove : public Component
     {
     public:
+        FY_BASE_TYPES(Component);
+
         inline static i32 removed = 0;
         void OnDestroy() override;
     };
@@ -18,6 +20,8 @@ namespace Fyrion
     class AnotherComponent : public Component
     {
     public:
+        FY_BASE_TYPES(Component);
+
         inline static i32 onStartCall = 0;
         void OnStart() override;
 
@@ -30,6 +34,10 @@ namespace Fyrion
     class ComponentTest : public Component
     {
     public:
+
+        FY_BASE_TYPES(Component);
+
+
         inline static i32 destructorCall = 0;
         inline static i32 onDestroyCall = 0;
 
@@ -92,9 +100,9 @@ namespace Fyrion
         {
             EventHandler<OnUpdate> updateHandler{};
 
-            Registry::Type<ComponentTest, Component>();
-            Registry::Type<AnotherComponent, Component>();
-            Registry::Type<ComponentToRemove, Component>();
+            Registry::Type<ComponentTest>();
+            Registry::Type<AnotherComponent>();
+            Registry::Type<ComponentToRemove>();
 
             SceneObject* object = SceneManager::CreateScene("TestScene");
             REQUIRE(object);

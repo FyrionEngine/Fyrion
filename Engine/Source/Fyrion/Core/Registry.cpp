@@ -365,7 +365,7 @@ namespace Fyrion
         {
             return it->second(this, instance);
         }
-        return instance;
+        return nullptr;
     }
 
     void TypeHandler::OnAttributeCreated(TypeID attributeId)

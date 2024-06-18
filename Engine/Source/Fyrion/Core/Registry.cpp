@@ -176,6 +176,11 @@ namespace Fyrion
         return m_simpleName;
     }
 
+    TypeID FunctionHandler::GetFunctionId() const
+    {
+        return m_functionId;
+    }
+
     Span<ParamHandler> FunctionHandler::GetParams() const
     {
         return m_params;
@@ -186,7 +191,7 @@ namespace Fyrion
         return m_return;
     }
 
-    TypeID FunctionHandler::GetOwner() const
+    TypeHandler* FunctionHandler::GetOwner() const
     {
         return m_owner;
     }
@@ -194,6 +199,16 @@ namespace Fyrion
     VoidPtr FunctionHandler::GetFunctionPointer() const
     {
         return m_functionPointer;
+    }
+
+    FunctionHandler::FnInvoke FunctionHandler::GetInvoker() const
+    {
+        return m_fnInvoke;
+    }
+
+    FnCast FunctionHandler::GetOwnerCaster() const
+    {
+        return m_ownerCast;
     }
 
     void FunctionHandler::Invoke(VoidPtr instance, VoidPtr ret, VoidPtr* params) const
@@ -315,6 +330,15 @@ namespace Fyrion
         return m_version;
     }
 
+    FnCast TypeHandler::GetCaster(TypeID typeId) const
+    {
+        if (const auto it = m_baseTypes.Find(typeId))
+        {
+            return it->second;
+        }
+        return nullptr;
+    }
+
     void TypeHandler::Destroy(VoidPtr instance, Allocator& allocator) const
     {
         if (m_fnDestroy)
@@ -361,10 +385,12 @@ namespace Fyrion
         {
             return instance;
         }
-        if (auto it = m_baseTypes.Find(typeId))
+
+        if (FnCast caster = GetCaster(typeId))
         {
-            return it->second(this, instance);
+            return caster(this, instance);
         }
+
         return nullptr;
     }
 
@@ -469,7 +495,8 @@ namespace Fyrion
         m_functionHandler.m_name = creation.name;
         m_functionHandler.m_functionId = creation.functionId;
         m_functionHandler.m_return = creation.retInfo;
-        m_functionHandler.m_owner = creation.owner;
+        m_functionHandler.m_owner =  Registry::FindTypeById(creation.owner);
+        m_functionHandler.m_ownerCast = ForwardDerived;
 
         m_functionHandler.m_simpleName = GetSimpleName(m_functionHandler.m_name);
 
@@ -477,6 +504,13 @@ namespace Fyrion
         {
             m_functionHandler.m_params.EmplaceBack(i, creation.params[i]);
         }
+    }
+
+    void FunctionBuilder::Create(FunctionHandler& functionHandler, TypeHandler& owner)
+    {
+        m_functionHandler = functionHandler;
+        m_functionHandler.m_owner = &owner;
+        m_functionHandler.m_ownerCast = owner.GetCaster(functionHandler.m_owner->GetTypeInfo().typeId);
     }
 
     FunctionHandler& FunctionBuilder::GetFunctionHandler() const
@@ -567,16 +601,21 @@ namespace Fyrion
 
     FunctionBuilder TypeBuilder::NewFunction(const FunctionHandlerCreation& creation)
     {
-        auto it = m_typeHandler.m_functions.Find(creation.name);
+        FunctionBuilder builder = NewFunction(creation.name);
+        builder.Create(creation);
+        return builder;
+    }
+
+    FunctionBuilder TypeBuilder::NewFunction(StringView functionName)
+    {
+        auto it = m_typeHandler.m_functions.Find(functionName);
         if (it == m_typeHandler.m_functions.end())
         {
-            it = m_typeHandler.m_functions.Emplace(String{creation.name}, MakeShared<FunctionHandler>()).first;
+            it = m_typeHandler.m_functions.Emplace(String{functionName}, MakeShared<FunctionHandler>()).first;
             m_typeHandler.m_functionArray.EmplaceBack(it->second.Get());
         }
 
-        FunctionBuilder builder{*it->second};
-        builder.Create(creation);
-        return builder;
+        return FunctionBuilder{*it->second};
     }
 
     void TypeBuilder::AddBaseType(TypeID typeId, FnCast fnCast)
@@ -587,6 +626,12 @@ namespace Fyrion
         baseType->m_derivedTypes.EmplaceBack(m_typeHandler.GetTypeInfo().typeId, fnCast);
         m_typeHandler.m_baseTypes.Insert(typeId, fnCast);
         m_typeHandler.m_baseTypesArray.EmplaceBack(typeId);
+
+        for(const auto& it : baseType->m_functions)
+        {
+            FunctionBuilder functionBuilder = NewFunction(it.first);
+            functionBuilder.Create(*it.second, m_typeHandler);
+        }
     }
 
     TypeHandler& TypeBuilder::GetTypeHandler() const

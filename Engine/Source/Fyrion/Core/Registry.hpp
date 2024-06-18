@@ -225,6 +225,7 @@ namespace Fyrion
     class FY_API FunctionHandler : public AttributeHandler
     {
         friend class FunctionBuilder;
+        friend class TypeHandler;
     public:
         typedef void(*FnInvoke)(const FunctionHandler* handler, VoidPtr instance, VoidPtr ret, VoidPtr* params);
     private:
@@ -232,11 +233,12 @@ namespace Fyrion
         String              m_name{};
         String              m_simpleName{};
         TypeID              m_functionId{U64_MAX};
-        TypeID              m_owner{};
+        TypeHandler*        m_owner{};
         Array<ParamHandler> m_params{};
         FieldInfo           m_return{};
         FnInvoke            m_fnInvoke{};
         VoidPtr             m_functionPointer{};
+        FnCast              m_ownerCast{};
 
         HashMap<TypeID, SharedPtr<AttributeHandler>> m_Attributes;
         Array<AttributeHandler*>                     m_AttributeArray;
@@ -244,10 +246,13 @@ namespace Fyrion
 
         StringView          GetName() const;
         StringView          GetSimpleName() const;
+        TypeID              GetFunctionId() const;
         Span<ParamHandler>  GetParams() const;
         FieldInfo           GetReturn() const;
-        TypeID              GetOwner() const;
+        TypeHandler*        GetOwner() const;
         VoidPtr             GetFunctionPointer() const;
+        FnInvoke            GetInvoker() const;
+        FnCast              GetOwnerCaster() const;
 
         void Invoke(VoidPtr instance, VoidPtr ret, VoidPtr* params) const;
 
@@ -319,6 +324,7 @@ namespace Fyrion
         StringView          GetSimpleName() const;
         const TypeInfo&     GetTypeInfo() const;
         u32                 GetVersion() const;
+        FnCast              GetCaster(TypeID typeId) const;
 
         void    Destroy(VoidPtr instance, Allocator& allocator = MemoryGlobals::GetDefaultAllocator()) const;
         void    Release(VoidPtr instance) const;
@@ -326,6 +332,7 @@ namespace Fyrion
         void    Copy(ConstPtr source, VoidPtr dest) const;
         void    Move(VoidPtr source, VoidPtr dest) const;
         VoidPtr Cast(TypeID typeId, VoidPtr instance) const;
+
 
         VoidPtr NewInstance(Allocator& allocator = MemoryGlobals::GetDefaultAllocator()) const
         {
@@ -444,6 +451,7 @@ namespace Fyrion
     public:
         explicit    FunctionBuilder(FunctionHandler& functionHandler);
         void        Create(const FunctionHandlerCreation& creation);
+        void        Create(FunctionHandler& functionHandler, TypeHandler& owner);
 
         FunctionHandler& GetFunctionHandler() const;
         ParamHandler& GetParam(usize index);
@@ -465,6 +473,7 @@ namespace Fyrion
         ConstructorBuilder NewConstructor(TypeID* ids, FieldInfo* params, usize size);
         FieldBuilder       NewField(const StringView& fieldName);
         FunctionBuilder    NewFunction(const FunctionHandlerCreation& creation);
+        FunctionBuilder    NewFunction(StringView functionName);
         ValueBuilder       NewValue(const StringView& valueDesc, i64 code);
         void               AddBaseType(TypeID typeId, FnCast fnCast);
 
@@ -505,6 +514,11 @@ namespace Fyrion
             return static_cast<Base*>(static_cast<Derived*>(derived));
         }
     };
+
+    inline VoidPtr ForwardDerived(const TypeHandler* typeHandler, VoidPtr derived)
+    {
+        return derived;
+    }
 
     template<typename Owner, typename Type>
     class NativeAttributeHandler
@@ -807,7 +821,7 @@ namespace Fyrion
     private:
         FunctionBuilder m_functionBuilder;
     public:
-        explicit NativeMemberFunctionHandler(FunctionBuilder& functionBuilder) : NativeAttributeBuilder<NativeMemberFunctionHandler<mfp, Return, Owner, Args...>>(functionBuilder.GetFunctionHandler()),
+        explicit NativeMemberFunctionHandler(FunctionBuilder& functionBuilder) : NativeAttributeBuilder<NativeMemberFunctionHandler>(functionBuilder.GetFunctionHandler()),
             m_functionBuilder(functionBuilder)
         {
             functionBuilder.SetFnInvoke(InvokeImpl);
@@ -816,6 +830,9 @@ namespace Fyrion
     private:
         static void InvokeImpl(const FunctionHandler* handler, VoidPtr instance, VoidPtr ret, VoidPtr * params)
         {
+            FnCast ownerCaster = handler->GetOwnerCaster();
+            instance = ownerCaster(handler->GetOwner(), instance);
+
             u32 i{sizeof...(Args)};
             if constexpr (Traits::IsSame<Return,void>)
             {
@@ -829,6 +846,9 @@ namespace Fyrion
 
         static Return FunctionImpl(const FunctionHandler* handler, VoidPtr instance, Args... args)
         {
+            FnCast ownerCaster = handler->GetOwnerCaster();
+            instance = ownerCaster(handler->GetOwner(), instance);
+
             return (static_cast<Owner*>(instance)->*mfp)(args...);
         }
     };
@@ -1069,22 +1089,22 @@ namespace Fyrion
     {
     };
 
-    template <typename Type, typename DerivedType, typename... Bases>
-    struct AddBaseTypes<Type, DerivedType, BaseTypes<Bases...>>
+    template <typename Type, typename DerivedType, typename... TypeBases>
+    struct AddBaseTypes<Type, DerivedType, BaseTypes<TypeBases...>>
     {
         template <typename Base>
         static void CheckBase(TypeBuilder& typeBuilder)
         {
             if constexpr (HasBase<Base>::value)
             {
-                AddBaseTypes<Base, DerivedType, typename Base::Bases...>::Register(typeBuilder);
+                AddBaseTypes<Base, DerivedType, typename Base::Bases>::Register(typeBuilder);
             }
         }
 
         static void Register(TypeBuilder& typeBuilder)
         {
-            (typeBuilder.AddBaseType(GetTypeID<Bases>(), TypeCaster<Bases, DerivedType>::Cast), ...);
-            (CheckBase<Bases>(typeBuilder), ...);
+            (typeBuilder.AddBaseType(GetTypeID<TypeBases>(), TypeCaster<TypeBases, DerivedType>::Cast), ...);
+            (CheckBase<TypeBases>(typeBuilder), ...);
         }
     };
 

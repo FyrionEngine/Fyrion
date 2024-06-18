@@ -7,18 +7,39 @@ namespace Fyrion
 {
     class Asset;
 
-    class FY_API Subobject
+
+    struct AssetField
+    {
+        Asset*        asset = nullptr;
+        FieldHandler* field;
+        static void   RegisterType(NativeTypeHandler<AssetField>& type);
+    };
+
+
+    class FY_API Subobject : public AssetField
     {
     public:
+        FY_BASE_TYPES(AssetField);
+
         void Add(Asset* asset);
-        void Add(UUID assetId);
-        void Remove(UUID uuid);
         void Remove(Asset* asset);
 
-        friend class Asset;
+        usize Count() const;
+        void  Get(Span<Asset*> retAssets) const;
+
+        Array<Asset*> GetAsArray() const
+        {
+            Array<Asset*> ret(Count());
+            Get(ret);
+            return ret;
+        }
+
+        static void RegisterType(NativeTypeHandler<Subobject>& type);
 
     private:
-        Asset* asset = nullptr;
+        Array<Asset*> assets;
+        void  GetTo(Span<Asset*> retAssets, usize pos) const;
+
     };
 
 
@@ -53,6 +74,7 @@ namespace Fyrion
         static void RegisterType(NativeTypeHandler<Asset>& type);
 
         friend class AssetDatabase;
+        friend class Subobject;
 
     private:
         UUID         uniqueId{};

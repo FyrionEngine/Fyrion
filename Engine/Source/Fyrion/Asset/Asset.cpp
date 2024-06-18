@@ -1,4 +1,5 @@
 #include "Asset.hpp"
+#include <algorithm>
 
 #include "AssetDatabase.hpp"
 
@@ -17,6 +18,11 @@ namespace Fyrion
     void Subobject::Remove(Asset* asset)
     {
         FY_ASSERT(asset, "asset is null, field not initialized");
+        if (const auto it = std::find(assets.begin(), assets.end(), asset); it != assets.end())
+        {
+            assets.Erase(it);
+        }
+
     }
 
     usize Subobject::Count() const

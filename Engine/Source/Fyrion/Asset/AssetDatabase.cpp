@@ -28,13 +28,18 @@ namespace Fyrion
 
     Asset* AssetDatabase::Create(TypeID typeId)
     {
+        return Create(typeId, UUID::RandomUUID());
+    }
+
+    Asset* AssetDatabase::Create(TypeID typeId, UUID uuid)
+    {
         TypeHandler* typeHandler = Registry::FindTypeById(typeId);
         FY_ASSERT(typeHandler, "type not found");
 
         Asset* asset = typeHandler->Cast<Asset>(typeHandler->NewInstance());
         FY_ASSERT(asset, "type cannot be casted to Asset");
 
-        asset->uniqueId = UUID::RandomUUID();
+        asset->uniqueId = uuid;
         asset->assetType = typeHandler;
         asset->version = 1;
 
@@ -57,7 +62,12 @@ namespace Fyrion
 
     Asset* AssetDatabase::CreateFromPrototype(TypeID typeId, Asset* prototype)
     {
-        Asset* asset = Create(typeId);
+        return CreateFromPrototype(typeId, prototype, UUID::RandomUUID());
+    }
+
+    Asset* AssetDatabase::CreateFromPrototype(TypeID typeId, Asset* prototype, UUID uuid)
+    {
+        Asset* asset = Create(typeId, uuid);
         asset->prototype = prototype;
         return asset;
     }

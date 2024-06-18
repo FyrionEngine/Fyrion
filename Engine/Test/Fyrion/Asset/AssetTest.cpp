@@ -11,7 +11,8 @@ namespace
     {
         FY_BASE_TYPES(Asset);
 
-        Subobject subobjects;
+        Subobject  subobjects;
+        Value<i32> testValue;
 
         static void RegisterType(NativeTypeHandler<TestAsset>& type)
         {
@@ -61,6 +62,9 @@ namespace
             Registry::Type<SubobjectAsset>();
 
             TestAsset* prototype = AssetDatabase::Create<TestAsset>();
+            CHECK(!prototype->testValue);
+            prototype->testValue = 10;
+            CHECK(prototype->testValue);
             {
                 SubobjectAsset* subobject = AssetDatabase::Create<SubobjectAsset>();
                 prototype->subobjects.Add(subobject);
@@ -70,15 +74,22 @@ namespace
                 prototype->subobjects.Add(subobject);
             }
 
+            UUID subobjectId = UUID::FromString("939fb3ac-c162-4d5f-b95e-b38e43c3ba69");
+
             TestAsset* testAsset = AssetDatabase::CreateFromPrototype<TestAsset>(prototype);
             {
-                SubobjectAsset* subobject = AssetDatabase::Create<SubobjectAsset>();
+                SubobjectAsset* subobject = AssetDatabase::Create<SubobjectAsset>(subobjectId);
                 testAsset->subobjects.Add(subobject);
             }
+
+            //CHECK(testAsset->testValue == 10);
 
             CHECK(testAsset->GetPrototype() == prototype);
             CHECK(testAsset->subobjects.Count() == 3);
 
+            testAsset->subobjects.Remove(AssetDatabase::FindById(subobjectId));
+
+            CHECK(testAsset->subobjects.Count() == 2);
         }
         Engine::Destroy();
     }

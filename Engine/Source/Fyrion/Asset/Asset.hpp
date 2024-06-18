@@ -7,14 +7,12 @@ namespace Fyrion
 {
     class Asset;
 
-
     struct AssetField
     {
         Asset*        asset = nullptr;
         FieldHandler* field;
         static void   RegisterType(NativeTypeHandler<AssetField>& type);
     };
-
 
     class FY_API Subobject : public AssetField
     {
@@ -38,10 +36,35 @@ namespace Fyrion
 
     private:
         Array<Asset*> assets;
-        void  GetTo(Span<Asset*> retAssets, usize pos) const;
 
+        void GetTo(Span<Asset*> retAssets, usize pos) const;
     };
 
+    template <typename Type>
+    class FY_API Value : public AssetField
+    {
+    public:
+        FY_BASE_TYPES(AssetField);
+
+        Value& operator=(const Type& pValue)
+        {
+            hasValue = true;
+            value = pValue;
+
+            return *this;
+        }
+
+        operator Type() const;
+
+        explicit operator bool() const
+        {
+            return hasValue;
+        }
+
+    private:
+        bool hasValue = false;
+        Type value = {};
+    };
 
     class FY_API Asset
     {
@@ -71,6 +94,11 @@ namespace Fyrion
             return assetType;
         }
 
+        StringView GetPath() const
+        {
+            return path;
+        }
+
         static void RegisterType(NativeTypeHandler<Asset>& type);
 
         friend class AssetDatabase;
@@ -85,4 +113,21 @@ namespace Fyrion
         u64          version{};
         String       name{};
     };
+
+    template <typename Type>
+    Value<Type>::operator Type() const
+    {
+        if (hasValue)
+        {
+            return value;
+        }
+
+        if (asset && asset->GetPrototype() != nullptr && field != nullptr)
+        {
+            Value& value = field->GetValueAs<Value>(asset->GetPrototype());
+            return value;
+        }
+
+        return {};
+    }
 }

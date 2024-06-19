@@ -70,10 +70,10 @@ namespace Fyrion
         void Assign(ConstPointer first, ConstPointer last);
         void Assign(const BasicString& other);
         void PushBack(Type ch);
-        void Append(ConstPointer sz);
-        void Append(Type c);
-        void Append(ConstPointer first, ConstPointer last);
-        void Append(const BasicString& other);
+        BasicString& Append(ConstPointer sz);
+        BasicString& Append(Type c);
+        BasicString& Append(ConstPointer first, ConstPointer last);
+        BasicString& Append(const BasicString& other);
         void Insert(Iterator where, Type ch);
         void Insert(Iterator where, ConstPointer sz);
         void Insert(Iterator where, ConstPointer first, ConstPointer last);
@@ -84,7 +84,7 @@ namespace Fyrion
         usize Find(char s) const;
 
 		template<typename Type>
-		BasicString<T, BufferSize>& Append(const Type& value)
+		BasicString& Append(const Type& value)
 		{
 			static_assert(StringConverter<Type>::hasConverter, "[StringConverter] type has no converter");
 			if constexpr (StringConverter<Type>::bufferCount > 0)
@@ -524,7 +524,7 @@ namespace Fyrion
     }
 
     template<typename T, usize BufferSize>
-    FY_FINLINE void BasicString<T, BufferSize>::Append(ConstPointer sz)
+    FY_FINLINE BasicString<T, BufferSize>& BasicString<T, BufferSize>::Append(ConstPointer sz)
     {
         usize len = 0;
         for (ConstPointer it = sz; *it; ++it)
@@ -532,10 +532,11 @@ namespace Fyrion
             ++len;
         }
         Append(sz, sz + len);
+        return *this;
     }
 
     template<typename T, usize BufferSize>
-    FY_FINLINE void BasicString<T, BufferSize>::Append(ConstPointer first, ConstPointer last)
+    FY_FINLINE BasicString<T, BufferSize>& BasicString<T, BufferSize>::Append(ConstPointer first, ConstPointer last)
     {
         const usize newsize = (usize) (Size() + (last - first));
         if (newsize > Capacity())
@@ -551,18 +552,21 @@ namespace Fyrion
 
         *newit = 0;
         m_size = newsize | (m_size & c_longFlag);
+        return *this;
     }
 
     template<typename T, usize BufferSize>
-    FY_FINLINE void BasicString<T, BufferSize>::Append(const BasicString& other)
+    FY_FINLINE BasicString<T, BufferSize>& BasicString<T, BufferSize>::Append(const BasicString& other)
     {
         Append(other.begin(), other.end());
+        return *this;
     }
 
     template<typename T, usize BufferSize>
-    FY_FINLINE void BasicString<T, BufferSize>::Append(T c)
+    FY_FINLINE BasicString<T, BufferSize>& BasicString<T, BufferSize>::Append(T c)
     {
         Append(&c, &c + 1);
+        return *this;
     }
 
     template<typename T, usize BufferSize>

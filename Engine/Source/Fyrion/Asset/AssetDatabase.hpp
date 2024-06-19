@@ -48,5 +48,7 @@ namespace Fyrion
         {
             return static_cast<T*>(FindById(assetId));
         }
+    private:
+        static void LoadAssetFile(AssetDirectory* directory, const StringView& filePath);
     };
 }

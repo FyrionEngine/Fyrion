@@ -243,6 +243,9 @@ namespace Fyrion
         VoidPtr       subobjectOf{};
         TypeHandler*  assetType{};
         u64           version{};
+        u64           loadedVersion{};
         String        name{};
+        String        absolutePath{};
+        Asset*        directory{};
     };
 }

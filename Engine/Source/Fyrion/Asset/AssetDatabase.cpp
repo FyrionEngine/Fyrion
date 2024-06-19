@@ -1,10 +1,13 @@
 #include "AssetDatabase.hpp"
 
+#include "Fyrion/IO/FileSystem.hpp"
+
 
 namespace Fyrion
 {
     HashMap<UUID, Asset*>   assetsById;
     HashMap<String, Asset*> assetsByPath;
+    bool isShutdown = false;
 
     Asset* AssetDatabase::FindById(const UUID& assetId)
     {
@@ -43,18 +46,6 @@ namespace Fyrion
         asset->assetType = typeHandler;
         asset->version = 1;
 
-        for (FieldHandler* field : typeHandler->GetFields())
-        {
-            TypeHandler* typeHandler = Registry::FindTypeById(field->GetFieldInfo().typeInfo.typeId);
-            FY_ASSERT(typeHandler, "Field type not registerd");
-            AssetField* assetField = typeHandler->Cast<AssetField>(field->GetFieldPointer(asset));
-            if (assetField != nullptr)
-            {
-                assetField->asset = asset;
-                assetField->field = field;
-            }
-        }
-
         assetsById.Insert(asset->uniqueId, asset);
 
         return asset;
@@ -69,19 +60,81 @@ namespace Fyrion
     {
         Asset* asset = Create(typeId, uuid);
         asset->prototype = prototype;
+
+        for (FieldHandler* field : asset->GetAssetType()->GetFields())
+        {
+            auto typeInfo = field->GetFieldInfo().typeInfo;
+            if (typeInfo.apiId == GetTypeID<SubobjectApi>())
+            {
+                SubobjectApi subobjectApi{};
+                typeInfo.extractApi(&subobjectApi);
+                subobjectApi.SetPrototype(field->GetFieldPointer(asset), field->GetFieldPointer(prototype));
+            }
+            else if (typeInfo.apiId == GetTypeID<ValueApi>())
+            {
+                ValueApi valueApi{};
+                typeInfo.extractApi(&valueApi);
+                valueApi.SetPrototype(field->GetFieldPointer(asset), field->GetFieldPointer(prototype));
+            }
+        }
+
         return asset;
     }
 
-    void AssetDatabase::Destroy(Asset* asset)
+    void AssetDatabase::Destroy(Asset* asset, bool destroySubobjects)
     {
+        if (destroySubobjects)
+        {
+            for (FieldHandler* field : asset->GetAssetType()->GetFields())
+            {
+                auto typeInfo = field->GetFieldInfo().typeInfo;
+                if (typeInfo.apiId == GetTypeID<SubobjectApi>())
+                {
+                    VoidPtr ptr = field->GetFieldPointer(asset);
+
+                    SubobjectApi subobjectApi{};
+                    typeInfo.extractApi(&subobjectApi);
+
+                    usize count = subobjectApi.GetOwnedObjectsCount(ptr);
+                    Array<Asset*> subObjects(count);
+                    subobjectApi.GetOwnedObjects(ptr, subObjects);
+
+                    for(Asset* subobject: subObjects)
+                    {
+                        Destroy(subobject);
+                    }
+                }
+            }
+        }
+        if (!isShutdown)
+        {
+            assetsById.Erase(asset->GetUniqueId());
+            assetsByPath.Erase(asset->GetPath());
+        }
+
         asset->assetType->Destroy(asset);
     }
 
     AssetDirectory* AssetDatabase::LoadFromDirectory(const StringView& name, const StringView& directory)
     {
-        return nullptr;
+        if (!FileSystem::GetFileStatus(directory).exists)
+        {
+            return nullptr;
+        }
+
+        AssetDirectory* assetDirectory = Create<AssetDirectory>();
+        assetDirectory->SetName(name);
+        assetDirectory->SetPath(String(name) + ":/");
+
+
+        return assetDirectory;
     }
 
+    AssetDirectory* AssetDatabase::LoadFromFile(const StringView& name, const StringView& file)
+    {
+        FY_ASSERT(false, "not implemented");
+        return nullptr;
+    }
 
     void AssetDatabaseInit()
     {
@@ -89,10 +142,14 @@ namespace Fyrion
 
     void AssetDatabaseShutdown()
     {
+
+        isShutdown = true;
         for (auto& it : assetsById)
         {
-            AssetDatabase::Destroy(it.second);
+            AssetDatabase::Destroy(it.second, false);
         }
+        isShutdown = false;
+
         assetsById.Clear();
         assetsByPath.Clear();
     }

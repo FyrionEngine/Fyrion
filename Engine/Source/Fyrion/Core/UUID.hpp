@@ -39,12 +39,12 @@ namespace Fyrion
 		}
 
 
-		static inline UUID RandomUUID()
+		static UUID RandomUUID()
 		{
 			return {Random::Xorshift64star(), Random::Xorshift64star()};
 		}
 
-		static inline UUID FromString(const StringView& str)
+		static UUID FromString(const StringView& str)
 		{
 
 			if (str.Empty())

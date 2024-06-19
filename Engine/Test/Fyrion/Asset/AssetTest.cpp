@@ -2,33 +2,36 @@
 
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Asset/AssetDatabase.hpp"
+#include "Fyrion/IO/FileSystem.hpp"
+#include "Fyrion/IO/Path.hpp"
 
 using namespace Fyrion;
 
 namespace
 {
+    struct SubobjectAsset : Asset
+    {
+        FY_BASE_TYPES(Asset);
+
+        i32 value{};
+
+        static void RegisterType(NativeTypeHandler<SubobjectAsset>& type)
+        {
+            type.Field<&SubobjectAsset::value>("value");
+        }
+    };
+
     struct TestAsset final : Asset
     {
         FY_BASE_TYPES(Asset);
 
-        Subobject  subobjects;
+        Subobject<SubobjectAsset>  subobjects;
         Value<i32> testValue;
 
         static void RegisterType(NativeTypeHandler<TestAsset>& type)
         {
             type.Field<&TestAsset::subobjects>("subobjects");
-        }
-    };
-
-    struct SubobjectAsset : Asset
-    {
-        FY_BASE_TYPES(Asset);
-
-        i32 value;
-
-        static void RegisterType(NativeTypeHandler<SubobjectAsset>& type)
-        {
-            type.Field<&SubobjectAsset::value>("value");
+            type.Field<&TestAsset::testValue>("testValue");
         }
     };
 
@@ -67,10 +70,12 @@ namespace
             CHECK(prototype->testValue);
             {
                 SubobjectAsset* subobject = AssetDatabase::Create<SubobjectAsset>();
+                subobject->value = 1;
                 prototype->subobjects.Add(subobject);
             }
             {
                 SubobjectAsset* subobject = AssetDatabase::Create<SubobjectAsset>();
+                subobject->value = 2;
                 prototype->subobjects.Add(subobject);
             }
 
@@ -79,17 +84,65 @@ namespace
             TestAsset* testAsset = AssetDatabase::CreateFromPrototype<TestAsset>(prototype);
             {
                 SubobjectAsset* subobject = AssetDatabase::Create<SubobjectAsset>(subobjectId);
+                subobject->value = 3;
                 testAsset->subobjects.Add(subobject);
             }
 
-            //CHECK(testAsset->testValue == 10);
+            CHECK(testAsset->testValue == 10);
 
             CHECK(testAsset->GetPrototype() == prototype);
             CHECK(testAsset->subobjects.Count() == 3);
 
-            testAsset->subobjects.Remove(AssetDatabase::FindById(subobjectId));
+            testAsset->subobjects.Remove(AssetDatabase::FindById<SubobjectAsset>(subobjectId));
 
             CHECK(testAsset->subobjects.Count() == 2);
+        }
+        Engine::Destroy();
+    }
+
+    TEST_CASE("Asset::SubobjectDestroy")
+    {
+        Engine::Init();
+        {
+            Registry::Type<TestAsset>();
+            Registry::Type<SubobjectAsset>();
+
+            TestAsset* asset = AssetDatabase::Create<TestAsset>();
+            {
+                SubobjectAsset* subobject = AssetDatabase::Create<SubobjectAsset>(UUID::FromString("939fb3ac-c162-4d5f-b95e-b38e43c3ba69"));
+                subobject->value = 1;
+                asset->subobjects.Add(subobject);
+            }
+
+            {
+                SubobjectAsset* subobject = AssetDatabase::Create<SubobjectAsset>(UUID::FromString("939fb3ac-c162-4d5f-b95e-b38e43c3ba870"));
+                subobject->value = 2;
+                asset->subobjects.Add(subobject);
+            }
+
+            CHECK(AssetDatabase::FindById(UUID::FromString("939fb3ac-c162-4d5f-b95e-b38e43c3ba69")) != nullptr);
+            CHECK(AssetDatabase::FindById(UUID::FromString("939fb3ac-c162-4d5f-b95e-b38e43c3ba870")) != nullptr);
+
+            AssetDatabase::Destroy(asset);
+
+            CHECK(AssetDatabase::FindById(UUID::FromString("939fb3ac-c162-4d5f-b95e-b38e43c3ba69")) == nullptr);
+            CHECK(AssetDatabase::FindById(UUID::FromString("939fb3ac-c162-4d5f-b95e-b38e43c3ba870")) == nullptr);
+        }
+        Engine::Destroy();
+    }
+
+
+    TEST_CASE("Asset::AssetDirectory")
+    {
+        Engine::Init();
+        {
+
+            String assetPath = Path::Join(FY_TEST_FILES, "AssetsBasic");
+            REQUIRE(FileSystem::GetFileStatus(assetPath).exists);
+
+            AssetDirectory* directory = AssetDatabase::LoadFromDirectory("Fyrion", assetPath);
+            REQUIRE(directory);
+            CHECK(directory->GetPath() == "Fyrion:/");
         }
         Engine::Destroy();
     }

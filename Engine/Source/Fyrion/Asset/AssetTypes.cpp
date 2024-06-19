@@ -11,8 +11,6 @@ namespace Fyrion
 
     void RegisterAssetTypes()
     {
-        Registry::Type<AssetField>();
-        Registry::Type<Subobject>();
         Registry::Type<Asset>();
         Registry::Type<AssetDirectory>();
     }

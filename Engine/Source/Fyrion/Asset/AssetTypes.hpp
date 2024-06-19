@@ -7,7 +7,7 @@ namespace Fyrion
     {
         FY_BASE_TYPES(Asset);
 
-        Subobject children;
+        Subobject<Asset> children;
 
         static void RegisterType(NativeTypeHandler<AssetDirectory>& type);
     };

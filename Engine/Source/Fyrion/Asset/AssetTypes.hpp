@@ -5,7 +5,7 @@ namespace Fyrion
 {
     struct AssetIO
     {
-        virtual Array<String> GetImportExtensions()
+        virtual Span<StringView> GetImportExtensions()
         {
             return {};
         }

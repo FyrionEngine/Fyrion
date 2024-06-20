@@ -14,10 +14,12 @@ namespace Fyrion
         bool Init()
         {
             atexit(OnExit);
+            return true;
         }
 
         HeapAllocator                                   defaultAllocator{};
         bool                                            captureTrace = false;
+        bool                                            detectLeaks = false;
         std::unordered_map<usize, cpptrace::stacktrace> traces{};
         std::mutex                                      traceMutex{};
         bool                                            init = Init();
@@ -25,7 +27,7 @@ namespace Fyrion
 
         void OnExit()
         {
-            if (captureTrace && !traces.empty())
+            if (detectLeaks && captureTrace && !traces.empty())
             {
                 traceMutex.lock();
                 for (auto& it : traces)
@@ -34,6 +36,15 @@ namespace Fyrion
                 }
                 traceMutex.unlock();
                 FY_ASSERT(false, "leak detected");
+            }
+
+            if (detectLeaks)
+            {
+                HeapStats heapStats = MemoryGlobals::GetHeapStats();
+                if (heapStats.totalAllocated != heapStats.totalFreed)
+                {
+                    FY_ASSERT(false, "leak detected");
+                }
             }
         }
     }
@@ -84,7 +95,12 @@ namespace Fyrion
 
         if (options & AllocatorOptions_DetectMemoryLeaks)
         {
-            captureTrace = true;
+            detectLeaks = true;
+        }
+
+        if (options & AllocatorOptions_CaptureStackTrace)
+        {
+            detectLeaks = true;
         }
     }
 

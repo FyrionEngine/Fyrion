@@ -25,5 +25,5 @@ int main(int argc, char** argv)
     Logger::Reset();
     Event::Reset();
 
-    return  res;
+    return res;
 }

@@ -23,9 +23,11 @@ namespace Fyrion
     {
         FY_BASE_TYPES(AssetIO);
 
-        Array<String> GetImportExtensions() override
+        StringView extension = {".txt"};
+
+        Span<StringView> GetImportExtensions() override
         {
-            return {".txt"};
+            return {&extension};
         }
 
         Asset* ImportAsset(StringView path, Asset* reimportAsset) override

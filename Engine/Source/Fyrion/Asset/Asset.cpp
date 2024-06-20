@@ -3,12 +3,12 @@
 namespace Fyrion
 {
 
-    void AssetDatabaseUpdatePath(Asset* asset, const StringView& newPath);
+    void AssetDatabaseUpdatePath(Asset* asset, const StringView& oldPath, const StringView& newPath);
 
     void Asset::SetPath(StringView p_path)
     {
+        AssetDatabaseUpdatePath(this, path, p_path);
         path = p_path;
-        AssetDatabaseUpdatePath(this, path);
     }
 
     void Asset::SetName(StringView p_name)

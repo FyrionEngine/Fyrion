@@ -14,6 +14,7 @@ namespace Fyrion
         HashMap<String, SharedPtr<FunctionHandler>>         functionsByName{};
         HashMap<TypeID, Array<TypeHandler*>>                typesByAttribute{};
         HashMap<TypeID, Array<FunctionHandler*>>            functionsByAttribute{};
+        EventHandler<OnTypeAdded>                           onTypeAddedEvent{};
         Logger&                                             logger = Logger::GetLogger("Fyrion::Registry");
     }
 
@@ -632,6 +633,11 @@ namespace Fyrion
             FunctionBuilder functionBuilder = NewFunction(it.first);
             functionBuilder.Create(*it.second, m_typeHandler);
         }
+    }
+
+    void TypeBuilder::Build()
+    {
+        onTypeAddedEvent.Invoke(m_typeHandler);
     }
 
     TypeHandler& TypeBuilder::GetTypeHandler() const

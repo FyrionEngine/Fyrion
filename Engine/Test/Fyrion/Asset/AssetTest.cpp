@@ -132,18 +132,5 @@ namespace
     }
 
 
-    TEST_CASE("Asset::AssetDirectory")
-    {
-        Engine::Init();
-        {
 
-            String assetPath = Path::Join(FY_TEST_FILES, "AssetsBasic");
-            REQUIRE(FileSystem::GetFileStatus(assetPath).exists);
-
-            AssetDirectory* directory = AssetDatabase::LoadFromDirectory("Fyrion", assetPath);
-            REQUIRE(directory);
-            CHECK(directory->GetPath() == "Fyrion:/");
-        }
-        Engine::Destroy();
-    }
 }

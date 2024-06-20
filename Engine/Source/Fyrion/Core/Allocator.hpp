@@ -17,6 +17,7 @@ namespace Fyrion
         AllocatorOptions_Verbose = 1 << 0,
         AllocatorOptions_ShowStats = 1 << 1,
         AllocatorOptions_ShowErrors = 1 << 2,
+        AllocatorOptions_CaptureTrace = 1 << 3,
     };
 
     typedef u32 AllocatorOptions;

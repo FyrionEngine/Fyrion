@@ -11,15 +11,15 @@ namespace Fyrion
     {
         HashMap<UUID, Asset*>   assetsById;
         HashMap<String, Asset*> assetsByPath;
-        bool isShutdown = false;
-        Logger& logger = Logger::GetLogger("Fyrion::AssetDatabase", LogLevel::Debug);
+        bool                    isShutdown = false;
+        Logger&                 logger = Logger::GetLogger("Fyrion::AssetDatabase", LogLevel::Debug);
     }
 
-    void AssetDatabaseUpdatePath(Asset* asset, const StringView& newPath)
+    void AssetDatabaseUpdatePath(Asset* asset, const StringView& oldPath, const StringView& newPath)
     {
-        if (!asset->GetPath().Empty())
+        if (!oldPath.Empty())
         {
-            assetsByPath.Erase(asset->GetPath());
+            assetsByPath.Erase(oldPath);
         }
         assetsByPath.Insert(String{newPath}, asset);
 
@@ -113,11 +113,11 @@ namespace Fyrion
                     SubobjectApi subobjectApi{};
                     typeInfo.extractApi(&subobjectApi);
 
-                    usize count = subobjectApi.GetOwnedObjectsCount(ptr);
+                    usize         count = subobjectApi.GetOwnedObjectsCount(ptr);
                     Array<Asset*> subObjects(count);
                     subobjectApi.GetOwnedObjects(ptr, subObjects);
 
-                    for(Asset* subobject: subObjects)
+                    for (Asset* subobject : subObjects)
                     {
                         Destroy(subobject);
                     }
@@ -144,7 +144,7 @@ namespace Fyrion
         assetDirectory->SetName(name);
         assetDirectory->SetPath(String(name) + ":/");
 
-        for (const auto& entry: DirectoryEntries{directory})
+        for (const auto& entry : DirectoryEntries{directory})
         {
             LoadAssetFile(assetDirectory, entry);
         }
@@ -162,7 +162,6 @@ namespace Fyrion
             AssetDirectory* assetDirectory = Create<AssetDirectory>();
             assetDirectory->directory = parentDirectory;
             assetDirectory->SetName(Path::Name(filePath));
-
             parentDirectory->children.Add(assetDirectory);
 
             for (const auto& entry : DirectoryEntries{filePath})
@@ -173,6 +172,10 @@ namespace Fyrion
         else if (extension == FY_ASSET_EXTENSION)
         {
             //TODO
+        }
+        else
+        {
+            //TODO check if can import the asset.
         }
     }
 
@@ -188,7 +191,6 @@ namespace Fyrion
 
     void AssetDatabaseShutdown()
     {
-
         isShutdown = true;
         for (auto& it : assetsById)
         {

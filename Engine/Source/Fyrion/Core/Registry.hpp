@@ -2,6 +2,7 @@
 
 #include "Fyrion/Common.hpp"
 #include "Allocator.hpp"
+#include "Event.hpp"
 #include "StringView.hpp"
 #include "TypeInfo.hpp"
 #include "String.hpp"
@@ -11,6 +12,7 @@
 
 namespace Fyrion
 {
+
 
     class TypeBuilder;
     class ValueBuilder;
@@ -22,6 +24,8 @@ namespace Fyrion
     struct FieldInfo;
 
     typedef VoidPtr (*FnCast)(const TypeHandler* typeHandler, VoidPtr derived);
+
+    using OnTypeAdded = EventType<"Fyrion::OnTypeAdded"_h, void(const TypeHandler& typeHandler)>;
 
 
     template<typename T>
@@ -476,6 +480,7 @@ namespace Fyrion
         FunctionBuilder    NewFunction(StringView functionName);
         ValueBuilder       NewValue(const StringView& valueDesc, i64 code);
         void               AddBaseType(TypeID typeId, FnCast fnCast);
+        void               Build();
 
         TypeHandler& GetTypeHandler() const;
 
@@ -1067,6 +1072,11 @@ namespace Fyrion
         auto Value(const StringView& valueName)
         {
             return NativeValue<value, decltype(value), Type>(m_typeBuilder.NewValue(valueName, static_cast<i64>(value)));
+        }
+
+        ~NativeTypeHandler()
+        {
+            m_typeBuilder.Build();
         }
     };
 

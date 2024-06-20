@@ -98,6 +98,15 @@ namespace Fyrion
 
     void EventShutdown()
     {
+        for(auto it: events)
+        {
+            it.second.events.Clear();
+        }
+    }
+
+    void Event::Reset()
+    {
+        EventShutdown();
         events.Clear();
     }
 }

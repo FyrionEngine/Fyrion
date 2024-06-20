@@ -65,6 +65,9 @@ namespace Fyrion
         {
             return EventCount(T::id);
         }
+
+
+        void Reset();
     }
 
 

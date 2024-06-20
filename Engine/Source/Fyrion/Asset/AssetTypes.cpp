@@ -3,6 +3,11 @@
 
 namespace Fyrion
 {
+    void AssetIO::RegisterType(NativeTypeHandler<AssetIO>& type)
+    {
+        type.Function<&AssetIO::GetImportExtensions>("GetImportExtensions");
+        type.Function<&AssetIO::ImportAsset>("ImportAsset");
+    }
 
     void AssetDirectory::RegisterType(NativeTypeHandler<AssetDirectory>& type)
     {
@@ -13,6 +18,7 @@ namespace Fyrion
     {
         Registry::Type<Asset>();
         Registry::Type<AssetDirectory>();
+        Registry::Type<AssetIO>();
     }
 
 

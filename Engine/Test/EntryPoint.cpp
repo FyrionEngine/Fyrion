@@ -10,8 +10,7 @@ using namespace Fyrion;
 
 int main(int argc, char** argv)
 {
-    MemoryGlobals::SetOptions(AllocatorOptions_CaptureTrace);
-
+    MemoryGlobals::SetOptions(AllocatorOptions_DetectMemoryLeaks);
     //Logger::SetDefaultLevel(LogLevel::Trace);
 
     StdOutSink sink{};
@@ -26,11 +25,5 @@ int main(int argc, char** argv)
     Logger::Reset();
     Event::Reset();
 
-    HeapStats heapStats = MemoryGlobals::GetHeapStats();
-    if (heapStats.totalAllocated != heapStats.totalFreed)
-    {
-        std::cout << "Leak detected " << heapStats.totalAllocated - heapStats.totalFreed << " bytes not freed" << std::endl;
-        res += 10000;
-    }
     return  res;
 }

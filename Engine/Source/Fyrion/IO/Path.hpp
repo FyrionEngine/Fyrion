@@ -47,7 +47,7 @@ namespace Fyrion::Path
     }
 
     template<typename ...T>
-    inline String Join(const T& ... paths)
+    String Join(const T& ... paths)
     {
         String retPath{};
         auto append = [&](StringView path)
@@ -61,8 +61,6 @@ namespace Fyrion::Path
                     retPath.Append(FY_PATH_SEPARATOR);
                 }
             }
-
-            retPath.Reserve(path.Size() + path.Size());
 
             for (int i = 0; i < path.Size(); ++i)
             {

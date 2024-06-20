@@ -155,6 +155,8 @@ namespace Fyrion
     template<typename T, usize BufferSize>
     BasicString<T, BufferSize>::BasicString(BasicString&& other) noexcept : m_size(0)
     {
+        this->~BasicString();
+
         m_size = other.m_size;
         m_allocator = other.m_allocator;
         if (other.m_size & c_longFlag)
@@ -171,6 +173,8 @@ namespace Fyrion
             m_buffer[other.Size()] = 0;
         }
         other.m_size = 0;
+        other.m_first = nullptr;
+        other.m_capacity = nullptr;
     }
 
     template<typename T, usize BufferSize>
@@ -225,7 +229,10 @@ namespace Fyrion
     template<typename T, usize BufferSize>
     FY_FINLINE BasicString<T, BufferSize>& BasicString<T, BufferSize>::operator=(BasicString&& other) noexcept
     {
+        this->~BasicString();
+
         m_size = other.m_size;
+        m_allocator = other.m_allocator;
 
         if (other.m_size & c_longFlag)
         {
@@ -241,6 +248,8 @@ namespace Fyrion
             m_buffer[other.Size()] = 0;
         }
         other.m_size = 0;
+        other.m_first = nullptr;
+        other.m_capacity = nullptr;
         return *this;
     }
 

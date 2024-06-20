@@ -109,6 +109,8 @@ namespace Fyrion
     template<typename T>
     FY_FINLINE Array<T>::Array(Array&& other) noexcept
     {
+        this->~Array();
+
         m_first     = other.m_first;
         m_last      = other.m_last;
         m_capacity  = other.m_capacity;

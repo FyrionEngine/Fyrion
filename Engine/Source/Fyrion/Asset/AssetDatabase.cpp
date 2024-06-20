@@ -9,10 +9,37 @@ namespace Fyrion
 {
     namespace
     {
-        HashMap<UUID, Asset*>   assetsById;
-        HashMap<String, Asset*> assetsByPath;
-        bool                    isShutdown = false;
-        Logger&                 logger = Logger::GetLogger("Fyrion::AssetDatabase", LogLevel::Debug);
+        bool RegisterEvents();
+
+        HashMap<UUID, Asset*>         assetsById;
+        HashMap<String, Asset*>       assetsByPath;
+        Array<Pair<TypeID, AssetIO*>> assetIOs;
+        HashMap<String, AssetIO*>     importers;
+        bool                          isShutdown = false;
+        Logger&                       logger = Logger::GetLogger("Fyrion::AssetDatabase", LogLevel::Debug);
+        bool                          registerEvents = RegisterEvents();
+
+        void OnTypeAddedImpl(const TypeHandler& typeHandler)
+        {
+            if (typeHandler.IsDerivedFrom(GetTypeID<AssetIO>()))
+            {
+                if (AssetIO* assetIo = typeHandler.Cast<AssetIO>(typeHandler.NewInstance()))
+                {
+                    assetIOs.EmplaceBack(typeHandler.GetTypeInfo().typeId, assetIo);
+
+                    for (StringView extension : assetIo->GetImportExtensions())
+                    {
+                        importers.Insert(extension, assetIo);
+                    }
+                }
+            }
+        }
+
+        bool RegisterEvents()
+        {
+            Event::Bind<OnTypeAdded, OnTypeAddedImpl>();
+            return true;
+        }
     }
 
     void AssetDatabaseUpdatePath(Asset* asset, const StringView& oldPath, const StringView& newPath)
@@ -23,7 +50,7 @@ namespace Fyrion
         }
         assetsByPath.Insert(String{newPath}, asset);
 
-        logger.Debug("asset {} registred to path {} ", asset->GetName(), asset->GetPath());
+        logger.Debug("asset {} registred to path {} ", asset->GetName(), newPath);
     }
 
 
@@ -160,7 +187,7 @@ namespace Fyrion
         if (FileSystem::GetFileStatus(filePath).isDirectory)
         {
             AssetDirectory* assetDirectory = Create<AssetDirectory>();
-            assetDirectory->directory = parentDirectory;
+            assetDirectory->SetDirectory(parentDirectory);
             assetDirectory->SetName(Path::Name(filePath));
             parentDirectory->children.Add(assetDirectory);
 
@@ -173,9 +200,17 @@ namespace Fyrion
         {
             //TODO
         }
-        else
+        else if (auto importer = importers.Find(extension))
         {
-            //TODO check if can import the asset.
+            if (Asset* asset = importer->second->ImportAsset(filePath, nullptr))
+            {
+                if (asset->GetName().Empty())
+                {
+                    asset->SetName(Path::Name(filePath) + Path::Extension(filePath));
+                }
+                asset->SetDirectory(parentDirectory);
+                parentDirectory->children.Add(asset);
+            }
         }
     }
 
@@ -198,7 +233,19 @@ namespace Fyrion
         }
         isShutdown = false;
 
+        for (const auto& assetIo : assetIOs)
+        {
+            if (TypeHandler* typeHandler = Registry::FindTypeById(assetIo.first))
+            {
+                typeHandler->Destroy(assetIo.second);
+            }
+        }
+
+        assetIOs.Clear();
+        assetIOs.ShrinkToFit();
+
         assetsById.Clear();
         assetsByPath.Clear();
+        importers.Clear();
     }
 }

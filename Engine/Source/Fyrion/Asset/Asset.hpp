@@ -7,6 +7,7 @@
 namespace Fyrion
 {
     class Asset;
+    class AssetDirectory;
 
     template <typename Type>
     class FY_API Subobject
@@ -237,15 +238,18 @@ namespace Fyrion
         friend class Subobject;
 
     private:
-        UUID          uniqueId{};
-        String        path{};
-        Asset*        prototype{};
-        VoidPtr       subobjectOf{};
-        TypeHandler*  assetType{};
-        u64           version{};
-        u64           loadedVersion{};
-        String        name{};
-        String        absolutePath{};
-        Asset*        directory{};
+        UUID            uniqueId{};
+        String          path{};
+        Asset*          prototype{};
+        VoidPtr         subobjectOf{};
+        TypeHandler*    assetType{};
+        u64             version{};
+        u64             loadedVersion{};
+        String          name{};
+        String          absolutePath{};
+        AssetDirectory* directory{};
+
+        void SetDirectory(AssetDirectory* p_directory);
+        void BuildPath();
     };
 }

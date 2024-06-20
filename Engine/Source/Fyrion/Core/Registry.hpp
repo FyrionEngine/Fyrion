@@ -322,6 +322,7 @@ namespace Fyrion
 
         Span<DerivedType>               GetDerivedTypes() const;
         Array<TypeID>                   GetBaseTypes() const;
+        bool                            IsDerivedFrom(TypeID typeId) const;
 
 
         StringView          GetName() const;

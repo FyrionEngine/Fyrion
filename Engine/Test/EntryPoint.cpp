@@ -10,6 +10,7 @@ using namespace Fyrion;
 
 int main(int argc, char** argv)
 {
+    //MemoryGlobals::SetOptions(AllocatorOptions_DetectMemoryLeaks | AllocatorOptions_CaptureStackTrace);
     MemoryGlobals::SetOptions(AllocatorOptions_DetectMemoryLeaks);
     //Logger::SetDefaultLevel(LogLevel::Trace);
 

@@ -11,6 +11,8 @@ namespace Fyrion
 
     struct TxtAsset : Asset
     {
+        FY_BASE_TYPES(Asset);
+
         Value<String> text;
 
         static void RegisterType(NativeTypeHandler<TxtAsset>& type)
@@ -32,7 +34,8 @@ namespace Fyrion
 
         Asset* ImportAsset(StringView path, Asset* reimportAsset) override
         {
-            return nullptr;
+            TxtAsset* txtAsset = AssetDatabase::Create<TxtAsset>();
+            return txtAsset;
         }
     };
 
@@ -43,8 +46,7 @@ namespace Fyrion
         Registry::Type<TxtAssetIO>();
     }
 
-    struct AssetDirectory;
-    TEST_CASE("Asset::AssetDirectory")
+    TEST_CASE("Asset::LoadFromDirectory")
     {
 
         Engine::Init();
@@ -56,6 +58,11 @@ namespace Fyrion
             AssetDirectory* directory = AssetDatabase::LoadFromDirectory("Fyrion", assetPath);
             REQUIRE(directory);
             CHECK(directory->GetPath() == "Fyrion:/");
+
+
+            Asset* asset = AssetDatabase::FindByPath("Fyrion://Dir1/Dir1/TxtFile1.txt");
+            REQUIRE(asset);
+
         }
         Engine::Destroy();
     }

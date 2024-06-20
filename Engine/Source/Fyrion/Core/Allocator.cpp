@@ -17,7 +17,6 @@ namespace Fyrion
             return true;
         }
 
-        HeapAllocator                                   defaultAllocator{};
         bool                                            captureTrace = false;
         bool                                            detectLeaks = false;
         std::unordered_map<usize, cpptrace::stacktrace> traces{};
@@ -27,7 +26,7 @@ namespace Fyrion
 
         void OnExit()
         {
-            if (detectLeaks && captureTrace && !traces.empty())
+            if (captureTrace && !traces.empty())
             {
                 traceMutex.lock();
                 for (auto& it : traces)
@@ -56,7 +55,7 @@ namespace Fyrion
         if (captureTrace)
         {
             usize ptrAddress = reinterpret_cast<usize>(ptr);
-            auto  trace = cpptrace::generate_trace();
+            auto  trace = cpptrace::generate_trace(1);
             traceMutex.lock();
             traces.insert(std::make_pair(ptrAddress, std::move(trace)));
             traceMutex.unlock();
@@ -96,16 +95,19 @@ namespace Fyrion
         if (options & AllocatorOptions_DetectMemoryLeaks)
         {
             detectLeaks = true;
+
+            if (options & AllocatorOptions_CaptureStackTrace)
+            {
+                captureTrace = true;
+            }
         }
 
-        if (options & AllocatorOptions_CaptureStackTrace)
-        {
-            detectLeaks = true;
-        }
+
     }
 
     Allocator& MemoryGlobals::GetDefaultAllocator()
     {
+        static HeapAllocator defaultAllocator{};
         return defaultAllocator;
     }
 

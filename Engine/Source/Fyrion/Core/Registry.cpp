@@ -311,6 +311,26 @@ namespace Fyrion
         return m_baseTypesArray;
     }
 
+    bool TypeHandler::IsDerivedFrom(TypeID typeId) const
+    {
+        if (m_baseTypes.Has(typeId))
+        {
+            return true;
+        }
+
+        for (auto& baseTypeId : m_baseTypesArray)
+        {
+            if (TypeHandler* typeHandler = Registry::FindTypeById(baseTypeId))
+            {
+                if (typeHandler->IsDerivedFrom(typeId))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     StringView TypeHandler::GetName() const
     {
         return m_name;

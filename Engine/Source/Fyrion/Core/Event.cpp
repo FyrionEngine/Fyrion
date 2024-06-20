@@ -37,11 +37,17 @@ namespace Fyrion
 
     namespace
     {
-        HashMap<TypeID, EventTypeData> events{};
+        HashMap<TypeID, EventTypeData>& GetEvents()
+        {
+            static HashMap<TypeID, EventTypeData> events{};
+            return events;
+        }
+
     }
 
     void Event::Bind(TypeID typeId, VoidPtr userData, VoidPtr instance, FnEventCallback eventCallback)
     {
+        HashMap<TypeID, EventTypeData>& events = GetEvents();
         auto it = events.Find(typeId);
         if (it == events.end())
         {
@@ -57,6 +63,8 @@ namespace Fyrion
 
     void Event::Unbind(TypeID typeId, VoidPtr userData, VoidPtr instance, FnEventCallback eventCallback)
     {
+        HashMap<TypeID, EventTypeData>& events = GetEvents();
+
         auto it = events.Find(typeId);
         if (it != events.end())
         {
@@ -70,6 +78,8 @@ namespace Fyrion
 
     usize Event::EventCount(TypeID typeId)
     {
+        HashMap<TypeID, EventTypeData>& events = GetEvents();
+
         auto it = events.Find(typeId);
         if (it != events.end())
         {
@@ -80,6 +90,8 @@ namespace Fyrion
 
     EventTypeData* Event::GetData(TypeID typeId)
     {
+        HashMap<TypeID, EventTypeData>& events = GetEvents();
+
         auto it = events.Find(typeId);
         if (it == events.end())
         {
@@ -98,6 +110,8 @@ namespace Fyrion
 
     void EventShutdown()
     {
+        HashMap<TypeID, EventTypeData>& events = GetEvents();
+
         for(auto it: events)
         {
             it.second.events.Clear();
@@ -107,6 +121,8 @@ namespace Fyrion
     void Event::Reset()
     {
         EventShutdown();
+
+        HashMap<TypeID, EventTypeData>& events = GetEvents();
         events.Clear();
     }
 }

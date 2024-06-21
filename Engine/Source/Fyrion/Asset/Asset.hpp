@@ -13,27 +13,29 @@ namespace Fyrion
     class FY_API Subobject
     {
     public:
-        void Add(Type* asset)
+        void Add(Type* object)
         {
-            FY_ASSERT(asset, "asset is null");
-            FY_ASSERT(!asset->subobjectOf, "asset is already a subobject");
-
-            asset->subobjectOf = this;
-            assets.EmplaceBack(asset);
+            FY_ASSERT(object, "asset is null");
+            if constexpr(Traits::IsBaseOf<Asset, Type>)
+            {
+                FY_ASSERT(!object->subobjectOf, "asset is already a subobject");
+                object->subobjectOf = this;
+            }
+            objects.EmplaceBack(object);
         }
 
-        void Remove(Type* asset)
+        void Remove(Type* object)
         {
-            FY_ASSERT(asset, "asset is null");
-            if (const auto it = std::find(assets.begin(), assets.end(), asset); it != assets.end())
+            FY_ASSERT(object, "asset is null");
+            if (const auto it = std::find(objects.begin(), objects.end(), object); it != objects.end())
             {
-                assets.Erase(it);
+                objects.Erase(it);
             }
         }
 
         usize Count() const
         {
-            usize total = assets.Size();
+            usize total = objects.Size();
             if (prototype != nullptr)
             {
                 total += prototype->Count();
@@ -41,9 +43,9 @@ namespace Fyrion
             return total;
         }
 
-        void Get(Span<Type*> retAssets) const
+        void Get(Span<Type*> p_objects) const
         {
-            GetTo(retAssets, 0);
+            GetTo(p_objects, 0);
         }
 
         Array<Type*> GetAsArray() const
@@ -57,27 +59,28 @@ namespace Fyrion
 
     private:
         Subobject*   prototype = {};
-        Array<Type*> assets;
+        Array<Type*> objects;
 
-        void GetTo(Span<Type*> retAssets, usize pos) const
+        void GetTo(Span<Type*> p_objects, usize pos) const
         {
             if (prototype != nullptr)
             {
-                prototype->GetTo(retAssets, pos);
+                prototype->GetTo(p_objects, pos);
             }
 
-            for (Asset* asset : assets)
+            for (Asset* object : objects)
             {
-                retAssets[pos++] = asset;
+                p_objects[pos++] = object;
             }
         }
     };
 
     struct SubobjectApi
     {
-        void (* SetPrototype)(VoidPtr subobject, VoidPtr prototype);
-        usize (*GetOwnedObjectsCount)(VoidPtr subobject);
-        void (* GetOwnedObjects)(VoidPtr subobject, Span<Asset*> assets);
+        void    (*SetPrototype)(VoidPtr subobject, VoidPtr prototype);
+        usize   (*GetOwnedObjectsCount)(VoidPtr subobject);
+        void    (*GetOwnedObjects)(VoidPtr subobject, Span<VoidPtr> assets);
+        TypeID  (*GetTypeId)();
     };
 
     template <typename Type>
@@ -90,18 +93,23 @@ namespace Fyrion
 
         static usize GetOwnedObjectsCount(VoidPtr subobject)
         {
-            return static_cast<Subobject<Type>*>(subobject)->assets.Size();
+            return static_cast<Subobject<Type>*>(subobject)->objects.Size();
         }
 
-        static void GetOwnedObjects(VoidPtr ptr, Span<Asset*> retAssets)
+        static void GetOwnedObjects(VoidPtr ptr, Span<VoidPtr> retAssets)
         {
             auto subobject = static_cast<Subobject<Type>*>(ptr);
 
             usize pos = 0;
-            for (Asset* asset : subobject->assets)
+            for (Type* asset : subobject->objects)
             {
                 retAssets[pos++] = asset;
             }
+        }
+
+        static TypeID GetTypeIdImpl()
+        {
+            return GetTypeID<Type>();
         }
 
         static void ExtractApi(VoidPtr pointer)
@@ -110,6 +118,7 @@ namespace Fyrion
             api->SetPrototype = SetPrototypeImpl;
             api->GetOwnedObjectsCount = GetOwnedObjectsCount;
             api->GetOwnedObjects = GetOwnedObjects;
+            api->GetTypeId = GetTypeIdImpl;
         }
 
         static constexpr TypeID GetApiId()

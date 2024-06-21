@@ -3,12 +3,21 @@
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Asset/AssetDatabase.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
-#include "Fyrion/IO/Path.hpp"
 
 using namespace Fyrion;
 
 namespace
 {
+    struct TestStruct
+    {
+        f32 floatValue;
+
+        static void RegisterType(NativeTypeHandler<TestStruct>& type)
+        {
+            type.Field<&TestStruct::floatValue>("floatValue");
+        }
+    };
+
     struct SubobjectAsset : Asset
     {
         FY_BASE_TYPES(Asset);
@@ -26,12 +35,15 @@ namespace
         FY_BASE_TYPES(Asset);
 
         Subobject<SubobjectAsset>  subobjects;
+        Subobject<TestStruct>  types;
+
         Value<i32> testValue;
 
         static void RegisterType(NativeTypeHandler<TestAsset>& type)
         {
             type.Field<&TestAsset::subobjects>("subobjects");
             type.Field<&TestAsset::testValue>("testValue");
+            type.Field<&TestAsset::types>("types");
         }
     };
 
@@ -100,12 +112,13 @@ namespace
         Engine::Destroy();
     }
 
-    TEST_CASE("Asset::SubobjectDestroy")
+    TEST_CASE("Asset::Subobjects")
     {
         Engine::Init();
         {
             Registry::Type<TestAsset>();
             Registry::Type<SubobjectAsset>();
+            Registry::Type<TestStruct>();
 
             TestAsset* asset = AssetDatabase::Create<TestAsset>();
             {
@@ -118,6 +131,12 @@ namespace
                 SubobjectAsset* subobject = AssetDatabase::Create<SubobjectAsset>(UUID::FromString("939fb3ac-c162-4d5f-b95e-b38e43c3ba870"));
                 subobject->value = 2;
                 asset->subobjects.Add(subobject);
+            }
+
+            {
+                TestStruct* testStruct = MemoryGlobals::GetDefaultAllocator().Alloc<TestStruct>();
+                testStruct->floatValue = 10;
+                asset->types.Add(testStruct);
             }
 
             CHECK(AssetDatabase::FindById(UUID::FromString("939fb3ac-c162-4d5f-b95e-b38e43c3ba69")) != nullptr);

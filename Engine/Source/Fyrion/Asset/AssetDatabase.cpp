@@ -140,13 +140,26 @@ namespace Fyrion
                     SubobjectApi subobjectApi{};
                     typeInfo.extractApi(&subobjectApi);
 
-                    usize         count = subobjectApi.GetOwnedObjectsCount(ptr);
-                    Array<Asset*> subObjects(count);
-                    subobjectApi.GetOwnedObjects(ptr, subObjects);
+                    TypeID typeId = subobjectApi.GetTypeId();
 
-                    for (Asset* subobject : subObjects)
+                    if (TypeHandler* typeHandler = Registry::FindTypeById(typeId))
                     {
-                        Destroy(subobject);
+                        usize count = subobjectApi.GetOwnedObjectsCount(ptr);
+                        Array<VoidPtr> subObjects(count);
+                        subobjectApi.GetOwnedObjects(ptr, subObjects);
+
+                        for (VoidPtr subobject : subObjects)
+                        {
+                            if (Asset* asset = typeHandler->Cast<Asset>(subobject))
+                            {
+                                Destroy(asset);
+                            }
+                            else
+                            {
+                                typeHandler->Destroy(subobject);
+                            }
+
+                        }
                     }
                 }
             }

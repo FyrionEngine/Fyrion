@@ -3,6 +3,7 @@
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Asset/AssetDatabase.hpp"
 #include "Fyrion/Core/String.hpp"
+#include "Fyrion/IO/FileSystem.hpp"
 #include "Fyrion/IO/Path.hpp"
 
 
@@ -35,6 +36,7 @@ namespace Fyrion
         Asset* ImportAsset(StringView path, Asset* reimportAsset) override
         {
             TxtAsset* txtAsset = AssetDatabase::Create<TxtAsset>();
+            txtAsset->text = FileSystem::ReadFileAsString(path);
             return txtAsset;
         }
     };
@@ -59,9 +61,10 @@ namespace Fyrion
             REQUIRE(directory);
             CHECK(directory->GetPath() == "Fyrion:/");
 
+            TxtAsset* txtAsset = AssetDatabase::FindByPath<TxtAsset>("Fyrion://Dir1/Dir1/TxtFile1.txt");
+            REQUIRE(txtAsset);
 
-            Asset* asset = AssetDatabase::FindByPath("Fyrion://Dir1/Dir1/TxtFile1.txt");
-            REQUIRE(asset);
+            CHECK(txtAsset->text == "aaaa");
 
         }
         Engine::Destroy();

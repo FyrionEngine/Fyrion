@@ -1,16 +1,32 @@
 #pragma once
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Core/UUID.hpp"
-#include <algorithm>
-
 
 namespace Fyrion
 {
     class Asset;
     class AssetDirectory;
+    struct SubobjectApi;
+
+
+    struct SubobjectApi
+    {
+        void    (*SetPrototype)(VoidPtr subobject, VoidPtr prototype);
+        usize   (*GetOwnedObjectsCount)(VoidPtr subobject);
+        void    (*GetOwnedObjects)(VoidPtr subobject, Span<VoidPtr> assets);
+        void    (*Remove)(VoidPtr subobject, VoidPtr object);
+        TypeID  (*GetTypeId)();
+    };
+
+    class SubobjectBase
+    {
+    public:
+        virtual ~SubobjectBase() = default;
+        virtual SubobjectApi GetApi() = 0;
+    };
 
     template <typename Type>
-    class FY_API Subobject
+    class Subobject : public SubobjectBase
     {
     public:
         void Add(Type* object)
@@ -27,7 +43,7 @@ namespace Fyrion
         void Remove(Type* object)
         {
             FY_ASSERT(object, "asset is null");
-            if (const auto it = std::find(objects.begin(), objects.end(), object); it != objects.end())
+            if (Type** it = FindFirst(objects.begin(), objects.end(), object))
             {
                 objects.Erase(it);
             }
@@ -55,6 +71,8 @@ namespace Fyrion
             return ret;
         }
 
+        SubobjectApi GetApi() override;
+
         friend class TypeApiInfo<Subobject>;
 
     private:
@@ -73,14 +91,6 @@ namespace Fyrion
                 p_objects[pos++] = object;
             }
         }
-    };
-
-    struct SubobjectApi
-    {
-        void    (*SetPrototype)(VoidPtr subobject, VoidPtr prototype);
-        usize   (*GetOwnedObjectsCount)(VoidPtr subobject);
-        void    (*GetOwnedObjects)(VoidPtr subobject, Span<VoidPtr> assets);
-        TypeID  (*GetTypeId)();
     };
 
     template <typename Type>
@@ -107,6 +117,11 @@ namespace Fyrion
             }
         }
 
+        static void RemoveImpl(VoidPtr subobject, VoidPtr object)
+        {
+            static_cast<Subobject<Type>*>(subobject)->Remove(static_cast<Type*>(object));
+        }
+
         static TypeID GetTypeIdImpl()
         {
             return GetTypeID<Type>();
@@ -119,6 +134,7 @@ namespace Fyrion
             api->GetOwnedObjectsCount = GetOwnedObjectsCount;
             api->GetOwnedObjects = GetOwnedObjects;
             api->GetTypeId = GetTypeIdImpl;
+            api->Remove = RemoveImpl;
         }
 
         static constexpr TypeID GetApiId()
@@ -128,6 +144,14 @@ namespace Fyrion
     };
 
     template <typename Type>
+    SubobjectApi Subobject<Type>::GetApi()
+    {
+        SubobjectApi api{};
+        TypeApiInfo<Subobject>::ExtractApi(&api);
+        return api;
+    }
+
+    template <typename Type>
     class FY_API Value
     {
     public:
@@ -135,8 +159,13 @@ namespace Fyrion
         {
             hasValue = true;
             value = pValue;
-
             return *this;
+        }
+
+        template<typename Other>
+        bool operator==(const Other& other) const
+        {
+            return Get() == other;
         }
 
         Type Get() const
@@ -250,7 +279,7 @@ namespace Fyrion
         UUID            uniqueId{};
         String          path{};
         Asset*          prototype{};
-        VoidPtr         subobjectOf{};
+        SubobjectBase*  subobjectOf{};
         TypeHandler*    assetType{};
         u64             version{};
         u64             loadedVersion{};

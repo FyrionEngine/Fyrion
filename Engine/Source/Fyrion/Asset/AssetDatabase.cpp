@@ -130,6 +130,13 @@ namespace Fyrion
     {
         if (destroySubobjects)
         {
+
+            if (asset->subobjectOf)
+            {
+                SubobjectApi api = asset->subobjectOf->GetApi();
+                api.Remove(asset->subobjectOf, asset);
+            }
+
             for (FieldHandler* field : asset->GetAssetType()->GetFields())
             {
                 auto typeInfo = field->GetFieldInfo().typeInfo;

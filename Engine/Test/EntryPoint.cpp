@@ -10,9 +10,11 @@ using namespace Fyrion;
 
 int main(int argc, char** argv)
 {
-    //MemoryGlobals::SetOptions(AllocatorOptions_DetectMemoryLeaks | AllocatorOptions_CaptureStackTrace);
-    MemoryGlobals::SetOptions(AllocatorOptions_DetectMemoryLeaks);
-    //Logger::SetDefaultLevel(LogLevel::Trace);
+    AllocatorOptions flags = AllocatorOptions_DetectMemoryLeaks;
+
+    //flags |= AllocatorOptions_CaptureStackTrace;
+
+    MemoryGlobals::SetOptions(flags);
 
     StdOutSink sink{};
     Logger::RegisterSink(sink);

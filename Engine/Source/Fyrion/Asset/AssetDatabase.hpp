@@ -48,6 +48,14 @@ namespace Fyrion
         {
             return static_cast<T*>(FindById(assetId));
         }
+
+        template <typename T>
+        static T* FindByPath(const StringView& path)
+        {
+            return static_cast<T*>(FindByPath(path));
+        }
+
+
     private:
         static void LoadAssetFile(AssetDirectory* directory, const StringView& filePath);
     };

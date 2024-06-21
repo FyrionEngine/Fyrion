@@ -20,39 +20,40 @@ namespace Fyrion
 
     struct EditorWindowStorage
     {
-        TypeID typeId{};
-        FnCast fnCast{};
+        TypeID       typeId{};
+        FnCast       fnCast{};
         DockPosition dockPosition{};
-        bool createOnInit{};
+        bool         createOnInit{};
     };
 
     struct OpenWindowStorage
     {
-        u32 id{};
+        u32           id{};
         EditorWindow* instance{};
-        TypeHandler* typeHandler{};
+        TypeHandler*  typeHandler{};
     };
 
     namespace
     {
         Array<EditorWindowStorage> editorWindowStorages{};
-        Array<OpenWindowStorage> openWindows{};
+        Array<OpenWindowStorage>   openWindows{};
         //Array<RID> updatedItems{};
 
         MenuItemContext menuContext{};
-        bool dockInitialized = false;
-        u32  dockSpaceId{10000};
-        u32  centerSpaceId{10000};
-        u32  topRightDockId{};
-        u32  bottomRightDockId{};
-        u32  bottomDockId{};
-        u32  leftDockId{};
-        u32  idCounter{100000};
-        bool showImGuiDemo = false;
+        bool            dockInitialized = false;
+        u32             dockSpaceId{10000};
+        u32             centerSpaceId{10000};
+        u32             topRightDockId{};
+        u32             bottomRightDockId{};
+        u32             bottomDockId{};
+        u32             leftDockId{};
+        u32             idCounter{100000};
+        bool            showImGuiDemo = false;
 
         bool forceClose{};
 
         UniquePtr<SceneEditor> sceneEditor{};
+        Array<AssetDirectory*> directories{};
 
         void SaveAll();
 
@@ -64,18 +65,20 @@ namespace Fyrion
             openWindows.ShrinkToFit();
             editorWindowStorages.Clear();
             editorWindowStorages.ShrinkToFit();
+            directories.Clear();
+            directories.ShrinkToFit();
             idCounter = 100000;
         }
 
         void InitEditor()
         {
             //TODO - this needs to be update on reload.
-            TypeHandler* editorWindow = Registry::FindType<EditorWindow>();
+            TypeHandler*      editorWindow = Registry::FindType<EditorWindow>();
             Span<DerivedType> derivedTypes = editorWindow->GetDerivedTypes();
-            for(const DerivedType& derivedType : derivedTypes)
+            for (const DerivedType& derivedType : derivedTypes)
             {
                 EditorWindowProperties properties{};
-                TypeHandler* typeHandler = Registry::FindTypeById(derivedType.typeId);
+                TypeHandler*           typeHandler = Registry::FindTypeById(derivedType.typeId);
                 if (typeHandler)
                 {
                     const EditorWindowProperties* editorWindowProperties = typeHandler->GetAttribute<EditorWindowProperties>();
@@ -111,7 +114,6 @@ namespace Fyrion
 
         void NewProject(const MenuItemEventData& eventData)
         {
-
         }
 
         void SaveAll(const MenuItemEventData& eventData)
@@ -128,13 +130,13 @@ namespace Fyrion
         {
             Editor::AddMenuItem(MenuItemCreation{.itemName = "File", .priority = 0});
             Editor::AddMenuItem(MenuItemCreation{.itemName = "File/New Project", .priority = 0, .action = NewProject});
-            Editor::AddMenuItem(MenuItemCreation{.itemName = "File/Save All", .priority = 1000, .itemShortcut{.ctrl=true, .presKey = Key::S}, .action = SaveAll});
-            Editor::AddMenuItem(MenuItemCreation{.itemName = "File/Exit", .priority = I32_MAX, .itemShortcut{.ctrl=true, .presKey = Key::Q}, .action = CloseEngine});
+            Editor::AddMenuItem(MenuItemCreation{.itemName = "File/Save All", .priority = 1000, .itemShortcut{.ctrl = true, .presKey = Key::S}, .action = SaveAll});
+            Editor::AddMenuItem(MenuItemCreation{.itemName = "File/Exit", .priority = I32_MAX, .itemShortcut{.ctrl = true, .presKey = Key::Q}, .action = CloseEngine});
             Editor::AddMenuItem(MenuItemCreation{.itemName = "Edit", .priority = 30});
             Editor::AddMenuItem(MenuItemCreation{.itemName = "Build", .priority = 40});
             Editor::AddMenuItem(MenuItemCreation{.itemName = "Window", .priority = 50});
             Editor::AddMenuItem(MenuItemCreation{.itemName = "Help", .priority = 60});
-            Editor::AddMenuItem(MenuItemCreation{.itemName = "Window/Dear ImGui Demo", .priority = I32_MAX, .action=ShowImGuiDemo});
+            Editor::AddMenuItem(MenuItemCreation{.itemName = "Window/Dear ImGui Demo", .priority = I32_MAX, .action = ShowImGuiDemo});
         }
 
 
@@ -145,7 +147,7 @@ namespace Fyrion
                 case DockPosition::None: return U32_MAX;
                 case DockPosition::Center: return centerSpaceId;
                 case DockPosition::Left: return leftDockId;
-                case DockPosition::TopRight:return topRightDockId;
+                case DockPosition::TopRight: return topRightDockId;
                 case DockPosition::BottomRight: return bottomRightDockId;
                 case DockPosition::Bottom: return bottomDockId;
             }
@@ -155,7 +157,7 @@ namespace Fyrion
         u32 CreateWindow(const EditorWindowStorage& editorWindowStorage, VoidPtr userData)
         {
             TypeHandler* typeHandler = Registry::FindTypeById(editorWindowStorage.typeId);
-            u32 windowId = idCounter;
+            u32          windowId = idCounter;
 
             OpenWindowStorage openWindowStorage = OpenWindowStorage{
                 .id = windowId,
@@ -181,7 +183,9 @@ namespace Fyrion
             for (u32 i = 0; i < openWindows.Size(); ++i)
             {
                 OpenWindowStorage& openWindowStorage = openWindows[i];
+
                 bool open = true;
+
                 openWindowStorage.instance->Draw(openWindowStorage.id, open);
                 if (!open)
                 {
@@ -212,13 +216,13 @@ namespace Fyrion
                 ImGui::DockBuilderReset(dockSpaceId);
 
                 //create default windows
-                centerSpaceId     = dockSpaceId;
-                topRightDockId    = ImGui::DockBuilderSplitNode(centerSpaceId, ImGuiDir_Right, 0.15f, nullptr, &centerSpaceId);
+                centerSpaceId = dockSpaceId;
+                topRightDockId = ImGui::DockBuilderSplitNode(centerSpaceId, ImGuiDir_Right, 0.15f, nullptr, &centerSpaceId);
                 bottomRightDockId = ImGui::DockBuilderSplitNode(topRightDockId, ImGuiDir_Down, 0.50f, nullptr, &topRightDockId);
-                bottomDockId      = ImGui::DockBuilderSplitNode(centerSpaceId, ImGuiDir_Down, 0.20f, nullptr, &centerSpaceId);
-                leftDockId        = ImGui::DockBuilderSplitNode(centerSpaceId, ImGuiDir_Left, 0.12f, nullptr, &centerSpaceId);
+                bottomDockId = ImGui::DockBuilderSplitNode(centerSpaceId, ImGuiDir_Down, 0.20f, nullptr, &centerSpaceId);
+                leftDockId = ImGui::DockBuilderSplitNode(centerSpaceId, ImGuiDir_Left, 0.12f, nullptr, &centerSpaceId);
 
-                for (const auto& windowType: editorWindowStorages)
+                for (const auto& windowType : editorWindowStorages)
                 {
                     if (windowType.createOnInit)
                     {
@@ -372,7 +376,7 @@ namespace Fyrion
     {
         for (const EditorWindowStorage& window : editorWindowStorages)
         {
-            if (window.typeId== windowType)
+            if (window.typeId == windowType)
             {
                 CreateWindow(window, initUserData);
                 break;
@@ -382,7 +386,12 @@ namespace Fyrion
 
     void Editor::OpenDirectory(AssetDirectory* directory)
     {
+        directories.EmplaceBack(directory);
+    }
 
+    Span<AssetDirectory*> Editor::GetOpenDirectories()
+    {
+        return directories;
     }
 
     void Editor::AddMenuItem(const MenuItemCreation& menuItem)
@@ -402,7 +411,7 @@ namespace Fyrion
         InitPropertiesWindow();
         InitGraphEditorWindow();
 
-        Event::Bind<OnInit , &InitEditor>();
+        Event::Bind<OnInit, &InitEditor>();
         Event::Bind<OnUpdate, &EditorUpdate>();
         Event::Bind<OnShutdown, &Shutdown>();
         Event::Bind<OnShutdownRequest, &OnEditorShutdownRequest>();

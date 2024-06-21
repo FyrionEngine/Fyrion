@@ -1,5 +1,8 @@
 #include "AssetTypes.hpp"
 
+#include "AssetDatabase.hpp"
+#include "Fyrion/IO/FileSystem.hpp"
+
 
 namespace Fyrion
 {
@@ -14,12 +17,29 @@ namespace Fyrion
         type.Field<&AssetDirectory::children>("children");
     }
 
-    void RegisterAssetTypes()
+    void UIFontAsset::RegisterType(NativeTypeHandler<UIFontAsset>& type)
     {
-        Registry::Type<Asset>();
-        Registry::Type<AssetDirectory>();
-        Registry::Type<AssetIO>();
+        type.Field<&UIFontAsset::fontBytes>("fontBytes");
     }
 
+    Span<StringView> UIFontAssetIO::GetImportExtensions()
+    {
+        return {extensions, 2};
+    }
 
+    Asset* UIFontAssetIO::ImportAsset(StringView path, Asset* reimportAsset)
+    {
+        UIFontAsset* fontAsset = AssetDatabase::Create<UIFontAsset>();
+        fontAsset->fontBytes = FileSystem::ReadFileAsByteArray(path);
+        return fontAsset;
+    }
+
+    void RegisterAssetTypes()
+    {
+        Registry::Type<AssetIO>();
+        Registry::Type<Asset>();
+        Registry::Type<AssetDirectory>();
+        Registry::Type<UIFontAsset>();
+        Registry::Type<UIFontAssetIO>();
+    }
 }

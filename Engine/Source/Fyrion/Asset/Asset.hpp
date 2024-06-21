@@ -5,23 +5,23 @@
 namespace Fyrion
 {
     class Asset;
-    class AssetDirectory;
+    struct AssetDirectory;
     struct SubobjectApi;
 
 
     struct SubobjectApi
     {
-        void    (*SetPrototype)(VoidPtr subobject, VoidPtr prototype);
-        usize   (*GetOwnedObjectsCount)(VoidPtr subobject);
-        void    (*GetOwnedObjects)(VoidPtr subobject, Span<VoidPtr> assets);
-        void    (*Remove)(VoidPtr subobject, VoidPtr object);
-        TypeID  (*GetTypeId)();
+        void (*  SetPrototype)(VoidPtr subobject, VoidPtr prototype);
+        usize (* GetOwnedObjectsCount)(VoidPtr subobject);
+        void (*  GetOwnedObjects)(VoidPtr subobject, Span<VoidPtr> assets);
+        void (*  Remove)(VoidPtr subobject, VoidPtr object);
+        TypeID (*GetTypeId)();
     };
 
     class SubobjectBase
     {
     public:
-        virtual ~SubobjectBase() = default;
+        virtual              ~SubobjectBase() = default;
         virtual SubobjectApi GetApi() = 0;
     };
 
@@ -32,7 +32,7 @@ namespace Fyrion
         void Add(Type* object)
         {
             FY_ASSERT(object, "asset is null");
-            if constexpr(Traits::IsBaseOf<Asset, Type>)
+            if constexpr (Traits::IsBaseOf<Asset, Type>)
             {
                 FY_ASSERT(!object->subobjectOf, "asset is already a subobject");
                 object->subobjectOf = this;
@@ -69,6 +69,11 @@ namespace Fyrion
             Array<Type*> ret(Count());
             Get(ret);
             return ret;
+        }
+
+        Span<Type*> GetOwnedObjects() const
+        {
+            return objects;
         }
 
         SubobjectApi GetApi() override;
@@ -162,7 +167,7 @@ namespace Fyrion
             return *this;
         }
 
-        template<typename Other>
+        template <typename Other>
         bool operator==(const Other& other) const
         {
             return Get() == other;
@@ -255,6 +260,11 @@ namespace Fyrion
             return assetType;
         }
 
+        TypeID GetAssetTypeId() const
+        {
+            return assetType->GetTypeInfo().typeId;
+        }
+
         StringView GetName() const
         {
             return name;
@@ -275,6 +285,32 @@ namespace Fyrion
         template <typename Type>
         friend class Subobject;
 
+        bool IsAlive()
+        {
+            return true;
+        }
+
+        Asset* GetDirectory() const
+        {
+            return directory;
+        }
+
+        bool IsParentOf(Asset* asset) const
+        {
+            if (asset == this) return false;
+
+            if (directory != nullptr)
+            {
+                if (reinterpret_cast<usize>(asset->GetDirectory()) == reinterpret_cast<usize>(asset))
+                {
+                    return true;
+                }
+
+                return directory->IsParentOf(asset);
+            }
+            return false;
+        }
+
     private:
         UUID            uniqueId{};
         String          path{};
@@ -285,7 +321,7 @@ namespace Fyrion
         u64             loadedVersion{};
         String          name{};
         String          absolutePath{};
-        AssetDirectory* directory{};
+        Asset*          directory{};
 
         void SetDirectory(AssetDirectory* p_directory);
         void BuildPath();

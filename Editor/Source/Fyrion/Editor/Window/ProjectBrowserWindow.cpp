@@ -15,53 +15,50 @@
 
 namespace Fyrion
 {
-#if FY_ASSET_REFACTOR
     MenuItemContext ProjectBrowserWindow::s_menuItemContext = {};
-
-    ProjectBrowserWindow::ProjectBrowserWindow() : m_assetTree(Editor::GetAssetTree())
-    {
-    }
 
     void ProjectBrowserWindow::Init(u32 id, VoidPtr userData)
     {
         m_windowId = id;
-        if (!m_assetTree.GetAssetRoots().Empty())
+        if (!Editor::GetOpenDirectories().Empty())
         {
-            SetOpenFolder(m_assetTree.GetAssetRoots().Back());
+            SetOpenDirectory(Editor::GetOpenDirectories().Back());
         }
     }
 
-    void ProjectBrowserWindow::SetOpenFolder(RID folder)
+    void ProjectBrowserWindow::SetOpenDirectory(AssetDirectory* p_directory)
     {
-        m_openFolder = folder;
+        m_openDirectory = p_directory;
         m_selectedItem = {};
-        AssetNode* node = m_assetTree.GetNode(folder);
-        if (node != nullptr && node->parent != nullptr)
+
+        if (p_directory->GetDirectory() != nullptr)
         {
-            m_openTreeFolders[node->parent->rid] = true;
+            m_openTreeFolders[p_directory->GetDirectory()->GetUniqueId()] = true;
         }
     }
 
-    void ProjectBrowserWindow::DrawTreeNode(AssetNode* node)
+    void ProjectBrowserWindow::DrawTreeNode(Asset* asset)
     {
-        if (!node->active) return;
+        if (asset == nullptr) return;
 
-        RID rid = node->rid;
+        AssetDirectory* directory = asset->GetAssetType()->Cast<AssetDirectory>(asset);
 
         ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_None;
 
-        if (m_openTreeFolders[rid])
+        bool openDir = m_openTreeFolders[asset->GetUniqueId()];
+
+        if (openDir)
         {
             ImGui::SetNextItemOpen(true);
         }
 
-        if (m_openFolder == rid)
+        if (m_openDirectory == asset)
         {
             flags |= ImGuiTreeNodeFlags_Selected;
         }
 
         m_stringCache.Clear();
-        if (m_openTreeFolders[rid])
+        if (openDir)
         {
             m_stringCache = ICON_FA_FOLDER_OPEN;
         }
@@ -69,43 +66,42 @@ namespace Fyrion
         {
             m_stringCache = ICON_FA_FOLDER;
         }
-        m_stringCache += " " + node->name;
-        bool isOpenNode = ImGui::TreeNode(HashValue(rid), m_stringCache.CStr(), flags);
 
+        m_stringCache.Append(" ").Append(asset->GetName());
+
+        bool isNodeOpen = ImGui::TreeNode(HashValue(reinterpret_cast<usize>(asset)), m_stringCache.CStr(), flags);
 
         if (ImGui::BeginDragDropTarget())
         {
-            bool accept = !m_assetTree.IsParentOf(rid, m_movingItem) && m_movingItem != rid;
-
-            if (accept && ImGui::AcceptDragDropPayload(ASSET_PAYLOAD))
+            if (m_movingItem != nullptr && !asset->IsParentOf(m_movingItem) && ImGui::AcceptDragDropPayload(ASSET_PAYLOAD))
             {
-                m_assetTree.Move(rid, m_movingItem);
+                //m_assetTree.Move(rid, m_movingItem);
             }
             ImGui::EndDragDropTarget();
         }
 
-        if (node->root != node->rid && ImGui::BeginDragDropSource())
+        if (asset->GetDirectory() != nullptr && ImGui::BeginDragDropSource())
         {
-            m_movingItem = rid;
+            m_movingItem = asset;
             ImGui::SetDragDropPayload(ASSET_PAYLOAD, nullptr, 0);
-            ImGui::Text("%s", node->name.CStr());
+            ImGui::Text("%s", asset->GetName().CStr());
             ImGui::EndDragDropSource();
         }
 
-        if ((m_openTreeFolders[rid] == isOpenNode) && ImGui::IsItemClicked(ImGuiMouseButton_Left))
+        if (openDir == isNodeOpen && ImGui::IsItemClicked(ImGuiMouseButton_Left))
         {
-            SetOpenFolder(node->rid);
+            SetOpenDirectory(directory);
         }
 
-        m_openTreeFolders[rid] = isOpenNode;
+        m_openTreeFolders[directory->GetUniqueId()] = isNodeOpen;
 
-        if (isOpenNode)
+        if (isNodeOpen)
         {
-            for (AssetNode* child: node->nodes)
+            for (Asset* child : directory->children.GetOwnedObjects())
             {
-                if (child->type == GetTypeID<AssetDirectory>())
+                if (AssetDirectory* childDirectory = child->GetAssetType()->Cast<AssetDirectory>(child))
                 {
-                    DrawTreeNode(child);
+                    DrawTreeNode(childDirectory);
                 }
             }
             ImGui::TreePop();
@@ -114,6 +110,7 @@ namespace Fyrion
 
     void ProjectBrowserWindow::DrawPathItems()
     {
+#if 0
         m_folderCache.Clear();
 
         AssetNode* openFolderNode = m_assetTree.GetNode(m_openFolder);
@@ -176,15 +173,15 @@ namespace Fyrion
             }
         }
         ImGui::EndPopupMenu(popupRes);
+#endif
     }
 
     void ProjectBrowserWindow::Draw(u32 id, bool& open)
     {
         ImGuiStyle& style = ImGui::GetStyle();
-        ImVec2 pad = style.WindowPadding;
+        ImVec2      pad = style.WindowPadding;
 
-        AssetNode* assetNodeTree = m_assetTree.GetNode(m_openFolder);
-        bool readOnly = assetNodeTree == nullptr;
+        bool readOnly = false;
 
         ImGui::StyleVar windowPadding(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         ImGui::StyleVar cellPadding(ImGuiStyleVar_CellPadding, ImVec2(0, 0));
@@ -195,12 +192,12 @@ namespace Fyrion
 
         //top child
         {
-            ImVec2 a = ImVec2(pad.x / 1.5f, pad.y / 1.5f);
+            ImVec2          a = ImVec2(pad.x / 1.5f, pad.y / 1.5f);
             ImGui::StyleVar childPadding(ImGuiStyleVar_WindowPadding, a);
-            f32 width = ImGui::GetContentRegionAvail().x - a.x;
+            f32             width = ImGui::GetContentRegionAvail().x - a.x;
             ImGui::BeginChild(id + 5, ImVec2(width, 30 * style.ScaleFactor), false, ImGuiWindowFlags_AlwaysUseWindowPadding | ImGuiWindowFlags_NoScrollbar);
 
-            ImGui::BeginHorizontal((i32) id + 10, ImVec2(width - a.x - pad.x, 20 * style.ScaleFactor));
+            ImGui::BeginHorizontal((i32)id + 10, ImVec2(width - a.x - pad.x, 20 * style.ScaleFactor));
 
             ImGui::BeginDisabled(readOnly);
             if (ImGui::Button(ICON_FA_PLUS " Import"))
@@ -211,11 +208,10 @@ namespace Fyrion
                 {
                     if (!paths.Empty())
                     {
-                        for (const String& path: paths)
+                        for (const String& path : paths)
                         {
-                            ResourceAssets::ImportAsset(assetNodeTree->root, assetNodeTree->rid, path);
+                            //  ResourceAssets::ImportAsset(assetNodeTree->root, assetNodeTree->rid, path);
                         }
-                        m_assetTree.MarkDirty();
                     }
                 }
             }
@@ -244,7 +240,6 @@ namespace Fyrion
             ImGui::EndHorizontal();
 
             ImGui::EndChild();
-
         }
 
         auto* drawList = ImGui::GetWindowDrawList();
@@ -254,7 +249,7 @@ namespace Fyrion
         drawList->AddLine(p1, p2, IM_COL32(0, 0, 0, 255), 1.f * style.ScaleFactor);
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 1.f * style.ScaleFactor);
 
-        bool browseFolder = true;
+        bool                   browseFolder = true;
         static ImGuiTableFlags flags = ImGuiTableFlags_Resizable;
 
         if (ImGui::BeginTable("table-project-browser", browseFolder ? 2 : 1, flags))
@@ -263,14 +258,14 @@ namespace Fyrion
             ImGui::TableNextColumn();
             {
                 ImGui::StyleColor childBg(ImGuiCol_ChildBg, IM_COL32(22, 23, 25, 255));
-                ImGui::StyleVar rounding(ImGuiStyleVar_FrameRounding, 0);
+                ImGui::StyleVar   rounding(ImGuiStyleVar_FrameRounding, 0);
                 ImGui::BeginChild(52110);
 
                 ImGui::BeginTreeNode();
 
-                for(AssetNode* node : m_assetTree.GetRootNodes())
+                for (AssetDirectory* directory : Editor::GetOpenDirectories())
                 {
-                    DrawTreeNode(node);
+                    DrawTreeNode(directory);
                 }
 
                 ImGui::EndTreeNode();
@@ -280,61 +275,60 @@ namespace Fyrion
             ImGui::TableNextColumn();
             {
                 ImGui::StyleColor childBg(ImGuiCol_ChildBg, IM_COL32(27, 28, 30, 255));
-                auto padding = 5.f * style.ScaleFactor;
-                ImGui::StyleVar cellPadding(ImGuiStyleVar_CellPadding, ImVec2(padding, padding));
-                ImGui::StyleVar browserWinPadding(ImGuiStyleVar_WindowPadding, ImVec2(padding * 2, padding));
+                auto              padding = 5.f * style.ScaleFactor;
+                ImGui::StyleVar   cellPadding(ImGuiStyleVar_CellPadding, ImVec2(padding, padding));
+                ImGui::StyleVar   browserWinPadding(ImGuiStyleVar_WindowPadding, ImVec2(padding * 2, padding));
 
                 ImGui::BeginChild(52211, ImVec2(0, 0), false, ImGuiWindowFlags_AlwaysUseWindowPadding);
 
                 ImGui::SetWindowFontScale(m_contentBrowserZoom);
 
-                RID selectedFolder = {};
+                AssetDirectory* selectedDiretory = nullptr;
+
+
                 if (ImGui::BeginContentTable(id + CONTENT_TABLE_ID, m_contentBrowserZoom * 112 * ImGui::GetStyle().ScaleFactor))
                 {
-                    AssetNode* openFolderNode = m_assetTree.GetNode(m_openFolder);
-
-                    if (m_openFolder && openFolderNode)
+                    if (m_openDirectory)
                     {
-                        Span<AssetNode*> nodes = openFolderNode->nodes;
-                        for (AssetNode* node: nodes)
+                        for (Asset* asset : m_openDirectory->children.GetOwnedObjects())
                         {
-                            if (!node->active) continue;
+                            if (!asset->IsAlive()) continue;
 
-                            if (node->type == GetTypeID<AssetDirectory>())
+                            if (asset->GetAssetTypeId() == GetTypeID<AssetDirectory>())
                             {
                                 ImGui::ContentItemDesc contentItem{};
-                                contentItem.ItemId        = Hash<RID>::Value(node->rid);
-                                contentItem.ShowDetails   = false;
-                                contentItem.Label         = node->name.CStr();
-                                contentItem.SetPayload    = ASSET_PAYLOAD;
+                                contentItem.ItemId = reinterpret_cast<usize>(asset);
+                                contentItem.ShowDetails = false;
+                                contentItem.Label = asset->GetName().CStr();
+                                contentItem.SetPayload = ASSET_PAYLOAD;
                                 contentItem.AcceptPayload = ASSET_PAYLOAD;
-                                contentItem.TooltipText = node->path.CStr();
+                                contentItem.TooltipText = asset->GetPath().CStr();
                                 //contentItem.Texture = folderTexture;
 
-                                if (node->updated)
-                                {
-                                    contentItem.PreLabel = "*";
-                                }
+                                // if (asset->updated)
+                                // {
+                                //     contentItem.PreLabel = "*";
+                                // }
 
                                 if (ImGui::DrawContentItem(contentItem))
                                 {
                                     ImGui::ContentItemSelected(U32_MAX);
-                                    selectedFolder = node->rid;
+                                    selectedDiretory = asset->GetAssetType()->Cast<AssetDirectory>(asset);
                                 }
 
                                 if (ImGui::ContentItemSelected(contentItem.ItemId))
                                 {
-                                    m_selectedItem = node->rid;
+                                    m_selectedItem = asset;
                                 }
 
                                 if (ImGui::ContentItemRenamed(contentItem.ItemId))
                                 {
-                                    m_assetTree.Rename(node->rid, ImGui::ContentRenameString());
+                                    // m_assetTree.Rename(asset->rid, ImGui::ContentRenameString());
                                 }
 
                                 if (ImGui::ContentItemAcceptPayload(contentItem.ItemId))
                                 {
-                                    m_assetTree.Move(node->rid, m_movingItem);
+                                    ///m_assetTree.Move(asset->rid, m_movingItem);
                                 }
 
                                 if (ImGui::ContentItemBeginPayload(contentItem.ItemId))
@@ -344,48 +338,48 @@ namespace Fyrion
                             }
                         }
 
-                        for (AssetNode* node: nodes)
+                        for (Asset* asset : m_openDirectory->children.GetOwnedObjects())
                         {
-                            if (!node->active) continue;
+                            if (!asset->IsAlive()) continue;
 
-                            if (node->type == GetTypeID<Asset>())
+                            if (asset->GetAssetTypeId() != GetTypeID<AssetDirectory>())
                             {
-                                ResourceObject assetObject = Repository::Read(node->rid);
+                                //ResourceObject assetObject = Repository::Read(node->rid);
 
                                 ImGui::ContentItemDesc contentItem{};
-                                contentItem.ItemId      = Hash<RID>::Value(node->rid);
+                                contentItem.ItemId = reinterpret_cast<usize>(asset);
                                 contentItem.ShowDetails = true;
-                                contentItem.Label       = node->name.CStr();
-                                contentItem.DetailsDesc = node->assetDesc.CStr();
-                                contentItem.SetPayload  = ASSET_PAYLOAD;
-                                contentItem.TooltipText = node->path.CStr();
+                                contentItem.Label = asset->GetName().CStr();
+                                contentItem.DetailsDesc = asset->GetAssetType()->GetSimpleName().CStr();
+                                contentItem.SetPayload = ASSET_PAYLOAD;
+                                contentItem.TooltipText = asset->GetPath().CStr();
                                 //contentItem.Texture = folderTexture;
 
-                                if (node->updated)
-                                {
-                                    contentItem.PreLabel = "*";
-                                }
+                                // if (node->updated)
+                                // {
+                                //     contentItem.PreLabel = "*";
+                                // }
 
                                 if (ImGui::DrawContentItem(contentItem))
                                 {
-                                    if (node->objectType == GetTypeID<SceneObjectAsset>())
-                                    {
-                                        Editor::GetSceneEditor().LoadScene(node->rid);
-                                    }
-                                    else if (node->objectType == GetTypeID<GraphAsset>() || node->objectType == GetTypeID<RenderGraphAsset>())
-                                    {
-                                        GraphEditorWindow::OpenGraphWindow(node->rid);
-                                    }
+                                    // if (node->objectType == GetTypeID<SceneObjectAsset>())
+                                    // {
+                                    //     Editor::GetSceneEditor().LoadScene(node->rid);
+                                    // }
+                                    // else if (node->objectType == GetTypeID<GraphAsset>() || node->objectType == GetTypeID<RenderGraphAsset>())
+                                    // {
+                                    //     GraphEditorWindow::OpenGraphWindow(node->rid);
+                                    // }
                                 }
 
                                 if (ImGui::ContentItemSelected(contentItem.ItemId))
                                 {
-                                    m_selectedItem = node->rid;
+                                    m_selectedItem = asset;
                                 }
 
                                 if (ImGui::ContentItemRenamed(contentItem.ItemId))
                                 {
-                                    m_assetTree.Rename(node->rid, ImGui::ContentRenameString());
+                                    //m_assetTree.Rename(node->rid, ImGui::ContentRenameString());
                                 }
 
                                 if (ImGui::ContentItemBeginPayload(contentItem.ItemId))
@@ -399,20 +393,16 @@ namespace Fyrion
 
                     if (!ImGui::RenamingSelected(CONTENT_TABLE_ID + id) && ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))
                     {
-                        if (ImGui::IsKeyPressed(ImGuiKey_Backspace) && m_openFolder)
+                        if (ImGui::IsKeyPressed(ImGuiKey_Backspace) && m_openDirectory)
                         {
-                            ResourceObject directory = Repository::Read(m_openFolder);
-                            if (directory.Has(AssetDirectory::Parent))
-                            {
-                                selectedFolder = directory[AssetDirectory::Parent].As<RID>();
-                            }
+                            selectedDiretory = static_cast<AssetDirectory*>(m_openDirectory->GetDirectory());
                         }
                     }
                 }
 
-                if (selectedFolder)
+                if (selectedDiretory)
                 {
-                    SetOpenFolder(selectedFolder);
+                    SetOpenDirectory(selectedDiretory);
                 }
 
                 ImGui::SetWindowFontScale(1.0);
@@ -451,33 +441,34 @@ namespace Fyrion
 
     void ProjectBrowserWindow::AssetNewFolder(const MenuItemEventData& eventData)
     {
-        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
-        RID newDirectory = projectBrowserWindow->m_assetTree.NewDirectory(projectBrowserWindow->m_openFolder, "New Folder");
-
-        ImGui::SelectContentItem(Hash<RID>::Value(newDirectory), CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
-        ImGui::RenameContentSelected(CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
+        // ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
+        // RID newDirectory = projectBrowserWindow->m_assetTree.NewDirectory(projectBrowserWindow->m_openFolder, "New Folder");
+        //
+        // ImGui::SelectContentItem(Hash<RID>::Value(newDirectory), CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
+        // ImGui::RenameContentSelected(CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
     }
 
     void ProjectBrowserWindow::AssetNewScene(const MenuItemEventData& eventData)
     {
-        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
-        RID newAsset = projectBrowserWindow->m_assetTree.NewAsset(projectBrowserWindow->m_openFolder, Repository::CreateResource<SceneObjectAsset>(), "New Scene");
-
-        ImGui::SelectContentItem(Hash<RID>::Value(newAsset), CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
-        ImGui::RenameContentSelected(CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
+        // ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
+        // RID newAsset = projectBrowserWindow->m_assetTree.NewAsset(projectBrowserWindow->m_openFolder, Repository::CreateResource<SceneObjectAsset>(), "New Scene");
+        //
+        // ImGui::SelectContentItem(Hash<RID>::Value(newAsset), CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
+        // ImGui::RenameContentSelected(CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
     }
 
     void ProjectBrowserWindow::AssetDelete(const MenuItemEventData& eventData)
     {
-        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
-        projectBrowserWindow->m_assetTree.Delete(projectBrowserWindow->m_selectedItem);
-        projectBrowserWindow->m_selectedItem = {};
+        // ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
+        // projectBrowserWindow->m_assetTree.Delete(projectBrowserWindow->m_selectedItem);
+        // projectBrowserWindow->m_selectedItem = {};
     }
 
     bool ProjectBrowserWindow::CheckSelectedAsset(const MenuItemEventData& eventData)
     {
-        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
-        return projectBrowserWindow->m_selectedItem != RID{} && Repository::IsAlive(projectBrowserWindow->m_selectedItem);
+        // ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
+        // return projectBrowserWindow->m_selectedItem != RID{} && Repository::IsAlive(projectBrowserWindow->m_selectedItem);
+        return false;
     }
 
     void ProjectBrowserWindow::AssetRename(const MenuItemEventData& eventData)
@@ -488,31 +479,31 @@ namespace Fyrion
 
     void ProjectBrowserWindow::AssetShowInExplorer(const MenuItemEventData& eventData)
     {
-        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
-        RID itemToShow = projectBrowserWindow->m_selectedItem ? projectBrowserWindow->m_selectedItem : projectBrowserWindow->m_openFolder;
-        StringView path = ResourceAssets::GetAbsolutePath(itemToShow);
-        if (!path.Empty())
-        {
-            Platform::ShowInExplorer(path);
-        }
+        // ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
+        // RID itemToShow = projectBrowserWindow->m_selectedItem ? projectBrowserWindow->m_selectedItem : projectBrowserWindow->m_openFolder;
+        // StringView path = ResourceAssets::GetAbsolutePath(itemToShow);
+        // if (!path.Empty())
+        // {
+        //     Platform::ShowInExplorer(path);
+        // }
     }
 
     void ProjectBrowserWindow::AssetNewResourceGraph(const MenuItemEventData& eventData)
     {
-        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
-        RID newAsset = projectBrowserWindow->m_assetTree.NewAsset(projectBrowserWindow->m_openFolder, Repository::CreateResource<GraphAsset>(), "New Resource Graph");
-
-        ImGui::SelectContentItem(Hash<RID>::Value(newAsset), CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
-        ImGui::RenameContentSelected(CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
+        // ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
+        // RID newAsset = projectBrowserWindow->m_assetTree.NewAsset(projectBrowserWindow->m_openFolder, Repository::CreateResource<GraphAsset>(), "New Resource Graph");
+        //
+        // ImGui::SelectContentItem(Hash<RID>::Value(newAsset), CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
+        // ImGui::RenameContentSelected(CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
     }
 
     void ProjectBrowserWindow::AssetNewRenderGraph(const MenuItemEventData& eventData)
     {
-        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
-        RID newAsset = projectBrowserWindow->m_assetTree.NewAsset(projectBrowserWindow->m_openFolder, Repository::CreateResource<RenderGraphAsset>(), "New Render Graph");
-
-        ImGui::SelectContentItem(Hash<RID>::Value(newAsset), CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
-        ImGui::RenameContentSelected(CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
+        // ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
+        // RID newAsset = projectBrowserWindow->m_assetTree.NewAsset(projectBrowserWindow->m_openFolder, Repository::CreateResource<RenderGraphAsset>(), "New Render Graph");
+        //
+        // ImGui::SelectContentItem(Hash<RID>::Value(newAsset), CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
+        // ImGui::RenameContentSelected(CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
     }
 
     void ProjectBrowserWindow::AddMenuItem(const MenuItemCreation& menuItem)
@@ -527,20 +518,21 @@ namespace Fyrion
 
     void ProjectBrowserWindow::RegisterType(NativeTypeHandler<ProjectBrowserWindow>& type)
     {
-        Editor::AddMenuItem(MenuItemCreation{.itemName="Window/Project Browser", .action = OpenProjectBrowser});
+        Editor::AddMenuItem(MenuItemCreation{.itemName = "Window/Project Browser", .action = OpenProjectBrowser});
         Event::Bind<OnShutdown, Shutdown>();
 
-        AddMenuItem(MenuItemCreation{.itemName="New Folder", .icon=ICON_FA_FOLDER, .priority = 0, .action = AssetNewFolder});
-        AddMenuItem(MenuItemCreation{.itemName="New Scene", .icon=ICON_FA_GLOBE, .priority = 10, .action = AssetNewScene});
-        AddMenuItem(MenuItemCreation{.itemName="Delete", .icon=ICON_FA_TRASH, .priority = 20, .itemShortcut {.presKey = Key::Delete}, .action = AssetDelete, .enable= CheckSelectedAsset});
-        AddMenuItem(MenuItemCreation{.itemName="Rename", .icon=ICON_FA_PEN_TO_SQUARE, .priority = 30, .itemShortcut {.presKey = Key::F2}, .action = AssetRename, .enable= CheckSelectedAsset});
-        AddMenuItem(MenuItemCreation{.itemName="Show in Explorer", .icon=ICON_FA_FOLDER, .priority = 40, .action = AssetShowInExplorer});
-        AddMenuItem(MenuItemCreation{.itemName="Create New Asset", .icon=ICON_FA_PLUS, .priority = 150});
-        AddMenuItem(MenuItemCreation{.itemName="Create New Asset/Resource Graph", .icon=ICON_FA_DIAGRAM_PROJECT, .priority = 10, .action = AssetNewResourceGraph});
-        AddMenuItem(MenuItemCreation{.itemName="Create New Asset/Behavior Graph", .icon=ICON_FA_DIAGRAM_PROJECT, .priority = 20});
-        AddMenuItem(MenuItemCreation{.itemName="Create New Asset/Render Graph", .icon=ICON_FA_DIAGRAM_PROJECT, .priority = 30, .action = AssetNewRenderGraph});
+        AddMenuItem(MenuItemCreation{.itemName = "New Folder", .icon = ICON_FA_FOLDER, .priority = 0, .action = AssetNewFolder});
+        AddMenuItem(MenuItemCreation{.itemName = "New Scene", .icon = ICON_FA_GLOBE, .priority = 10, .action = AssetNewScene});
+        AddMenuItem(MenuItemCreation{.itemName = "Delete", .icon = ICON_FA_TRASH, .priority = 20, .itemShortcut{.presKey = Key::Delete}, .action = AssetDelete, .enable = CheckSelectedAsset});
+        AddMenuItem(MenuItemCreation{.itemName = "Rename", .icon = ICON_FA_PEN_TO_SQUARE, .priority = 30, .itemShortcut{.presKey = Key::F2}, .action = AssetRename, .enable = CheckSelectedAsset});
+        AddMenuItem(MenuItemCreation{.itemName = "Show in Explorer", .icon = ICON_FA_FOLDER, .priority = 40, .action = AssetShowInExplorer});
+        AddMenuItem(MenuItemCreation{.itemName = "Create New Asset", .icon = ICON_FA_PLUS, .priority = 150});
+        AddMenuItem(MenuItemCreation{.itemName = "Create New Asset/Resource Graph", .icon = ICON_FA_DIAGRAM_PROJECT, .priority = 10, .action = AssetNewResourceGraph});
+        AddMenuItem(MenuItemCreation{.itemName = "Create New Asset/Behavior Graph", .icon = ICON_FA_DIAGRAM_PROJECT, .priority = 20});
+        AddMenuItem(MenuItemCreation{.itemName = "Create New Asset/Render Graph", .icon = ICON_FA_DIAGRAM_PROJECT, .priority = 30, .action = AssetNewRenderGraph});
 
-        type.Function<&ProjectBrowserWindow::SetOpenFolder>("SetOpenFolder");
+        type.Function<&ProjectBrowserWindow::SetOpenDirectory>("SetOpenDirectory");
+
         type.Attribute<EditorWindowProperties>(EditorWindowProperties{
             .dockPosition = DockPosition::Bottom,
             .createOnInit = true
@@ -554,12 +546,6 @@ namespace Fyrion
 
     void InitProjectBrowser()
     {
-        Registry::Type<ProjectBrowserWindow, EditorWindow>();
+        Registry::Type<ProjectBrowserWindow>();
     }
-#else
-    void InitProjectBrowser()
-    {
-
-    }
-#endif
 }

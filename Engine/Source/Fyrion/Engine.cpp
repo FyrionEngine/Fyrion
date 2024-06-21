@@ -5,6 +5,7 @@
 #include "Fyrion/Graphics/GraphicsTypes.hpp"
 #include "Fyrion/Graphics/Graphics.hpp"
 #include "TypeRegister.hpp"
+#include "Asset/AssetDatabase.hpp"
 #include "Fyrion/ImGui/ImGui.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
 #include "Fyrion/IO/Path.hpp"
@@ -70,7 +71,7 @@ namespace Fyrion
 
     void Engine::CreateContext(const EngineContextCreation& contextCreation)
     {
-     //   ResourceAssets::LoadAssetsFromDirectory("Fyrion", Path::Join(FileSystem::AssetFolder(), "Fyrion"));
+        AssetDatabase::LoadFromDirectory("Fyrion", Path::Join(FileSystem::AssetFolder(), "Fyrion"));
 
         PlatformInit();
 

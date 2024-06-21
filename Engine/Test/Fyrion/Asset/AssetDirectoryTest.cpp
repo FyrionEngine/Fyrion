@@ -33,7 +33,7 @@ namespace Fyrion
             return {&extension};
         }
 
-        Asset* ImportAsset(StringView path, Asset* reimportAsset) override
+        Asset* ImportAsset(StringView path, Asset* reimportAsset, AssetTransaction* transaction) override
         {
             TxtAsset* txtAsset = AssetDatabase::Create<TxtAsset>();
             txtAsset->text = FileSystem::ReadFileAsString(path);

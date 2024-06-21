@@ -55,6 +55,9 @@ namespace Fyrion
         UniquePtr<SceneEditor> sceneEditor{};
         Array<AssetDirectory*> directories{};
 
+        Array<SharedPtr<AssetTransaction>> undoActions{};
+        Array<SharedPtr<AssetTransaction>> redoActions{};
+
         void SaveAll();
 
         void Shutdown()
@@ -68,6 +71,12 @@ namespace Fyrion
             directories.Clear();
             directories.ShrinkToFit();
             idCounter = 100000;
+
+            undoActions.Clear();
+            undoActions.ShrinkToFit();
+
+            redoActions.Clear();
+            redoActions.ShrinkToFit();
         }
 
         void InitEditor()
@@ -126,6 +135,33 @@ namespace Fyrion
             showImGuiDemo = true;
         }
 
+        void Undo(const MenuItemEventData& eventData)
+        {
+            SharedPtr<AssetTransaction> action = undoActions.Back();
+            action->Undo();
+            redoActions.EmplaceBack(action);
+            undoActions.PopBack();
+        }
+
+        bool UndoEnabled(const MenuItemEventData& eventData)
+        {
+            return !undoActions.Empty();
+        }
+
+        void Redo(const MenuItemEventData& eventData)
+        {
+            SharedPtr<AssetTransaction> action = redoActions.Back();
+            action->Redo();
+
+            redoActions.PopBack();
+            undoActions.EmplaceBack(action);
+        }
+
+        bool RedoEnabled(const MenuItemEventData& eventData)
+        {
+            return !redoActions.Empty();
+        }
+
         void CreateMenuItems()
         {
             Editor::AddMenuItem(MenuItemCreation{.itemName = "File", .priority = 0});
@@ -133,6 +169,8 @@ namespace Fyrion
             Editor::AddMenuItem(MenuItemCreation{.itemName = "File/Save All", .priority = 1000, .itemShortcut{.ctrl = true, .presKey = Key::S}, .action = SaveAll});
             Editor::AddMenuItem(MenuItemCreation{.itemName = "File/Exit", .priority = I32_MAX, .itemShortcut{.ctrl = true, .presKey = Key::Q}, .action = CloseEngine});
             Editor::AddMenuItem(MenuItemCreation{.itemName = "Edit", .priority = 30});
+            Editor::AddMenuItem(MenuItemCreation{.itemName = "Edit/Undo", .priority = 10, .itemShortcut{.ctrl = true, .presKey = Key::Z}, .action = Undo, .enable = UndoEnabled});
+            Editor::AddMenuItem(MenuItemCreation{.itemName = "Edit/Redo", .priority = 20, .itemShortcut{.ctrl = true, .shift = true,  .presKey = Key::Z}, .action = Redo, .enable = RedoEnabled});
             Editor::AddMenuItem(MenuItemCreation{.itemName = "Build", .priority = 40});
             Editor::AddMenuItem(MenuItemCreation{.itemName = "Window", .priority = 50});
             Editor::AddMenuItem(MenuItemCreation{.itemName = "Help", .priority = 60});
@@ -394,6 +432,17 @@ namespace Fyrion
         return directories;
     }
 
+    SceneEditor& Editor::GetSceneEditor()
+    {
+        return *sceneEditor.Get();
+    }
+
+    AssetTransaction* Editor::CreateTransaction()
+    {
+        redoActions.Clear();
+        return undoActions.EmplaceBack(MakeShared<AssetTransaction>()).Get();
+    }
+
     void Editor::AddMenuItem(const MenuItemCreation& menuItem)
     {
         menuContext.AddMenuItem(menuItem);
@@ -417,10 +466,5 @@ namespace Fyrion
         Event::Bind<OnShutdownRequest, &OnEditorShutdownRequest>();
 
         CreateMenuItems();
-    }
-
-    SceneEditor& Editor::GetSceneEditor()
-    {
-        return *sceneEditor.Get();
     }
 }

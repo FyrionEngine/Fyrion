@@ -27,7 +27,7 @@ namespace Fyrion
         return {extensions, 2};
     }
 
-    Asset* UIFontAssetIO::ImportAsset(StringView path, Asset* reimportAsset)
+    Asset* UIFontAssetIO::ImportAsset(StringView path, Asset* reimportAsset, AssetTransaction* transaction)
     {
         UIFontAsset* fontAsset = AssetDatabase::Create<UIFontAsset>();
         fontAsset->fontBytes = FileSystem::ReadFileAsByteArray(path);

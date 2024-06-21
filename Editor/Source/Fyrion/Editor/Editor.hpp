@@ -14,6 +14,7 @@ namespace Fyrion::Editor
     FY_API void                  OpenDirectory(AssetDirectory* directory);
     FY_API Span<AssetDirectory*> GetOpenDirectories();
     FY_API SceneEditor&          GetSceneEditor();
+    FY_API AssetTransaction*     CreateTransaction();
 
     template <typename T>
     FY_API void OpenWindow(VoidPtr initUserData = nullptr)

@@ -9,6 +9,7 @@
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Platform/Platform.hpp"
 #include "Fyrion/Engine.hpp"
+#include "Fyrion/Asset/AssetDatabase.hpp"
 
 #define CONTENT_TABLE_ID 500
 #define ASSET_PAYLOAD "ASSET-PAYLOAD"
@@ -75,7 +76,7 @@ namespace Fyrion
         {
             if (m_movingItem != nullptr && !asset->IsParentOf(m_movingItem) && ImGui::AcceptDragDropPayload(ASSET_PAYLOAD))
             {
-                //m_assetTree.Move(rid, m_movingItem);
+                m_movingItem->Move(directory, Editor::CreateTransaction());
             }
             ImGui::EndDragDropTarget();
         }
@@ -210,7 +211,7 @@ namespace Fyrion
                     {
                         for (const String& path : paths)
                         {
-                            //  ResourceAssets::ImportAsset(assetNodeTree->root, assetNodeTree->rid, path);
+                            AssetDatabase::ImportAsset(m_openDirectory, path, Editor::CreateTransaction());
                         }
                     }
                 }
@@ -285,7 +286,6 @@ namespace Fyrion
 
                 AssetDirectory* selectedDiretory = nullptr;
 
-
                 if (ImGui::BeginContentTable(id + CONTENT_TABLE_ID, m_contentBrowserZoom * 112 * ImGui::GetStyle().ScaleFactor))
                 {
                     if (m_openDirectory)
@@ -323,12 +323,12 @@ namespace Fyrion
 
                                 if (ImGui::ContentItemRenamed(contentItem.ItemId))
                                 {
-                                    // m_assetTree.Rename(asset->rid, ImGui::ContentRenameString());
+                                    asset->Rename(ImGui::ContentRenameString(), Editor::CreateTransaction());
                                 }
 
                                 if (ImGui::ContentItemAcceptPayload(contentItem.ItemId))
                                 {
-                                    ///m_assetTree.Move(asset->rid, m_movingItem);
+                                    asset->Move(m_movingItem, Editor::CreateTransaction());
                                 }
 
                                 if (ImGui::ContentItemBeginPayload(contentItem.ItemId))
@@ -379,7 +379,7 @@ namespace Fyrion
 
                                 if (ImGui::ContentItemRenamed(contentItem.ItemId))
                                 {
-                                    //m_assetTree.Rename(node->rid, ImGui::ContentRenameString());
+                                    asset->Rename(ImGui::ContentRenameString(), Editor::CreateTransaction());
                                 }
 
                                 if (ImGui::ContentItemBeginPayload(contentItem.ItemId))
@@ -466,9 +466,8 @@ namespace Fyrion
 
     bool ProjectBrowserWindow::CheckSelectedAsset(const MenuItemEventData& eventData)
     {
-        // ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
-        // return projectBrowserWindow->m_selectedItem != RID{} && Repository::IsAlive(projectBrowserWindow->m_selectedItem);
-        return false;
+        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
+        return projectBrowserWindow->m_selectedItem != nullptr && projectBrowserWindow->m_selectedItem->IsAlive();
     }
 
     void ProjectBrowserWindow::AssetRename(const MenuItemEventData& eventData)

@@ -10,7 +10,7 @@ namespace Fyrion
             return {};
         }
 
-        virtual Asset* ImportAsset(StringView path, Asset* reimportAsset)
+        virtual Asset* ImportAsset(StringView path, Asset* reimportAsset, AssetTransaction* transaction)
         {
             return nullptr;
         }
@@ -45,6 +45,6 @@ namespace Fyrion
         StringView extensions[2] = {".ttf", ".otf"};
 
         Span<StringView> GetImportExtensions() override;
-        Asset*           ImportAsset(StringView path, Asset* reimportAsset) override;
+        Asset*           ImportAsset(StringView path, Asset* reimportAsset, AssetTransaction* transaction) override;
     };
 }

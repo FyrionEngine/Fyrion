@@ -148,14 +148,14 @@ namespace
 
             {
                 Asset* asset = AssetDatabase::FindById(UUID::FromString("678f9a42-52c4-4233-9e27-769eb2a4ea64"));
-                AssetDatabase::Destroy(asset);
+                AssetDatabase::Destroy(asset, nullptr);
             }
 
 
             CHECK(AssetDatabase::FindById(UUID::FromString("939fb3ac-c162-4d5f-b95e-b38e43c3ba69")) != nullptr);
             CHECK(AssetDatabase::FindById(UUID::FromString("939fb3ac-c162-4d5f-b95e-b38e43c3ba870")) != nullptr);
 
-            AssetDatabase::Destroy(asset);
+            AssetDatabase::Destroy(asset, nullptr);
 
             CHECK(AssetDatabase::FindById(UUID::FromString("939fb3ac-c162-4d5f-b95e-b38e43c3ba69")) == nullptr);
             CHECK(AssetDatabase::FindById(UUID::FromString("939fb3ac-c162-4d5f-b95e-b38e43c3ba870")) == nullptr);

@@ -231,6 +231,27 @@ namespace Fyrion
         }
     };
 
+    struct AssetTransactionAction
+    {
+        virtual ~AssetTransactionAction() = default;
+
+        virtual void Undo() = 0;
+        virtual void Redo() = 0;
+    };
+
+
+
+    class FY_API AssetTransaction
+    {
+    public:
+        void AddRename(Asset* asset, StringView oldName, StringView newName);
+
+        void Undo();
+        void Redo();
+    private:
+        Array<SharedPtr<AssetTransactionAction>> actions;
+    };
+
 
     class FY_API Asset
     {
@@ -295,21 +316,10 @@ namespace Fyrion
             return directory;
         }
 
-        bool IsParentOf(Asset* asset) const
-        {
-            if (asset == this) return false;
+        bool IsParentOf(Asset* asset) const;
 
-            if (directory != nullptr)
-            {
-                if (reinterpret_cast<usize>(asset->GetDirectory()) == reinterpret_cast<usize>(asset))
-                {
-                    return true;
-                }
-
-                return directory->IsParentOf(asset);
-            }
-            return false;
-        }
+        void Rename(const StringView& newName, AssetTransaction* transaction);
+        void Move(Asset* newDirectory, AssetTransaction* transaction);
 
     private:
         UUID            uniqueId{};

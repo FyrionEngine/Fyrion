@@ -1,12 +1,10 @@
 #include "SceneEditor.hpp"
 
 #include "Fyrion/Editor/Editor.hpp"
-#include "Fyrion/Resource/AssetTree.hpp"
-#include "Fyrion/Resource/Repository.hpp"
-#include "Fyrion/Scene/SceneAssets.hpp"
 
 namespace Fyrion
 {
+#if FY_ASSET_REFACTOR
     void SceneEditor::LoadScene(const RID rid)
     {
         m_asset = rid;
@@ -209,4 +207,6 @@ namespace Fyrion
         Repository::Commit(component, value);
         Editor::GetAssetTree().MarkDirty();
     }
+#endif
+
 }

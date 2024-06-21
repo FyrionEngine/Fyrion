@@ -1,5 +1,7 @@
 #pragma once
 
+#if FY_ASSET_REFACTOR
+
 #include "Fyrion/Common.hpp"
 #include "Fyrion/Core/HashSet.hpp"
 #include "Fyrion/Core/Math.hpp"
@@ -67,3 +69,5 @@ namespace Fyrion
         inline static GraphEditor* m_lastGraphEditorSelected = nullptr;
     };
 }
+
+#endif

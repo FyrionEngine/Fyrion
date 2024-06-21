@@ -1,7 +1,9 @@
 #pragma once
+
+#if FY_ASSET_REFACTOR
+
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Editor/EditorTypes.hpp"
-#include "Fyrion/Resource/ResourceTypes.hpp"
 
 namespace Fyrion
 {
@@ -42,3 +44,5 @@ namespace Fyrion
         }
     };
 }
+
+#endif

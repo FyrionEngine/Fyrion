@@ -154,19 +154,19 @@ namespace Fyrion
 
         	Extent extent = {static_cast<u32>(size.x), static_cast<u32>(size.y)};
 
-	        if (m_renderGraph == nullptr)
-	        {
-		        m_renderGraph = RenderGraph::Create(extent, {});
-	        }
-	        else if (extent != m_renderGraph->GetViewportExtent())
-	        {
-		        m_renderGraph->Resize(extent);
-	        }
-
-        	if (open)
-        	{
-        		ImGui::DrawImage(m_renderGraph->GetColorOutput(), bb);
-        	}
+	        // if (m_renderGraph == nullptr)
+	        // {
+		       //  m_renderGraph = RenderGraph::Create(extent, {});
+	        // }
+	        // else if (extent != m_renderGraph->GetViewportExtent())
+	        // {
+		       //  m_renderGraph->Resize(extent);
+	        // }
+	        //
+        	// if (open)
+        	// {
+        	// 	ImGui::DrawImage(m_renderGraph->GetColorOutput(), bb);
+        	// }
 
         }
         ImGui::End();
@@ -189,7 +189,7 @@ namespace Fyrion
 
     void InitSceneViewWindow()
     {
-        Registry::Type<SceneViewWindow, EditorWindow>();
+        Registry::Type<SceneViewWindow>();
     }
 
 

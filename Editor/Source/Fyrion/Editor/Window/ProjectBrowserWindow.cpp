@@ -8,19 +8,14 @@
 #include "Fyrion/Core/Event.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Platform/Platform.hpp"
-#include "Fyrion/Resource/ResourceAssets.hpp"
-#include "Fyrion/Resource/Repository.hpp"
 #include "Fyrion/Engine.hpp"
-#include "Fyrion/Assets/AssetTypes.hpp"
-#include "Fyrion/Graphics/RenderGraph.hpp"
-#include "Fyrion/Resource/ResourceGraph.hpp"
-#include "Fyrion/Scene/SceneAssets.hpp"
 
 #define CONTENT_TABLE_ID 500
 #define ASSET_PAYLOAD "ASSET-PAYLOAD"
 
 namespace Fyrion
 {
+#if FY_ASSET_REFACTOR
     MenuItemContext ProjectBrowserWindow::s_menuItemContext = {};
 
     ProjectBrowserWindow::ProjectBrowserWindow() : m_assetTree(Editor::GetAssetTree())
@@ -561,6 +556,10 @@ namespace Fyrion
     {
         Registry::Type<ProjectBrowserWindow, EditorWindow>();
     }
+#else
+    void InitProjectBrowser()
+    {
 
-
+    }
+#endif
 }

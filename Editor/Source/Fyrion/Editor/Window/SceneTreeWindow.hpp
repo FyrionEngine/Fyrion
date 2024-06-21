@@ -2,16 +2,18 @@
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Editor/EditorTypes.hpp"
 #include "Fyrion/Editor/MenuItem.hpp"
-#include "Fyrion/Resource/ResourceTypes.hpp"
 
 namespace Fyrion
 {
     struct SceneObject;
-    class SceneEditor;
+    struct SceneEditor;
 
     class SceneTreeWindow : public EditorWindow
     {
     public:
+
+        FY_BASE_TYPES(EditorWindow);
+
         SceneTreeWindow();
         void Draw(u32 id, bool& open) override;
 
@@ -19,13 +21,13 @@ namespace Fyrion
         static void RegisterType(NativeTypeHandler<SceneTreeWindow>& type);
 
     private:
-        SceneEditor& m_sceneEditor;
-        String       m_searchEntity{};
-        String       m_nameCache{};
-        bool         m_renamingSelected{};
-        bool         m_entityIsSelected{};
+        SceneEditor& sceneEditor;
+        String       searchEntity{};
+        String       nameCache{};
+        bool         renamingSelected{};
+        bool         entityIsSelected{};
 
-        void        DrawSceneObject(RID object);
+        void        DrawSceneObject(SceneObject& sceneObject);
         static void OpenSceneTree(const MenuItemEventData& eventData);
         static void AddSceneObject(const MenuItemEventData& eventData);
         static void AddSceneObjectFromAsset(const MenuItemEventData& eventData);

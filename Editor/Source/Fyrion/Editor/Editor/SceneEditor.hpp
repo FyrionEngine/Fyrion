@@ -1,12 +1,11 @@
 #pragma once
 
 #include "Fyrion/Common.hpp"
-#include "Fyrion/Core/HashSet.hpp"
-#include "Fyrion/Resource/ResourceTypes.hpp"
 #include "Fyrion/Scene/SceneObject.hpp"
 
 namespace Fyrion
 {
+#if FY_ASSET_REFACTOR
     class FY_API SceneEditor final
     {
     public:
@@ -33,13 +32,54 @@ namespace Fyrion
         void          UpdateComponent(RID component, ConstPtr value);
 
     private:
-        RID          m_rootObject{};
-        RID          m_asset{};
-        String       m_rootName{};
-        HashSet<RID> m_selectedObjects{};
-        RID          m_lastSelectedRid{};
-        u64          m_count{}; //TODO this count is just for creating the object names, but it doesn't work correct.
+        // RID          m_rootObject{};
+        // RID          m_asset{};
+        // String       m_rootName{};
+        // HashSet<RID> m_selectedObjects{};
+        // RID          m_lastSelectedRid{};
+        // u64          m_count{}; //TODO this count is just for creating the object names, but it doesn't work correct.
 
-        static u64 SubObjectCount(RID rid);
+       //static u64 SubObjectCount(RID rid);
     };
+#else
+    class FY_API SceneEditor
+    {
+    public:
+        SceneObject* GetRootObject() const
+        {
+            return nullptr;
+        }
+
+        void ClearSelection()
+        {
+        }
+
+        void SelectObject(SceneObject& object)
+        {
+        }
+
+        bool IsSelected(SceneObject& object) const
+        {
+            return false;
+        }
+
+        bool IsParentOfSelected(SceneObject& object) const
+        {
+            return false;
+        }
+
+        void DestroySelectedObjects()
+        {
+        }
+
+        void CreateObject()
+        {
+        }
+
+        bool IsSimulating()
+        {
+            return false;
+        }
+    };
+#endif
 }

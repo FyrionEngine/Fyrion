@@ -3,60 +3,55 @@
 #include "Fyrion/Editor/Editor.hpp"
 #include "Fyrion/ImGui/IconsFontAwesome6.h"
 #include "Fyrion/ImGui/ImGui.hpp"
-#include "Fyrion/Resource/Repository.hpp"
-#include "Fyrion/Scene/SceneAssets.hpp"
 
 namespace Fyrion
 {
     MenuItemContext SceneTreeWindow::s_menuItemContext = {};
 
-    SceneTreeWindow::SceneTreeWindow(): m_sceneEditor(Editor::GetSceneEditor())
+    SceneTreeWindow::SceneTreeWindow(): sceneEditor(Editor::GetSceneEditor())
     {
     }
 
-    void SceneTreeWindow::DrawSceneObject(RID object)
+    void SceneTreeWindow::DrawSceneObject(SceneObject& sceneObject)
     {
-        ResourceObject read = Repository::Read(object);
-        Span<RID> children = read[SceneObjectAsset::ChildrenSort].Value<Span<RID>>();
-
 
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
 
-        bool root = m_sceneEditor.GetRootObject() == object;
+        bool root = false;
 
-        m_nameCache.Clear();
-        m_nameCache += root ? ICON_FA_CUBES : ICON_FA_CUBE;
-        m_nameCache += " ";
-        m_nameCache += root ? m_sceneEditor.GetRootName() : read[SceneObjectAsset::Name].Value<StringView>();
+        nameCache.Clear();
+        nameCache += root ? ICON_FA_CUBES : ICON_FA_CUBE;
+        nameCache += " ";
+        nameCache += sceneObject.GetName();
 
-        bool isSelected =  m_sceneEditor.IsSelected(object);
+        bool isSelected =  sceneEditor.IsSelected(sceneObject);
         auto treeFlags = isSelected ? ImGuiTreeNodeFlags_Selected | ImGuiTreeNodeFlags_SpanAllColumns : ImGuiTreeNodeFlags_SpanAllColumns;
         bool open = false;
 
-        ImGuiID treeId = static_cast<ImGuiID>(HashValue(object));
+        ImGuiID treeId = static_cast<ImGuiID>(HashValue(reinterpret_cast<usize>(&sceneObject)));
 
         if (root)
         {
             ImGui::SetNextItemOpen(true, ImGuiCond_Once);
         }
 
-        if (m_sceneEditor.IsParentOfSelected(object))
+        if (sceneEditor.IsParentOfSelected(sceneObject))
         {
             ImGui::SetNextItemOpen(true, ImGuiCond_Always);
         }
 
-        if (isSelected && m_renamingSelected)
+        if (isSelected && renamingSelected)
         {
 
         }
-        else if (children.Size() > 0)
+        else if (sceneObject.GetChildrenCount() > 0)
         {
-            open = ImGui::TreeNode(treeId, m_nameCache.CStr(), treeFlags);
+            open = ImGui::TreeNode(treeId, nameCache.CStr(), treeFlags);
         }
         else
         {
-            ImGui::TreeLeaf(treeId, m_nameCache.CStr(), treeFlags);
+            ImGui::TreeLeaf(treeId, nameCache.CStr(), treeFlags);
         }
 
         if (ImGui::BeginDragDropTarget())
@@ -75,14 +70,14 @@ namespace Fyrion
         {
             if (!(ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_LeftCtrl)) || ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_RightCtrl))))
             {
-                m_sceneEditor.ClearSelection();
+                sceneEditor.ClearSelection();
             }
-            m_sceneEditor.SelectObject(object);
+            sceneEditor.SelectObject(sceneObject);
         }
 
         if (ImGui::IsMouseReleased(ImGuiMouseButton_Right) && isHovered)
         {
-            m_entityIsSelected = true;
+            entityIsSelected = true;
         }
 
         ImGui::TableNextColumn();
@@ -93,10 +88,12 @@ namespace Fyrion
 
         if (open)
         {
-            for(RID child: children)
+
+            for(SceneObject& child: sceneObject.GetChildren())
             {
                 DrawSceneObject(child);
             }
+
             ImGui::TreePop();
         }
     }
@@ -104,7 +101,7 @@ namespace Fyrion
     void SceneTreeWindow::Draw(u32 id, bool& open)
     {
 
-        m_entityIsSelected = false;
+        entityIsSelected = false;
 
         auto& style = ImGui::GetStyle();
         auto originalWindowPadding = style.WindowPadding;
@@ -126,7 +123,7 @@ namespace Fyrion
 
             ImGui::SameLine();
             ImGui::SetNextItemWidth(-1);
-            ImGui::SearchInputText(id + 10, m_searchEntity);
+            ImGui::SearchInputText(id + 10, searchEntity);
             ImGui::EndChild();
         }
 
@@ -148,10 +145,10 @@ namespace Fyrion
                     ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 35 * style.ScaleFactor);
                     ImGui::TableHeadersRow();
 
-                    if (m_sceneEditor.IsLoaded())
+                    if (SceneObject* root = sceneEditor.GetRootObject())
                     {
                         ImGui::BeginTreeNode();
-                        DrawSceneObject(m_sceneEditor.GetRootObject());
+                        DrawSceneObject(*root);
                         ImGui::EndTreeNode();
                     }
 
@@ -174,10 +171,10 @@ namespace Fyrion
 
             if (ImGui::IsMouseReleased(ImGuiMouseButton_Right))
             {
-                if (!m_entityIsSelected)
+                if (!entityIsSelected)
                 {
-                    m_sceneEditor.ClearSelection();
-                    m_renamingSelected = false;
+                    sceneEditor.ClearSelection();
+                    renamingSelected = false;
                 }
                 openPopup = true;
             }
@@ -214,7 +211,7 @@ namespace Fyrion
 
     void SceneTreeWindow::AddSceneObject(const MenuItemEventData& eventData)
     {
-        static_cast<SceneTreeWindow*>(eventData.drawData)->m_sceneEditor.CreateObject();
+        static_cast<SceneTreeWindow*>(eventData.drawData)->sceneEditor.CreateObject();
     }
 
     void SceneTreeWindow::AddSceneObjectFromAsset(const MenuItemEventData& eventData)
@@ -235,7 +232,7 @@ namespace Fyrion
 
     void SceneTreeWindow::DeleteSceneObject(const MenuItemEventData& eventData)
     {
-        static_cast<SceneTreeWindow*>(eventData.drawData)->m_sceneEditor.DestroySelectedObjects();
+        static_cast<SceneTreeWindow*>(eventData.drawData)->sceneEditor.DestroySelectedObjects();
     }
 
     void SceneTreeWindow::RegisterType(NativeTypeHandler<SceneTreeWindow>& type)
@@ -257,6 +254,6 @@ namespace Fyrion
 
     void InitSceneTreeWindow()
     {
-        Registry::Type<SceneTreeWindow, EditorWindow>();
+        Registry::Type<SceneTreeWindow>();
     }
 }

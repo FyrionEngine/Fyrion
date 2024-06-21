@@ -1,12 +1,11 @@
 #pragma once
 
 #include "Fyrion/Editor/EditorTypes.hpp"
-#include "Fyrion/Resource/ResourceTypes.hpp"
 #include "Fyrion/Core/String.hpp"
-#include "Fyrion/Resource/AssetTree.hpp"
 #include "Fyrion/Editor/MenuItem.hpp"
 #include "Fyrion/Core/Registry.hpp"
 
+#if 0
 namespace Fyrion
 {
     class FY_API ProjectBrowserWindow : public EditorWindow
@@ -52,3 +51,4 @@ namespace Fyrion
     };
 
 }
+#endif

@@ -6,8 +6,6 @@ namespace Fyrion
 {
     constexpr const char* SceneTreePayload = "scene-tree-payload";
 
-    class AssetTree;
-
     enum class DockPosition
     {
         None = 0,

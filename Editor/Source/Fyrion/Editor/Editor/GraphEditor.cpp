@@ -1,3 +1,5 @@
+#if FY_ASSET_REFACTOR
+
 #include <algorithm>
 #include "GraphEditor.hpp"
 
@@ -569,3 +571,5 @@ namespace Fyrion
         return m_graph;
     }
 }
+
+#endif

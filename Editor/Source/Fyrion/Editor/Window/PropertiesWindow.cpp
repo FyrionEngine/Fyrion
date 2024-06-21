@@ -2,17 +2,15 @@
 
 #include "GraphEditorWindow.hpp"
 #include "imgui_internal.h"
-#include "Fyrion/Assets/AssetTypes.hpp"
 #include "Fyrion/Core/StringUtils.hpp"
 #include "Fyrion/Editor/Editor.hpp"
 #include "Fyrion/Editor/Editor/SceneEditor.hpp"
 #include "Fyrion/ImGui/IconsFontAwesome6.h"
 #include "Fyrion/ImGui/ImGui.hpp"
-#include "Fyrion/Resource/Repository.hpp"
-#include "Fyrion/Scene/SceneAssets.hpp"
 
 namespace Fyrion
 {
+#if FY_ASSET_REFACTOR
     PropertiesWindow::PropertiesWindow() : m_sceneEditor(Editor::GetSceneEditor())
     {
     }
@@ -404,4 +402,9 @@ namespace Fyrion
     {
         Registry::Type<PropertiesWindow, EditorWindow>();
     }
+#else
+    void InitPropertiesWindow()
+    {
+    }
+#endif
 }

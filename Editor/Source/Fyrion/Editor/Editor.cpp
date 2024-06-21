@@ -2,14 +2,13 @@
 
 #include "EditorTypes.hpp"
 #include "Fyrion/Engine.hpp"
+#include "Fyrion/Asset/AssetDatabase.hpp"
 #include "Fyrion/Core/Event.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Core/UniquePtr.hpp"
 #include "Fyrion/ImGui/ImGui.hpp"
 #include "Fyrion/ImGui/Lib/imgui_internal.h"
 #include "Fyrion/IO/Path.hpp"
-#include "Fyrion/Resource/AssetTree.hpp"
-#include "Fyrion/Resource/ResourceAssets.hpp"
 
 namespace Fyrion
 {
@@ -38,7 +37,7 @@ namespace Fyrion
     {
         Array<EditorWindowStorage> editorWindowStorages{};
         Array<OpenWindowStorage> openWindows{};
-        Array<RID> updatedItems{};
+        //Array<RID> updatedItems{};
 
         MenuItemContext menuContext{};
         bool dockInitialized = false;
@@ -53,7 +52,6 @@ namespace Fyrion
 
         bool forceClose{};
 
-        AssetTree assetTree{};
         UniquePtr<SceneEditor> sceneEditor{};
 
         void SaveAll();
@@ -97,12 +95,12 @@ namespace Fyrion
             }
 
             //TODO: Create a setting for that.
-            Editor::OpenProject(ResourceAssets::GetAssetRootByName("Fyrion"));
+            Editor::OpenDirectory(AssetDatabase::FindByPath<AssetDirectory>("Fyrion:/"));
 
             if (Engine::HasArgByName("projectPath"))
             {
                 String projectPath = Engine::GetArgByName("projectPath");
-                Editor::OpenProject(ResourceAssets::LoadAssetsFromDirectory(Path::Name(projectPath), Path::Join(projectPath, "Assets")));
+                Editor::OpenDirectory(AssetDatabase::LoadFromDirectory(Path::Name(projectPath), Path::Join(projectPath, "Assets")));
             }
         }
 
@@ -232,6 +230,7 @@ namespace Fyrion
 
         void ProjectUpdate()
         {
+#if FY_ASSET_REFACTOR
             if (!updatedItems.Empty())
             {
                 bool open{true};
@@ -326,15 +325,16 @@ namespace Fyrion
                     updatedItems.Clear();
                 }
             }
+#endif
         }
 
         void SaveAll()
         {
-            for (RID assetRoot: assetTree.GetAssetRoots())
-            {
-                ResourceAssets::SaveAssetsToDirectory(assetRoot, ResourceAssets::GetAbsolutePath(assetRoot));
-            }
-            assetTree.MarkDirty();
+            // for (RID assetRoot: assetTree.GetAssetRoots())
+            // {
+            //     ResourceAssets::SaveAssetsToDirectory(assetRoot, ResourceAssets::GetAbsolutePath(assetRoot));
+            // }
+            // assetTree.MarkDirty();
         }
 
         void EditorUpdate(f64 deltaTime)
@@ -355,21 +355,16 @@ namespace Fyrion
             ProjectUpdate();
         }
 
-        void EditorEndFrame()
-        {
-            assetTree.Update();
-        }
-
         void OnEditorShutdownRequest(bool* canClose)
         {
             if (forceClose) return;
 
-            assetTree.GetUpdated(updatedItems);
-            if (!updatedItems.Empty())
-            {
-                ImGui::OpenPopup("Save Content");
-                *canClose = false;
-            }
+            // assetTree.GetUpdated(updatedItems);
+            // if (!updatedItems.Empty())
+            // {
+            //     ImGui::OpenPopup("Save Content");
+            //     *canClose = false;
+            // }
         }
     }
 
@@ -385,12 +380,9 @@ namespace Fyrion
         }
     }
 
-    void Editor::OpenProject(RID rid)
+    void Editor::OpenDirectory(AssetDirectory* directory)
     {
-        if (rid)
-        {
-            assetTree.AddAssetRoot(rid);
-        }
+
     }
 
     void Editor::AddMenuItem(const MenuItemCreation& menuItem)
@@ -412,16 +404,10 @@ namespace Fyrion
 
         Event::Bind<OnInit , &InitEditor>();
         Event::Bind<OnUpdate, &EditorUpdate>();
-        Event::Bind<OnEndFrame , &EditorEndFrame>();
         Event::Bind<OnShutdown, &Shutdown>();
         Event::Bind<OnShutdownRequest, &OnEditorShutdownRequest>();
 
         CreateMenuItems();
-    }
-
-    AssetTree& Editor::GetAssetTree()
-    {
-        return assetTree;
     }
 
     SceneEditor& Editor::GetSceneEditor()

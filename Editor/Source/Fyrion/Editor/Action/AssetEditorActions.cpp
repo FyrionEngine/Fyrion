@@ -23,9 +23,41 @@ namespace Fyrion
         asset->SetName(oldName);
     }
 
+    MoveAssetAction::MoveAssetAction(Asset* asset, Asset* newDirectory)
+        : asset(asset),
+        oldDirectory(asset->GetDirectory()),
+        newDirectory(newDirectory)
+    {
+    }
+
+    void MoveAssetAction::Commit()
+    {
+        MoveToFolder(newDirectory);
+    }
+
+    void MoveAssetAction::Rollback()
+    {
+        MoveToFolder(oldDirectory);
+    }
+
+    void MoveAssetAction::MoveToFolder(Asset* directory)
+    {
+        //TODO
+    }
+
+    void MoveAssetAction::RegisterType(NativeTypeHandler<MoveAssetAction>& type)
+    {
+        type.Constructor<Asset*, Asset*>();
+    }
+
+    AssetCreationAction::AssetCreationAction(Asset* directory, TypeID typeId)
+    {
+
+    }
 
     void InitAssetEditorActions()
     {
         Registry::Type<RenameAssetAction>();
+        Registry::Type<MoveAssetAction>();
     }
 }

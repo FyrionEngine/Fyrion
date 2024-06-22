@@ -7,7 +7,7 @@ namespace Fyrion
 {
     class Asset;
 
-    class RenameAssetAction final : public EditorAction
+    class RenameAssetAction : public EditorAction
     {
     public:
 
@@ -24,5 +24,42 @@ namespace Fyrion
         Asset* asset;
         String oldName;
         String newName;
+    };
+
+
+    class MoveAssetAction : public EditorAction
+    {
+    public:
+
+        FY_BASE_TYPES(EditorAction);
+
+        MoveAssetAction(Asset* asset, Asset* newDirectory);
+
+        void Commit() override;
+        void Rollback() override;
+
+        static void RegisterType(NativeTypeHandler<MoveAssetAction>& type);
+
+    private:
+
+        void MoveToFolder(Asset* directory);
+
+        Asset* asset;
+        Asset* oldDirectory;
+        Asset* newDirectory;
+    };
+
+
+    class AssetCreationAction : public EditorAction
+    {
+    public:
+        FY_BASE_TYPES(AssetCreationAction);
+
+        AssetCreationAction(Asset* directory, TypeID typeId);
+
+        AssetCreationAction();
+
+    private:
+
     };
 }

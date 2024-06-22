@@ -444,7 +444,11 @@ namespace Fyrion
 
     void ProjectBrowserWindow::AssetNewFolder(const MenuItemEventData& eventData)
     {
-        // ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
+         ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
+         //projectBrowserWindow->m_openDirectory
+
+
+
         // RID newDirectory = projectBrowserWindow->m_assetTree.NewDirectory(projectBrowserWindow->m_openFolder, "New Folder");
         //
         // ImGui::SelectContentItem(Hash<RID>::Value(newDirectory), CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);

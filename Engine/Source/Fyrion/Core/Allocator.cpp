@@ -4,6 +4,7 @@
 
 #include <cpptrace/cpptrace.hpp>
 #include <unordered_map>
+#include <mutex>
 
 namespace Fyrion
 {

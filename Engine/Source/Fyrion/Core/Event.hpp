@@ -67,7 +67,7 @@ namespace Fyrion
         }
 
 
-        void Reset();
+        FY_API void Reset();
     }
 
 

@@ -9,6 +9,7 @@
 #include <shellapi.h>
 
 namespace Fyrion
+{
 
     void Platform::ShowInExplorer(const StringView& path)
     {

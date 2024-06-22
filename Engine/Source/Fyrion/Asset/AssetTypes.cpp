@@ -17,6 +17,17 @@ namespace Fyrion
         type.Field<&AssetDirectory::children>("children");
     }
 
+    void AssetDirectory::BuildPath()
+    {
+        Asset::BuildPath();
+
+        for(Asset* child: children.GetOwnedObjects())
+        {
+            child->BuildPath();
+        }
+
+    }
+
     void UIFontAsset::RegisterType(NativeTypeHandler<UIFontAsset>& type)
     {
         type.Field<&UIFontAsset::fontBytes>("fontBytes");

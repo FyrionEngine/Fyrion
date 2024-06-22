@@ -46,6 +46,7 @@ namespace Fyrion
             if (Type** it = FindFirst(objects.begin(), objects.end(), object))
             {
                 objects.Erase(it);
+                object->subobjectOf = nullptr;
             }
         }
 
@@ -232,19 +233,14 @@ namespace Fyrion
     };
 
 
-
     class FY_API Asset
     {
     public:
         virtual ~Asset() = default;
 
-        virtual void Load()
-        {
-        }
+        virtual void Load() {}
 
-        virtual void Unload()
-        {
-        }
+        virtual void Unload() {}
 
         UUID GetUniqueId() const
         {
@@ -276,27 +272,35 @@ namespace Fyrion
             return path;
         }
 
-        void SetPath(StringView p_path);
         void SetName(StringView p_name);
+        void SetDirectory(Asset* p_directory);
 
-        static void RegisterType(NativeTypeHandler<Asset>& type);
+        bool IsActive() const
+        {
+            return active;
+        }
+
+        void SetActive(bool p_active)
+        {
+            active = p_active;
+        }
+
+        AssetDirectory* GetDirectory() const
+        {
+            return directory;
+        }
+
+        bool IsParentOf(Asset* asset) const;
+
 
         friend class AssetDatabase;
 
         template <typename Type>
         friend class Subobject;
 
-        bool IsAlive()
-        {
-            return true;
-        }
+        static void RegisterType(NativeTypeHandler<Asset>& type);
 
-        Asset* GetDirectory() const
-        {
-            return directory;
-        }
-
-        bool IsParentOf(Asset* asset) const;
+        virtual void BuildPath();
 
     private:
         UUID            uniqueId{};
@@ -308,9 +312,9 @@ namespace Fyrion
         u64             loadedVersion{};
         String          name{};
         String          absolutePath{};
-        Asset*          directory{};
+        AssetDirectory* directory{};
+        bool            active = true;
 
-        void SetDirectory(AssetDirectory* p_directory);
-        void BuildPath();
+        void ValidateName();
     };
 }

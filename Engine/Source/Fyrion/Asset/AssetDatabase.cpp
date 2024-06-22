@@ -130,7 +130,6 @@ namespace Fyrion
     {
         if (destroySubobjects)
         {
-
             if (asset->subobjectOf)
             {
                 SubobjectApi api = asset->subobjectOf->GetApi();
@@ -151,7 +150,7 @@ namespace Fyrion
 
                     if (TypeHandler* typeHandler = Registry::FindTypeById(typeId))
                     {
-                        usize count = subobjectApi.GetOwnedObjectsCount(ptr);
+                        usize          count = subobjectApi.GetOwnedObjectsCount(ptr);
                         Array<VoidPtr> subObjects(count);
                         subobjectApi.GetOwnedObjects(ptr, subObjects);
 
@@ -165,7 +164,6 @@ namespace Fyrion
                             {
                                 typeHandler->Destroy(subobject);
                             }
-
                         }
                     }
                 }
@@ -189,7 +187,8 @@ namespace Fyrion
 
         AssetDirectory* assetDirectory = Create<AssetDirectory>();
         assetDirectory->SetName(name);
-        assetDirectory->SetPath(String(name) + ":/");
+        assetDirectory->path = String(name) + ":/";
+        assetsByPath.Insert(assetDirectory->path, assetDirectory);
 
         for (const auto& entry : DirectoryEntries{directory})
         {
@@ -209,7 +208,6 @@ namespace Fyrion
             AssetDirectory* assetDirectory = Create<AssetDirectory>();
             assetDirectory->SetDirectory(parentDirectory);
             assetDirectory->SetName(Path::Name(filePath));
-            parentDirectory->children.Add(assetDirectory);
 
             for (const auto& entry : DirectoryEntries{filePath})
             {
@@ -229,7 +227,6 @@ namespace Fyrion
                     asset->SetName(Path::Name(filePath) + Path::Extension(filePath));
                 }
                 asset->SetDirectory(parentDirectory);
-                parentDirectory->children.Add(asset);
             }
         }
     }
@@ -245,9 +242,7 @@ namespace Fyrion
         return nullptr;
     }
 
-    void AssetDatabaseInit()
-    {
-    }
+    void AssetDatabaseInit() {}
 
     void AssetDatabaseShutdown()
     {

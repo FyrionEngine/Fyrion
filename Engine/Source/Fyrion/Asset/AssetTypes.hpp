@@ -20,13 +20,17 @@ namespace Fyrion
     };
 
 
-    struct AssetDirectory final : Asset
+    class AssetDirectory final : public Asset
     {
+    public:
         FY_BASE_TYPES(Asset);
 
         Subobject<Asset> children;
 
         static void RegisterType(NativeTypeHandler<AssetDirectory>& type);
+
+    protected:
+        void BuildPath() override;
     };
 
     struct UIFontAsset final : Asset

@@ -9,14 +9,42 @@ namespace Fyrion
     {
         if (directory != nullptr && !name.Empty())
         {
-            SetPath(String().Append(directory->GetPath()).Append("/").Append(name));
+            ValidateName();
+            String newPath = String().Append(directory->GetPath()).Append("/").Append(name);
+            AssetDatabaseUpdatePath(this, path, newPath);
+            path = newPath;
         }
     }
 
-    void Asset::SetPath(StringView p_path)
+    void Asset::ValidateName()
     {
-        AssetDatabaseUpdatePath(this, path, p_path);
-        path = p_path;
+        u32    count{};
+        String finalName = name;
+        bool   nameFound;
+        do
+        {
+            nameFound = true;
+            for (Asset* child : directory->children.GetOwnedObjects())
+            {
+                if (child == this) continue;
+
+                if (finalName == child->name)
+                {
+                    finalName = name;
+                    finalName += " (";
+                    finalName.Append(++count);
+                    finalName += ")";
+                    nameFound = false;
+                    break;
+                }
+            }
+        }
+        while (!nameFound);
+
+        if (name != finalName)
+        {
+            name = finalName;
+        }
     }
 
     void Asset::SetName(StringView p_name)
@@ -25,9 +53,14 @@ namespace Fyrion
         BuildPath();
     }
 
-    void Asset::SetDirectory(AssetDirectory* p_directory)
+    void Asset::SetDirectory(Asset* p_directory)
     {
-        directory = p_directory;
+        if (directory)
+        {
+            directory->children.Remove(this);
+        }
+        directory = dynamic_cast<AssetDirectory*>(p_directory);
+        directory->children.Add(this);
         BuildPath();
     }
 
@@ -47,7 +80,5 @@ namespace Fyrion
         return false;
     }
 
-    void Asset::RegisterType(NativeTypeHandler<Asset>& type)
-    {
-    }
+    void Asset::RegisterType(NativeTypeHandler<Asset>& type) {}
 }

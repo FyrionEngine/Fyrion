@@ -112,35 +112,33 @@ namespace Fyrion
 
     void ProjectBrowserWindow::DrawPathItems()
     {
-#if 0
-        m_folderCache.Clear();
-
-        AssetNode* openFolderNode = m_assetTree.GetNode(m_openFolder);
-        RID nextFolder = {};
+        if (!m_openDirectory) return;
+        directoryCache.Clear();
 
         {
-            AssetNode* drawItem = openFolderNode;
-            while (drawItem != nullptr)
+            AssetDirectory* item = m_openDirectory;
+            while (item != nullptr)
             {
-                m_folderCache.EmplaceBack(drawItem);
-                drawItem = drawItem->parent;
+                directoryCache.EmplaceBack(item);
+                item = item->GetDirectory();
             }
         }
 
-        for (usize i = m_folderCache.Size(); i > 0; --i)
-        {
-            AssetNode* drawItem = m_folderCache[i - 1];
+        AssetDirectory* nextDirectory = nullptr;
 
-            String name = drawItem->name;
-            if (ImGui::Button(name.CStr()))
+        for (usize i = directoryCache.Size(); i > 0; --i)
+        {
+            AssetDirectory* drawItem = directoryCache[i - 1];
+
+            if (ImGui::Button(drawItem->GetName().CStr()))
             {
-                nextFolder = drawItem->rid;
+                nextDirectory = drawItem;
             }
 
             if (i > 1)
             {
                 bool openPopup = false;
-                ImGui::PushID((i32) Hash<RID>::Value(drawItem->rid));
+                ImGui::PushID(static_cast<int>(reinterpret_cast<usize>(drawItem)));
                 if (ImGui::Button(ICON_FA_ARROW_RIGHT))
                 {
                     openPopup = true;
@@ -149,33 +147,32 @@ namespace Fyrion
 
                 if (openPopup)
                 {
-                    m_popupFolder = drawItem->rid;
+                    m_popupFolder = drawItem;
                     ImGui::OpenPopup("select-folder-browser-popup");
                 }
             }
         }
 
-        if (nextFolder)
+        if (nextDirectory)
         {
-            SetOpenFolder(nextFolder);
+            SetOpenDirectory(nextDirectory);
         }
 
         auto popupRes = ImGui::BeginPopupMenu("select-folder-browser-popup");
         if (popupRes && m_popupFolder)
         {
-            for(AssetNode* node : m_assetTree.GetNode(m_popupFolder)->nodes)
+            for (Asset* node : m_popupFolder->children.GetOwnedObjects())
             {
-                if (node->type == GetTypeID<AssetDirectory>())
+                if (AssetDirectory* assetDirectory = dynamic_cast<AssetDirectory*>(node))
                 {
-                    if (ImGui::MenuItem(node->name.CStr()))
+                    if (ImGui::MenuItem(assetDirectory->GetName().CStr()))
                     {
-                        SetOpenFolder(node->rid);
+                        SetOpenDirectory(assetDirectory);
                     }
                 }
             }
         }
         ImGui::EndPopupMenu(popupRes);
-#endif
     }
 
     void ProjectBrowserWindow::Draw(u32 id, bool& open)

@@ -64,6 +64,16 @@ namespace Fyrion
         BuildPath();
     }
 
+    void Asset::SetActive(bool p_active)
+    {
+        const bool changed = active != p_active;
+        active = p_active;
+        if (changed)
+        {
+            OnActiveChanged();
+        }
+    }
+
     bool Asset::IsParentOf(Asset* asset) const
     {
         if (asset == this) return false;

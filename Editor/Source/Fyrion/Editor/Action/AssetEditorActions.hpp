@@ -37,7 +37,7 @@ namespace Fyrion
     public:
         FY_BASE_TYPES(EditorAction);
 
-        MoveAssetAction(Asset* asset, Asset* newDirectory);
+        MoveAssetAction(Asset* asset, AssetDirectory* newDirectory);
 
         void Commit() override;
         void Rollback() override;
@@ -45,20 +45,20 @@ namespace Fyrion
         static void RegisterType(NativeTypeHandler<MoveAssetAction>& type);
 
     private:
-        void MoveToFolder(Asset* directory);
+        void MoveToFolder(Asset* directory) const;
 
-        Asset* asset;
-        Asset* oldDirectory;
-        Asset* newDirectory;
+        Asset*          asset;
+        AssetDirectory* oldDirectory;
+        AssetDirectory* newDirectory;
     };
 
 
-    class AssetCreationAction : public EditorAction
+    class AssetCreateAction : public EditorAction
     {
     public:
         FY_BASE_TYPES(EditorAction);
 
-        AssetCreationAction(AssetDirectory* directory, TypeID typeId);
+        AssetCreateAction(AssetDirectory* directory, TypeID typeId);
 
         void Commit() override;
         void Rollback() override;
@@ -68,11 +68,28 @@ namespace Fyrion
             return newAsset;
         }
 
-        static void RegisterType(NativeTypeHandler<AssetCreationAction>& type);
+        static void RegisterType(NativeTypeHandler<AssetCreateAction>& type);
 
-        ~AssetCreationAction() override;
+        ~AssetCreateAction() override;
 
     private:
         Asset* newAsset;
+    };
+
+    class AssetDeleteAction : public EditorAction
+    {
+    public:
+        FY_BASE_TYPES(EditorAction);
+        AssetDeleteAction(Asset* asset);
+
+        void Commit() override;
+        void Rollback() override;
+
+        ~AssetDeleteAction() override;
+
+        static void RegisterType(NativeTypeHandler<AssetDeleteAction>& type);
+
+    private:
+        Asset* asset;
     };
 }

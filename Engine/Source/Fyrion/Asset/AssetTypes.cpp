@@ -20,12 +20,18 @@ namespace Fyrion
     void AssetDirectory::BuildPath()
     {
         Asset::BuildPath();
-
-        for(Asset* child: children.GetOwnedObjects())
+        for (Asset* child : children.GetOwnedObjects())
         {
             child->BuildPath();
         }
+    }
 
+    void AssetDirectory::OnActiveChanged()
+    {
+        for (Asset* child : children.GetOwnedObjects())
+        {
+            child->SetActive(IsActive());
+        }
     }
 
     void UIFontAsset::RegisterType(NativeTypeHandler<UIFontAsset>& type)

@@ -77,7 +77,7 @@ namespace Fyrion
         {
             if (m_movingItem != nullptr && !asset->IsParentOf(m_movingItem) && ImGui::AcceptDragDropPayload(ASSET_PAYLOAD))
             {
-                //m_movingItem->Move(directory, Editor::CreateTransaction());
+                Editor::CreateTransaction()->CreateAction<MoveAssetAction>(m_movingItem, directory)->Commit();
             }
             ImGui::EndDragDropTarget();
         }
@@ -327,7 +327,7 @@ namespace Fyrion
 
                                 if (ImGui::ContentItemAcceptPayload(contentItem.ItemId))
                                 {
-                                    // asset->Move(m_movingItem, Editor::CreateTransaction());
+                                    Editor::CreateTransaction()->CreateAction<MoveAssetAction>(m_movingItem, dynamic_cast<AssetDirectory*>(asset))->Commit();
                                 }
 
                                 if (ImGui::ContentItemBeginPayload(contentItem.ItemId))
@@ -379,8 +379,6 @@ namespace Fyrion
                                 if (ImGui::ContentItemRenamed(contentItem.ItemId))
                                 {
                                     Editor::CreateTransaction()->CreateAction<RenameAssetAction>(asset, ImGui::ContentRenameString());
-
-                                    //asset->Rename(ImGui::ContentRenameString(), Editor::CreateTransaction());
                                 }
 
                                 if (ImGui::ContentItemBeginPayload(contentItem.ItemId))
@@ -396,7 +394,7 @@ namespace Fyrion
                     {
                         if (ImGui::IsKeyPressed(ImGuiKey_Backspace) && m_openDirectory)
                         {
-                            selectedDiretory = static_cast<AssetDirectory*>(m_openDirectory->GetDirectory());
+                            selectedDiretory = m_openDirectory->GetDirectory();
                         }
                     }
                 }
@@ -443,7 +441,7 @@ namespace Fyrion
     void ProjectBrowserWindow::AssetNewFolder(const MenuItemEventData& eventData)
     {
         ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
-        AssetCreationAction*  assetCreationAction = Editor::CreateTransaction()->CreateAction<AssetCreationAction>(projectBrowserWindow->m_openDirectory, GetTypeID<AssetDirectory>());
+        AssetCreateAction*    assetCreationAction = Editor::CreateTransaction()->CreateAction<AssetCreateAction>(projectBrowserWindow->m_openDirectory, GetTypeID<AssetDirectory>());
         assetCreationAction->Commit();
         ImGui::SelectContentItem(reinterpret_cast<usize>(assetCreationAction->GetNewAsset()), CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
         ImGui::RenameContentSelected(CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
@@ -460,9 +458,9 @@ namespace Fyrion
 
     void ProjectBrowserWindow::AssetDelete(const MenuItemEventData& eventData)
     {
-        // ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
-        // projectBrowserWindow->m_assetTree.Delete(projectBrowserWindow->m_selectedItem);
-        // projectBrowserWindow->m_selectedItem = {};
+        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
+        Editor::CreateTransaction()->CreateAction<AssetDeleteAction>(projectBrowserWindow->m_selectedItem)->Commit();
+        projectBrowserWindow->m_selectedItem = {};
     }
 
     bool ProjectBrowserWindow::CheckSelectedAsset(const MenuItemEventData& eventData)
@@ -479,13 +477,12 @@ namespace Fyrion
 
     void ProjectBrowserWindow::AssetShowInExplorer(const MenuItemEventData& eventData)
     {
-        // ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
-        // RID itemToShow = projectBrowserWindow->m_selectedItem ? projectBrowserWindow->m_selectedItem : projectBrowserWindow->m_openFolder;
-        // StringView path = ResourceAssets::GetAbsolutePath(itemToShow);
-        // if (!path.Empty())
-        // {
-        //     Platform::ShowInExplorer(path);
-        // }
+        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
+        Asset*                itemToShow = projectBrowserWindow->m_selectedItem ? projectBrowserWindow->m_selectedItem : projectBrowserWindow->m_openDirectory;
+        if (itemToShow != nullptr)
+        {
+            Platform::ShowInExplorer(itemToShow->GetAbsolutePath());
+        }
     }
 
     void ProjectBrowserWindow::AssetNewResourceGraph(const MenuItemEventData& eventData)

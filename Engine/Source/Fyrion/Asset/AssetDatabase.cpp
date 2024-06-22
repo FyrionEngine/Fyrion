@@ -188,6 +188,7 @@ namespace Fyrion
         AssetDirectory* assetDirectory = Create<AssetDirectory>();
         assetDirectory->SetName(name);
         assetDirectory->path = String(name) + ":/";
+        assetDirectory->absolutePath = directory;
         assetsByPath.Insert(assetDirectory->path, assetDirectory);
 
         for (const auto& entry : DirectoryEntries{directory})
@@ -208,6 +209,7 @@ namespace Fyrion
             AssetDirectory* assetDirectory = Create<AssetDirectory>();
             assetDirectory->SetDirectory(parentDirectory);
             assetDirectory->SetName(Path::Name(filePath));
+            assetDirectory->absolutePath = filePath;
 
             for (const auto& entry : DirectoryEntries{filePath})
             {
@@ -226,6 +228,7 @@ namespace Fyrion
                 {
                     asset->SetName(Path::Name(filePath) + Path::Extension(filePath));
                 }
+                asset->absolutePath = filePath;
                 asset->SetDirectory(parentDirectory);
             }
         }

@@ -272,6 +272,11 @@ namespace Fyrion
             return path;
         }
 
+        StringView GetAbsolutePath() const
+        {
+            return absolutePath;
+        }
+
         void SetName(StringView p_name);
         void SetDirectory(Asset* p_directory);
 
@@ -280,10 +285,7 @@ namespace Fyrion
             return active;
         }
 
-        void SetActive(bool p_active)
-        {
-            active = p_active;
-        }
+        void SetActive(bool p_active);
 
         AssetDirectory* GetDirectory() const
         {
@@ -301,6 +303,7 @@ namespace Fyrion
         static void RegisterType(NativeTypeHandler<Asset>& type);
 
         virtual void BuildPath();
+        virtual void OnActiveChanged() {}
 
     private:
         UUID            uniqueId{};

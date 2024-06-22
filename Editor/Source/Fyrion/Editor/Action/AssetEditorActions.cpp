@@ -22,7 +22,7 @@ namespace Fyrion
         asset->SetName(oldName);
     }
 
-    MoveAssetAction::MoveAssetAction(Asset* asset, Asset* newDirectory)
+    MoveAssetAction::MoveAssetAction(Asset* asset, AssetDirectory* newDirectory)
         : asset(asset),
           oldDirectory(asset->GetDirectory()),
           newDirectory(newDirectory) {}
@@ -37,34 +37,34 @@ namespace Fyrion
         MoveToFolder(oldDirectory);
     }
 
-    void MoveAssetAction::MoveToFolder(Asset* directory)
+    void MoveAssetAction::MoveToFolder(Asset* directory) const
     {
-        //TODO
+        asset->SetDirectory(directory);
     }
 
     void MoveAssetAction::RegisterType(NativeTypeHandler<MoveAssetAction>& type)
     {
-        type.Constructor<Asset*, Asset*>();
+        type.Constructor<Asset*, AssetDirectory*>();
     }
 
-    AssetCreationAction::AssetCreationAction(AssetDirectory* directory, TypeID typeId)
+    AssetCreateAction::AssetCreateAction(AssetDirectory* directory, TypeID typeId)
     {
         newAsset = AssetDatabase::Create(typeId);
         newAsset->SetName("New Folder");
         newAsset->SetDirectory(directory);
     }
 
-    void AssetCreationAction::Commit()
+    void AssetCreateAction::Commit()
     {
         newAsset->SetActive(true);
     }
 
-    void AssetCreationAction::Rollback()
+    void AssetCreateAction::Rollback()
     {
         newAsset->SetActive(false);
     }
 
-    AssetCreationAction::~AssetCreationAction()
+    AssetCreateAction::~AssetCreateAction()
     {
         if (!newAsset->IsActive())
         {
@@ -72,15 +72,41 @@ namespace Fyrion
         }
     }
 
-    void AssetCreationAction::RegisterType(NativeTypeHandler<AssetCreationAction>& type)
+    void AssetCreateAction::RegisterType(NativeTypeHandler<AssetCreateAction>& type)
     {
         type.Constructor<AssetDirectory*, TypeID>();
+    }
+
+    AssetDeleteAction::AssetDeleteAction(Asset* asset) : asset(asset) {}
+
+    void AssetDeleteAction::Commit()
+    {
+        asset->SetActive(false);
+    }
+
+    void AssetDeleteAction::Rollback()
+    {
+        asset->SetActive(true);
+    }
+
+    AssetDeleteAction::~AssetDeleteAction()
+    {
+        if (!asset->IsActive())
+        {
+            AssetDatabase::Destroy(asset);
+        }
+    }
+
+    void AssetDeleteAction::RegisterType(NativeTypeHandler<AssetDeleteAction>& type)
+    {
+        type.Constructor<Asset*>();
     }
 
     void InitAssetEditorActions()
     {
         Registry::Type<RenameAssetAction>();
         Registry::Type<MoveAssetAction>();
-        Registry::Type<AssetCreationAction>();
+        Registry::Type<AssetCreateAction>();
+        Registry::Type<AssetDeleteAction>();
     }
 }

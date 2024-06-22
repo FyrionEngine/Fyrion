@@ -149,9 +149,9 @@ namespace Fyrion
             bool shiftHolding = ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_LeftShift)) || ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_RightShift));
             bool altHolding = ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_LeftAlt)) || ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_RightAlt));
 
-            bool ctrlState = (context->m_itemShortcut.ctrl && ctrlHolding) || !context->m_itemShortcut.ctrl;
-            bool shitState = (context->m_itemShortcut.shift && shiftHolding) || !context->m_itemShortcut.shift;
-            bool altState = (context->m_itemShortcut.alt && altHolding) || !context->m_itemShortcut.alt;
+            bool ctrlState = (context->m_itemShortcut.ctrl && ctrlHolding) || (!context->m_itemShortcut.ctrl && !ctrlHolding);
+            bool shitState = (context->m_itemShortcut.shift && shiftHolding) || (!context->m_itemShortcut.shift && !shiftHolding);
+            bool altState = (context->m_itemShortcut.alt && altHolding) || (!context->m_itemShortcut.alt && !altHolding);
 
             bool keyPressed = ImGui::IsKeyPressed(ImGui::GetImGuiKey(context->m_itemShortcut.presKey));
             if (keyPressed && ctrlState && shitState && altState)

@@ -126,7 +126,7 @@ namespace Fyrion
         return asset;
     }
 
-    void AssetDatabase::Destroy(Asset* asset, AssetTransaction* transaction, bool destroySubobjects)
+    void AssetDatabase::Destroy(Asset* asset, bool destroySubobjects)
     {
         if (destroySubobjects)
         {
@@ -159,7 +159,7 @@ namespace Fyrion
                         {
                             if (Asset* asset = typeHandler->Cast<Asset>(subobject))
                             {
-                                Destroy(asset, transaction);
+                                Destroy(asset);
                             }
                             else
                             {
@@ -222,7 +222,7 @@ namespace Fyrion
         }
         else if (auto importer = importers.Find(extension))
         {
-            if (Asset* asset = importer->second->ImportAsset(filePath, nullptr, nullptr))
+            if (Asset* asset = importer->second->ImportAsset(filePath, nullptr))
             {
                 if (asset->GetName().Empty())
                 {
@@ -240,9 +240,9 @@ namespace Fyrion
         return nullptr;
     }
 
-    void AssetDatabase::ImportAsset(AssetDirectory* directory, const StringView& path, AssetTransaction* transaction)
+    Asset* AssetDatabase::ImportAsset(AssetDirectory* directory, const StringView& path)
     {
-
+        return nullptr;
     }
 
     void AssetDatabaseInit()
@@ -254,7 +254,7 @@ namespace Fyrion
         isShutdown = true;
         for (auto& it : assetsById)
         {
-            AssetDatabase::Destroy(it.second, nullptr, false);
+            AssetDatabase::Destroy(it.second, false);
         }
         isShutdown = false;
 

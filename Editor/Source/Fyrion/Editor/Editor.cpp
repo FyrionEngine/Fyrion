@@ -1,6 +1,7 @@
 #include "Editor.hpp"
 
 #include "EditorTypes.hpp"
+#include "Action/EditorAction.hpp"
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Asset/AssetDatabase.hpp"
 #include "Fyrion/Core/Event.hpp"
@@ -17,6 +18,7 @@ namespace Fyrion
     void InitSceneViewWindow();
     void InitSceneTreeWindow();
     void InitGraphEditorWindow();
+    void InitEditorAction();
 
     struct EditorWindowStorage
     {
@@ -55,8 +57,8 @@ namespace Fyrion
         UniquePtr<SceneEditor> sceneEditor{};
         Array<AssetDirectory*> directories{};
 
-        Array<SharedPtr<AssetTransaction>> undoActions{};
-        Array<SharedPtr<AssetTransaction>> redoActions{};
+        Array<SharedPtr<EditorTransaction>> undoActions{};
+        Array<SharedPtr<EditorTransaction>> redoActions{};
 
         void SaveAll();
 
@@ -137,8 +139,8 @@ namespace Fyrion
 
         void Undo(const MenuItemEventData& eventData)
         {
-            SharedPtr<AssetTransaction> action = undoActions.Back();
-            action->Undo();
+            SharedPtr<EditorTransaction> action = undoActions.Back();
+            action->Rollback();
             redoActions.EmplaceBack(action);
             undoActions.PopBack();
         }
@@ -150,8 +152,8 @@ namespace Fyrion
 
         void Redo(const MenuItemEventData& eventData)
         {
-            SharedPtr<AssetTransaction> action = redoActions.Back();
-            action->Redo();
+            SharedPtr<EditorTransaction> action = redoActions.Back();
+            action->Commit();
 
             redoActions.PopBack();
             undoActions.EmplaceBack(action);
@@ -437,11 +439,12 @@ namespace Fyrion
         return *sceneEditor.Get();
     }
 
-    AssetTransaction* Editor::CreateTransaction()
+    EditorTransaction* Editor::CreateTransaction()
     {
         redoActions.Clear();
-        return undoActions.EmplaceBack(MakeShared<AssetTransaction>()).Get();
+        return undoActions.EmplaceBack(MakeShared<EditorTransaction>()).Get();
     }
+
 
     void Editor::AddMenuItem(const MenuItemCreation& menuItem)
     {
@@ -454,6 +457,7 @@ namespace Fyrion
 
         Registry::Type<EditorWindow>();
 
+        InitEditorAction();
         InitProjectBrowser();
         InitSceneTreeWindow();
         InitSceneViewWindow();

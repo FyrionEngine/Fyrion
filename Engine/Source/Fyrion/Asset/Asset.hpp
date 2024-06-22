@@ -231,26 +231,6 @@ namespace Fyrion
         }
     };
 
-    struct AssetTransactionAction
-    {
-        virtual ~AssetTransactionAction() = default;
-
-        virtual void Undo() = 0;
-        virtual void Redo() = 0;
-    };
-
-
-
-    class FY_API AssetTransaction
-    {
-    public:
-        void AddRename(Asset* asset, StringView oldName, StringView newName);
-
-        void Undo();
-        void Redo();
-    private:
-        Array<SharedPtr<AssetTransactionAction>> actions;
-    };
 
 
     class FY_API Asset
@@ -317,9 +297,6 @@ namespace Fyrion
         }
 
         bool IsParentOf(Asset* asset) const;
-
-        void Rename(const StringView& newName, AssetTransaction* transaction);
-        void Move(Asset* newDirectory, AssetTransaction* transaction);
 
     private:
         UUID            uniqueId{};

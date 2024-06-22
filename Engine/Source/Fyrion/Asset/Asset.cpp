@@ -3,31 +3,6 @@
 
 namespace Fyrion
 {
-    struct RenameTransactionAction : AssetTransactionAction
-    {
-        Asset* asset;
-        String oldName;
-        String newName;
-
-        RenameTransactionAction(Asset* asset, const String& oldName, const String& newName)
-            : asset(asset),
-              oldName(oldName),
-              newName(newName)
-        {
-        }
-
-        void Undo() override
-        {
-            asset->SetName(oldName);
-        }
-
-        void Redo() override
-        {
-            asset->SetName(newName);
-        }
-    };
-
-
     void AssetDatabaseUpdatePath(Asset* asset, const StringView& oldPath, const StringView& newPath);
 
     void Asset::BuildPath()
@@ -35,27 +10,6 @@ namespace Fyrion
         if (directory != nullptr && !name.Empty())
         {
             SetPath(String().Append(directory->GetPath()).Append("/").Append(name));
-        }
-    }
-
-    void AssetTransaction::AddRename(Asset* asset,StringView oldName, StringView newName)
-    {
-        actions.EmplaceBack(MakeShared<RenameTransactionAction>(asset, oldName, newName));
-    }
-
-    void AssetTransaction::Undo()
-    {
-        for(const auto& action : actions)
-        {
-            action->Undo();
-        }
-    }
-
-    void AssetTransaction::Redo()
-    {
-        for(const auto& action : actions)
-        {
-            action->Redo();
         }
     }
 
@@ -91,19 +45,6 @@ namespace Fyrion
             return directory->IsParentOf(asset);
         }
         return false;
-    }
-
-    void Asset::Rename(const StringView& newName, AssetTransaction* transaction)
-    {
-        if (transaction)
-        {
-            transaction->AddRename(this, GetName(), newName);
-        }
-        SetName(newName);
-    }
-
-    void Asset::Move(Asset* newDirectory, AssetTransaction* transaction)
-    {
     }
 
     void Asset::RegisterType(NativeTypeHandler<Asset>& type)

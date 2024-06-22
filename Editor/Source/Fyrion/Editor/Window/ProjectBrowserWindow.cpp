@@ -10,6 +10,7 @@
 #include "Fyrion/Platform/Platform.hpp"
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Asset/AssetDatabase.hpp"
+#include "Fyrion/Editor/Action/AssetEditorActions.hpp"
 
 #define CONTENT_TABLE_ID 500
 #define ASSET_PAYLOAD "ASSET-PAYLOAD"
@@ -76,7 +77,7 @@ namespace Fyrion
         {
             if (m_movingItem != nullptr && !asset->IsParentOf(m_movingItem) && ImGui::AcceptDragDropPayload(ASSET_PAYLOAD))
             {
-                m_movingItem->Move(directory, Editor::CreateTransaction());
+                //m_movingItem->Move(directory, Editor::CreateTransaction());
             }
             ImGui::EndDragDropTarget();
         }
@@ -211,7 +212,7 @@ namespace Fyrion
                     {
                         for (const String& path : paths)
                         {
-                            AssetDatabase::ImportAsset(m_openDirectory, path, Editor::CreateTransaction());
+                            AssetDatabase::ImportAsset(m_openDirectory, path);
                         }
                     }
                 }
@@ -323,12 +324,12 @@ namespace Fyrion
 
                                 if (ImGui::ContentItemRenamed(contentItem.ItemId))
                                 {
-                                    asset->Rename(ImGui::ContentRenameString(), Editor::CreateTransaction());
+                                    Editor::CreateTransaction()->CreateAction<RenameAssetAction>(asset, ImGui::ContentRenameString())->Commit();
                                 }
 
                                 if (ImGui::ContentItemAcceptPayload(contentItem.ItemId))
                                 {
-                                    asset->Move(m_movingItem, Editor::CreateTransaction());
+                                   // asset->Move(m_movingItem, Editor::CreateTransaction());
                                 }
 
                                 if (ImGui::ContentItemBeginPayload(contentItem.ItemId))
@@ -379,7 +380,9 @@ namespace Fyrion
 
                                 if (ImGui::ContentItemRenamed(contentItem.ItemId))
                                 {
-                                    asset->Rename(ImGui::ContentRenameString(), Editor::CreateTransaction());
+                                    Editor::CreateTransaction()->CreateAction<RenameAssetAction>(asset, ImGui::ContentRenameString());
+
+                                    //asset->Rename(ImGui::ContentRenameString(), Editor::CreateTransaction());
                                 }
 
                                 if (ImGui::ContentItemBeginPayload(contentItem.ItemId))

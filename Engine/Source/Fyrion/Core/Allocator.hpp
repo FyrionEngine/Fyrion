@@ -13,9 +13,9 @@ namespace Fyrion
 
     enum AllocatorOptions_
     {
-        AllocatorOptions_Verbose    = 1 << 0,
-        AllocatorOptions_ShowStats  = 1 << 1,
-        AllocatorOptions_ShowErrors = 1 << 2,
+        AllocatorOptions_Verbose           = 1 << 0,
+        AllocatorOptions_ShowStats         = 1 << 1,
+        AllocatorOptions_ShowErrors        = 1 << 2,
         AllocatorOptions_DetectMemoryLeaks = 1 << 3,
         AllocatorOptions_CaptureStackTrace = 1 << 4
     };
@@ -24,8 +24,11 @@ namespace Fyrion
 
     struct FY_API Allocator
     {
+        virtual ~Allocator() = default;
+
         virtual VoidPtr MemAlloc(usize bytes, usize alignment) = 0;
         virtual void    MemFree(VoidPtr ptr) = 0;
+        virtual VoidPtr MemRealloc(VoidPtr ptr, usize newSize) = 0;
 
         template <typename Type, typename... Args>
         Type* Alloc(Args&&... args)
@@ -50,10 +53,11 @@ namespace Fyrion
         }
     };
 
-    struct FY_API HeapAllocator : Allocator
+    struct FY_API GeneralPurposeAllocator : Allocator
     {
         VoidPtr MemAlloc(usize bytes, usize alignment) override;
         void    MemFree(VoidPtr ptr) override;
+        VoidPtr MemRealloc(VoidPtr ptr, usize newSize) override;
     };
 
     namespace MemoryGlobals

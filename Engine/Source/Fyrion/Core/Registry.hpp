@@ -9,6 +9,7 @@
 #include "SharedPtr.hpp"
 #include "HashMap.hpp"
 #include "Span.hpp"
+#include "Serialization.hpp"
 
 namespace Fyrion
 {
@@ -323,6 +324,9 @@ namespace Fyrion
         Span<DerivedType>               GetDerivedTypes() const;
         Array<TypeID>                   GetBaseTypes() const;
         bool                            IsDerivedFrom(TypeID typeId) const;
+
+
+        void Serialize();
 
 
         StringView          GetName() const;

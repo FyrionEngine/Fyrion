@@ -49,7 +49,7 @@ namespace Fyrion
         }
     }
 
-    VoidPtr HeapAllocator::MemAlloc(usize bytes, usize alignment)
+    VoidPtr GeneralPurposeAllocator::MemAlloc(usize bytes, usize alignment)
     {
         VoidPtr ptr = mi_malloc_aligned(bytes, alignment);
 
@@ -64,7 +64,7 @@ namespace Fyrion
         return ptr;
     }
 
-    void HeapAllocator::MemFree(VoidPtr ptr)
+    void GeneralPurposeAllocator::MemFree(VoidPtr ptr)
     {
         if (captureTrace)
         {
@@ -74,6 +74,20 @@ namespace Fyrion
         }
 
         mi_free(ptr);
+    }
+
+    VoidPtr GeneralPurposeAllocator::MemRealloc(VoidPtr ptr, usize newSize)
+    {
+        VoidPtr newPtr = mi_realloc(ptr, newSize);
+        if (captureTrace)
+        {
+            usize ptrAddress = reinterpret_cast<usize>(newPtr);
+            auto  trace = cpptrace::generate_trace(1);
+            traceMutex.lock();
+            traces.insert(std::make_pair(ptrAddress, std::move(trace)));
+            traceMutex.unlock();
+        }
+        return newPtr;
     }
 
     void MemoryGlobals::SetOptions(AllocatorOptions options)
@@ -108,7 +122,7 @@ namespace Fyrion
 
     Allocator& MemoryGlobals::GetDefaultAllocator()
     {
-        static HeapAllocator defaultAllocator{};
+        static GeneralPurposeAllocator defaultAllocator{};
         return defaultAllocator;
     }
 

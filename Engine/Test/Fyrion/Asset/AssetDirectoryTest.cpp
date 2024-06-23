@@ -6,8 +6,9 @@
 #include "Fyrion/IO/FileSystem.hpp"
 #include "Fyrion/IO/Path.hpp"
 
+using namespace Fyrion;
 
-namespace Fyrion
+namespace
 {
 
     struct TxtAsset : Asset

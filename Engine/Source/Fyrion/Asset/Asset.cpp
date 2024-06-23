@@ -76,7 +76,7 @@ namespace Fyrion
 
     bool Asset::IsChildOf(Asset* parent) const
     {
-        if (parent == this) return false;
+        if (parent == this) return true;
 
         if (directory != nullptr)
         {

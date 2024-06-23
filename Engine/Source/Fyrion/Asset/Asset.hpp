@@ -46,7 +46,10 @@ namespace Fyrion
             if (Type** it = FindFirst(objects.begin(), objects.end(), object))
             {
                 objects.Erase(it);
-                object->subobjectOf = nullptr;
+                if constexpr (Traits::IsBaseOf<Asset, Type>)
+                {
+                    object->subobjectOf = nullptr;
+                }
             }
         }
 

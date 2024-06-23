@@ -292,7 +292,7 @@ namespace Fyrion
             return directory;
         }
 
-        bool IsParentOf(Asset* asset) const;
+        bool IsChildOf(Asset* parent) const;
 
 
         friend class AssetDatabase;

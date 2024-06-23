@@ -75,7 +75,7 @@ namespace Fyrion
 
         if (ImGui::BeginDragDropTarget())
         {
-            if (m_movingItem != nullptr && !asset->IsParentOf(m_movingItem) && ImGui::AcceptDragDropPayload(ASSET_PAYLOAD))
+            if (m_movingItem != nullptr && !directory->IsChildOf(m_movingItem) && ImGui::AcceptDragDropPayload(ASSET_PAYLOAD))
             {
                 Editor::CreateTransaction()->CreateAction<MoveAssetAction>(m_movingItem, directory)->Commit();
             }
@@ -322,7 +322,7 @@ namespace Fyrion
                                     Editor::CreateTransaction()->CreateAction<RenameAssetAction>(asset, ImGui::ContentRenameString())->Commit();
                                 }
 
-                                if (ImGui::ContentItemAcceptPayload(contentItem.ItemId))
+                                if (!asset->IsChildOf(m_movingItem) && ImGui::ContentItemAcceptPayload(contentItem.ItemId))
                                 {
                                     Editor::CreateTransaction()->CreateAction<MoveAssetAction>(m_movingItem, dynamic_cast<AssetDirectory*>(asset))->Commit();
                                 }

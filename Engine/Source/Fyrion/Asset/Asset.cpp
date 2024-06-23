@@ -74,18 +74,18 @@ namespace Fyrion
         }
     }
 
-    bool Asset::IsParentOf(Asset* asset) const
+    bool Asset::IsChildOf(Asset* parent) const
     {
-        if (asset == this) return false;
+        if (parent == this) return false;
 
         if (directory != nullptr)
         {
-            if (reinterpret_cast<usize>(asset->GetDirectory()) == reinterpret_cast<usize>(asset))
+            if (reinterpret_cast<usize>(this->directory) == reinterpret_cast<usize>(parent))
             {
                 return true;
             }
 
-            return directory->IsParentOf(asset);
+            return directory->IsChildOf(parent);
         }
         return false;
     }

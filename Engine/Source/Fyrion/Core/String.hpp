@@ -5,6 +5,7 @@
 #include "Hash.hpp"
 #include "StringConverter.hpp"
 #include "Format.hpp"
+#include "Serialization.hpp"
 
 
 namespace Fyrion
@@ -955,6 +956,15 @@ namespace Fyrion
 			StrCopy(string.begin(), str, size);
 		}
 	};
+
+    template<usize BufferSize>
+    struct ArchiveFieldHandler<BasicString<char, BufferSize>>
+    {
+        static void WriteField(ArchiveWriter& writer, ArchiveObject object, const StringView& name, const BasicString<char, BufferSize>& value)
+        {
+            writer.WriteString(object, name, value);
+        }
+    };
 
     template<usize BufferSize>
     using BufferString = BasicString<char, BufferSize>;

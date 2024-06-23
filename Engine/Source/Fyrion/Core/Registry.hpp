@@ -191,14 +191,16 @@ namespace Fyrion
         typedef VoidPtr     (*FnGetFieldPointer)(const FieldHandler* fieldHandler, VoidPtr instance);
         typedef void        (*FnCopyValueTo)(const FieldHandler* fieldHandler, ConstPtr instance, VoidPtr value);
         typedef void        (*FnSetValue)(const FieldHandler* fieldHandler, VoidPtr instance, ConstPtr value);
+        typedef void        (*FnSerialize)(const FieldHandler* fieldHandler, ConstPtr instance, ArchiveWriter& writer, ArchiveObject object);
 
         explicit FieldHandler(const String& name);
 
-        StringView  GetName() const;
-        FieldInfo   GetFieldInfo() const;
-        VoidPtr     GetFieldPointer(VoidPtr instance) const;
-        void        CopyValueTo(ConstPtr instance, VoidPtr value);
-        void        SetValue(VoidPtr instance, ConstPtr value);
+        StringView GetName() const;
+        FieldInfo  GetFieldInfo() const;
+        VoidPtr    GetFieldPointer(VoidPtr instance) const;
+        void       CopyValueTo(ConstPtr instance, VoidPtr value) const;
+        void       SetValue(VoidPtr instance, ConstPtr value) const;
+        void       Serialize(ArchiveWriter& writer, ConstPtr instance, ArchiveObject object) const;
 
         template<typename T>
         T& GetValueAs(VoidPtr instance)
@@ -220,11 +222,12 @@ namespace Fyrion
 
         friend class FieldBuilder;
     private:
-        String            m_name;
-        FnGetFieldInfo    m_fnGetFieldInfo;
-        FnGetFieldPointer m_fnGetFieldPointer;
-        FnCopyValueTo     m_fnCopyValueTo;
-        FnSetValue        m_fnSetValue;
+        String            name;
+        FnGetFieldInfo    fnGetFieldInfo = nullptr;
+        FnGetFieldPointer fnGetFieldPointer = nullptr;
+        FnCopyValueTo     fnCopyValueTo = nullptr;
+        FnSetValue        fnSetValue = nullptr;
+        FnSerialize       fnSerialize = nullptr;
     };
 
     class FY_API FunctionHandler : public AttributeHandler
@@ -325,8 +328,7 @@ namespace Fyrion
         Array<TypeID>                   GetBaseTypes() const;
         bool                            IsDerivedFrom(TypeID typeId) const;
 
-
-        void Serialize();
+        ArchiveObject                   Serialize(ArchiveWriter& writer, ConstPtr instance) const;
 
 
         StringView          GetName() const;
@@ -451,6 +453,7 @@ namespace Fyrion
         void SetFnGetFieldPointer(FieldHandler::FnGetFieldPointer fnGetFieldPointer);
         void SetFnCopyValueTo(FieldHandler::FnCopyValueTo fnCopyValueTo);
         void SetFnSetValue(FieldHandler::FnSetValue fnSetValue);
+        void SetFnSerialize(FieldHandler::FnSerialize fnSerialize);
     };
 
     class FY_API FunctionBuilder
@@ -743,16 +746,22 @@ namespace Fyrion
         {
             fieldBuilder.SetFnCopyValueTo(&CopyValueToImpl);
             fieldBuilder.SetFnSetValue(&SetValue);
+            fieldBuilder.SetFnSerialize(&SerializeImpl);
         }
     private:
         static void CopyValueToImpl(const FieldHandler* fieldHandler, ConstPtr instance, VoidPtr value)
         {
-            *static_cast<Field*>(value) = ((*static_cast<const Owner*>(instance)).*mfp);
+            *static_cast<Field*>(value) = *static_cast<const Owner*>(instance).*mfp;
         }
 
         static void SetValue(const FieldHandler* fieldHandler, VoidPtr instance, ConstPtr value)
         {
             *static_cast<Owner*>(instance).*mfp = *static_cast<const Field*>(value);
+        }
+
+        static void SerializeImpl(const FieldHandler* fieldHandler, ConstPtr instance, ArchiveWriter& writer, ArchiveObject object)
+        {
+            ArchiveFieldHandler<Field>::WriteField(writer, object, fieldHandler->GetName(), static_cast<const Owner*>(instance)->*mfp);
         }
     };
 

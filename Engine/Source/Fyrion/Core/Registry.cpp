@@ -122,47 +122,55 @@ namespace Fyrion
         }
     }
 
-    FieldHandler::FieldHandler(const String& name) : m_name(name)
+    FieldHandler::FieldHandler(const String& name) : name(name)
     {
 
     }
 
     StringView FieldHandler::GetName() const
     {
-        return m_name;
+        return name;
     }
 
     FieldInfo FieldHandler::GetFieldInfo() const
     {
-        if (m_fnGetFieldInfo)
+        if (fnGetFieldInfo)
         {
-            return m_fnGetFieldInfo(this);
+            return fnGetFieldInfo(this);
         }
         return {};
     }
 
     VoidPtr FieldHandler::GetFieldPointer(VoidPtr instance) const
     {
-        if (m_fnGetFieldPointer)
+        if (fnGetFieldPointer)
         {
-            return m_fnGetFieldPointer(this, instance);
+            return fnGetFieldPointer(this, instance);
         }
         return nullptr;
     }
 
-    void FieldHandler::CopyValueTo(ConstPtr instance, VoidPtr value)
+    void FieldHandler::CopyValueTo(ConstPtr instance, VoidPtr value) const
     {
-        if (m_fnCopyValueTo)
+        if (fnCopyValueTo)
         {
-            m_fnCopyValueTo(this, instance, value);
+            fnCopyValueTo(this, instance, value);
         }
     }
 
-    void FieldHandler::SetValue(VoidPtr instance, ConstPtr value)
+    void FieldHandler::SetValue(VoidPtr instance, ConstPtr value) const
     {
-        if (m_fnSetValue)
+        if (fnSetValue)
         {
-            m_fnSetValue(this, instance, value);
+            fnSetValue(this, instance, value);
+        }
+    }
+
+    void FieldHandler::Serialize(ArchiveWriter& writer, ConstPtr instance, ArchiveObject object) const
+    {
+        if (fnSerialize)
+        {
+            fnSerialize(this, instance, writer, object);
         }
     }
 
@@ -331,6 +339,16 @@ namespace Fyrion
         return false;
     }
 
+    ArchiveObject TypeHandler::Serialize(ArchiveWriter& writer, ConstPtr instance) const
+    {
+        const ArchiveObject object = writer.CreateObject();
+        for (FieldHandler* field : GetFields())
+        {
+            field->Serialize(writer, instance, object);
+        }
+        return object;
+    }
+
     StringView TypeHandler::GetName() const
     {
         return m_name;
@@ -488,22 +506,27 @@ namespace Fyrion
 
     void FieldBuilder::SetFnGetFieldInfo(FieldHandler::FnGetFieldInfo fnGetFieldInfo)
     {
-        m_fieldHandler.m_fnGetFieldInfo = fnGetFieldInfo;
+        m_fieldHandler.fnGetFieldInfo = fnGetFieldInfo;
     }
 
     void FieldBuilder::SetFnGetFieldPointer(FieldHandler::FnGetFieldPointer fnGetFieldPointer)
     {
-        m_fieldHandler.m_fnGetFieldPointer = fnGetFieldPointer;
+        m_fieldHandler.fnGetFieldPointer = fnGetFieldPointer;
     }
 
     void FieldBuilder::SetFnCopyValueTo(FieldHandler::FnCopyValueTo fnCopyValueTo)
     {
-        m_fieldHandler.m_fnCopyValueTo = fnCopyValueTo;
+        m_fieldHandler.fnCopyValueTo = fnCopyValueTo;
     }
 
     void FieldBuilder::SetFnSetValue(FieldHandler::FnSetValue fnSetValue)
     {
-        m_fieldHandler.m_fnSetValue = fnSetValue;
+        m_fieldHandler.fnSetValue = fnSetValue;
+    }
+
+    void FieldBuilder::SetFnSerialize(FieldHandler::FnSerialize fnSerialize)
+    {
+        m_fieldHandler.fnSerialize = fnSerialize;
     }
 
     FunctionBuilder::FunctionBuilder(FunctionHandler& functionHandler) : m_functionHandler(functionHandler)

@@ -6,12 +6,16 @@
 
 typedef struct yyjson_mut_doc yyjson_mut_doc;
 typedef struct yyjson_mut_val yyjson_mut_val;
+typedef struct yyjson_doc yyjson_doc;
 
 namespace Fyrion
 {
     class FY_API JsonAssetWriter : public ArchiveWriter
     {
     public:
+
+        FY_NO_COPY_CONSTRUCTOR(JsonAssetWriter);
+
         JsonAssetWriter();
         ~JsonAssetWriter() override;
 
@@ -22,7 +26,6 @@ namespace Fyrion
         void WriteInt(ArchiveObject object, const StringView& name, i64 value) override;
         void WriteUInt(ArchiveObject object, const StringView& name, u64 value) override;
         void WriteFloat(ArchiveObject object, const StringView& name, f64 value) override;
-        void WriteUUID(ArchiveObject object, const StringView& name, const UUID& value) override;
         void WriteString(ArchiveObject object, const StringView& name, const StringView& value) override;
         void WriteValue(ArchiveObject object, const StringView& name, ArchiveObject value) override;
 
@@ -31,14 +34,40 @@ namespace Fyrion
         void AddInt(ArchiveObject array, i64 value) override;
         void AddUInt(ArchiveObject array, u64 value) override;
         void AddFloat(ArchiveObject array, f64 value) override;
-        void AddUUID(ArchiveObject array, const UUID& value) override;
         void AddString(ArchiveObject array, const StringView& value) override;
         void AddValue(ArchiveObject array, ArchiveObject value) override;
-
 
         static String Stringify(ArchiveObject object);
 
     private:
         yyjson_mut_doc* doc = nullptr;
+    };
+
+
+    class FY_API JsonAssetReader : public ArchiveReader
+    {
+    public:
+        FY_NO_COPY_CONSTRUCTOR(JsonAssetReader);
+
+        explicit JsonAssetReader(StringView data);
+        ~JsonAssetReader() override;
+
+        ArchiveObject ReadObject() override;
+
+        i64           ReadInt(ArchiveObject object, const StringView& name) override;
+        u64           ReadUInt(ArchiveObject object, const StringView& name) override;
+        StringView    ReadString(ArchiveObject object, const StringView& name) override;
+        f64           ReadFloat(ArchiveObject object, const StringView& name) override;
+        ArchiveObject ReadObject(ArchiveObject object, const StringView& name) override;
+
+        usize         ArrSize(ArchiveObject object) override;
+        ArchiveObject Next(ArchiveObject object, ArchiveObject item) override;
+        i64           GetInt(ArchiveObject object) override;
+        u64           GetUInt(ArchiveObject object) override;
+        StringView    GetString(ArchiveObject object) override;
+        f64           GetFloat(ArchiveObject object) override;
+
+    private:
+        yyjson_doc* doc = nullptr;
     };
 }

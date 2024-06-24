@@ -19,7 +19,6 @@ namespace Fyrion
         virtual void WriteInt(ArchiveObject object, const StringView& name, i64 value) = 0;
         virtual void WriteUInt(ArchiveObject object, const StringView& name, u64 value) = 0;
         virtual void WriteFloat(ArchiveObject object, const StringView& name, f64 value) = 0;
-        virtual void WriteUUID(ArchiveObject object, const StringView& name, const UUID& value) = 0;
         virtual void WriteString(ArchiveObject object, const StringView& name, const StringView& value) = 0;
         virtual void WriteValue(ArchiveObject object, const StringView& name, ArchiveObject value) = 0;
 
@@ -27,9 +26,27 @@ namespace Fyrion
         virtual void AddInt(ArchiveObject array, i64 value) = 0;
         virtual void AddUInt(ArchiveObject array, u64 value) = 0;
         virtual void AddFloat(ArchiveObject array, f64 value) = 0;
-        virtual void AddUUID(ArchiveObject array, const UUID& value) = 0;
         virtual void AddString(ArchiveObject array, const StringView& value) = 0;
         virtual void AddValue(ArchiveObject array, ArchiveObject value) = 0;
+    };
+
+    struct ArchiveReader
+    {
+        virtual ~ArchiveReader() = default;
+
+        virtual ArchiveObject ReadObject() = 0;
+        virtual i64           ReadInt(ArchiveObject object, const StringView& name) = 0;
+        virtual u64           ReadUInt(ArchiveObject object, const StringView& name) = 0;
+        virtual StringView    ReadString(ArchiveObject object, const StringView& name) = 0;
+        virtual f64           ReadFloat(ArchiveObject object, const StringView& name) = 0;
+        virtual ArchiveObject ReadObject(ArchiveObject object, const StringView& name) = 0;
+
+        virtual usize         ArrSize(ArchiveObject object) = 0;
+        virtual ArchiveObject Next(ArchiveObject object, ArchiveObject item) = 0;
+        virtual i64           GetInt(ArchiveObject object) = 0;
+        virtual u64           GetUInt(ArchiveObject object) = 0;
+        virtual StringView    GetString(ArchiveObject object) = 0;
+        virtual f64           GetFloat(ArchiveObject object) = 0;
     };
 
 
@@ -44,6 +61,11 @@ namespace Fyrion
         {                           \
             writer.WriteInt(object, name, value);   \
         }                                           \
+                                                    \
+        static T ReadField(ArchiveReader& reader, ArchiveObject object, const StringView& name)   \
+        {                                                   \
+            return reader.ReadInt(object, name);            \
+        }                                                   \
     }
 
 #define FY_ARCHIVE_TYPE_UINT(T)      \
@@ -54,6 +76,11 @@ namespace Fyrion
         {                           \
             writer.WriteUInt(object, name, value);      \
         }                                               \
+                                                        \
+        static T ReadField(ArchiveReader& reader, ArchiveObject object, const StringView& name)   \
+        {                                                       \
+            return reader.ReadUInt(object, name);               \
+        }       \
     }
 
 #define FY_ARCHIVE_TYPE_FLOAT(T)      \
@@ -64,6 +91,11 @@ namespace Fyrion
         {                           \
             writer.WriteFloat(object, name, value);      \
         }                                               \
+        \
+        static T ReadField(ArchiveReader& reader, ArchiveObject object, const StringView& name)   \
+        {                                                           \
+            return reader.ReadFloat(object, name);                  \
+        }   \
     }
 
 
@@ -71,12 +103,10 @@ namespace Fyrion
     FY_ARCHIVE_TYPE_INT(i16);
     FY_ARCHIVE_TYPE_INT(i32);
     FY_ARCHIVE_TYPE_INT(i64);
-
     FY_ARCHIVE_TYPE_UINT(u8);
     FY_ARCHIVE_TYPE_UINT(u16);
     FY_ARCHIVE_TYPE_UINT(u32);
     FY_ARCHIVE_TYPE_UINT(u64);
-
     FY_ARCHIVE_TYPE_FLOAT(f32);
     FY_ARCHIVE_TYPE_FLOAT(f64);
 
@@ -89,7 +119,6 @@ namespace Fyrion
     template <typename T>
     constexpr bool HasWriteType = HasWriteTypeImpl<T>::value;
 
-
     template <typename, typename = void>
     struct HasWriteFieldImpl : Traits::FalseType {};
 
@@ -98,4 +127,14 @@ namespace Fyrion
 
     template <typename T>
     constexpr bool HasWriteField = HasWriteFieldImpl<T>::value;
+
+
+    template <typename, typename = void>
+    struct HasReadFieldImpl : Traits::FalseType {};
+
+    template <typename T>
+    struct HasReadFieldImpl<T, Traits::VoidType<decltype(static_cast<T(*)(ArchiveReader&, ArchiveObject, const StringView& name)>(&ArchiveType<T>::ReadField))>> : Traits::TrueType {};
+
+    template <typename T>
+    constexpr bool HasReadField = HasReadFieldImpl<T>::value;
 }

@@ -64,13 +64,6 @@ namespace Fyrion
         yyjson_mut_obj_add_real(doc, static_cast<yyjson_mut_val*>(object.handler), name.CStr(), value);
     }
 
-    void JsonAssetWriter::WriteUUID(ArchiveObject object, const StringView& name, const UUID& value)
-    {
-        char buffer[StringConverter<UUID>::bufferCount] = {};
-        StringConverter<UUID>::ToString(buffer, 0, value);
-        yyjson_mut_obj_add_strncpy(doc, static_cast<yyjson_mut_val*>(object.handler), name.CStr(), buffer, StringConverter<UUID>::bufferCount);
-    }
-
     void JsonAssetWriter::WriteString(ArchiveObject object, const StringView& name, const StringView& value)
     {
         yyjson_mut_obj_add_strn(doc, static_cast<yyjson_mut_val*>(object.handler), name.CStr(), value.CStr(), value.Size());
@@ -101,13 +94,6 @@ namespace Fyrion
         yyjson_mut_arr_add_real(doc, static_cast<yyjson_mut_val*>(array.handler), value);
     }
 
-    void JsonAssetWriter::AddUUID(ArchiveObject array, const UUID& value)
-    {
-        char buffer[StringConverter<UUID>::bufferCount];
-        StringConverter<UUID>::ToString(buffer, 0, value);
-        yyjson_mut_arr_add_strncpy(doc, static_cast<yyjson_mut_val*>(array.handler), buffer, StringConverter<UUID>::bufferCount);
-    }
-
     void JsonAssetWriter::AddString(ArchiveObject array, const StringView& value)
     {
         yyjson_mut_arr_add_strn(doc, static_cast<yyjson_mut_val*>(array.handler), value.CStr(), value.Size());
@@ -136,5 +122,105 @@ namespace Fyrion
     JsonAssetWriter::~JsonAssetWriter()
     {
         yyjson_mut_doc_free(doc);
+    }
+
+
+    JsonAssetReader::JsonAssetReader(StringView data)
+    {
+        const yyjson_read_flag flg = {};
+        yyjson_read_err        err;
+        doc = yyjson_read_opts(const_cast<char*>(data.begin()), data.Size(), flg, &alloc, &err);
+        if (err.code != 0)
+        {
+            FY_ASSERT(false, "error");
+        }
+    }
+
+    ArchiveObject JsonAssetReader::ReadObject()
+    {
+        return {yyjson_doc_get_root(doc)};
+    }
+
+    i64 JsonAssetReader::ReadInt(ArchiveObject object, const StringView& name)
+    {
+        if (yyjson_val* val = yyjson_obj_getn(static_cast<yyjson_val*>(object.handler), name.CStr(), name.Size()))
+        {
+            return yyjson_get_int(val);
+        }
+        return 0;
+    }
+
+    u64 JsonAssetReader::ReadUInt(ArchiveObject object, const StringView& name)
+    {
+        if (yyjson_val* val = yyjson_obj_getn(static_cast<yyjson_val*>(object.handler), name.CStr(), name.Size()))
+        {
+            return yyjson_get_uint(val);
+        }
+        return 0;
+    }
+
+    StringView JsonAssetReader::ReadString(ArchiveObject object, const StringView& name)
+    {
+        if (yyjson_val* val = yyjson_obj_getn(static_cast<yyjson_val*>(object.handler), name.CStr(), name.Size()))
+        {
+            return yyjson_get_str(val);
+        }
+        return {};
+    }
+
+    f64 JsonAssetReader::ReadFloat(ArchiveObject object, const StringView& name)
+    {
+        if (yyjson_val* val = yyjson_obj_getn(static_cast<yyjson_val*>(object.handler), name.CStr(), name.Size()))
+        {
+            return yyjson_get_real(val);
+        }
+        return 0.0f;
+    }
+
+    ArchiveObject JsonAssetReader::ReadObject(ArchiveObject object, const StringView& name)
+    {
+        yyjson_val* val = yyjson_obj_getn(static_cast<yyjson_val*>(object.handler), name.CStr(), name.Size());
+        return {val};
+    }
+
+    usize JsonAssetReader::ArrSize(ArchiveObject object)
+    {
+        return yyjson_arr_size(static_cast<yyjson_val*>(object.handler));
+    }
+
+    ArchiveObject JsonAssetReader::Next(ArchiveObject object, ArchiveObject item)
+    {
+        yyjson_val* arr = static_cast<yyjson_val*>(object.handler);
+        if (item.handler == nullptr)
+        {
+            return {yyjson_arr_get_first(arr)};
+        }
+
+        return {unsafe_yyjson_get_next(static_cast<yyjson_val*>(item.handler))};
+    }
+
+    i64 JsonAssetReader::GetInt(ArchiveObject object)
+    {
+        return yyjson_get_int(static_cast<yyjson_val*>(object.handler));
+    }
+
+    u64 JsonAssetReader::GetUInt(ArchiveObject object)
+    {
+        return yyjson_get_uint(static_cast<yyjson_val*>(object.handler));
+    }
+
+    StringView JsonAssetReader::GetString(ArchiveObject object)
+    {
+        return yyjson_get_str(static_cast<yyjson_val*>(object.handler));
+    }
+
+    f64 JsonAssetReader::GetFloat(ArchiveObject object)
+    {
+        return yyjson_get_real(static_cast<yyjson_val*>(object.handler));
+    }
+
+    JsonAssetReader::~JsonAssetReader()
+    {
+        yyjson_doc_free(doc);
     }
 }

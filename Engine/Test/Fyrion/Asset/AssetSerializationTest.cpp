@@ -36,26 +36,69 @@ namespace
 
     TEST_CASE("AssetSerialization::JsonWriterReaderBasics")
     {
-        JsonAssetWriter writer{};
-
-        ArchiveObject root = writer.CreateObject();
-
-        writer.WriteInt(root, "testInt", 10);
-        writer.WriteString(root, "testStr", "strstr");
-        writer.WriteUUID(root, "testUUID", UUID::RandomUUID());
+        String str;
 
         {
-            ArchiveObject subObject = writer.CreateObject();
-            writer.WriteString(subObject, "strSubObject", "strstr");
-            writer.WriteValue(root, "subobj", subObject);
+            JsonAssetWriter writer;
+
+            ArchiveObject root = writer.CreateObject();
+
+            writer.WriteInt(root, "testInt", 10);
+            writer.WriteString(root, "testStr", "strstr");
+
+            {
+                ArchiveObject subObject = writer.CreateObject();
+                writer.WriteString(subObject, "strSubObject", "strstr");
+                writer.WriteValue(root, "subobj", subObject);
+            }
+
+            {
+                ArchiveObject arr = writer.CreateArray();
+                writer.AddInt(arr, 10);
+                writer.AddInt(arr, 30);
+                writer.WriteValue(root, "arr", arr);
+            }
+
+            {
+                ArchiveObject objAray = writer.CreateArray();
+
+                for (int i = 0; i < 5; ++i)
+                {
+                    ArchiveObject obj = writer.CreateObject();
+                    writer.WriteInt(obj, "vl", i);
+                    writer.AddValue(objAray, obj);
+
+                }
+
+                writer.WriteValue(root, "objAray", objAray);
+            }
+
+            str = JsonAssetWriter::Stringify(root);
         }
 
+        CHECK(!str.Empty());
+
         {
-            ArchiveObject arr = writer.CreateArray();
-            writer.AddInt(arr, 10);
-            writer.AddInt(arr, 30);
-            writer.AddUUID(arr, UUID::RandomUUID());
-            writer.WriteValue(root, "arr", arr);
+            JsonAssetReader reader(str);
+            ArchiveObject root = reader.ReadObject();
+            CHECK(reader.ReadInt(root, "testInt") == 10);
+            CHECK(reader.ReadString(root, "testStr") == "strstr");
+
+            ArchiveObject arr = reader.ReadObject(root, "arr");
+
+            Array<i32> toArr{};
+            toArr.Resize(reader.ArrSize(arr));
+
+            ArchiveObject item{};
+            for (usize i = 0; i < reader.ArrSize(arr); ++i)
+            {
+                item = reader.Next(arr, item);
+                toArr[i] = static_cast<i32>(reader.GetInt(item));
+            }
+
+            REQUIRE(toArr.Size() == 2);
+            CHECK(toArr[0] == 10);
+            CHECK(toArr[1] == 30);
         }
     }
 
@@ -72,21 +115,34 @@ namespace
             {
                 TypeHandler* typeHandler = Registry::FindType<TestSerialization>();
 
-                TestSerialization vl = {
-                    .value = 47,
-                    .string = "testring",
-                    .floatValue = 44.475,
-                    .subObject = {
-                        .otherValue = 444
-                    }
-                };
+                String str;
+                {
+                    TestSerialization vl = {
+                        .value = 47,
+                        .string = "testring",
+                        .floatValue = 44.475,
+                        .subObject = {
+                            .otherValue = 444
+                        }
+                    };
+                    JsonAssetWriter writer{};
+                    ArchiveObject   obj = typeHandler->Serialize(writer, &vl);
 
-                JsonAssetWriter writer{};
-                ArchiveObject   obj = typeHandler->Serialize(writer, &vl);
+                    str = JsonAssetWriter::Stringify(obj);
+                }
 
-                String str = JsonAssetWriter::Stringify(obj);
                 CHECK(!str.Empty());
-                MESSAGE(doctest::String(str.CStr()));
+
+                {
+                    TestSerialization vl{};
+                    JsonAssetReader reader(str);
+                    typeHandler->Deserialize(reader, reader.ReadObject(), &vl);
+
+                    CHECK(vl.value == 47);
+                    CHECK(vl.string == "testring");
+                    CHECK(vl.subObject.otherValue == 444);
+                }
+
             }
         }
 

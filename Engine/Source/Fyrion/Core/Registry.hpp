@@ -192,6 +192,7 @@ namespace Fyrion
         typedef void        (*FnCopyValueTo)(const FieldHandler* fieldHandler, ConstPtr instance, VoidPtr value);
         typedef void        (*FnSetValue)(const FieldHandler* fieldHandler, VoidPtr instance, ConstPtr value);
         typedef void        (*FnSerialize)(const FieldHandler* fieldHandler, ConstPtr instance, ArchiveWriter& writer, ArchiveObject object);
+        typedef void        (*FnDeserialize)(const FieldHandler* fieldHandler, VoidPtr instance, ArchiveReader& reader, ArchiveObject object);
 
         explicit FieldHandler(const String& name);
 
@@ -201,6 +202,7 @@ namespace Fyrion
         void       CopyValueTo(ConstPtr instance, VoidPtr value) const;
         void       SetValue(VoidPtr instance, ConstPtr value) const;
         void       Serialize(ArchiveWriter& writer, ConstPtr instance, ArchiveObject object) const;
+        void       Deserialize(ArchiveReader& reader, VoidPtr instance, ArchiveObject object) const;
 
         template<typename T>
         T& GetValueAs(VoidPtr instance)
@@ -223,11 +225,12 @@ namespace Fyrion
         friend class FieldBuilder;
     private:
         String            name;
-        FnGetFieldInfo    fnGetFieldInfo = nullptr;
-        FnGetFieldPointer fnGetFieldPointer = nullptr;
-        FnCopyValueTo     fnCopyValueTo = nullptr;
-        FnSetValue        fnSetValue = nullptr;
-        FnSerialize       fnSerialize = nullptr;
+        FnGetFieldInfo    fnGetFieldInfo{};
+        FnGetFieldPointer fnGetFieldPointer{};
+        FnCopyValueTo     fnCopyValueTo{};
+        FnSetValue        fnSetValue{};
+        FnSerialize       fnSerialize{};
+        FnDeserialize     fnDeserialize{};
     };
 
     class FY_API FunctionHandler : public AttributeHandler
@@ -284,32 +287,34 @@ namespace Fyrion
         typedef void (*FnMove)(const TypeHandler* typeHandler, VoidPtr source, VoidPtr dest);
         typedef void (*FnRelease)(const TypeHandler* typeHandler, VoidPtr instance);
         typedef void (*FnSerialize)(const TypeHandler* typeHandler, ConstPtr instance, ArchiveWriter& writer, ArchiveObject object);
+        typedef void (*FnDeserialize)(const TypeHandler* typeHandler, VoidPtr instance, ArchiveReader& reader, ArchiveObject object);
         friend class TypeBuilder;
     private:
-        String       m_name{};
-        String       m_simpleName{};
-        TypeInfo     m_typeInfo{};
-        u32          m_version{};
-        FnDestroy    m_fnDestroy{};
-        FnCopy       m_fnCopy{};
-        FnDestructor m_fnDestructor{};
-        FnMove       m_fnMove{};
-        FnRelease    m_fnRelease{};
-        FnSerialize  fnSerialize{};
+        String        name{};
+        String        simpleName{};
+        TypeInfo      typeInfo{};
+        u32           version{};
+        FnDestroy     fnDestroy{};
+        FnCopy        fnCopy{};
+        FnDestructor  fnDestructor{};
+        FnMove        fnMove{};
+        FnRelease     fnRelease{};
+        FnSerialize   fnSerialize{};
+        FnDeserialize fnDeserialize{};
 
-        HashMap<usize, SharedPtr<ConstructorHandler>> m_constructors{};
-        Array<ConstructorHandler*>                    m_constructorArray{};
-        HashMap<String, SharedPtr<FieldHandler>>      m_fields{};
-        Array<FieldHandler*>                          m_fieldArray{};
-        HashMap<String, SharedPtr<FunctionHandler>>   m_functions{};
-        Array<FunctionHandler*>                       m_functionArray{};
-        HashMap<String, SharedPtr<ValueHandler>>      m_values{};
-        HashMap<i64, ValueHandler*>                   m_valuesByCode{};
-        Array<ValueHandler*>                          m_valuesArray{};
+        HashMap<usize, SharedPtr<ConstructorHandler>> constructors{};
+        Array<ConstructorHandler*>                    constructorArray{};
+        HashMap<String, SharedPtr<FieldHandler>>      fields{};
+        Array<FieldHandler*>                          fieldArray{};
+        HashMap<String, SharedPtr<FunctionHandler>>   functions{};
+        Array<FunctionHandler*>                       functionArray{};
+        HashMap<String, SharedPtr<ValueHandler>>      values{};
+        HashMap<i64, ValueHandler*>                   valuesByCode{};
+        Array<ValueHandler*>                          valuesArray{};
 
-        HashMap<TypeID, FnCast>                       m_baseTypes{};
-        Array<TypeID>                                 m_baseTypesArray{};
-        Array<DerivedType>                            m_derivedTypes{};
+        HashMap<TypeID, FnCast>                       baseTypes{};
+        Array<TypeID>                                 baseTypesArray{};
+        Array<DerivedType>                            derivedTypes{};
     public:
         TypeHandler(const StringView& name, const TypeInfo& typeInfo, u32 version);
 
@@ -331,6 +336,7 @@ namespace Fyrion
         bool                            IsDerivedFrom(TypeID typeId) const;
 
         ArchiveObject                   Serialize(ArchiveWriter& writer, ConstPtr instance) const;
+        void                            Deserialize(ArchiveReader& reader, ArchiveObject object, VoidPtr instance) const;
 
 
         StringView          GetName() const;
@@ -345,7 +351,6 @@ namespace Fyrion
         void    Copy(ConstPtr source, VoidPtr dest) const;
         void    Move(VoidPtr source, VoidPtr dest) const;
         VoidPtr Cast(TypeID typeId, VoidPtr instance) const;
-
 
         VoidPtr NewInstance(Allocator& allocator = MemoryGlobals::GetDefaultAllocator()) const
         {
@@ -445,7 +450,7 @@ namespace Fyrion
     class FY_API FieldBuilder
     {
     private:
-        FieldHandler& m_fieldHandler;
+        FieldHandler& fieldHandler;
     public:
         explicit FieldBuilder(FieldHandler& fieldHandler);
 
@@ -456,6 +461,7 @@ namespace Fyrion
         void SetFnCopyValueTo(FieldHandler::FnCopyValueTo fnCopyValueTo);
         void SetFnSetValue(FieldHandler::FnSetValue fnSetValue);
         void SetFnSerialize(FieldHandler::FnSerialize fnSerialize);
+        void SetFnDeserialize(FieldHandler::FnDeserialize fnDeserialize);
     };
 
     class FY_API FunctionBuilder
@@ -485,6 +491,7 @@ namespace Fyrion
         void               SetFnMove(TypeHandler::FnMove fnMove);
         void               SetFnRelease(TypeHandler::FnRelease fnRelease);
         void               SetFnSerialize(TypeHandler::FnSerialize fnSerialize);
+        void               SetFnDeserialize(TypeHandler::FnDeserialize fnDeserialize);
         ConstructorBuilder NewConstructor(TypeID* ids, FieldInfo* params, usize size);
         FieldBuilder       NewField(const StringView& fieldName);
         FunctionBuilder    NewFunction(const FunctionHandlerCreation& creation);
@@ -496,7 +503,7 @@ namespace Fyrion
         TypeHandler& GetTypeHandler() const;
 
     private:
-        TypeHandler& m_typeHandler;
+        TypeHandler& typeHandler;
     };
 
     ///-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -753,6 +760,11 @@ namespace Fyrion
             {
                 fieldBuilder.SetFnSerialize(&SerializeImpl);
             }
+
+            if constexpr (HasReadField<Field>)
+            {
+                fieldBuilder.SetFnDeserialize(&DeserializeImpl);
+            }
         }
     private:
         static void CopyValueToImpl(const FieldHandler* fieldHandler, ConstPtr instance, VoidPtr value)
@@ -767,7 +779,18 @@ namespace Fyrion
 
         static void SerializeImpl(const FieldHandler* fieldHandler, ConstPtr instance, ArchiveWriter& writer, ArchiveObject object)
         {
-            ArchiveType<Field>::WriteField(writer, object, fieldHandler->GetName(), static_cast<const Owner*>(instance)->*mfp);
+            if constexpr (HasWriteField<Field>)
+            {
+                ArchiveType<Field>::WriteField(writer, object, fieldHandler->GetName(), static_cast<const Owner*>(instance)->*mfp);
+            }
+        }
+
+        static void DeserializeImpl(const FieldHandler* fieldHandler, VoidPtr instance, ArchiveReader& reader, ArchiveObject object)
+        {
+            if constexpr (HasReadField<Field>)
+            {
+                static_cast<Owner*>(instance)->*mfp = ArchiveType<Field>::ReadField(reader, object, fieldHandler->GetName());
+            }
         }
     };
 

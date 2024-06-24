@@ -964,6 +964,11 @@ namespace Fyrion
         {
             writer.WriteString(object, name, value);
         }
+
+        static BasicString<char, BufferSize> ReadField(ArchiveReader& reader, ArchiveObject object, const StringView& name)
+        {
+            return reader.ReadString(object, name);
+        }
     };
 
     template<usize BufferSize>

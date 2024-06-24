@@ -8,17 +8,30 @@ using namespace Fyrion;
 
 namespace
 {
+    struct TestSubObject
+    {
+        u32 otherValue;
+
+        static void RegisterType(NativeTypeHandler<TestSubObject>& type)
+        {
+            type.Field<&TestSubObject::otherValue>("otherValue");
+        }
+    };
+
     struct TestSerialization
     {
-        u32    value;
-        String string;
+        u32           value;
+        String        string;
+        f32           floatValue;
+        TestSubObject subObject;
 
         static void RegisterType(NativeTypeHandler<TestSerialization>& type)
         {
             type.Field<&TestSerialization::value>("value");
             type.Field<&TestSerialization::string>("string");
+            type.Field<&TestSerialization::floatValue>("floatValue");
+            type.Field<&TestSerialization::subObject>("subObject");
         }
-
     };
 
     TEST_CASE("AssetSerialization::JsonWriterReaderBasics")
@@ -44,17 +57,16 @@ namespace
             writer.AddUUID(arr, UUID::RandomUUID());
             writer.WriteValue(root, "arr", arr);
         }
-
-
     }
 
 
-    TEST_CASE("AssetSerialization::TypeSerialization")
+    TEST_CASE("AssetSerialization::JsonTypeSerialization")
     {
         Engine::Init();
         {
             {
                 Registry::Type<TestSerialization>();
+                Registry::Type<TestSubObject>();
             }
 
             {
@@ -62,17 +74,20 @@ namespace
 
                 TestSerialization vl = {
                     .value = 47,
-                    .string = "testring"
+                    .string = "testring",
+                    .floatValue = 44.475,
+                    .subObject = {
+                        .otherValue = 444
+                    }
                 };
 
                 JsonAssetWriter writer{};
-                ArchiveObject obj = typeHandler->Serialize(writer, &vl);
+                ArchiveObject   obj = typeHandler->Serialize(writer, &vl);
 
                 String str = JsonAssetWriter::Stringify(obj);
                 CHECK(!str.Empty());
                 MESSAGE(doctest::String(str.CStr()));
             }
-
         }
 
         Engine::Destroy();

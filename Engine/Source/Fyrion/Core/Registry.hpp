@@ -283,6 +283,7 @@ namespace Fyrion
         typedef void (*FnCopy)(const TypeHandler* typeHandler, ConstPtr source, VoidPtr dest);
         typedef void (*FnMove)(const TypeHandler* typeHandler, VoidPtr source, VoidPtr dest);
         typedef void (*FnRelease)(const TypeHandler* typeHandler, VoidPtr instance);
+        typedef void (*FnSerialize)(const TypeHandler* typeHandler, ConstPtr instance, ArchiveWriter& writer, ArchiveObject object);
         friend class TypeBuilder;
     private:
         String       m_name{};
@@ -294,6 +295,7 @@ namespace Fyrion
         FnDestructor m_fnDestructor{};
         FnMove       m_fnMove{};
         FnRelease    m_fnRelease{};
+        FnSerialize  fnSerialize{};
 
         HashMap<usize, SharedPtr<ConstructorHandler>> m_constructors{};
         Array<ConstructorHandler*>                    m_constructorArray{};
@@ -482,6 +484,7 @@ namespace Fyrion
         void               SetFnDestructor(TypeHandler::FnDestructor destructor);
         void               SetFnMove(TypeHandler::FnMove fnMove);
         void               SetFnRelease(TypeHandler::FnRelease fnRelease);
+        void               SetFnSerialize(TypeHandler::FnSerialize fnSerialize);
         ConstructorBuilder NewConstructor(TypeID* ids, FieldInfo* params, usize size);
         FieldBuilder       NewField(const StringView& fieldName);
         FunctionBuilder    NewFunction(const FunctionHandlerCreation& creation);
@@ -729,7 +732,6 @@ namespace Fyrion
         {
             using Return = Traits::FunctionReturnType<getFp>;
             *static_cast<Traits::RemoveAll<Return>*>(value) = (*static_cast<const Owner*>(instance).*getFp)();
-
         }
 
         static void SetValue(const FieldHandler* fieldHandler, VoidPtr instance, ConstPtr value)
@@ -746,7 +748,11 @@ namespace Fyrion
         {
             fieldBuilder.SetFnCopyValueTo(&CopyValueToImpl);
             fieldBuilder.SetFnSetValue(&SetValue);
-            fieldBuilder.SetFnSerialize(&SerializeImpl);
+
+            if constexpr (HasWriteField<Field>)
+            {
+                fieldBuilder.SetFnSerialize(&SerializeImpl);
+            }
         }
     private:
         static void CopyValueToImpl(const FieldHandler* fieldHandler, ConstPtr instance, VoidPtr value)
@@ -761,7 +767,7 @@ namespace Fyrion
 
         static void SerializeImpl(const FieldHandler* fieldHandler, ConstPtr instance, ArchiveWriter& writer, ArchiveObject object)
         {
-            ArchiveFieldHandler<Field>::WriteField(writer, object, fieldHandler->GetName(), static_cast<const Owner*>(instance)->*mfp);
+            ArchiveType<Field>::WriteField(writer, object, fieldHandler->GetName(), static_cast<const Owner*>(instance)->*mfp);
         }
     };
 
@@ -969,11 +975,12 @@ namespace Fyrion
     template<typename Type, typename Enabler = void>
     struct NativeTypeHandlerFuncs
     {
-        static void DestroyImpl(const TypeHandler* typeHandler, Allocator& allocator, VoidPtr instance){};
-        static void CopyImpl(const TypeHandler* typeHandler, ConstPtr source, VoidPtr dest) {};
-        static void DestructorImpl(const TypeHandler* typeHandler, VoidPtr instance){};
-        static void MoveImpl(const TypeHandler* typeHandler, VoidPtr origin, VoidPtr destination) {};
-        static void ReleaseImpl(const TypeHandler* typeHandler, VoidPtr instance) {};
+        static void DestroyImpl(const TypeHandler* typeHandler, Allocator& allocator, VoidPtr instance){}
+        static void CopyImpl(const TypeHandler* typeHandler, ConstPtr source, VoidPtr dest) {}
+        static void DestructorImpl(const TypeHandler* typeHandler, VoidPtr instance){}
+        static void MoveImpl(const TypeHandler* typeHandler, VoidPtr origin, VoidPtr destination) {}
+        static void ReleaseImpl(const TypeHandler* typeHandler, VoidPtr instance) {}
+        static void SerializeImpl(const TypeHandler* typeHandler, ConstPtr instance, ArchiveWriter& writer, ArchiveObject object){}
     };
 
     template<typename Type>
@@ -1024,6 +1031,11 @@ namespace Fyrion
         {
             ReleaseHandler<Type>::Release(*static_cast<Type*>(instance));
         }
+
+        static void SerializeImpl(const TypeHandler* typeHandler, ConstPtr instance, ArchiveWriter& writer, ArchiveObject object)
+        {
+
+        }
     };
 
 
@@ -1044,6 +1056,11 @@ namespace Fyrion
             typeBuilder.SetFnDestructor(&NativeTypeHandlerFuncs<Type>::DestructorImpl);
             typeBuilder.SetFnMove(&NativeTypeHandlerFuncs<Type>::MoveImpl);
             typeBuilder.SetFnRelease(&NativeTypeHandlerFuncs<Type>::ReleaseImpl);
+
+            if constexpr (HasWriteType<Type>)
+            {
+                typeBuilder.SetFnSerialize(&NativeTypeHandlerFuncs<Type>::SerializeImpl);
+            }
         }
 
         auto Constructor()

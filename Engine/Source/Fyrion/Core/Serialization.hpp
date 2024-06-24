@@ -34,20 +34,68 @@ namespace Fyrion
 
 
     template <typename T>
-    struct ArchiveFieldHandler
-    {
-        static void WriteField(ArchiveWriter& writer, ArchiveObject object, const StringView& name, const T& value)
-        {
-            FY_ASSERT(false, "ArchiveFieldHandler not implemented for this type");
-        }
-    };
+    struct ArchiveType {};
 
-    template <>
-    struct ArchiveFieldHandler<u32>
-    {
-        static void WriteField(ArchiveWriter& writer, ArchiveObject object, const StringView& name, const u32& value)
-        {
-            writer.WriteInt(object, name, value);
-        }
-    };
+#define FY_ARCHIVE_TYPE_INT(T)      \
+    template<>                      \
+    struct ArchiveType<T>           \
+    {                               \
+        static void WriteField(ArchiveWriter& writer, ArchiveObject object, const StringView& name, const T& value)   \
+        {                           \
+            writer.WriteInt(object, name, value);   \
+        }                                           \
+    }
+
+#define FY_ARCHIVE_TYPE_UINT(T)      \
+    template<>                      \
+    struct ArchiveType<T>           \
+    {                               \
+        static void WriteField(ArchiveWriter& writer, ArchiveObject object, const StringView& name, const T& value)   \
+        {                           \
+            writer.WriteUInt(object, name, value);      \
+        }                                               \
+    }
+
+#define FY_ARCHIVE_TYPE_FLOAT(T)      \
+    template<>                      \
+    struct ArchiveType<T>           \
+    {                               \
+        static void WriteField(ArchiveWriter& writer, ArchiveObject object, const StringView& name, const T& value)   \
+        {                           \
+            writer.WriteFloat(object, name, value);      \
+        }                                               \
+    }
+
+
+    FY_ARCHIVE_TYPE_INT(i8);
+    FY_ARCHIVE_TYPE_INT(i16);
+    FY_ARCHIVE_TYPE_INT(i32);
+    FY_ARCHIVE_TYPE_INT(i64);
+
+    FY_ARCHIVE_TYPE_UINT(u8);
+    FY_ARCHIVE_TYPE_UINT(u16);
+    FY_ARCHIVE_TYPE_UINT(u32);
+    FY_ARCHIVE_TYPE_UINT(u64);
+
+    FY_ARCHIVE_TYPE_FLOAT(f32);
+    FY_ARCHIVE_TYPE_FLOAT(f64);
+
+    template <typename, typename = void>
+    struct HasWriteTypeImpl : Traits::FalseType {};
+
+    template <typename T>
+    struct HasWriteTypeImpl<T, Traits::VoidType<decltype(static_cast<void(*)(ArchiveWriter&, ArchiveObject, const T&)>(&ArchiveType<T>::WriteType))>> : Traits::TrueType {};
+
+    template <typename T>
+    constexpr bool HasWriteType = HasWriteTypeImpl<T>::value;
+
+
+    template <typename, typename = void>
+    struct HasWriteFieldImpl : Traits::FalseType {};
+
+    template <typename T>
+    struct HasWriteFieldImpl<T, Traits::VoidType<decltype(static_cast<void(*)(ArchiveWriter&, ArchiveObject, const StringView& name, const T&)>(&ArchiveType<T>::WriteField))>> : Traits::TrueType {};
+
+    template <typename T>
+    constexpr bool HasWriteField = HasWriteFieldImpl<T>::value;
 }

@@ -172,6 +172,10 @@ namespace Fyrion
         {
             fnSerialize(this, instance, writer, object);
         }
+        else if (TypeHandler* typeHandler = Registry::FindTypeById(GetFieldInfo().typeInfo.typeId))
+        {
+            writer.WriteValue(object, GetName(), typeHandler->Serialize(writer, GetFieldPointer(const_cast<VoidPtr>(instance))));
+        }
     }
 
 
@@ -342,9 +346,17 @@ namespace Fyrion
     ArchiveObject TypeHandler::Serialize(ArchiveWriter& writer, ConstPtr instance) const
     {
         const ArchiveObject object = writer.CreateObject();
-        for (FieldHandler* field : GetFields())
+
+        if (fnSerialize)
         {
-            field->Serialize(writer, instance, object);
+            fnSerialize(this, instance, writer, object);
+        }
+        else
+        {
+            for (FieldHandler* field : GetFields())
+            {
+                field->Serialize(writer, instance, object);
+            }
         }
         return object;
     }
@@ -600,6 +612,11 @@ namespace Fyrion
     void TypeBuilder::SetFnRelease(TypeHandler::FnRelease fnRelease)
     {
         m_typeHandler.m_fnRelease = fnRelease;
+    }
+
+    void TypeBuilder::SetFnSerialize(TypeHandler::FnSerialize fnSerialize)
+    {
+        m_typeHandler.fnSerialize = fnSerialize;
     }
 
     void TypeBuilder::SetFnMove(TypeHandler::FnMove fnMove)

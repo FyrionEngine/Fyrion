@@ -958,7 +958,7 @@ namespace Fyrion
 	};
 
     template<usize BufferSize>
-    struct ArchiveFieldHandler<BasicString<char, BufferSize>>
+    struct ArchiveType<BasicString<char, BufferSize>>
     {
         static void WriteField(ArchiveWriter& writer, ArchiveObject object, const StringView& name, const BasicString<char, BufferSize>& value)
         {

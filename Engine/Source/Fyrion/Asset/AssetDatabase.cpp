@@ -91,6 +91,17 @@ namespace Fyrion
         asset->assetType = typeHandler;
         asset->version = 1;
 
+        for (FieldHandler* field : asset->GetAssetType()->GetFields())
+        {
+            auto typeInfo = field->GetFieldInfo().typeInfo;
+            if (typeInfo.apiId == GetTypeID<SubobjectApi>())
+            {
+                SubobjectApi subobjectApi{};
+                typeInfo.extractApi(&subobjectApi);
+                subobjectApi.SetOwner(field->GetFieldPointer(asset), asset);
+            }
+        }
+
         assetsById.Insert(asset->uniqueId, asset);
 
         return asset;
@@ -114,6 +125,7 @@ namespace Fyrion
                 SubobjectApi subobjectApi{};
                 typeInfo.extractApi(&subobjectApi);
                 subobjectApi.SetPrototype(field->GetFieldPointer(asset), field->GetFieldPointer(prototype));
+                subobjectApi.SetOwner(field->GetFieldPointer(asset), asset);
             }
             else if (typeInfo.apiId == GetTypeID<ValueApi>())
             {
@@ -177,6 +189,9 @@ namespace Fyrion
 
         asset->assetType->Destroy(asset);
     }
+
+    void AssetDatabase::SaveOnDirectory(AssetDirectory* directoryAsset, const StringView& directoryPath) {}
+    void AssetDatabase::GetUpdatedAssets(AssetDirectory* directoryAsset, Array<Asset*>& updatedAssets) {}
 
     AssetDirectory* AssetDatabase::LoadFromDirectory(const StringView& name, const StringView& directory)
     {

@@ -39,7 +39,7 @@ namespace Fyrion
     {
         Array<EditorWindowStorage> editorWindowStorages{};
         Array<OpenWindowStorage>   openWindows{};
-        //Array<RID> updatedItems{};
+        Array<Asset*> updatedItems{};
 
         MenuItemContext menuContext{};
         bool            dockInitialized = false;
@@ -374,11 +374,10 @@ namespace Fyrion
 
         void SaveAll()
         {
-            // for (RID assetRoot: assetTree.GetAssetRoots())
-            // {
-            //     ResourceAssets::SaveAssetsToDirectory(assetRoot, ResourceAssets::GetAbsolutePath(assetRoot));
-            // }
-            // assetTree.MarkDirty();
+            for (AssetDirectory* directory : directories)
+            {
+                AssetDatabase::SaveOnDirectory(directory, directory->GetAbsolutePath());
+            }
         }
 
         void EditorUpdate(f64 deltaTime)
@@ -403,12 +402,18 @@ namespace Fyrion
         {
             if (forceClose) return;
 
-            // assetTree.GetUpdated(updatedItems);
-            // if (!updatedItems.Empty())
-            // {
-            //     ImGui::OpenPopup("Save Content");
-            //     *canClose = false;
-            // }
+            updatedItems.Clear();
+
+            for (AssetDirectory* directory : directories)
+            {
+                AssetDatabase::GetUpdatedAssets(directory, updatedItems);
+            }
+
+            if (!updatedItems.Empty())
+            {
+                ImGui::OpenPopup("Save Content");
+                *canClose = false;
+            }
         }
     }
 

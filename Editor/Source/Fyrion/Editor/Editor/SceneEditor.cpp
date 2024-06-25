@@ -1,5 +1,8 @@
 #include "SceneEditor.hpp"
 
+#include "Fyrion/Editor/Editor.hpp"
+#include "Fyrion/Editor/Action/SceneEditorAction.hpp"
+
 namespace Fyrion
 {
     SceneObjectAsset* SceneEditor::GetRootObject() const
@@ -7,18 +10,79 @@ namespace Fyrion
         return root;
     }
 
-    void SceneEditor::ClearSelection() {}
-    void SceneEditor::SelectObject(SceneObjectAsset& object) {}
+    void SceneEditor::ClearSelection()
+    {
+        selectedObjects.Clear();
+    }
+
+    void SceneEditor::SelectObject(SceneObjectAsset& object)
+    {
+        selectedObjects.Emplace(reinterpret_cast<usize>(&object));
+    }
+
+    void SceneEditor::DeselectObject(SceneObjectAsset& object)
+    {
+        selectedObjects.Erase(reinterpret_cast<usize>(&object));
+    }
+
     bool SceneEditor::IsSelected(SceneObjectAsset& object) const
     {
-        return false;
+        return selectedObjects.Has(reinterpret_cast<usize>(&object));
     }
+
     bool SceneEditor::IsParentOfSelected(SceneObjectAsset& object) const
     {
+        for (const auto it : selectedObjects)
+        {
+            if (reinterpret_cast<SceneObjectAsset*>(it.first)->GetParent() == &object)
+            {
+                return true;
+            }
+        }
         return false;
     }
-    void SceneEditor::DestroySelectedObjects() {}
-    void SceneEditor::CreateObject() {}
+
+    void SceneEditor::DestroySelectedObjects()
+    {
+        if (root == nullptr) return;
+
+        EditorTransaction* transaction = Editor::CreateTransaction();
+        for (const auto it : selectedObjects)
+        {
+            transaction->CreateAction<DestroySceneObjectAction>(reinterpret_cast<SceneObjectAsset*>(it.first));
+        }
+        transaction->Commit();
+        selectedObjects.Clear();
+    }
+
+    void SceneEditor::ClearSelectionStatic(VoidPtr userData)
+    {
+        static_cast<SceneEditor*>(userData)->ClearSelection();
+    }
+
+    void SceneEditor::CreateObject()
+    {
+        if (root == nullptr) return;
+
+        if (selectedObjects.Empty())
+        {
+            EditorTransaction* transaction = Editor::CreateTransaction();
+            transaction->AddPreExecute(this, ClearSelectionStatic);
+            transaction->CreateAction<CreateSceneObjectAction>(*this, GetRootObject())->Commit();
+        }
+        else
+        {
+            EditorTransaction* transaction = Editor::CreateTransaction();
+            transaction->AddPreExecute(this, ClearSelectionStatic);
+            for (const auto it : selectedObjects)
+            {
+                transaction->CreateAction<CreateSceneObjectAction>(*this, reinterpret_cast<SceneObjectAsset*>(it.first));
+            }
+            selectedObjects.Clear();
+            transaction->Commit();
+        }
+    }
+
     bool SceneEditor::IsSimulating()
     {
         return false;
@@ -26,6 +90,9 @@ namespace Fyrion
 
     void SceneEditor::LoadScene(SceneObjectAsset* asset)
     {
+        selectedObjects.Clear();
         root = asset;
     }
 }
+
+

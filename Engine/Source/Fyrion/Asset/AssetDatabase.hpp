@@ -1,6 +1,7 @@
 #pragma once
 #include "Fyrion/Common.hpp"
 #include "Fyrion/Core/StringView.hpp"
+#include "Fyrion/Core/Array.hpp"
 #include "AssetTypes.hpp"
 
 
@@ -10,6 +11,8 @@ namespace Fyrion
     {
     public:
         static AssetDirectory* LoadFromDirectory(const StringView& name, const StringView& directory);
+        static void            SaveOnDirectory(AssetDirectory* directoryAsset, const StringView& directoryPath);
+        static void            GetUpdatedAssets(AssetDirectory* directoryAsset, Array<Asset*>& updatedAssets);
         static AssetDirectory* LoadFromFile(const StringView& name, const StringView& file);
         static Asset*          ImportAsset(AssetDirectory* directory, const StringView& path);
         static Asset*          FindById(const UUID& assetId);

@@ -18,7 +18,7 @@ namespace Fyrion
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
 
-        bool root = false;
+        bool root = sceneEditor.GetRootObject() == &sceneObject;
 
         Array<SceneObjectAsset*> children = sceneObject.GetChildren().GetAsArray();
 

@@ -12,6 +12,7 @@ namespace Fyrion
     struct SubobjectApi
     {
         void (*  SetPrototype)(VoidPtr subobject, VoidPtr prototype);
+        void (*  SetOwner)(VoidPtr subobject, VoidPtr owner);
         usize (* GetOwnedObjectsCount)(VoidPtr subobject);
         void (*  GetOwnedObjects)(VoidPtr subobject, Span<VoidPtr> assets);
         void (*  Remove)(VoidPtr subobject, VoidPtr object);
@@ -23,6 +24,7 @@ namespace Fyrion
     public:
         virtual              ~SubobjectBase() = default;
         virtual SubobjectApi GetApi() = 0;
+        virtual Asset*       GetOwner() = 0;
     };
 
     template <typename Type>
@@ -83,10 +85,16 @@ namespace Fyrion
 
         SubobjectApi GetApi() override;
 
+        Asset* GetOwner() override
+        {
+            return owner;
+        }
+
         friend class TypeApiInfo<Subobject>;
 
     private:
         Subobject*   prototype = {};
+        Asset*       owner{};
         Array<Type*> objects;
 
         void GetTo(Span<Type*> p_objects, usize pos) const
@@ -132,6 +140,11 @@ namespace Fyrion
             static_cast<Subobject<Type>*>(subobject)->Remove(static_cast<Type*>(object));
         }
 
+        static void SetOwnerImpl(VoidPtr subobject, VoidPtr owner)
+        {
+            static_cast<Subobject<Type>*>(subobject)->owner = static_cast<Asset*>(owner);
+        }
+
         static TypeID GetTypeIdImpl()
         {
             return GetTypeID<Type>();
@@ -141,6 +154,7 @@ namespace Fyrion
         {
             SubobjectApi* api = static_cast<SubobjectApi*>(pointer);
             api->SetPrototype = SetPrototypeImpl;
+            api->SetOwner = SetOwnerImpl;
             api->GetOwnedObjectsCount = GetOwnedObjectsCount;
             api->GetOwnedObjects = GetOwnedObjects;
             api->GetTypeId = GetTypeIdImpl;
@@ -294,6 +308,15 @@ namespace Fyrion
         AssetDirectory* GetDirectory() const
         {
             return directory;
+        }
+
+        Asset* GetParent() const
+        {
+            if (subobjectOf)
+            {
+                return subobjectOf->GetOwner();
+            }
+            return nullptr;
         }
 
         bool IsChildOf(Asset* parent) const;

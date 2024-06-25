@@ -41,8 +41,18 @@ namespace Fyrion
         return nullptr;
     }
 
+    void EditorTransaction::AddPreExecute(VoidPtr usarData, PreActionFn actionFn)
+    {
+        preExecute.EmplaceBack(usarData, actionFn);
+    }
+
     void EditorTransaction::Commit()
     {
+        for (auto& it: preExecute)
+        {
+            it.action(it.userData);
+        }
+
         for(const auto& action : actions)
         {
             action.second->Commit();
@@ -51,6 +61,11 @@ namespace Fyrion
 
     void EditorTransaction::Rollback()
     {
+        for (auto& it: preExecute)
+        {
+            it.action(it.userData);
+        }
+
         for(const auto& action : actions)
         {
             action.second->Rollback();

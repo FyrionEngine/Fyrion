@@ -1,4 +1,5 @@
 #pragma once
+
 #include "Fyrion/Core/Array.hpp"
 #include "Fyrion/Core/Pair.hpp"
 
@@ -6,6 +7,8 @@
 namespace Fyrion
 {
     class TypeHandler;
+    class EditorTransaction;
+    typedef void(*PreActionFn)(VoidPtr userData);
 
     class EditorAction
     {
@@ -16,10 +19,17 @@ namespace Fyrion
         virtual void Rollback() = 0;
     };
 
+
+    struct PreExecuteContext
+    {
+        VoidPtr     userData;
+        PreActionFn action;
+    };
+
     class EditorTransaction
     {
     public:
-        ~EditorTransaction();
+        virtual ~EditorTransaction();
 
         EditorAction* CreateAction(TypeID typeId, VoidPtr* params, TypeID* paramTypes, usize paramNum);
 
@@ -37,11 +47,13 @@ namespace Fyrion
             return static_cast<T*>(CreateAction(GetTypeID<T>(), params, ids, sizeof...(Args)));
         }
 
-        void Commit();
-        void Rollback();
+        void AddPreExecute(VoidPtr usarData, PreActionFn actionFn);
 
+        virtual void Commit();
+        virtual void Rollback();
 
     private:
         Array<Pair<TypeHandler*, EditorAction*>> actions;
+        Array<PreExecuteContext> preExecute;
     };
 }

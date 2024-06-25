@@ -16,7 +16,7 @@ namespace Fyrion
             return children;
         }
 
-        StringView GetDisplayName() override
+        StringView GetDisplayName() const override
         {
             return "Scene";
         }

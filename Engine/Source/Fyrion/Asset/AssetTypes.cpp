@@ -20,7 +20,7 @@ namespace Fyrion
     void AssetDirectory::BuildPath()
     {
         Asset::BuildPath();
-        for (Asset* child : children.GetOwnedObjects())
+        for (Asset* child : children)
         {
             child->BuildPath();
         }
@@ -28,15 +28,39 @@ namespace Fyrion
 
     void AssetDirectory::OnActiveChanged()
     {
-        for (Asset* child : children.GetOwnedObjects())
+        for (Asset* child : children)
         {
             child->SetActive(IsActive());
         }
     }
 
-    StringView AssetDirectory::GetDisplayName()
+    StringView AssetDirectory::GetDisplayName() const
     {
         return "Folder";
+    }
+
+    void AssetDirectory::AddChild(Asset* child)
+    {
+        if (child->GetDirectory() != nullptr)
+        {
+            child->GetDirectory()->RemoveChild(child);
+        }
+        child->directory = this;
+        child->BuildPath();
+        children.EmplaceBack(child);
+    }
+
+    void AssetDirectory::RemoveChild(Asset* child)
+    {
+        if (Asset** it = FindFirst(children.begin(), children.end(), child))
+        {
+            children.Erase(it);
+        }
+    }
+
+    Span<Asset*> AssetDirectory::GetChildren()
+    {
+        return children;
     }
 
     void UIFontAsset::RegisterType(NativeTypeHandler<UIFontAsset>& type)

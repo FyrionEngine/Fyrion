@@ -49,7 +49,6 @@ namespace Fyrion
             assetsByPath.Erase(oldPath);
         }
         assetsByPath.Insert(String{newPath}, asset);
-
         logger.Debug("asset {} registred to path {} ", asset->GetName(), newPath);
     }
 
@@ -89,7 +88,8 @@ namespace Fyrion
 
         asset->uniqueId = uuid;
         asset->assetType = typeHandler;
-        asset->version = 1;
+        asset->loadedVersion = 0;
+        asset->currentVersion = 1;
 
         for (FieldHandler* field : asset->GetAssetType()->GetFields())
         {
@@ -190,8 +190,27 @@ namespace Fyrion
         asset->assetType->Destroy(asset);
     }
 
-    void AssetDatabase::SaveOnDirectory(AssetDirectory* directoryAsset, const StringView& directoryPath) {}
-    void AssetDatabase::GetUpdatedAssets(AssetDirectory* directoryAsset, Array<Asset*>& updatedAssets) {}
+    void AssetDatabase::SaveOnDirectory(AssetDirectory* directoryAsset, const StringView& directoryPath)
+    {
+
+    }
+
+
+    void AssetDatabase::GetUpdatedAssets(AssetDirectory* directoryAsset, Array<Asset*>& updatedAssets)
+    {
+        for (Asset* asset : directoryAsset->GetChildren())
+        {
+            if (asset->IsModified())
+            {
+                updatedAssets.EmplaceBack(asset);
+            }
+
+            if (AssetDirectory* childDirectory = dynamic_cast<AssetDirectory*>(asset))
+            {
+                GetUpdatedAssets(childDirectory, updatedAssets);
+            }
+        }
+    }
 
     AssetDirectory* AssetDatabase::LoadFromDirectory(const StringView& name, const StringView& directory)
     {
@@ -211,6 +230,8 @@ namespace Fyrion
             LoadAssetFile(assetDirectory, entry);
         }
 
+        assetDirectory->loadedVersion =  assetDirectory->currentVersion;
+
         return assetDirectory;
     }
 
@@ -222,9 +243,10 @@ namespace Fyrion
         if (FileSystem::GetFileStatus(filePath).isDirectory)
         {
             AssetDirectory* assetDirectory = Create<AssetDirectory>();
-            assetDirectory->SetDirectory(parentDirectory);
-            assetDirectory->SetName(Path::Name(filePath));
             assetDirectory->absolutePath = filePath;
+            assetDirectory->loadedVersion =  assetDirectory->currentVersion;
+            assetDirectory->name = Path::Name(filePath);
+            parentDirectory->AddChild(assetDirectory);
 
             for (const auto& entry : DirectoryEntries{filePath})
             {
@@ -234,17 +256,19 @@ namespace Fyrion
         else if (extension == FY_ASSET_EXTENSION)
         {
             //TODO
+            //asset->loadedVersion =  asset->currentVersion; //??
         }
         else if (auto importer = importers.Find(extension))
         {
             if (Asset* asset = importer->second->ImportAsset(filePath, nullptr))
             {
-                if (asset->GetName().Empty())
+                if (asset->name.Empty())
                 {
-                    asset->SetName(Path::Name(filePath) + Path::Extension(filePath));
+                    asset->name = Path::Name(filePath) + Path::Extension(filePath);
                 }
                 asset->absolutePath = filePath;
-                asset->SetDirectory(parentDirectory);
+                asset->loadedVersion =  asset->currentVersion;
+                parentDirectory->AddChild(asset);
             }
         }
     }

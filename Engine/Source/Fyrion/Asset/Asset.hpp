@@ -5,7 +5,7 @@
 namespace Fyrion
 {
     class Asset;
-    struct AssetDirectory;
+    class AssetDirectory;
     struct SubobjectApi;
 
 
@@ -257,7 +257,6 @@ namespace Fyrion
         virtual ~Asset() = default;
 
         virtual void Load() {}
-
         virtual void Unload() {}
 
         UUID GetUniqueId() const
@@ -296,7 +295,6 @@ namespace Fyrion
         }
 
         void SetName(StringView p_name);
-        void SetDirectory(Asset* p_directory);
 
         bool IsActive() const
         {
@@ -324,7 +322,17 @@ namespace Fyrion
         virtual void BuildPath();
         virtual void OnActiveChanged() {}
 
-        virtual StringView GetDisplayName()
+        virtual void Modify()
+        {
+            currentVersion += 1;
+        }
+
+        bool IsModified() const
+        {
+            return currentVersion != loadedVersion;
+        }
+
+        virtual StringView GetDisplayName() const
         {
             if (assetType != nullptr)
             {
@@ -337,6 +345,7 @@ namespace Fyrion
 
         template <typename Type>
         friend class Subobject;
+        friend class AssetDirectory;
 
         static void RegisterType(NativeTypeHandler<Asset>& type);
 
@@ -346,7 +355,7 @@ namespace Fyrion
         Asset*          prototype{};
         SubobjectBase*  subobjectOf{};
         TypeHandler*    assetType{};
-        u64             version{};
+        u64             currentVersion{};
         u64             loadedVersion{};
         String          name{};
         String          absolutePath{};

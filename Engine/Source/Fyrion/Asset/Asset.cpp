@@ -24,7 +24,7 @@ namespace Fyrion
         do
         {
             nameFound = true;
-            for (Asset* child : directory->children.GetOwnedObjects())
+            for (Asset* child : directory->GetChildren())
             {
                 if (child == this) continue;
 
@@ -50,17 +50,6 @@ namespace Fyrion
     void Asset::SetName(StringView p_name)
     {
         name = p_name;
-        BuildPath();
-    }
-
-    void Asset::SetDirectory(Asset* p_directory)
-    {
-        if (directory)
-        {
-            directory->children.Remove(this);
-        }
-        directory = dynamic_cast<AssetDirectory*>(p_directory);
-        directory->children.Add(this);
         BuildPath();
     }
 

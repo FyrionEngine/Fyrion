@@ -58,12 +58,12 @@ namespace
             REQUIRE(root);
 
             AssetDirectory* anoterDir = AssetDatabase::Create<AssetDirectory>();
-            root->children.Add(anoterDir);
+            root->AddChild(anoterDir);
 
             TestAsset* testAsset = AssetDatabase::Create<TestAsset>();
-            root->children.Add(testAsset);
+            root->AddChild(testAsset);
 
-            Array<Asset*> children = root->children.GetAsArray();
+            Span<Asset*> children = root->GetChildren();
             CHECK(children.Size() == 2);
         }
         Engine::Destroy();

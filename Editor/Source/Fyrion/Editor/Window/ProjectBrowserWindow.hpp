@@ -10,7 +10,7 @@ namespace Fyrion
 {
     struct UUID;
     class Asset;
-    struct AssetDirectory;
+    class AssetDirectory;
 
     class FY_API ProjectBrowserWindow : public EditorWindow
     {

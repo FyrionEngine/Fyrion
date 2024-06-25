@@ -37,9 +37,9 @@ namespace Fyrion
         MoveToFolder(oldDirectory);
     }
 
-    void MoveAssetAction::MoveToFolder(Asset* directory) const
+    void MoveAssetAction::MoveToFolder(AssetDirectory* directory) const
     {
-        asset->SetDirectory(directory);
+        directory->AddChild(asset);
     }
 
     void MoveAssetAction::RegisterType(NativeTypeHandler<MoveAssetAction>& type)
@@ -51,7 +51,7 @@ namespace Fyrion
     {
         newAsset = AssetDatabase::Create(typeId);
         newAsset->SetName(String("New ").Append(newAsset->GetDisplayName()));
-        newAsset->SetDirectory(directory);
+        directory->AddChild(newAsset);
     }
 
     void AssetCreateAction::Commit()

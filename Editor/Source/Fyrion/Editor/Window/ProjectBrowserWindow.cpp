@@ -100,7 +100,7 @@ namespace Fyrion
 
         if (isNodeOpen)
         {
-            for (Asset* child : directory->children.GetOwnedObjects())
+            for (Asset* child : directory->GetChildren())
             {
                 if (AssetDirectory* childDirectory = child->GetAssetType()->Cast<AssetDirectory>(child))
                 {
@@ -162,7 +162,7 @@ namespace Fyrion
         auto popupRes = ImGui::BeginPopupMenu("select-folder-browser-popup");
         if (popupRes && m_popupFolder)
         {
-            for (Asset* node : m_popupFolder->children.GetOwnedObjects())
+            for (Asset* node : m_popupFolder->GetChildren())
             {
                 if (AssetDirectory* assetDirectory = dynamic_cast<AssetDirectory*>(node))
                 {
@@ -287,7 +287,7 @@ namespace Fyrion
                 {
                     if (m_openDirectory)
                     {
-                        for (Asset* asset : m_openDirectory->children.GetOwnedObjects())
+                        for (Asset* asset : m_openDirectory->GetChildren())
                         {
                             if (!asset->IsActive()) continue;
 
@@ -302,10 +302,10 @@ namespace Fyrion
                                 contentItem.TooltipText = asset->GetPath().CStr();
                                 //contentItem.Texture = folderTexture;
 
-                                // if (asset->updated)
-                                // {
-                                //     contentItem.PreLabel = "*";
-                                // }
+                                if (asset->IsModified())
+                                {
+                                    contentItem.PreLabel = "*";
+                                }
 
                                 if (ImGui::DrawContentItem(contentItem))
                                 {
@@ -338,7 +338,7 @@ namespace Fyrion
                             }
                         }
 
-                        for (Asset* asset : m_openDirectory->children.GetOwnedObjects())
+                        for (Asset* asset : m_openDirectory->GetChildren())
                         {
                             if (!asset->IsActive()) continue;
 
@@ -355,10 +355,10 @@ namespace Fyrion
                                 contentItem.TooltipText = asset->GetPath().CStr();
                                 //contentItem.Texture = folderTexture;
 
-                                // if (node->updated)
-                                // {
-                                //     contentItem.PreLabel = "*";
-                                // }
+                                if (asset->IsModified())
+                                {
+                                    contentItem.PreLabel = "*";
+                                }
 
                                 if (ImGui::DrawContentItem(contentItem))
                                 {

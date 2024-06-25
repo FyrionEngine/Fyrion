@@ -6,7 +6,7 @@
 
 namespace Fyrion
 {
-    struct AssetDirectory;
+    class AssetDirectory;
 }
 
 namespace Fyrion
@@ -45,7 +45,7 @@ namespace Fyrion
         static void RegisterType(NativeTypeHandler<MoveAssetAction>& type);
 
     private:
-        void MoveToFolder(Asset* directory) const;
+        void MoveToFolder(AssetDirectory* directory) const;
 
         Asset*          asset;
         AssetDirectory* oldDirectory;

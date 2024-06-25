@@ -274,7 +274,6 @@ namespace Fyrion
 
         void ProjectUpdate()
         {
-#if FY_ASSET_REFACTOR
             if (!updatedItems.Empty())
             {
                 bool open{true};
@@ -302,33 +301,23 @@ namespace Fyrion
                                 ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_None, 200.f * style.ScaleFactor);
                                 ImGui::TableHeadersRow();
 
-                                for(const RID& rid: updatedItems)
+                                for(const Asset* asset: updatedItems)
                                 {
-                                    AssetNode* node = assetTree.GetNode(rid);
-                                    if (node == nullptr) continue;
-
                                     ImGui::TableNextRow();
 
                                     ImVec4 color = style.Colors[ImGuiCol_Text];
-                                    if (!node->active)
+                                    if (!asset->IsActive())
                                     {
-                                        color = ImVec4{180.f/255.f, 85.f/255.f, 85.f/255.f, 255};
+                                        color = ImVec4{180.f / 255.f, 85.f / 255.f, 85.f / 255.f, 255};
                                     }
 
                                     ImGui::TableSetColumnIndex(0);
-                                    ImGui::TextColored(color, "%s", node->name.CStr());
+                                    ImGui::TextColored(color, "%s", asset->GetName().CStr());
                                     ImGui::TableSetColumnIndex(1);
-                                    ImGui::TextColored(color, "%s", node->path.CStr());
+                                    ImGui::TextColored(color, "%s", asset->GetPath().CStr());
                                     ImGui::TableSetColumnIndex(2);
 
-                                    if (node->type == GetTypeID<AssetDirectory>())
-                                    {
-                                        ImGui::TextColored(color, "%s", "Directory");
-                                    }
-                                    else if (!node->assetDesc.Empty())
-                                    {
-                                        ImGui::TextColored(color, "%s", node->assetDesc.CStr());
-                                    }
+                                    ImGui::TextColored(color, "%s", asset->GetDisplayName().CStr());
 
                                 }
                                 ImGui::EndTable();
@@ -369,7 +358,6 @@ namespace Fyrion
                     updatedItems.Clear();
                 }
             }
-#endif
         }
 
         void SaveAll()

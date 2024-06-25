@@ -34,6 +34,11 @@ namespace Fyrion
         }
     }
 
+    StringView AssetDirectory::GetDisplayName()
+    {
+        return "Folder";
+    }
+
     void UIFontAsset::RegisterType(NativeTypeHandler<UIFontAsset>& type)
     {
         type.Field<&UIFontAsset::fontBytes>("fontBytes");

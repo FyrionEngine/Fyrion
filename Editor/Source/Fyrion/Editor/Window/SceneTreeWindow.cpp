@@ -12,13 +12,15 @@ namespace Fyrion
     {
     }
 
-    void SceneTreeWindow::DrawSceneObject(SceneObject& sceneObject)
+    void SceneTreeWindow::DrawSceneObject(SceneObjectAsset& sceneObject)
     {
 
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
 
         bool root = false;
+
+        Array<SceneObjectAsset*> children = sceneObject.GetChildren().GetAsArray();
 
         nameCache.Clear();
         nameCache += root ? ICON_FA_CUBES : ICON_FA_CUBE;
@@ -45,7 +47,7 @@ namespace Fyrion
         {
 
         }
-        else if (sceneObject.GetChildrenCount() > 0)
+        else if (children.Size() > 0)
         {
             open = ImGui::TreeNode(treeId, nameCache.CStr(), treeFlags);
         }
@@ -88,10 +90,9 @@ namespace Fyrion
 
         if (open)
         {
-
-            for(SceneObject& child: sceneObject.GetChildren())
+            for (SceneObjectAsset* child : children)
             {
-                DrawSceneObject(child);
+                DrawSceneObject(*child);
             }
 
             ImGui::TreePop();
@@ -145,7 +146,7 @@ namespace Fyrion
                     ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 35 * style.ScaleFactor);
                     ImGui::TableHeadersRow();
 
-                    if (SceneObject* root = sceneEditor.GetRootObject())
+                    if (SceneObjectAsset* root = sceneEditor.GetRootObject())
                     {
                         ImGui::BeginTreeNode();
                         DrawSceneObject(*root);

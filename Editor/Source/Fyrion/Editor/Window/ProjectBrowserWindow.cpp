@@ -11,6 +11,7 @@
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Asset/AssetDatabase.hpp"
 #include "Fyrion/Editor/Action/AssetEditorActions.hpp"
+#include "Fyrion/Editor/Action/SceneEditorAction.hpp"
 
 #define CONTENT_TABLE_ID 500
 #define ASSET_PAYLOAD "ASSET-PAYLOAD"
@@ -319,7 +320,10 @@ namespace Fyrion
 
                                 if (ImGui::ContentItemRenamed(contentItem.ItemId))
                                 {
-                                    Editor::CreateTransaction()->CreateAction<RenameAssetAction>(asset, ImGui::ContentRenameString())->Commit();
+                                    if (ImGui::ContentRenameString() != asset->GetName())
+                                    {
+                                        Editor::CreateTransaction()->CreateAction<RenameAssetAction>(asset, ImGui::ContentRenameString())->Commit();
+                                    }
                                 }
 
                                 if (!asset->IsChildOf(m_movingItem) && ImGui::ContentItemAcceptPayload(contentItem.ItemId))
@@ -346,7 +350,7 @@ namespace Fyrion
                                 contentItem.ItemId = reinterpret_cast<usize>(asset);
                                 contentItem.ShowDetails = true;
                                 contentItem.Label = asset->GetName().CStr();
-                                contentItem.DetailsDesc = asset->GetAssetType()->GetSimpleName().CStr();
+                                contentItem.DetailsDesc = asset->GetDisplayName().CStr();
                                 contentItem.SetPayload = ASSET_PAYLOAD;
                                 contentItem.TooltipText = asset->GetPath().CStr();
                                 //contentItem.Texture = folderTexture;
@@ -358,10 +362,10 @@ namespace Fyrion
 
                                 if (ImGui::DrawContentItem(contentItem))
                                 {
-                                    // if (node->objectType == GetTypeID<SceneObjectAsset>())
-                                    // {
-                                    //     Editor::GetSceneEditor().LoadScene(node->rid);
-                                    // }
+                                    if (SceneObjectAsset* sceneObjectAsset = dynamic_cast<SceneObjectAsset*>(asset))
+                                    {
+                                        Editor::CreateTransaction()->CreateAction<OpenSceneAction>(Editor::GetSceneEditor(), sceneObjectAsset)->Commit();
+                                    }
                                     // else if (node->objectType == GetTypeID<GraphAsset>() || node->objectType == GetTypeID<RenderGraphAsset>())
                                     // {
                                     //     GraphEditorWindow::OpenGraphWindow(node->rid);
@@ -375,7 +379,11 @@ namespace Fyrion
 
                                 if (ImGui::ContentItemRenamed(contentItem.ItemId))
                                 {
-                                    Editor::CreateTransaction()->CreateAction<RenameAssetAction>(asset, ImGui::ContentRenameString());
+                                    if (ImGui::ContentRenameString() != asset->GetName())
+                                    {
+                                        Editor::CreateTransaction()->CreateAction<RenameAssetAction>(asset, ImGui::ContentRenameString())->Commit();
+                                    }
+
                                 }
 
                                 if (ImGui::ContentItemBeginPayload(contentItem.ItemId))
@@ -437,20 +445,12 @@ namespace Fyrion
 
     void ProjectBrowserWindow::AssetNewFolder(const MenuItemEventData& eventData)
     {
-        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
-        AssetCreateAction*    assetCreationAction = Editor::CreateTransaction()->CreateAction<AssetCreateAction>(projectBrowserWindow->m_openDirectory, GetTypeID<AssetDirectory>());
-        assetCreationAction->Commit();
-        ImGui::SelectContentItem(reinterpret_cast<usize>(assetCreationAction->GetNewAsset()), CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
-        ImGui::RenameContentSelected(CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
+        static_cast<ProjectBrowserWindow*>(eventData.drawData)->NewAsset(GetTypeID<AssetDirectory>());
     }
 
     void ProjectBrowserWindow::AssetNewScene(const MenuItemEventData& eventData)
     {
-        // ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
-        // RID newAsset = projectBrowserWindow->m_assetTree.NewAsset(projectBrowserWindow->m_openFolder, Repository::CreateResource<SceneObjectAsset>(), "New Scene");
-        //
-        // ImGui::SelectContentItem(Hash<RID>::Value(newAsset), CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
-        // ImGui::RenameContentSelected(CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
+        static_cast<ProjectBrowserWindow*>(eventData.drawData)->NewAsset(GetTypeID<SceneObjectAsset>());
     }
 
     void ProjectBrowserWindow::AssetDelete(const MenuItemEventData& eventData)
@@ -498,6 +498,14 @@ namespace Fyrion
         //
         // ImGui::SelectContentItem(Hash<RID>::Value(newAsset), CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
         // ImGui::RenameContentSelected(CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
+    }
+
+    void ProjectBrowserWindow::NewAsset(TypeID typeId)
+    {
+        AssetCreateAction*    assetCreationAction = Editor::CreateTransaction()->CreateAction<AssetCreateAction>(m_openDirectory, typeId);
+        assetCreationAction->Commit();
+        ImGui::SelectContentItem(reinterpret_cast<usize>(assetCreationAction->GetNewAsset()), CONTENT_TABLE_ID + m_windowId);
+        ImGui::RenameContentSelected(CONTENT_TABLE_ID + m_windowId);
     }
 
     void ProjectBrowserWindow::AddMenuItem(const MenuItemCreation& menuItem)

@@ -68,6 +68,7 @@ namespace Fyrion
             GetTo(p_objects, 0);
         }
 
+        //TODO make a proper iterator to avoid a heap allocation in Array
         Array<Type*> GetAsArray() const
         {
             Array<Type*> ret(Count());
@@ -95,7 +96,7 @@ namespace Fyrion
                 prototype->GetTo(p_objects, pos);
             }
 
-            for (Asset* object : objects)
+            for (Type* object : objects)
             {
                 p_objects[pos++] = object;
             }
@@ -297,6 +298,17 @@ namespace Fyrion
 
         bool IsChildOf(Asset* parent) const;
 
+        virtual void BuildPath();
+        virtual void OnActiveChanged() {}
+
+        virtual StringView GetDisplayName()
+        {
+            if (assetType != nullptr)
+            {
+                return assetType->GetSimpleName();
+            }
+            return "Asset";
+        }
 
         friend class AssetDatabase;
 
@@ -304,9 +316,6 @@ namespace Fyrion
         friend class Subobject;
 
         static void RegisterType(NativeTypeHandler<Asset>& type);
-
-        virtual void BuildPath();
-        virtual void OnActiveChanged() {}
 
     private:
         UUID            uniqueId{};

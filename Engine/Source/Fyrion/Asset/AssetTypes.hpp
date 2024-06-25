@@ -30,6 +30,8 @@ namespace Fyrion
 
         void BuildPath() override;
         void OnActiveChanged() override;
+
+        StringView GetDisplayName() override;
     };
 
     struct UIFontAsset final : Asset

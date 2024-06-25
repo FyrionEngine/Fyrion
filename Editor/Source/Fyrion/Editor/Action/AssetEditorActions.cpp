@@ -50,7 +50,7 @@ namespace Fyrion
     AssetCreateAction::AssetCreateAction(AssetDirectory* directory, TypeID typeId)
     {
         newAsset = AssetDatabase::Create(typeId);
-        newAsset->SetName("New Folder");
+        newAsset->SetName(String("New ").Append(newAsset->GetDisplayName()));
         newAsset->SetDirectory(directory);
     }
 

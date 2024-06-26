@@ -369,4 +369,24 @@ namespace Fyrion
 
         void ValidateName();
     };
+
+
+    template<typename T>
+    struct ArchiveType<Subobject<T>, Traits::EnableIf<Traits::IsBaseOf<Asset, T>>>
+    {
+        static void WriteField(ArchiveWriter& writer, ArchiveObject object, const StringView& name, const Subobject<T>& value)
+        {
+            ArchiveObject arr = writer.CreateArray();
+            for (T* asset : value.GetOwnedObjects())
+            {
+
+            }
+            writer.WriteValue(object, name, arr);
+        }
+
+        static Subobject<T> ReadField(ArchiveReader& reader, ArchiveObject object, const StringView& name)
+        {
+            return {};
+        }
+    };
 }

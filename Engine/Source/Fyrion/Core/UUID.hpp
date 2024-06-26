@@ -176,4 +176,22 @@ namespace Fyrion
 		}
 	};
 
+
+	template<>
+	struct ArchiveType<UUID>
+	{
+		static void WriteField(ArchiveWriter& writer, ArchiveObject object, const StringView& name, const UUID& value)
+		{
+			char buffer[StringConverter<UUID>::bufferCount] = {};
+			StringConverter<UUID>::ToString(buffer, 0, value);
+			writer.WriteString(object, name, StringView{buffer, StringConverter<UUID>::bufferCount});
+		}
+
+		static UUID ReadField(ArchiveReader& reader, ArchiveObject object, const StringView& name)
+		{
+			return UUID::FromString(reader.ReadString(object, name));
+		}
+	};
+
+
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include "Asset.hpp"
+#include "Fyrion/Core/Any.hpp"
 
 namespace Fyrion
 {

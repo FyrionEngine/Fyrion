@@ -1,5 +1,6 @@
 #include "AssetDatabase.hpp"
 
+#include "AssetSerialization.hpp"
 #include "Fyrion/Core/Logger.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
 #include "Fyrion/IO/Path.hpp"
@@ -234,7 +235,14 @@ namespace Fyrion
             {
                 String assetPath = Path::Join(directoryPath, asset->GetName(), FY_ASSET_EXTENSION);
 
-                String str = "dummy";
+                JsonAssetWriter writer;
+
+                ArchiveObject object = writer.CreateObject();
+                writer.WriteString(object, "type", asset->GetAssetType()->GetName());
+                writer.WriteString(object, "uuid", ToString(asset->GetUniqueId()));
+                writer.WriteValue(object, "asset", asset->GetAssetType()->Serialize(writer, asset));
+                String str = JsonAssetWriter::Stringify(object);
+
                 FileHandler handler = FileSystem::OpenFile(assetPath, AccessMode::WriteOnly);
                 FileSystem::WriteFile(handler, str.begin(), str.Size());
                 FileSystem::CloseFile(handler);
@@ -309,8 +317,25 @@ namespace Fyrion
         }
         else if (extension == FY_ASSET_EXTENSION)
         {
-            //TODO
-            //asset->loadedVersion =  asset->currentVersion; //??
+            FileHandler handler = FileSystem::OpenFile(filePath, AccessMode::ReadOnly);
+            u64 size = FileSystem::GetFileSize(handler);
+            String buffer(size);
+            FileSystem::ReadFile(handler, buffer.begin(), buffer.Size());
+            FileSystem::CloseFile(handler);
+
+            JsonAssetReader reader(buffer);
+            ArchiveObject root = reader.ReadObject();
+
+            TypeHandler* typeHandler = Registry::FindTypeByName(reader.ReadString(root, "type"));
+            FY_ASSERT(typeHandler, "type not found");
+            if (typeHandler)
+            {
+                Asset* asset = Create(typeHandler->GetTypeInfo().typeId, UUID::FromString(reader.ReadString(root, "uuid")));
+                asset->name = Path::Name(filePath);
+                asset->absolutePath = filePath;
+                asset->loadedVersion =  asset->currentVersion;
+                parentDirectory->AddChild(asset);
+            }
         }
         else if (auto importer = importers.Find(extension))
         {

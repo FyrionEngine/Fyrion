@@ -89,5 +89,8 @@ namespace Fyrion
         return false;
     }
 
-    void Asset::RegisterType(NativeTypeHandler<Asset>& type) {}
+    void Asset::RegisterType(NativeTypeHandler<Asset>& type)
+    {
+        type.Function<&Asset::GetName>("GetName");
+    }
 }

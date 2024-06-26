@@ -50,7 +50,7 @@ namespace Fyrion
     };
 
 
-    template <typename T>
+    template <typename T, typename Enable = void>
     struct ArchiveType {};
 
 #define FY_ARCHIVE_TYPE_INT(T)      \

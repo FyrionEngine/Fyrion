@@ -66,7 +66,7 @@ namespace Fyrion
 
     void JsonAssetWriter::WriteString(ArchiveObject object, const StringView& name, const StringView& value)
     {
-        yyjson_mut_obj_add_strn(doc, static_cast<yyjson_mut_val*>(object.handler), name.CStr(), value.CStr(), value.Size());
+        yyjson_mut_obj_add_strncpy(doc, static_cast<yyjson_mut_val*>(object.handler), name.CStr(), value.CStr(), value.Size());
     }
 
     void JsonAssetWriter::WriteValue(ArchiveObject object, const StringView& name, ArchiveObject value)
@@ -116,6 +116,12 @@ namespace Fyrion
             Free(nullptr, json);
             return ret;
         }
+
+        if (err.code != 0)
+        {
+            FY_ASSERT(false, "error");
+        }
+
         return {};
     }
 

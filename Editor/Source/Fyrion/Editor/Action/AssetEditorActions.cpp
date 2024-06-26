@@ -39,6 +39,7 @@ namespace Fyrion
 
     void MoveAssetAction::MoveToFolder(AssetDirectory* directory) const
     {
+        asset->Modify();
         directory->AddChild(asset);
     }
 
@@ -66,7 +67,7 @@ namespace Fyrion
 
     AssetCreateAction::~AssetCreateAction()
     {
-        if (!newAsset->IsActive() && !newAsset->IsModified())
+        if (!newAsset->IsActive() && !newAsset->IsModified() && newAsset->GetAbsolutePath().Empty())
         {
             newAsset->GetDirectory()->RemoveChild(newAsset);
             AssetDatabase::Destroy(newAsset);

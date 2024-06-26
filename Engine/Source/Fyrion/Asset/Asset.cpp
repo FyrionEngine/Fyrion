@@ -11,7 +11,10 @@ namespace Fyrion
         {
             ValidateName();
             String newPath = String().Append(directory->GetPath()).Append("/").Append(name);
-            AssetDatabaseUpdatePath(this, path, newPath);
+            if (path != newPath)
+            {
+                AssetDatabaseUpdatePath(this, path, newPath);
+            }
             path = newPath;
         }
     }
@@ -27,6 +30,8 @@ namespace Fyrion
             for (Asset* child : directory->GetChildren())
             {
                 if (child == this) continue;
+
+                if (!child->IsActive()) continue;
 
                 if (finalName == child->name)
                 {
@@ -60,6 +65,10 @@ namespace Fyrion
         if (changed)
         {
             OnActiveChanged();
+        }
+        if (active)
+        {
+            BuildPath();
         }
         Modify();
     }

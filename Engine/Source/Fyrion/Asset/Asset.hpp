@@ -365,6 +365,7 @@ namespace Fyrion
         String          absolutePath{};
         AssetDirectory* directory{};
         bool            active = true;
+        bool            imported = false;
 
         void ValidateName();
     };

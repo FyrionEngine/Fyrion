@@ -192,17 +192,60 @@ namespace Fyrion
 
     void AssetDatabase::SaveOnDirectory(AssetDirectory* directoryAsset, const StringView& directoryPath)
     {
+        if (!FileSystem::GetFileStatus(directoryPath).exists)
+        {
+            FileSystem::CreateDirectory(directoryPath);
+        }
+
         for (Asset* asset : directoryAsset->GetChildren())
         {
-            if (asset->IsModified())
+            const bool oldPathExists = FileSystem::GetFileStatus(asset->GetAbsolutePath()).exists;
+
+            if (!asset->IsActive())
+            {
+                if (oldPathExists)
+                {
+                    FileSystem::Remove(asset->GetAbsolutePath());
+                    logger.Debug("Asset {} removed on {} ", asset->GetPath(), asset->GetAbsolutePath());
+                    asset->absolutePath = "";
+                }
+                continue;
+            }
+
+            if (AssetDirectory* dir = dynamic_cast<AssetDirectory*>(asset))
+            {
+                String newPath = Path::Join(directoryPath, asset->GetName());
+                const bool newPathExists = FileSystem::GetFileStatus(newPath).exists;
+
+                if (oldPathExists && !newPathExists)
+                {
+                    FileSystem::Rename(asset->GetAbsolutePath(), newPath);
+                    logger.Debug("Directory {} moved from {} to {} ", asset->GetPath(), asset->GetAbsolutePath(), newPath);
+                }
+                else if (!newPathExists)
+                {
+                    FileSystem::CreateDirectory(newPath);
+                    logger.Debug("Directory {} created on {} ", asset->GetPath(), newPath);
+                }
+                dir->absolutePath = newPath;
+                SaveOnDirectory(dir, newPath);
+            }
+            else if (asset->IsModified() && !asset->imported)
+            {
+                String assetPath = Path::Join(directoryPath, asset->GetName(), FY_ASSET_EXTENSION);
+
+                String str = "dummy";
+                FileHandler handler = FileSystem::OpenFile(assetPath, AccessMode::WriteOnly);
+                FileSystem::WriteFile(handler, str.begin(), str.Size());
+                FileSystem::CloseFile(handler);
+
+                asset->absolutePath = assetPath;
+            }
+            else if (!oldPathExists)
             {
 
             }
-
-            if (AssetDirectory* childDirectory = dynamic_cast<AssetDirectory*>(asset))
-            {
-                //GetUpdatedAssets(childDirectory, updatedAssets);
-            }
+            asset->loadedVersion = asset->currentVersion;
         }
     }
 
@@ -211,7 +254,7 @@ namespace Fyrion
     {
         for (Asset* asset : directoryAsset->GetChildren())
         {
-            if (asset->IsModified())
+            if (asset->IsModified() && asset->IsActive())
             {
                 updatedAssets.EmplaceBack(asset);
             }
@@ -279,6 +322,7 @@ namespace Fyrion
                 }
                 asset->absolutePath = filePath;
                 asset->loadedVersion =  asset->currentVersion;
+                asset->imported = true;
                 parentDirectory->AddChild(asset);
             }
         }

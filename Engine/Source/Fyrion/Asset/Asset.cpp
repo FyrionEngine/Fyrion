@@ -61,6 +61,7 @@ namespace Fyrion
         {
             OnActiveChanged();
         }
+        Modify();
     }
 
     bool Asset::IsChildOf(Asset* parent) const

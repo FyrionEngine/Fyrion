@@ -162,7 +162,7 @@ namespace Fyrion
 
                     if (TypeHandler* typeHandler = Registry::FindTypeById(typeId))
                     {
-                        usize          count = subobjectApi.GetOwnedObjectsCount(ptr);
+                        usize count = subobjectApi.GetOwnedObjectsCount(ptr);
                         Array<VoidPtr> subObjects(count);
                         subobjectApi.GetOwnedObjects(ptr, subObjects);
 
@@ -192,7 +192,18 @@ namespace Fyrion
 
     void AssetDatabase::SaveOnDirectory(AssetDirectory* directoryAsset, const StringView& directoryPath)
     {
+        for (Asset* asset : directoryAsset->GetChildren())
+        {
+            if (asset->IsModified())
+            {
 
+            }
+
+            if (AssetDirectory* childDirectory = dynamic_cast<AssetDirectory*>(asset))
+            {
+                //GetUpdatedAssets(childDirectory, updatedAssets);
+            }
+        }
     }
 
 

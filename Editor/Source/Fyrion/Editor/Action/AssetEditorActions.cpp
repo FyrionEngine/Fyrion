@@ -66,8 +66,9 @@ namespace Fyrion
 
     AssetCreateAction::~AssetCreateAction()
     {
-        if (!newAsset->IsActive())
+        if (!newAsset->IsActive() && !newAsset->IsModified())
         {
+            newAsset->GetDirectory()->RemoveChild(newAsset);
             AssetDatabase::Destroy(newAsset);
         }
     }

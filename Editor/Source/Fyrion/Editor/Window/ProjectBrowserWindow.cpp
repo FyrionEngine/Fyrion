@@ -344,8 +344,6 @@ namespace Fyrion
 
                             if (asset->GetAssetTypeId() != GetTypeID<AssetDirectory>())
                             {
-                                //ResourceObject assetObject = Repository::Read(node->rid);
-
                                 ImGui::ContentItemDesc contentItem{};
                                 contentItem.ItemId = reinterpret_cast<usize>(asset);
                                 contentItem.ShowDetails = true;
@@ -484,20 +482,10 @@ namespace Fyrion
 
     void ProjectBrowserWindow::AssetNewResourceGraph(const MenuItemEventData& eventData)
     {
-        // ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
-        // RID newAsset = projectBrowserWindow->m_assetTree.NewAsset(projectBrowserWindow->m_openFolder, Repository::CreateResource<GraphAsset>(), "New Resource Graph");
-        //
-        // ImGui::SelectContentItem(Hash<RID>::Value(newAsset), CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
-        // ImGui::RenameContentSelected(CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
     }
 
     void ProjectBrowserWindow::AssetNewRenderGraph(const MenuItemEventData& eventData)
     {
-        // ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
-        // RID newAsset = projectBrowserWindow->m_assetTree.NewAsset(projectBrowserWindow->m_openFolder, Repository::CreateResource<RenderGraphAsset>(), "New Render Graph");
-        //
-        // ImGui::SelectContentItem(Hash<RID>::Value(newAsset), CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
-        // ImGui::RenameContentSelected(CONTENT_TABLE_ID + projectBrowserWindow->m_windowId);
     }
 
     void ProjectBrowserWindow::NewAsset(TypeID typeId)

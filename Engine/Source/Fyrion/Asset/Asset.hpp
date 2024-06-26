@@ -329,6 +329,10 @@ namespace Fyrion
 
         bool IsModified() const
         {
+            if (!IsActive() && loadedVersion == 0)
+            {
+                return false;
+            }
             return currentVersion != loadedVersion;
         }
 

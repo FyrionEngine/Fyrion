@@ -52,6 +52,11 @@ namespace Fyrion
         }
     }
 
+    void Asset::SetUUID(const UUID& p_uuid)
+    {
+        uuid = p_uuid;
+    }
+
     void Asset::SetName(StringView p_name)
     {
         name = p_name;
@@ -91,6 +96,9 @@ namespace Fyrion
 
     void Asset::RegisterType(NativeTypeHandler<Asset>& type)
     {
+        type.Field<&Asset::uuid>("uuid");
+
+
         type.Function<&Asset::GetName>("GetName");
     }
 }

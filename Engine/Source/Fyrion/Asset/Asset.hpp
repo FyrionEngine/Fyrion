@@ -259,10 +259,12 @@ namespace Fyrion
         virtual void Load() {}
         virtual void Unload() {}
 
-        UUID GetUniqueId() const
+        UUID GetUUID() const
         {
-            return uniqueId;
+            return uuid;
         }
+
+        void SetUUID(const UUID& p_uuid);
 
         Asset* GetPrototype() const
         {
@@ -354,7 +356,8 @@ namespace Fyrion
         static void RegisterType(NativeTypeHandler<Asset>& type);
 
     private:
-        UUID            uniqueId{};
+        usize           index{};
+        UUID            uuid{};
         String          path{};
         Asset*          prototype{};
         SubobjectBase*  subobjectOf{};
@@ -365,7 +368,6 @@ namespace Fyrion
         String          absolutePath{};
         AssetDirectory* directory{};
         bool            active = true;
-        bool            imported = false;
 
         void ValidateName();
     };
@@ -376,10 +378,11 @@ namespace Fyrion
     {
         static void WriteField(ArchiveWriter& writer, ArchiveObject object, const StringView& name, const Subobject<T>& value)
         {
+            TypeHandler* typeHandler = Registry::FindType<T>();
             ArchiveObject arr = writer.CreateArray();
             for (T* asset : value.GetOwnedObjects())
             {
-
+                writer.AddValue(arr, typeHandler->Serialize(writer, asset));
             }
             writer.WriteValue(object, name, arr);
         }

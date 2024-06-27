@@ -32,7 +32,7 @@ namespace Fyrion
         String                 m_stringCache{};
         Asset*                 m_movingItem{};
         AssetDirectory*        m_popupFolder{};
-        HashMap<UUID, bool>    m_openTreeFolders{};
+        HashMap<usize, bool>   m_openTreeFolders{};
         f32                    m_contentBrowserZoom = 0.8;
         Array<AssetDirectory*> directoryCache;
 

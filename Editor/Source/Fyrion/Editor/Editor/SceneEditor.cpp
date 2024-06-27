@@ -46,6 +46,8 @@ namespace Fyrion
     {
         if (root == nullptr) return;
 
+        root->Modify();
+
         EditorTransaction* transaction = Editor::CreateTransaction();
         for (const auto it : selectedObjects)
         {
@@ -63,6 +65,8 @@ namespace Fyrion
     void SceneEditor::CreateObject()
     {
         if (root == nullptr) return;
+
+        root->Modify();
 
         if (selectedObjects.Empty())
         {

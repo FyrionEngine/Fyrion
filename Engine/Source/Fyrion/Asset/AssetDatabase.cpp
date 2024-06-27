@@ -12,6 +12,7 @@ namespace Fyrion
     {
         bool RegisterEvents();
 
+        Array<Asset*>                 assets;
         HashMap<UUID, Asset*>         assetsById;
         HashMap<String, Asset*>       assetsByPath;
         Array<Pair<TypeID, AssetIO*>> assetIOs;
@@ -76,7 +77,7 @@ namespace Fyrion
 
     Asset* AssetDatabase::Create(TypeID typeId)
     {
-        return Create(typeId, UUID::RandomUUID());
+        return Create(typeId, {});
     }
 
     Asset* AssetDatabase::Create(TypeID typeId, UUID uuid)
@@ -87,7 +88,7 @@ namespace Fyrion
         Asset* asset = typeHandler->Cast<Asset>(typeHandler->NewInstance());
         FY_ASSERT(asset, "type cannot be casted to Asset");
 
-        asset->uniqueId = uuid;
+        asset->uuid = uuid;
         asset->assetType = typeHandler;
         asset->loadedVersion = 0;
         asset->currentVersion = 1;
@@ -103,14 +104,20 @@ namespace Fyrion
             }
         }
 
-        assetsById.Insert(asset->uniqueId, asset);
+        asset->index = assets.Size();
+        assets.EmplaceBack(asset);
+
+        if (asset->uuid)
+        {
+            assetsById.Insert(asset->uuid, asset);
+        }
 
         return asset;
     }
 
     Asset* AssetDatabase::CreateFromPrototype(TypeID typeId, Asset* prototype)
     {
-        return CreateFromPrototype(typeId, prototype, UUID::RandomUUID());
+        return CreateFromPrototype(typeId, prototype, {});
     }
 
     Asset* AssetDatabase::CreateFromPrototype(TypeID typeId, Asset* prototype, UUID uuid)
@@ -182,9 +189,20 @@ namespace Fyrion
                 }
             }
         }
+
         if (!isShutdown)
         {
-            assetsById.Erase(asset->GetUniqueId());
+
+            Asset* lastAsset = assets.Back();
+            if (lastAsset != asset)
+            {
+                lastAsset->index = asset->index;
+                assets[lastAsset->index] = lastAsset;
+            }
+
+            assets.PopBack();
+
+            assetsById.Erase(asset->GetUUID());
             assetsByPath.Erase(asset->GetPath());
         }
 
@@ -231,7 +249,7 @@ namespace Fyrion
                 dir->absolutePath = newPath;
                 SaveOnDirectory(dir, newPath);
             }
-            else if (asset->IsModified() && !asset->imported)
+            else if (asset->IsModified() && asset->GetUUID())
             {
                 String assetPath = Path::Join(directoryPath, asset->GetName(), FY_ASSET_EXTENSION);
 
@@ -239,7 +257,7 @@ namespace Fyrion
 
                 ArchiveObject object = writer.CreateObject();
                 writer.WriteString(object, "type", asset->GetAssetType()->GetName());
-                writer.WriteString(object, "uuid", ToString(asset->GetUniqueId()));
+                writer.WriteString(object, "uuid", ToString(asset->GetUUID()));
                 writer.WriteValue(object, "asset", asset->GetAssetType()->Serialize(writer, asset));
                 String str = JsonAssetWriter::Stringify(object);
 
@@ -347,7 +365,6 @@ namespace Fyrion
                 }
                 asset->absolutePath = filePath;
                 asset->loadedVersion =  asset->currentVersion;
-                asset->imported = true;
                 parentDirectory->AddChild(asset);
             }
         }
@@ -369,10 +386,11 @@ namespace Fyrion
     void AssetDatabaseShutdown()
     {
         isShutdown = true;
-        for (auto& it : assetsById)
+        for (Asset* it : assets)
         {
-            AssetDatabase::Destroy(it.second, false);
+            AssetDatabase::Destroy(it, false);
         }
+
         isShutdown = false;
 
         for (const auto& assetIo : assetIOs)
@@ -385,6 +403,9 @@ namespace Fyrion
 
         assetIOs.Clear();
         assetIOs.ShrinkToFit();
+
+        assets.Clear();
+        assets.ShrinkToFit();
 
         assetsById.Clear();
         assetsByPath.Clear();

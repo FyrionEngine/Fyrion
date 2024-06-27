@@ -36,7 +36,7 @@ namespace Fyrion
 
         if (p_directory->GetDirectory() != nullptr)
         {
-            m_openTreeFolders[p_directory->GetDirectory()->GetUniqueId()] = true;
+            m_openTreeFolders[reinterpret_cast<usize>(p_directory->GetDirectory())] = true;
         }
     }
 
@@ -48,7 +48,7 @@ namespace Fyrion
 
         ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_None;
 
-        bool openDir = m_openTreeFolders[asset->GetUniqueId()];
+        bool openDir = m_openTreeFolders[reinterpret_cast<usize>(asset)];
 
         if (openDir)
         {
@@ -96,7 +96,7 @@ namespace Fyrion
             SetOpenDirectory(directory);
         }
 
-        m_openTreeFolders[directory->GetUniqueId()] = isNodeOpen;
+        m_openTreeFolders[reinterpret_cast<usize>(directory)] = isNodeOpen;
 
         if (isNodeOpen)
         {

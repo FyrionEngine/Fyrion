@@ -1,7 +1,10 @@
 #include <doctest.h>
 
 #include "Fyrion/Engine.hpp"
+#include "Fyrion/Asset/Asset.hpp"
 #include "Fyrion/Asset/AssetDatabase.hpp"
+#include "Fyrion/Asset/AssetTypes.hpp"
+#include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
 
 using namespace Fyrion;

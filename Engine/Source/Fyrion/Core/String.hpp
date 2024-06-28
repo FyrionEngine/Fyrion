@@ -965,9 +965,9 @@ namespace Fyrion
             writer.WriteString(object, name, value);
         }
 
-        static BasicString<char, BufferSize> ReadField(ArchiveReader& reader, ArchiveObject object, const StringView& name)
+        static void ReadField(ArchiveReader& reader, ArchiveObject object, const StringView& name, BasicString<char, BufferSize>& string)
         {
-            return reader.ReadString(object, name);
+            string = reader.ReadString(object, name);
         }
     };
 

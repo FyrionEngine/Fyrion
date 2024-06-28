@@ -1,4 +1,5 @@
 #pragma once
+#include "AssetDatabase.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Core/UUID.hpp"
 
@@ -387,9 +388,20 @@ namespace Fyrion
             writer.WriteValue(object, name, arr);
         }
 
-        static Subobject<T> ReadField(ArchiveReader& reader, ArchiveObject object, const StringView& name)
+        static void ReadField(ArchiveReader& reader, ArchiveObject object, const StringView& name, Subobject<T>& value)
         {
-            return {};
+            TypeHandler* typeHandler = Registry::FindType<T>();
+            ArchiveObject arr = reader.ReadObject(object, name);
+            usize arrSize = reader.ArrSize(arr);
+
+            ArchiveObject item{};
+            for (usize i = 0; i < arrSize; ++i)
+            {
+                item = reader.Next(arr, item);
+                T* asset = AssetDatabase::Create<T>();
+                typeHandler->Deserialize(reader, item, asset);
+                value.Add(asset);
+            }
         }
     };
 }

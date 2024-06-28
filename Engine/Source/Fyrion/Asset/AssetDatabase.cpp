@@ -1,6 +1,8 @@
 #include "AssetDatabase.hpp"
 
 #include "AssetSerialization.hpp"
+#include "AssetTypes.hpp"
+#include "Fyrion/Core/HashMap.hpp"
 #include "Fyrion/Core/Logger.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
 #include "Fyrion/IO/Path.hpp"
@@ -52,6 +54,15 @@ namespace Fyrion
         }
         assetsByPath.Insert(String{newPath}, asset);
         logger.Debug("asset {} registred to path {} ", asset->GetName(), newPath);
+    }
+
+    void AssetDatabaseUpdateUUID(Asset* asset, const UUID& newUUID)
+    {
+        if (asset->GetUUID())
+        {
+            assetsById.Erase(asset->GetUUID());
+        }
+        assetsById.Insert(newUUID, asset);
     }
 
 
@@ -228,12 +239,10 @@ namespace Fyrion
                     logger.Debug("Asset {} removed on {} ", asset->GetPath(), asset->GetAbsolutePath());
                     asset->absolutePath = "";
                 }
-                continue;
             }
-
-            if (AssetDirectory* dir = dynamic_cast<AssetDirectory*>(asset))
+            else if (AssetDirectory* dir = dynamic_cast<AssetDirectory*>(asset))
             {
-                String newPath = Path::Join(directoryPath, asset->GetName());
+                String     newPath = Path::Join(directoryPath, asset->GetName());
                 const bool newPathExists = FileSystem::GetFileStatus(newPath).exists;
 
                 if (oldPathExists && !newPathExists)
@@ -252,13 +261,16 @@ namespace Fyrion
             else if (asset->IsModified() && asset->GetUUID())
             {
                 String assetPath = Path::Join(directoryPath, asset->GetName(), FY_ASSET_EXTENSION);
+                if (assetPath != asset->GetAbsolutePath() && oldPathExists)
+                {
+                    FileSystem::Remove(asset->GetAbsolutePath());
+                    logger.Debug("Asset {} moved from {} to {} ", asset->GetPath(), asset->GetAbsolutePath(), assetPath);
+                }
 
                 JsonAssetWriter writer;
 
-                ArchiveObject object = writer.CreateObject();
-                writer.WriteString(object, "type", asset->GetAssetType()->GetName());
-                writer.WriteString(object, "uuid", ToString(asset->GetUUID()));
-                writer.WriteValue(object, "asset", asset->GetAssetType()->Serialize(writer, asset));
+                ArchiveObject object = asset->GetAssetType()->Serialize(writer, asset);
+                writer.WriteString(object, "_type", asset->GetAssetType()->GetName());
                 String str = JsonAssetWriter::Stringify(object);
 
                 FileHandler handler = FileSystem::OpenFile(assetPath, AccessMode::WriteOnly);
@@ -266,10 +278,6 @@ namespace Fyrion
                 FileSystem::CloseFile(handler);
 
                 asset->absolutePath = assetPath;
-            }
-            else if (!oldPathExists)
-            {
-
             }
             asset->loadedVersion = asset->currentVersion;
         }
@@ -280,7 +288,7 @@ namespace Fyrion
     {
         for (Asset* asset : directoryAsset->GetChildren())
         {
-            if (asset->IsModified() && asset->IsActive())
+            if (asset->IsModified())
             {
                 updatedAssets.EmplaceBack(asset);
             }
@@ -343,12 +351,12 @@ namespace Fyrion
 
             JsonAssetReader reader(buffer);
             ArchiveObject root = reader.ReadObject();
-
-            TypeHandler* typeHandler = Registry::FindTypeByName(reader.ReadString(root, "type"));
-            FY_ASSERT(typeHandler, "type not found");
+            TypeHandler* typeHandler = Registry::FindTypeByName(reader.ReadString(root, "_type"));
             if (typeHandler)
             {
-                Asset* asset = Create(typeHandler->GetTypeInfo().typeId, UUID::FromString(reader.ReadString(root, "uuid")));
+                Asset* asset = Create(typeHandler->GetTypeInfo().typeId);
+                typeHandler->Deserialize(reader, root, asset);
+
                 asset->name = Path::Name(filePath);
                 asset->absolutePath = filePath;
                 asset->loadedVersion =  asset->currentVersion;

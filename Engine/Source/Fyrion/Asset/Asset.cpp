@@ -4,6 +4,7 @@
 namespace Fyrion
 {
     void AssetDatabaseUpdatePath(Asset* asset, const StringView& oldPath, const StringView& newPath);
+    void AssetDatabaseUpdateUUID(Asset* asset, const UUID& newUUID);
 
     void Asset::BuildPath()
     {
@@ -54,6 +55,7 @@ namespace Fyrion
 
     void Asset::SetUUID(const UUID& p_uuid)
     {
+        AssetDatabaseUpdateUUID(this, p_uuid);
         uuid = p_uuid;
     }
 
@@ -96,9 +98,8 @@ namespace Fyrion
 
     void Asset::RegisterType(NativeTypeHandler<Asset>& type)
     {
-        type.Field<&Asset::uuid>("uuid");
-
-
+        type.Field<&Asset::uuid, &Asset::GetUUID, &Asset::SetUUID>("uuid");
+        type.Field<&Asset::name>("name");
         type.Function<&Asset::GetName>("GetName");
     }
 }

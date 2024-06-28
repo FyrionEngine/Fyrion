@@ -62,9 +62,9 @@ namespace Fyrion
             writer.WriteInt(object, name, value);   \
         }                                           \
                                                     \
-        static T ReadField(ArchiveReader& reader, ArchiveObject object, const StringView& name)   \
+        static void ReadField(ArchiveReader& reader, ArchiveObject object, const StringView& name, T& value)   \
         {                                                   \
-            return reader.ReadInt(object, name);            \
+            value = reader.ReadInt(object, name);            \
         }                                                   \
     }
 
@@ -77,9 +77,9 @@ namespace Fyrion
             writer.WriteUInt(object, name, value);      \
         }                                               \
                                                         \
-        static T ReadField(ArchiveReader& reader, ArchiveObject object, const StringView& name)   \
+        static void ReadField(ArchiveReader& reader, ArchiveObject object, const StringView& name, T& value)   \
         {                                                       \
-            return reader.ReadUInt(object, name);               \
+            value = reader.ReadUInt(object, name);               \
         }       \
     }
 
@@ -92,9 +92,9 @@ namespace Fyrion
             writer.WriteFloat(object, name, value);      \
         }                                               \
         \
-        static T ReadField(ArchiveReader& reader, ArchiveObject object, const StringView& name)   \
+        static void ReadField(ArchiveReader& reader, ArchiveObject object, const StringView& name, T& value)   \
         {                                                           \
-            return reader.ReadFloat(object, name);                  \
+            value = reader.ReadFloat(object, name);                  \
         }   \
     }
 
@@ -133,7 +133,7 @@ namespace Fyrion
     struct HasReadFieldImpl : Traits::FalseType {};
 
     template <typename T>
-    struct HasReadFieldImpl<T, Traits::VoidType<decltype(static_cast<T(*)(ArchiveReader&, ArchiveObject, const StringView& name)>(&ArchiveType<T>::ReadField))>> : Traits::TrueType {};
+    struct HasReadFieldImpl<T, Traits::VoidType<decltype(static_cast<void(*)(ArchiveReader&, ArchiveObject, const StringView& name, T&)>(&ArchiveType<T>::ReadField))>> : Traits::TrueType {};
 
     template <typename T>
     constexpr bool HasReadField = HasReadFieldImpl<T>::value;

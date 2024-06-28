@@ -2,11 +2,14 @@
 #include "Fyrion/Common.hpp"
 #include "Fyrion/Core/StringView.hpp"
 #include "Fyrion/Core/Array.hpp"
-#include "AssetTypes.hpp"
+#include "Fyrion/Core/UUID.hpp"
 
 
 namespace Fyrion
 {
+    class Asset;
+    class AssetDirectory;
+
     class FY_API AssetDatabase
     {
     public:

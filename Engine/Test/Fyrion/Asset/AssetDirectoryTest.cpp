@@ -1,7 +1,9 @@
 #include <doctest.h>
 
 #include "Fyrion/Engine.hpp"
+#include "Fyrion/Asset/Asset.hpp"
 #include "Fyrion/Asset/AssetDatabase.hpp"
+#include "Fyrion/Asset/AssetTypes.hpp"
 #include "Fyrion/Core/String.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
 #include "Fyrion/IO/Path.hpp"

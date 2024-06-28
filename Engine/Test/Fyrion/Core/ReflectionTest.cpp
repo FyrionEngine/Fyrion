@@ -464,6 +464,7 @@ namespace ReflectionTest
 
         static void RegisterType(NativeTypeHandler<TypeBase>& type)
         {
+            type.Field<&TypeBase::vlBase>("vlBase");
             type.Function<&TypeBase::FuncBase>("FuncBase");
         }
     };
@@ -481,6 +482,7 @@ namespace ReflectionTest
 
         static void RegisterType(NativeTypeHandler<DerivedOne>& type)
         {
+            type.Field<&DerivedOne::vlOne>("vlOne");
             type.Function<&DerivedOne::FuncDerivedOne>("FuncDerivedOne");
         }
     };
@@ -488,6 +490,11 @@ namespace ReflectionTest
     struct OtherBase
     {
         i32 vlvl;
+
+        static void RegisterType(NativeTypeHandler<OtherBase>& type)
+        {
+            type.Field<&OtherBase::vlvl>("vlvl");
+        }
     };
 
 
@@ -548,6 +555,18 @@ namespace ReflectionTest
 
             funcDerivedTwo->Invoke(instance, &ret, nullptr);
             CHECK(ret == 13);
+
+            FieldHandler* vlBase = type->FindField("vlBase");
+            FieldHandler* vlOne = type->FindField("vlOne");
+            FieldHandler* vlvl = type->FindField("vlvl");
+
+            REQUIRE(vlBase);
+            REQUIRE(vlOne);
+            REQUIRE(vlvl);
+
+            CHECK(vlBase->GetValueAs<i32>(derivedTwo) == 10);
+            CHECK(vlOne->GetValueAs<i32>(derivedTwo) == 20);
+            CHECK(vlvl->GetValueAs<i32>(derivedTwo) == 200);
 
             type->Destroy(instance);
         }

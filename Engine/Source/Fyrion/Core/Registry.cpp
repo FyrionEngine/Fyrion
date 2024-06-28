@@ -122,9 +122,9 @@ namespace Fyrion
         }
     }
 
-    FieldHandler::FieldHandler(const String& name) : name(name)
+    FieldHandler::FieldHandler(const String& name, TypeHandler& owner) : name(name), owner(owner)
     {
-
+        ownerCast = ForwardDerived;
     }
 
     StringView FieldHandler::GetName() const
@@ -164,6 +164,16 @@ namespace Fyrion
         {
             fnSetValue(this, instance, value);
         }
+    }
+
+    FnCast FieldHandler::GetOwnerCaster() const
+    {
+        return ownerCast;
+    }
+
+    TypeHandler& FieldHandler::GetOwner() const
+    {
+        return owner;
     }
 
     void FieldHandler::Serialize(ArchiveWriter& writer, ConstPtr instance, ArchiveObject object) const
@@ -573,6 +583,12 @@ namespace Fyrion
         fieldHandler.fnDeserialize = fnDeserialize;
     }
 
+    void FieldBuilder::Copy(const FieldHandler& p_fieldHandler, TypeHandler& owner)
+    {
+        new(&fieldHandler) FieldHandler{p_fieldHandler};
+        fieldHandler.ownerCast = owner.GetCaster(fieldHandler.owner.GetTypeInfo().typeId);
+    }
+
     FunctionBuilder::FunctionBuilder(FunctionHandler& functionHandler) : m_functionHandler(functionHandler)
     {
     }
@@ -679,7 +695,7 @@ namespace Fyrion
         auto it = typeHandler.fields.Find(fieldName);
         if (it == typeHandler.fields.end())
         {
-            it = typeHandler.fields.Emplace(fieldName, MakeShared<FieldHandler>(fieldName)).first;
+            it = typeHandler.fields.Emplace(fieldName, MakeShared<FieldHandler>(fieldName, typeHandler)).first;
             typeHandler.fieldArray.EmplaceBack(it->second.Get());
         }
         return FieldBuilder{*it->second};
@@ -731,10 +747,16 @@ namespace Fyrion
                 FunctionBuilder functionBuilder = NewFunction(it.first);
                 functionBuilder.Create(*it.second, typeHandler);
             }
+
+            for (const auto& it : baseType->fields)
+            {
+                FieldBuilder builder = NewField(it.first);
+                builder.Copy(*it.second, typeHandler);
+            }
         }
     }
 
-    void TypeBuilder::Build()
+    void TypeBuilder::Build() const
     {
         onTypeAddedEvent.Invoke(typeHandler);
     }

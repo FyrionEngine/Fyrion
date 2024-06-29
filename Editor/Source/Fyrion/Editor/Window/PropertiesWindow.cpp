@@ -12,12 +12,12 @@ namespace Fyrion
 {
     PropertiesWindow::PropertiesWindow() : m_sceneEditor(Editor::GetSceneEditor())
     {
-        Event::Bind<OnSceneObjectAssetSelection, &PropertiesWindow::SceneObjectAssetSelection>(this);
+        Event::Bind<OnSceneObjectSelection, &PropertiesWindow::SceneObjectSelection>(this);
     }
 
     PropertiesWindow::~PropertiesWindow()
     {
-        Event::Unbind<OnSceneObjectAssetSelection, &PropertiesWindow::SceneObjectAssetSelection>(this);
+        Event::Unbind<OnSceneObjectSelection, &PropertiesWindow::SceneObjectSelection>(this);
     }
 
     void PropertiesWindow::Draw(u32 id, bool& open)
@@ -52,7 +52,7 @@ namespace Fyrion
         Editor::OpenWindow<PropertiesWindow>();
     }
 
-    void PropertiesWindow::DrawSceneObject(u32 id, SceneObjectAsset& object)
+    void PropertiesWindow::DrawSceneObject(u32 id, SceneObject& object)
     {
         bool root = m_sceneEditor.GetRootObject() == &object;
 
@@ -247,7 +247,7 @@ namespace Fyrion
         ImGui::EndPopupMenu(popupOpenSettings);
     }
 
-    void PropertiesWindow::SceneObjectAssetSelection(SceneObjectAsset* objectAsset)
+    void PropertiesWindow::SceneObjectSelection(SceneObject* objectAsset)
     {
         selectedObject = objectAsset;
     }

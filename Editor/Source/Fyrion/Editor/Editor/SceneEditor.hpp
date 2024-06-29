@@ -10,24 +10,27 @@ namespace Fyrion
     class FY_API SceneEditor
     {
     public:
-        SceneObjectAsset* GetRootObject() const;
-        void              ClearSelection();
-        void              SelectObject(SceneObjectAsset& object);
-        void              DeselectObject(SceneObjectAsset& object);
-        bool              IsSelected(SceneObjectAsset& object) const;
-        bool              IsParentOfSelected(SceneObjectAsset& object) const;
-        void              RenameObject(SceneObjectAsset& asset, StringView newName);
-        void              DestroySelectedObjects();
-        void              CreateObject();
-        bool              IsSimulating();
+        SceneObject* GetRootObject() const;
+        void         ClearSelection();
+        void         SelectObject(SceneObject& object);
+        void         DeselectObject(SceneObject& object);
+        bool         IsSelected(SceneObject& object) const;
+        bool         IsParentOfSelected(SceneObject& object) const;
+        void         RenameObject(SceneObject& asset, StringView newName);
+        void         DestroySelectedObjects();
+        void         CreateObject();
+        bool         IsSimulating();
+        bool         IsRootSelected() const;
+        void         AddComponent(SceneObject& asset, TypeHandler* typeHandler);
+
         void              LoadScene(SceneObjectAsset* asset);
-        bool              IsRootSelected() const;
-        void              AddComponent(SceneObjectAsset& asset, TypeHandler* typeHandler);
+        SceneObjectAsset* GetScene() const;
+
     private:
-        SceneObjectAsset* root = nullptr;
+        SceneObjectAsset* scene = nullptr;
         HashSet<usize>    selectedObjects{};
 
-        EventHandler<OnSceneObjectAssetSelection> onSceneObjectAssetSelection{};
+        EventHandler<OnSceneObjectSelection> onSceneObjectAssetSelection{};
 
         static void ClearSelectionStatic(VoidPtr userData);
     };

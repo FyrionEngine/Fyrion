@@ -8,8 +8,7 @@ namespace Fyrion
     struct GraphEditorNodePin;
     struct MenuItemEventData;
     class SceneEditor;
-    struct SceneObject;
-    class SceneObjectAsset;
+    class SceneObject;
     class GraphEditor;
 
     class PropertiesWindow : public EditorWindow
@@ -22,24 +21,25 @@ namespace Fyrion
         void Draw(u32 id, bool& open) override;
 
         static void RegisterType(NativeTypeHandler<PropertiesWindow>& type);
+
     private:
         u32                 m_idCount{};
         SceneEditor&        m_sceneEditor;
         String              m_stringCache{};
-        SceneObjectAsset*   selectedObject{};
+        SceneObject*        selectedObject{};
         bool                m_renamingFocus{};
         String              m_renamingCache{};
-        SceneObjectAsset*   m_renamingObject{};
+        SceneObject*        m_renamingObject{};
         GraphEditorNodePin* m_renmaingPin{};
         String              m_searchComponentString{};
         //RID                 m_selectedComponent = {};
         GraphEditorNodePin* m_selectedNodePin = {};
 
         static void OpenProperties(const MenuItemEventData& eventData);
-        void        DrawSceneObject(u32 id, SceneObjectAsset& object);
-//      void        DrawGraphNode(GraphEditor* graphEditor, RID node);
+        void        DrawSceneObject(u32 id, SceneObject& object);
+        //      void        DrawGraphNode(GraphEditor* graphEditor, RID node);
 
-        void SceneObjectAssetSelection(SceneObjectAsset* objectAsset);
+        void SceneObjectSelection(SceneObject* objectAsset);
 
         u32 PushId()
         {

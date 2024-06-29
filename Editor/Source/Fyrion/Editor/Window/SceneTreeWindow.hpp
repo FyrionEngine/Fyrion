@@ -5,13 +5,12 @@
 
 namespace Fyrion
 {
-    class SceneObjectAsset;
+    struct SceneObject;
     struct SceneEditor;
 
     class SceneTreeWindow : public EditorWindow
     {
     public:
-
         FY_BASE_TYPES(EditorWindow);
 
         SceneTreeWindow();
@@ -29,7 +28,7 @@ namespace Fyrion
         bool         renamingFocus{};
         String       renamingStringCache{};
 
-        void        DrawSceneObject(SceneObjectAsset& sceneObject);
+        void        DrawSceneObject(SceneObject& sceneObject);
         static void OpenSceneTree(const MenuItemEventData& eventData);
         static void AddSceneObject(const MenuItemEventData& eventData);
         static void AddSceneObjectFromAsset(const MenuItemEventData& eventData);

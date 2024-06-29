@@ -6,11 +6,11 @@
 
 namespace Fyrion
 {
-    class SceneObjectAsset;
+    class SceneObject;
 
     constexpr const char* SceneTreePayload = "scene-tree-payload";
 
-    using OnSceneObjectAssetSelection = EventType<"Fyrion::Editor::OnSceneObjectAssetSelection"_h, void(SceneObjectAsset*)>;
+    using OnSceneObjectSelection = EventType<"Fyrion::Editor::OnSceneObjectSelection"_h, void(SceneObject*)>;
 
     enum class DockPosition
     {

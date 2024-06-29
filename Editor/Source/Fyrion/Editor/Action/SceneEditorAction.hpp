@@ -1,6 +1,7 @@
 #pragma once
 #include "EditorAction.hpp"
 #include "Fyrion/Core/Registry.hpp"
+#include "Fyrion/Scene/SceneObject.hpp"
 
 
 namespace Fyrion
@@ -12,11 +13,11 @@ namespace Fyrion
     {
         FY_BASE_TYPES(EditorAction);
 
-        SceneEditor& sceneEditor;
+        SceneEditor&      sceneEditor;
         SceneObjectAsset* oldScene;
         SceneObjectAsset* newScene;
 
-        OpenSceneAction(SceneEditor& sceneEditor,  SceneObjectAsset* scene);
+        OpenSceneAction(SceneEditor& sceneEditor, SceneObjectAsset* scene);
 
         void Commit() override;
         void Rollback() override;
@@ -29,11 +30,11 @@ namespace Fyrion
         FY_BASE_TYPES(EditorAction);
 
         SceneEditor& sceneEditor;
-        SceneObjectAsset* parent;
-        SceneObjectAsset* current;
-        usize             pos;
+        SceneObject* parent;
+        SceneObject* current;
+        usize        pos;
 
-        CreateSceneObjectAction(SceneEditor& sceneEditor, SceneObjectAsset* parent);
+        CreateSceneObjectAction(SceneEditor& sceneEditor, SceneObject* parent);
         ~CreateSceneObjectAction() override;
 
         static void RegisterType(NativeTypeHandler<CreateSceneObjectAction>& type);
@@ -43,15 +44,15 @@ namespace Fyrion
     };
 
 
-    struct DestroySceneObjectAction :  EditorAction
+    struct DestroySceneObjectAction : EditorAction
     {
         FY_BASE_TYPES(EditorAction);
 
-        SceneObjectAsset* object;
-        SceneObjectAsset* parent;
-        usize             pos;
+        SceneObject* object;
+        SceneObject* parent;
+        usize        pos;
 
-        DestroySceneObjectAction(SceneObjectAsset* object);
+        DestroySceneObjectAction(SceneObject* object);
         ~DestroySceneObjectAction() override;
 
         static void RegisterType(NativeTypeHandler<DestroySceneObjectAction>& type);

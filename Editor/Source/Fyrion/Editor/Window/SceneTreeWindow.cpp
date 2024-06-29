@@ -3,6 +3,7 @@
 #include "Fyrion/Editor/Editor.hpp"
 #include "Fyrion/ImGui/IconsFontAwesome6.h"
 #include "Fyrion/ImGui/ImGui.hpp"
+#include "Fyrion/Scene/SceneObject.hpp"
 
 namespace Fyrion
 {
@@ -12,7 +13,7 @@ namespace Fyrion
     {
     }
 
-    void SceneTreeWindow::DrawSceneObject(SceneObjectAsset& sceneObject)
+    void SceneTreeWindow::DrawSceneObject(SceneObject& sceneObject)
     {
 
         ImGui::TableNextRow();
@@ -20,7 +21,7 @@ namespace Fyrion
 
         bool root = sceneEditor.GetRootObject() == &sceneObject;
 
-        Array<SceneObjectAsset*> children = sceneObject.GetChildren().GetAsArray();
+        Array<SceneObject*> children = sceneObject.GetChildren();
 
         nameCache.Clear();
         nameCache += root ? ICON_FA_CUBES : ICON_FA_CUBE;
@@ -126,7 +127,7 @@ namespace Fyrion
 
         if (open)
         {
-            for (SceneObjectAsset* child : children)
+            for (SceneObject* child : children)
             {
                 DrawSceneObject(*child);
             }
@@ -182,7 +183,7 @@ namespace Fyrion
                     ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 35 * style.ScaleFactor);
                     ImGui::TableHeadersRow();
 
-                    if (SceneObjectAsset* root = sceneEditor.GetRootObject())
+                    if (SceneObject* root = sceneEditor.GetRootObject())
                     {
                         ImGui::BeginTreeNode();
                         DrawSceneObject(*root);

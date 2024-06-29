@@ -63,6 +63,7 @@ namespace Fyrion
     {
         name = p_name;
         BuildPath();
+        Modify();
     }
 
     void Asset::SetActive(bool p_active)

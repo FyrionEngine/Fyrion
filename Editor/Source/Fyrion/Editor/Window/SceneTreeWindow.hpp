@@ -26,6 +26,8 @@ namespace Fyrion
         String       nameCache{};
         bool         renamingSelected{};
         bool         entityIsSelected{};
+        bool         renamingFocus{};
+        String       renamingStringCache{};
 
         void        DrawSceneObject(SceneObjectAsset& sceneObject);
         static void OpenSceneTree(const MenuItemEventData& eventData);

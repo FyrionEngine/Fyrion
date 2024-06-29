@@ -328,6 +328,11 @@ namespace Fyrion
         virtual void Modify()
         {
             currentVersion += 1;
+
+            if (subobjectOf != nullptr && subobjectOf->GetOwner() != nullptr)
+            {
+                subobjectOf->GetOwner()->Modify();
+            }
         }
 
         bool IsModified() const

@@ -1,6 +1,7 @@
 #include "SceneEditor.hpp"
 
 #include "Fyrion/Editor/Editor.hpp"
+#include "Fyrion/Editor/Action/AssetEditorActions.hpp"
 #include "Fyrion/Editor/Action/SceneEditorAction.hpp"
 
 namespace Fyrion
@@ -96,6 +97,11 @@ namespace Fyrion
     {
         selectedObjects.Clear();
         root = asset;
+    }
+
+    void SceneEditor::RenameObject(SceneObjectAsset& asset, StringView newName)
+    {
+        Editor::CreateTransaction()->CreateAction<RenameAssetAction>(static_cast<Asset*>(&asset), newName)->Commit();
     }
 }
 

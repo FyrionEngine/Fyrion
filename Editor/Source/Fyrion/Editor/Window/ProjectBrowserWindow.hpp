@@ -25,21 +25,21 @@ namespace Fyrion
         static void RegisterType(NativeTypeHandler<ProjectBrowserWindow>& type);
 
     private:
-        u32                    m_windowId{};
-        AssetDirectory*        m_openDirectory{};
-        Asset*                 m_selectedItem{};
-        String                 m_searchString{};
-        String                 m_stringCache{};
-        Asset*                 m_movingItem{};
-        AssetDirectory*        m_popupFolder{};
-        HashMap<usize, bool>   m_openTreeFolders{};
-        f32                    m_contentBrowserZoom = 0.8;
+        u32                    windowId{};
+        AssetDirectory*        openDirectory{};
+        Asset*                 selectedItem{};
+        String                 searchString{};
+        String                 stringCache{};
+        Asset*                 movingItem{};
+        AssetDirectory*        popupFolder{};
+        HashMap<usize, bool>   openTreeFolders{};
+        f32                    contentBrowserZoom = 0.8;
         Array<AssetDirectory*> directoryCache;
 
         void DrawTreeNode(Asset* asset);
         void DrawPathItems();
 
-        static MenuItemContext s_menuItemContext;
+        static MenuItemContext menuItemContext;
         static void            Shutdown();
         static void            OpenProjectBrowser(const MenuItemEventData& eventData);
 

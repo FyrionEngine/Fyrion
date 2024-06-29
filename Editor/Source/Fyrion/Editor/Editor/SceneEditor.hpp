@@ -15,6 +15,7 @@ namespace Fyrion
         void              DeselectObject(SceneObjectAsset& object);
         bool              IsSelected(SceneObjectAsset& object) const;
         bool              IsParentOfSelected(SceneObjectAsset& object) const;
+        void              RenameObject(SceneObjectAsset& asset, StringView newName);
         void              DestroySelectedObjects();
         void              CreateObject();
         bool              IsSimulating();

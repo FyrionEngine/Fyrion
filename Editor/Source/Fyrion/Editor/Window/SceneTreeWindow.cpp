@@ -45,7 +45,43 @@ namespace Fyrion
 
         if (isSelected && renamingSelected)
         {
+            ImVec2 cursorPos = ImGui::GetCursorPos();
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetTreeNodeToLabelSpacing());
 
+            if (!renamingFocus)
+            {
+                renamingStringCache = sceneObject.GetName();
+                ImGui::SetKeyboardFocusHere();
+            }
+
+            ImGui::StyleVar framePadding(ImGuiStyleVar_FramePadding, ImVec2{0, 0});
+
+            ImGui::Text(ICON_FA_CUBE);
+            ImGui::SameLine();
+
+            auto size = ImGui::CalcTextSize(" ");
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + size.x);
+
+            ImGui::InputText(66554433, renamingStringCache);
+
+            if (!ImGui::IsItemActive() && renamingFocus)
+            {
+                renamingSelected = false;
+                renamingFocus = false;
+                sceneEditor.RenameObject(sceneObject, renamingStringCache);
+            }
+
+            if (!renamingFocus && renamingSelected)
+            {
+                renamingFocus = true;
+            }
+
+            ImGui::SetCursorPos(cursorPos);
+
+            if (children.Size() > 0)
+            {
+                open = ImGui::TreeNode(treeId, " ", 0);
+            }
         }
         else if (children.Size() > 0)
         {
@@ -225,6 +261,7 @@ namespace Fyrion
 
     void SceneTreeWindow::RenameSceneObject(const MenuItemEventData& eventData)
     {
+        static_cast<SceneTreeWindow*>(eventData.drawData)->renamingSelected = true;
     }
 
     void SceneTreeWindow::DuplicateSceneObject(const MenuItemEventData& eventData)

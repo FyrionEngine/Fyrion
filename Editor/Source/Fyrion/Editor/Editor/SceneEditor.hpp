@@ -22,6 +22,7 @@ namespace Fyrion
         bool              IsSimulating();
         void              LoadScene(SceneObjectAsset* asset);
         bool              IsRootSelected() const;
+        void              AddComponent(SceneObjectAsset& asset, TypeHandler* typeHandler);
     private:
         SceneObjectAsset* root = nullptr;
         HashSet<usize>    selectedObjects{};

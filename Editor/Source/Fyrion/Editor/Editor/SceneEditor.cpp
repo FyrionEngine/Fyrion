@@ -115,6 +115,11 @@ namespace Fyrion
         return false;
     }
 
+    void SceneEditor::AddComponent(SceneObjectAsset& asset, TypeHandler* typeHandler)
+    {
+
+    }
+
     void SceneEditor::RenameObject(SceneObjectAsset& asset, StringView newName)
     {
         Editor::CreateTransaction()->CreateAction<RenameAssetAction>(static_cast<Asset*>(&asset), newName)->Commit();

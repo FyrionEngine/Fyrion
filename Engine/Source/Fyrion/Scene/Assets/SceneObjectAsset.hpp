@@ -1,10 +1,10 @@
 #pragma once
 #include "Fyrion/Asset/Asset.hpp"
+#include "Fyrion/Scene/Component.hpp"
 
 
 namespace Fyrion
 {
-
     class FY_API SceneObjectAsset : public Asset
     {
     public:
@@ -25,6 +25,7 @@ namespace Fyrion
 
     private:
         Subobject<SceneObjectAsset> children;
+        Subobject<Component> components;
     };
 
 }

@@ -151,8 +151,6 @@ namespace Fyrion
 
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5 * style.ScaleFactor);
 
-
-
         bool openComponentSettings = false;
 
         // for (RID component : components)
@@ -207,22 +205,22 @@ namespace Fyrion
             ImGui::SearchInputText(id + 100, m_searchComponentString);
             ImGui::Separator();
 
-            // TypeHandler* componentHandler = Registry::FindType<Component>();
-            // if (componentHandler)
-            // {
-            //     for (DerivedType& derivedType : componentHandler->GetDerivedTypes())
-            //     {
-            //         TypeHandler* typeHandler = Registry::FindTypeById(derivedType.typeId);
-            //         if (typeHandler)
-            //         {
-            //             String name = FormatName(typeHandler->GetSimpleName());
-            //             if (ImGui::Selectable(name.CStr()))
-            //             {
-            //                 m_sceneEditor.AddComponent(rid, typeHandler);
-            //             }
-            //         }
-            //     }
-            // }
+            TypeHandler* componentHandler = Registry::FindType<Component>();
+            if (componentHandler)
+            {
+                for (DerivedType& derivedType : componentHandler->GetDerivedTypes())
+                {
+                    TypeHandler* typeHandler = Registry::FindTypeById(derivedType.typeId);
+                    if (typeHandler)
+                    {
+                        String name = FormatName(typeHandler->GetSimpleName());
+                        if (ImGui::Selectable(name.CStr()))
+                        {
+                            m_sceneEditor.AddComponent(object, typeHandler);
+                        }
+                    }
+                }
+            }
         }
         ImGui::EndPopupMenu(popupRes);
 

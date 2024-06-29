@@ -31,6 +31,7 @@ namespace Fyrion
         SceneEditor& sceneEditor;
         SceneObjectAsset* parent;
         SceneObjectAsset* current;
+        usize             pos;
 
         CreateSceneObjectAction(SceneEditor& sceneEditor, SceneObjectAsset* parent);
         ~CreateSceneObjectAction() override;
@@ -48,6 +49,7 @@ namespace Fyrion
 
         SceneObjectAsset* object;
         SceneObjectAsset* parent;
+        usize             pos;
 
         DestroySceneObjectAction(SceneObjectAsset* object);
         ~DestroySceneObjectAction() override;

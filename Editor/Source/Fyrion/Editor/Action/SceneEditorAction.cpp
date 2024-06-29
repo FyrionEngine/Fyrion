@@ -32,6 +32,8 @@ namespace Fyrion
     {
         current = AssetDatabase::Create<SceneObjectAsset>();
         current->SetName("New Object");
+        current->SetUUID(UUID::RandomUUID());
+        pos = parent->GetChildren().Count();
     }
 
     CreateSceneObjectAction::~CreateSceneObjectAction()
@@ -45,7 +47,7 @@ namespace Fyrion
     void CreateSceneObjectAction::Commit()
     {
         sceneEditor.SelectObject(*current);
-        parent->GetChildren().Add(current);
+        parent->GetChildren().Insert(current, pos);
         current->SetActive(true);
     }
 
@@ -76,12 +78,19 @@ namespace Fyrion
     void DestroySceneObjectAction::Commit()
     {
         object->SetActive(false);
-        parent->GetChildren().Remove(object);
+        pos = parent->GetChildren().IndexOf(object);
+        if (pos != nPos)
+        {
+            parent->GetChildren().Remove(object);\
+        }
     }
 
     void DestroySceneObjectAction::Rollback()
     {
-        parent->GetChildren().Add(object);
+        if (pos != nPos)
+        {
+            parent->GetChildren().Insert(object, pos);
+        }
         object->SetActive(true);
     }
 

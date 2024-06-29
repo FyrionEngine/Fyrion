@@ -14,11 +14,13 @@ namespace Fyrion
     void SceneEditor::ClearSelection()
     {
         selectedObjects.Clear();
+        onSceneObjectAssetSelection.Invoke(nullptr);
     }
 
     void SceneEditor::SelectObject(SceneObjectAsset& object)
     {
         selectedObjects.Emplace(reinterpret_cast<usize>(&object));
+        onSceneObjectAssetSelection.Invoke(&object);
     }
 
     void SceneEditor::DeselectObject(SceneObjectAsset& object)
@@ -56,6 +58,7 @@ namespace Fyrion
         }
         transaction->Commit();
         selectedObjects.Clear();
+        onSceneObjectAssetSelection.Invoke(nullptr);
     }
 
     void SceneEditor::ClearSelectionStatic(VoidPtr userData)
@@ -83,6 +86,7 @@ namespace Fyrion
             {
                 transaction->CreateAction<CreateSceneObjectAction>(*this, reinterpret_cast<SceneObjectAsset*>(it.first));
             }
+            onSceneObjectAssetSelection.Invoke(nullptr);
             selectedObjects.Clear();
             transaction->Commit();
         }
@@ -97,6 +101,18 @@ namespace Fyrion
     {
         selectedObjects.Clear();
         root = asset;
+    }
+
+    bool SceneEditor::IsRootSelected() const
+    {
+        for (const auto it : selectedObjects)
+        {
+            if (reinterpret_cast<SceneObjectAsset*>(it.first) == root)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     void SceneEditor::RenameObject(SceneObjectAsset& asset, StringView newName)

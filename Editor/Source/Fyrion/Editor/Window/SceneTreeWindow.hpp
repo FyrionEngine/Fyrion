@@ -37,6 +37,7 @@ namespace Fyrion
         static void RenameSceneObject(const MenuItemEventData& eventData);
         static void DuplicateSceneObject(const MenuItemEventData& eventData);
         static void DeleteSceneObject(const MenuItemEventData& eventData);
+        static bool CheckSelectedObject(const MenuItemEventData& eventData);
 
         static MenuItemContext s_menuItemContext;
     };

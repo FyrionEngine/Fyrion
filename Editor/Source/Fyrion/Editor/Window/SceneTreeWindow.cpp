@@ -273,6 +273,11 @@ namespace Fyrion
         static_cast<SceneTreeWindow*>(eventData.drawData)->sceneEditor.DestroySelectedObjects();
     }
 
+    bool SceneTreeWindow::CheckSelectedObject(const MenuItemEventData& eventData)
+    {
+        return !static_cast<SceneTreeWindow*>(eventData.drawData)->sceneEditor.IsRootSelected();
+    }
+
     void SceneTreeWindow::RegisterType(NativeTypeHandler<SceneTreeWindow>& type)
     {
         Editor::AddMenuItem(MenuItemCreation{.itemName = "Window/Scene Tree", .action = OpenSceneTree});
@@ -280,9 +285,9 @@ namespace Fyrion
         AddMenuItem(MenuItemCreation{.itemName = "Add Empty Object", .priority = 0, .itemShortcut = {.ctrl = true, .presKey = Key::Space}, .action = AddSceneObject});
         AddMenuItem(MenuItemCreation{.itemName = "Add Object From Asset", .priority = 10, .action = AddSceneObjectFromAsset});
         AddMenuItem(MenuItemCreation{.itemName = "Add Component", .priority = 20, .action = AddComponent});
-        AddMenuItem(MenuItemCreation{.itemName = "Rename", .priority = 200, .itemShortcut = {.presKey = Key::F2}, .action = RenameSceneObject});
-        AddMenuItem(MenuItemCreation{.itemName = "Duplicate", .priority = 210, .itemShortcut = {.ctrl = true, .presKey = Key::D}, .action = DuplicateSceneObject});
-        AddMenuItem(MenuItemCreation{.itemName = "Delete", .priority = 220, .itemShortcut = {.presKey = Key::Delete}, .action = DeleteSceneObject});
+        AddMenuItem(MenuItemCreation{.itemName = "Rename", .priority = 200, .itemShortcut = {.presKey = Key::F2}, .action = RenameSceneObject, .enable = CheckSelectedObject});
+        AddMenuItem(MenuItemCreation{.itemName = "Duplicate", .priority = 210, .itemShortcut = {.ctrl = true, .presKey = Key::D}, .action = DuplicateSceneObject, .enable = CheckSelectedObject});
+        AddMenuItem(MenuItemCreation{.itemName = "Delete", .priority = 220, .itemShortcut = {.presKey = Key::Delete}, .action = DeleteSceneObject, .enable = CheckSelectedObject});
 
         type.Attribute<EditorWindowProperties>(EditorWindowProperties{
             .dockPosition = DockPosition::TopRight,

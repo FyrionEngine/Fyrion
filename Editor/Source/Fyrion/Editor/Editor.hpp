@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Fyrion/Common.hpp"
-#include "EditorTypes.hpp"
 #include "MenuItem.hpp"
 #include "Action/EditorAction.hpp"
 #include "Editor/SceneEditor.hpp"

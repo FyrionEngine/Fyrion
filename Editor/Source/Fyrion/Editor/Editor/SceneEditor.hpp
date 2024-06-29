@@ -2,6 +2,7 @@
 
 #include "Fyrion/Common.hpp"
 #include "Fyrion/Core/HashSet.hpp"
+#include "Fyrion/Editor/EditorTypes.hpp"
 #include "Fyrion/Scene/Assets/SceneObjectAsset.hpp"
 
 namespace Fyrion
@@ -20,9 +21,12 @@ namespace Fyrion
         void              CreateObject();
         bool              IsSimulating();
         void              LoadScene(SceneObjectAsset* asset);
+        bool              IsRootSelected() const;
     private:
         SceneObjectAsset* root = nullptr;
         HashSet<usize>    selectedObjects{};
+
+        EventHandler<OnSceneObjectAssetSelection> onSceneObjectAssetSelection{};
 
         static void ClearSelectionStatic(VoidPtr userData);
     };

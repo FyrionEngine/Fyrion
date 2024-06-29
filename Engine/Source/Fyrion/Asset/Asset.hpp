@@ -43,6 +43,17 @@ namespace Fyrion
             objects.EmplaceBack(object);
         }
 
+        void Insert(Type* object, usize pos)
+        {
+            FY_ASSERT(object, "asset is null");
+            if constexpr (Traits::IsBaseOf<Asset, Type>)
+            {
+                FY_ASSERT(!object->subobjectOf, "asset is already a subobject");
+                object->subobjectOf = this;
+            }
+            objects.Insert(objects.begin() + pos, &object, &object + 1);
+        }
+
         void Remove(Type* object)
         {
             FY_ASSERT(object, "asset is null");
@@ -54,6 +65,11 @@ namespace Fyrion
                     object->subobjectOf = nullptr;
                 }
             }
+        }
+
+        usize IndexOf(Type* object)
+        {
+            return FindFirstIndex(objects.begin(), objects.end(), object);
         }
 
         usize Count() const

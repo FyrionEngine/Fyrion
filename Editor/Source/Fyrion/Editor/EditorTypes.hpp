@@ -1,10 +1,16 @@
 #pragma once
 
 #include "Fyrion/Common.hpp"
+#include "Fyrion/Core/Event.hpp"
+#include "Fyrion/Core/Hash.hpp"
 
 namespace Fyrion
 {
+    class SceneObjectAsset;
+
     constexpr const char* SceneTreePayload = "scene-tree-payload";
+
+    using OnSceneObjectAssetSelection = EventType<"Fyrion::Editor::OnSceneObjectAssetSelection"_h, void(SceneObjectAsset*)>;
 
     enum class DockPosition
     {

@@ -49,12 +49,14 @@ namespace Fyrion
     {
         sceneEditor.SelectObject(*current);
         parent->AddChildAt(current, pos);
+        sceneEditor.Modify();
     }
 
     void CreateSceneObjectAction::Rollback()
     {
         sceneEditor.DeselectObject(*current);
         parent->RemoveChild(current);
+        sceneEditor.Modify();
     }
 
     void CreateSceneObjectAction::RegisterType(NativeTypeHandler<CreateSceneObjectAction>& type)
@@ -83,6 +85,7 @@ namespace Fyrion
         if (pos != nPos)
         {
             parent->GetChildren().Remove(pos);
+            sceneEditor.Modify();
         }
     }
 
@@ -91,6 +94,7 @@ namespace Fyrion
         if (pos != nPos)
         {
             parent->AddChildAt(object, pos);
+            sceneEditor.Modify();
         }
     }
 
@@ -108,11 +112,13 @@ namespace Fyrion
     void RenameSceneObjectAction::Commit()
     {
         object->SetName(newName);
+        sceneEditor.Modify();
     }
 
     void RenameSceneObjectAction::Rollback()
     {
         object->SetName(oldName);
+        sceneEditor.Modify();
     }
 
     void InitSceneEditorAction()

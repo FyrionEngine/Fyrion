@@ -26,6 +26,6 @@ namespace Fyrion
         static void RegisterType(NativeTypeHandler<SceneObjectAsset>& type);
 
     private:
-        SceneObject object;
+        SceneObject object{this};
     };
 }

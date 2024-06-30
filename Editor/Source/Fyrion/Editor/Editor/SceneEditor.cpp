@@ -15,6 +15,14 @@ namespace Fyrion
         return nullptr;
     }
 
+    void SceneEditor::Modify() const
+    {
+        if (scene)
+        {
+            scene->Modify();
+        }
+    }
+
     void SceneEditor::ClearSelection()
     {
         selectedObjects.Clear();
@@ -39,7 +47,7 @@ namespace Fyrion
 
     bool SceneEditor::IsParentOfSelected(SceneObject& object) const
     {
-        for (const auto it : selectedObjects)
+        for (const auto& it : selectedObjects)
         {
             if (reinterpret_cast<SceneObject*>(it.first)->GetParent() == &object)
             {
@@ -58,8 +66,7 @@ namespace Fyrion
         EditorTransaction* transaction = Editor::CreateTransaction();
         for (const auto it : selectedObjects)
         {
-            SceneObjectAction* action = transaction->CreateAction<SceneObjectAction>(*this, SceneObjectActionType::Create);
-            action->current = reinterpret_cast<SceneObject*>(it.first);
+            transaction->CreateAction<DestroySceneObjectAction>(*this, reinterpret_cast<SceneObject*>(it.first));
         }
         transaction->Commit();
         selectedObjects.Clear();
@@ -81,9 +88,7 @@ namespace Fyrion
         {
             EditorTransaction* transaction = Editor::CreateTransaction();
             transaction->AddPreExecute(this, ClearSelectionStatic);
-            SceneObjectAction* action = transaction->CreateAction<SceneObjectAction>(*this, SceneObjectActionType::Create);
-            action->parent = GetRootObject();
-            action->Commit();
+            transaction->CreateAction<CreateSceneObjectAction>(*this, GetRootObject())->Commit();
         }
         else
         {
@@ -91,8 +96,7 @@ namespace Fyrion
             transaction->AddPreExecute(this, ClearSelectionStatic);
             for (const auto it : selectedObjects)
             {
-                SceneObjectAction* action = transaction->CreateAction<SceneObjectAction>(*this, SceneObjectActionType::Create);
-                action->parent = reinterpret_cast<SceneObject*>(it.first);
+                transaction->CreateAction<CreateSceneObjectAction>(*this, reinterpret_cast<SceneObject*>(it.first));
             }
             onSceneObjectAssetSelection.Invoke(nullptr);
             selectedObjects.Clear();
@@ -128,18 +132,10 @@ namespace Fyrion
         return false;
     }
 
-    void SceneEditor::AddComponent(SceneObject& asset, TypeHandler* typeHandler)
-    {
-
-    }
+    void SceneEditor::AddComponent(SceneObject& asset, TypeHandler* typeHandler) {}
 
     void SceneEditor::RenameObject(SceneObject& asset, StringView newName)
     {
-        SceneObjectAction* action = Editor::CreateTransaction()->CreateAction<SceneObjectAction>(*this, SceneObjectActionType::Rename);
-        action->current = &asset;
-        action->newName = newName;
-        action->Commit();
+        Editor::CreateTransaction()->CreateAction<RenameSceneObjectAction>(*this, &asset, newName)->Commit();
     }
 }
-
-

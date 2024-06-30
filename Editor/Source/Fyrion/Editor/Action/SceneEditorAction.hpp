@@ -25,28 +25,56 @@ namespace Fyrion
         static void RegisterType(NativeTypeHandler<OpenSceneAction>& type);
     };
 
-
-    enum class SceneObjectActionType
-    {
-        Create,
-        Destroy,
-        Rename
-    };
-
-    struct SceneObjectAction : EditorAction
+    struct CreateSceneObjectAction : EditorAction
     {
         FY_BASE_TYPES(EditorAction);
 
-        SceneEditor&          sceneEditor;
-        SceneObjectActionType type ;
-        SceneObject*          parent = nullptr;
-        SceneObject*          current = nullptr;
-        usize                 pos = 0;
-        String                newName = "";
+        SceneEditor& sceneEditor;
+        SceneObject* parent;
+        SceneObject* current;
+        usize        pos;
 
-        SceneObjectAction(SceneEditor& sceneEditor, SceneObjectActionType type);
+        CreateSceneObjectAction(SceneEditor& sceneEditor, SceneObject* parent);
+        ~CreateSceneObjectAction() override;
 
-        static void RegisterType(NativeTypeHandler<SceneObjectAction>& type);
+        static void RegisterType(NativeTypeHandler<CreateSceneObjectAction>& type);
+
+        void Commit() override;
+        void Rollback() override;
+    };
+
+
+    struct DestroySceneObjectAction : EditorAction
+    {
+        FY_BASE_TYPES(EditorAction);
+
+        SceneEditor& sceneEditor;
+        SceneObject* object;
+        SceneObject* parent;
+        usize        pos;
+
+        DestroySceneObjectAction(SceneEditor& sceneEditor, SceneObject* object);
+        ~DestroySceneObjectAction() override;
+
+        static void RegisterType(NativeTypeHandler<DestroySceneObjectAction>& type);
+
+        void Commit() override;
+        void Rollback() override;
+    };
+
+
+    struct RenameSceneObjectAction : EditorAction
+    {
+        FY_BASE_TYPES(EditorAction);
+
+        SceneEditor& sceneEditor;
+        SceneObject* object;
+        String       newName;
+        String       oldName;
+
+        RenameSceneObjectAction(SceneEditor& sceneEditor, SceneObject* object, StringView newName);
+
+        static void RegisterType(NativeTypeHandler<RenameSceneObjectAction>& type);
 
         void Commit() override;
         void Rollback() override;

@@ -19,7 +19,6 @@ namespace Fyrion
         HashMap<String, Asset*>       assetsByPath;
         Array<Pair<TypeID, AssetIO*>> assetIOs;
         HashMap<String, AssetIO*>     importers;
-        bool                          isShutdown = false;
         Logger&                       logger = Logger::GetLogger("Fyrion::AssetDatabase", LogLevel::Debug);
         bool                          registerEvents = RegisterEvents();
 
@@ -103,19 +102,8 @@ namespace Fyrion
         asset->assetType = typeHandler;
         asset->loadedVersion = 0;
         asset->currentVersion = 1;
-
-        for (FieldHandler* field : asset->GetAssetType()->GetFields())
-        {
-            auto typeInfo = field->GetFieldInfo().typeInfo;
-            if (typeInfo.apiId == GetTypeID<SubobjectApi>())
-            {
-                SubobjectApi subobjectApi{};
-                typeInfo.extractApi(&subobjectApi);
-                subobjectApi.SetOwner(field->GetFieldPointer(asset), asset);
-            }
-        }
-
         asset->index = assets.Size();
+
         assets.EmplaceBack(asset);
 
         if (asset->uuid)
@@ -135,87 +123,22 @@ namespace Fyrion
     {
         Asset* asset = Create(typeId, uuid);
         asset->prototype = prototype;
-
-        for (FieldHandler* field : asset->GetAssetType()->GetFields())
-        {
-            auto typeInfo = field->GetFieldInfo().typeInfo;
-            if (typeInfo.apiId == GetTypeID<SubobjectApi>())
-            {
-                SubobjectApi subobjectApi{};
-                typeInfo.extractApi(&subobjectApi);
-                subobjectApi.SetPrototype(field->GetFieldPointer(asset), field->GetFieldPointer(prototype));
-                subobjectApi.SetOwner(field->GetFieldPointer(asset), asset);
-            }
-            else if (typeInfo.apiId == GetTypeID<ValueApi>())
-            {
-                ValueApi valueApi{};
-                typeInfo.extractApi(&valueApi);
-                valueApi.SetPrototype(field->GetFieldPointer(asset), field->GetFieldPointer(prototype));
-            }
-        }
-
         return asset;
     }
 
-    void AssetDatabase::Destroy(Asset* asset, bool destroySubobjects)
+    void AssetDatabase::Destroy(Asset* asset)
     {
-        if (destroySubobjects)
+        Asset* lastAsset = assets.Back();
+        if (lastAsset != asset)
         {
-            if (asset->subobjectOf)
-            {
-                SubobjectApi api = asset->subobjectOf->GetApi();
-                api.Remove(asset->subobjectOf, asset);
-            }
-
-            for (FieldHandler* field : asset->GetAssetType()->GetFields())
-            {
-                auto typeInfo = field->GetFieldInfo().typeInfo;
-                if (typeInfo.apiId == GetTypeID<SubobjectApi>())
-                {
-                    VoidPtr ptr = field->GetFieldPointer(asset);
-
-                    SubobjectApi subobjectApi{};
-                    typeInfo.extractApi(&subobjectApi);
-
-                    TypeID typeId = subobjectApi.GetTypeId();
-
-                    if (TypeHandler* typeHandler = Registry::FindTypeById(typeId))
-                    {
-                        usize count = subobjectApi.GetOwnedObjectsCount(ptr);
-                        Array<VoidPtr> subObjects(count);
-                        subobjectApi.GetOwnedObjects(ptr, subObjects);
-
-                        for (VoidPtr subobject : subObjects)
-                        {
-                            if (Asset* asset = typeHandler->Cast<Asset>(subobject))
-                            {
-                                Destroy(asset);
-                            }
-                            else
-                            {
-                                typeHandler->Destroy(subobject);
-                            }
-                        }
-                    }
-                }
-            }
+            lastAsset->index = asset->index;
+            assets[lastAsset->index] = lastAsset;
         }
 
-        if (!isShutdown)
-        {
+        assets.PopBack();
 
-            Asset* lastAsset = assets.Back();
-            if (lastAsset != asset)
-            {
-                lastAsset->index = asset->index;
-                assets[lastAsset->index] = lastAsset;
-            }
-
-            assets.PopBack();
-
-            assetsById.Erase(asset->GetUUID());
-            assetsByPath.Erase(asset->GetPath());
-        }
+        assetsById.Erase(asset->GetUUID());
+        assetsByPath.Erase(asset->GetPath());
 
         asset->assetType->Destroy(asset);
     }
@@ -393,13 +316,10 @@ namespace Fyrion
 
     void AssetDatabaseShutdown()
     {
-        isShutdown = true;
-        for (Asset* it : assets)
+        for (Asset* asset : assets)
         {
-            AssetDatabase::Destroy(it, false);
+            asset->GetAssetType()->Destroy(asset);
         }
-
-        isShutdown = false;
 
         for (const auto& assetIo : assetIOs)
         {

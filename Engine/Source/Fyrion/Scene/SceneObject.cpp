@@ -1,5 +1,7 @@
 #include "SceneObject.hpp"
 
+#include "SceneManager.hpp"
+
 
 namespace Fyrion
 {
@@ -13,9 +15,14 @@ namespace Fyrion
         return *component;
     }
 
+    void SceneObject::SetUUID(UUID p_uuid)
+    {
+        uuid = p_uuid;
+    }
+
     UUID SceneObject::GetUUID() const
     {
-        return {};
+        return uuid;
     }
 
     SceneObjectAsset* SceneObject::GetPrototype() const
@@ -23,12 +30,29 @@ namespace Fyrion
         return nullptr;
     }
 
-    SceneObject* SceneObject::NewChild()
+    void SceneObject::AddChild(SceneObject* sceneObject)
     {
-        SceneObject* child = MemoryGlobals::GetDefaultAllocator().Alloc<SceneObject>();
-        child->parent = this;
-        children.EmplaceBack(child);
-        return child;
+        sceneObject->parent = this;
+        children.EmplaceBack(sceneObject);
+    }
+
+    void SceneObject::AddChildAt(SceneObject* sceneObject, usize pos)
+    {
+        sceneObject->parent = this;
+        children.Insert(children.begin() + pos, &sceneObject, &sceneObject + 1);
+    }
+
+    void SceneObject::RemoveChild(SceneObject* sceneObject)
+    {
+        if (const auto it = FindFirst(children.begin(), children.end(), sceneObject))
+        {
+            children.Erase(it);
+        }
+    }
+
+    void SceneObject::Destroy()
+    {
+        SceneManager::Destroy(this);
     }
 
     void SceneObject::RegisterType(NativeTypeHandler<SceneObject>& type)

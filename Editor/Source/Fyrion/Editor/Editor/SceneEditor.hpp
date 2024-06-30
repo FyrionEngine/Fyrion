@@ -11,6 +11,7 @@ namespace Fyrion
     {
     public:
         SceneObject* GetRootObject() const;
+        void         Modify() const;
         void         ClearSelection();
         void         SelectObject(SceneObject& object);
         void         DeselectObject(SceneObject& object);

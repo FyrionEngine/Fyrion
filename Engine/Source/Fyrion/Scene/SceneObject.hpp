@@ -40,14 +40,19 @@ namespace Fyrion
             return children;
         }
 
+        void              SetUUID(UUID p_uuid);
         UUID              GetUUID() const;
         SceneObjectAsset* GetPrototype() const;
-        SceneObject*      NewChild();
+        void              AddChild(SceneObject* sceneObject);
+        void              AddChildAt(SceneObject* sceneObject, usize pos);
+        void              RemoveChild(SceneObject* sceneObject);
+        void              Destroy();
 
         static void RegisterType(NativeTypeHandler<SceneObject>& type);
 
     private:
         String              name;
+        UUID                uuid;
         Array<Component*>   components{};
         Array<SceneObject*> children{};
         SceneObject*        parent = nullptr;

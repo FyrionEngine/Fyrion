@@ -3,6 +3,7 @@
 #include "Fyrion/Asset/AssetDatabase.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Editor/Editor/SceneEditor.hpp"
+#include "Fyrion/Scene/SceneManager.hpp"
 
 namespace Fyrion
 {
@@ -28,56 +29,97 @@ namespace Fyrion
     }
 
 
-    SceneObjectAction::SceneObjectAction(SceneEditor& sceneEditor, SceneObjectActionType type) : sceneEditor(sceneEditor), type(type)
+    CreateSceneObjectAction::CreateSceneObjectAction(SceneEditor& sceneEditor, SceneObject* parent) : sceneEditor(sceneEditor), parent(parent)
     {
-        // current = AssetDatabase::Create<SceneObjectAsset>();
-        // current->SetName("New Object");
-        // current->SetUUID(UUID::RandomUUID());
-        // pos = parent->GetChildren().Count();
+        current = SceneManager::CreateObject();
+        current->SetName("New Object");
+        current->SetUUID(UUID::RandomUUID());
+        pos = parent->GetChildren().Size();
     }
 
-    void SceneObjectAction::Commit()
+    CreateSceneObjectAction::~CreateSceneObjectAction()
     {
-        sceneEditor.GetScene()->Modify();
-
-        switch (type)
+        if (current != nullptr)
         {
-            case SceneObjectActionType::Create:
-            {
-                sceneEditor.SelectObject(*current);
-                break;
-            }
-            case SceneObjectActionType::Destroy:
-            {
-                break;
-            }
-            case SceneObjectActionType::Rename:
-            {
-                break;
-            }
+            SceneManager::Destroy(current);
         }
-
-        // parent->GetChildren().Insert(current, pos);
-        // current->SetActive(true);
     }
 
-    void SceneObjectAction::Rollback()
+    void CreateSceneObjectAction::Commit()
     {
-        sceneEditor.GetScene()->Modify();
-
-        // sceneEditor.DeselectObject(*current);
-        // current->SetActive(false);
-        // parent->GetChildren().Remove(current);
+        sceneEditor.SelectObject(*current);
+        parent->AddChildAt(current, pos);
     }
 
-    void SceneObjectAction::RegisterType(NativeTypeHandler<SceneObjectAction>& type)
+    void CreateSceneObjectAction::Rollback()
     {
-        type.Constructor<SceneEditor, SceneObjectActionType>();
+        sceneEditor.DeselectObject(*current);
+        parent->RemoveChild(current);
+    }
+
+    void CreateSceneObjectAction::RegisterType(NativeTypeHandler<CreateSceneObjectAction>& type)
+    {
+        type.Constructor<SceneEditor, SceneObject*>();
+    }
+
+    DestroySceneObjectAction::DestroySceneObjectAction(SceneEditor& sceneEditor, SceneObject* object) : sceneEditor(sceneEditor), object(object), parent(object->GetParent()) {}
+
+    DestroySceneObjectAction::~DestroySceneObjectAction()
+    {
+        if (object)
+        {
+            SceneManager::Destroy(object);
+        }
+    }
+
+    void DestroySceneObjectAction::RegisterType(NativeTypeHandler<DestroySceneObjectAction>& type)
+    {
+        type.Constructor<SceneEditor, SceneObject*>();
+    }
+
+    void DestroySceneObjectAction::Commit()
+    {
+        pos = parent->GetChildren().IndexOf(object);
+        if (pos != nPos)
+        {
+            parent->GetChildren().Remove(pos);
+        }
+    }
+
+    void DestroySceneObjectAction::Rollback()
+    {
+        if (pos != nPos)
+        {
+            parent->AddChildAt(object, pos);
+        }
+    }
+
+    RenameSceneObjectAction::RenameSceneObjectAction(SceneEditor& sceneEditor, SceneObject* sceneObject, StringView newName)
+        : sceneEditor(sceneEditor),
+          object(sceneObject),
+          newName(newName),
+          oldName(sceneObject->GetName()) {}
+
+    void RenameSceneObjectAction::RegisterType(NativeTypeHandler<RenameSceneObjectAction>& type)
+    {
+        type.Constructor<SceneEditor, SceneObject*, StringView>();
+    }
+
+    void RenameSceneObjectAction::Commit()
+    {
+        object->SetName(newName);
+    }
+
+    void RenameSceneObjectAction::Rollback()
+    {
+        object->SetName(oldName);
     }
 
     void InitSceneEditorAction()
     {
         Registry::Type<OpenSceneAction>();
-        Registry::Type<SceneObjectAction>();
+        Registry::Type<CreateSceneObjectAction>();
+        Registry::Type<DestroySceneObjectAction>();
+        Registry::Type<RenameSceneObjectAction>();
     }
 }

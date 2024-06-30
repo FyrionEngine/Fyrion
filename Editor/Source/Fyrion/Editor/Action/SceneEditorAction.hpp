@@ -79,4 +79,21 @@ namespace Fyrion
         void Commit() override;
         void Rollback() override;
     };
+
+    struct AddComponentSceneObjectAction : EditorAction
+    {
+        FY_BASE_TYPES(EditorAction);
+
+        SceneEditor& sceneEditor;
+        SceneObject* object;
+        TypeHandler* typeHandler;
+        Component*   component;
+
+        AddComponentSceneObjectAction(SceneEditor& sceneEditor, SceneObject* object, TypeHandler* typeHandler);
+
+        void Commit() override;
+        void Rollback() override;
+
+        static void RegisterType(NativeTypeHandler<AddComponentSceneObjectAction>& type);
+    };
 }

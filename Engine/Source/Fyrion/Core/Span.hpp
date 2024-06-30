@@ -122,6 +122,11 @@ namespace Fyrion
             return !((*this) == other);
         }
 
+        constexpr usize IndexOf(T object)
+        {
+            return FindFirstIndex(begin(), end(), object);
+        }
+
     private:
         T* m_first;
         T* m_last;

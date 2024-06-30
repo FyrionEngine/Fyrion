@@ -5,6 +5,7 @@
 
 namespace Fyrion
 {
+    class Component;
     struct GraphEditorNodePin;
     struct MenuItemEventData;
     class SceneEditor;
@@ -32,7 +33,7 @@ namespace Fyrion
         SceneObject*        m_renamingObject{};
         GraphEditorNodePin* m_renmaingPin{};
         String              m_searchComponentString{};
-        //RID                 m_selectedComponent = {};
+        Component*          selectedComponent = {};
         GraphEditorNodePin* m_selectedNodePin = {};
 
         static void OpenProperties(const MenuItemEventData& eventData);

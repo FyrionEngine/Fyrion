@@ -84,7 +84,7 @@ namespace Fyrion
         pos = parent->GetChildren().IndexOf(object);
         if (pos != nPos)
         {
-            parent->GetChildren().Remove(pos);
+            parent->RemoveChildAt(pos);
             sceneEditor.Modify();
         }
     }
@@ -121,11 +121,35 @@ namespace Fyrion
         sceneEditor.Modify();
     }
 
+    AddComponentSceneObjectAction::AddComponentSceneObjectAction(SceneEditor& sceneEditor, SceneObject* object, TypeHandler* typeHandler)
+        : sceneEditor(sceneEditor),
+          object(object),
+          typeHandler(typeHandler),
+          component(nullptr) {}
+
+    void AddComponentSceneObjectAction::Commit()
+    {
+        sceneEditor.Modify();
+        component = &object->AddComponent(typeHandler);
+    }
+
+    void AddComponentSceneObjectAction::Rollback()
+    {
+        sceneEditor.Modify();
+        object->RemoveComponent(component);
+    }
+
+    void AddComponentSceneObjectAction::RegisterType(NativeTypeHandler<AddComponentSceneObjectAction>& type)
+    {
+        type.Constructor<SceneEditor, SceneObject*, TypeHandler*>();
+    }
+
     void InitSceneEditorAction()
     {
         Registry::Type<OpenSceneAction>();
         Registry::Type<CreateSceneObjectAction>();
         Registry::Type<DestroySceneObjectAction>();
         Registry::Type<RenameSceneObjectAction>();
+        Registry::Type<AddComponentSceneObjectAction>();
     }
 }

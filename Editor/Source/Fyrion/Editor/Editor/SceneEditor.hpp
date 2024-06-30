@@ -22,7 +22,9 @@ namespace Fyrion
         void         CreateObject();
         bool         IsSimulating();
         bool         IsRootSelected() const;
-        void         AddComponent(SceneObject& asset, TypeHandler* typeHandler);
+        void         AddComponent(SceneObject& object, TypeHandler* typeHandler);
+        void         ResetComponent(SceneObject& asset, Component* component);
+        void         RemoveComponent(SceneObject& asset, Component* component);
 
         void              LoadScene(SceneObjectAsset* asset);
         SceneObjectAsset* GetScene() const;

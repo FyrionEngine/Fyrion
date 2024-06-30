@@ -15,7 +15,25 @@ namespace Fyrion
         SceneObject() = default;
         SceneObject(SceneObjectAsset* asset);
 
-        Component& AddComponent(TypeID typeId);
+        StringView         GetName() const;
+        void               SetName(const StringView& p_name);
+        SceneObject*       GetParent() const;
+        Span<SceneObject*> GetChildren() const;
+        void               SetUUID(UUID p_uuid);
+        UUID               GetUUID() const;
+        SceneObjectAsset*  GetPrototype() const;
+        void               AddChild(SceneObject* sceneObject);
+        void               AddChildAt(SceneObject* sceneObject, usize pos);
+        void               RemoveChild(SceneObject* sceneObject);
+        void               RemoveChildAt(usize pos);
+        Component&         AddComponent(TypeID typeId);
+        Component&         AddComponent(TypeHandler* typeHandler);
+        void               RemoveComponent(Component* component);
+        Span<Component*>   GetComponents() const;
+        void               Destroy();
+        ArchiveObject      Serialize(ArchiveWriter& writer) const;
+        void               Deserialize(ArchiveReader& reader, ArchiveObject object);
+
 
         template <typename T, Traits::EnableIf<Traits::IsBaseOf<Component, T>>* = nullptr>
         T& AddComponent()
@@ -23,43 +41,7 @@ namespace Fyrion
             return static_cast<T&>(AddComponent(GetTypeID<T>()));
         }
 
-        FY_FINLINE StringView GetName() const
-        {
-            return name;
-        }
-
-        FY_FINLINE void SetName(const StringView& p_name)
-        {
-            name = p_name;
-        }
-
-        FY_FINLINE SceneObject* GetParent() const
-        {
-            return parent;
-        }
-
-        FY_FINLINE Array<SceneObject*>& GetChildren()
-        {
-            return children;
-        }
-
-        FY_FINLINE const Array<SceneObject*>& GetChildren() const
-        {
-            return children;
-        }
-
-        void              SetUUID(UUID p_uuid);
-        UUID              GetUUID() const;
-        SceneObjectAsset* GetPrototype() const;
-        void              AddChild(SceneObject* sceneObject);
-        void              AddChildAt(SceneObject* sceneObject, usize pos);
-        void              RemoveChild(SceneObject* sceneObject);
-        void              Destroy();
-
         static void RegisterType(NativeTypeHandler<SceneObject>& type);
-
-        ArchiveObject Serialize(ArchiveWriter& writer) const;
-        void          Deserialize(ArchiveReader& reader, ArchiveObject object);
 
     private:
         SceneObjectAsset*   asset{};

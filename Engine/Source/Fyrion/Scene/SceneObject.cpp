@@ -2,24 +2,58 @@
 
 #include "SceneManager.hpp"
 #include "Assets/SceneObjectAsset.hpp"
-#include "GLFW/glfw3native.h"
 
 
 namespace Fyrion
 {
-    SceneObject::SceneObject(SceneObjectAsset* asset) : asset(asset)
-    {
-
-    }
+    SceneObject::SceneObject(SceneObjectAsset* asset) : asset(asset) {}
 
     Component& SceneObject::AddComponent(TypeID typeId)
     {
-        TypeHandler* typeHandler = Registry::FindTypeById(typeId);
-        Component*   component = typeHandler->Cast<Component>(typeHandler->NewInstance());
+        return AddComponent(Registry::FindTypeById(typeId));
+    }
+
+    Component& SceneObject::AddComponent(TypeHandler* typeHandler)
+    {
+        Component* component = typeHandler->Cast<Component>(typeHandler->NewInstance());
         component->typeHandler = typeHandler;
         component->object = this;
         components.EmplaceBack(component);
         return *component;
+    }
+
+    void SceneObject::RemoveComponent(Component* component)
+    {
+        usize index = components.IndexOf(component);
+        if (index != nPos)
+        {
+            components.Remove(index);
+        }
+    }
+
+    Span<Component*> SceneObject::GetComponents() const
+    {
+        return components;
+    }
+
+    StringView SceneObject::GetName() const
+    {
+        return name;
+    }
+
+    void SceneObject::SetName(const StringView& p_name)
+    {
+        name = p_name;
+    }
+
+    SceneObject* SceneObject::GetParent() const
+    {
+        return parent;
+    }
+
+    Span<SceneObject*> SceneObject::GetChildren() const
+    {
+        return children;
     }
 
     void SceneObject::SetUUID(UUID p_uuid)
@@ -67,6 +101,11 @@ namespace Fyrion
         }
     }
 
+    void SceneObject::RemoveChildAt(usize pos)
+    {
+        children.Remove(pos);
+    }
+
     void SceneObject::Destroy()
     {
         SceneManager::Destroy(this);
@@ -81,17 +120,37 @@ namespace Fyrion
     {
         ArchiveObject object = writer.CreateObject();
         writer.WriteString(object, "name", name);
+
         if (uuid)
         {
             writer.WriteString(object, "uuid", ToString(uuid));
         }
 
-        ArchiveObject arr = writer.CreateArray();
-        for (const SceneObject* child : GetChildren())
+        ArchiveObject objChildren = writer.CreateArray();
+        for (const SceneObject* child : children)
         {
-            writer.AddValue(arr, child->Serialize(writer));
+            writer.AddValue(objChildren, child->Serialize(writer));
         }
-        writer.WriteValue(object, "children", arr);
+
+        if (!children.Empty())
+        {
+            writer.WriteValue(object, "children", objChildren);
+        }
+
+        ArchiveObject objComponents = writer.CreateArray();
+
+        for (const Component* component : components)
+        {
+            ArchiveObject componentObject = component->typeHandler->Serialize(writer, component);
+            writer.WriteString(componentObject, "_type", component->typeHandler->GetName());
+            writer.AddValue(objComponents, componentObject);
+        }
+
+        if (!components.Empty())
+        {
+            writer.WriteValue(object, "components", objComponents);
+        }
+
         return object;
     }
 
@@ -104,18 +163,35 @@ namespace Fyrion
             uuid = UUID::FromString(uuidStr);
         }
 
-        ArchiveObject arr = reader.ReadObject(object, "children");
-        usize arrSize = reader.ArrSize(arr);
-
-        ArchiveObject item{};
-        for (usize i = 0; i < arrSize; ++i)
+        if (ArchiveObject childrenArr = reader.ReadObject(object, "children"))
         {
-            item = reader.Next(arr, item);
+            usize childrenArrSize = reader.ArrSize(childrenArr);
+            ArchiveObject childObject{};
+            for (usize i = 0; i < childrenArrSize; ++i)
+            {
+                childObject = reader.Next(childrenArr, childObject);
 
-            SceneObject* child = SceneManager::CreateObject();
-            child->Deserialize(reader, item);
-            AddChild(child);
+                SceneObject* child = SceneManager::CreateObject();
+                child->Deserialize(reader, childObject);
+                AddChild(child);
+            }
         }
 
+        if (ArchiveObject compArr = reader.ReadObject(object, "components"))
+        {
+            usize compArrSize = reader.ArrSize(compArr);
+
+            ArchiveObject compObj{};
+            for (usize i = 0; i < compArrSize; ++i)
+            {
+                compObj = reader.Next(compArr, compObj);
+
+                if (TypeHandler* typeHandler = Registry::FindTypeByName(reader.ReadString(compObj, "_type")))
+                {
+                    Component& component = AddComponent(typeHandler);
+                    typeHandler->Deserialize(reader, compObj, &component);
+                }
+            }
+        }
     }
 }

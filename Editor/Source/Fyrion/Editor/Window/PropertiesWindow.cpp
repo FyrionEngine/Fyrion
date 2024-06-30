@@ -153,41 +153,38 @@ namespace Fyrion
 
         bool openComponentSettings = false;
 
-        // for (RID component : components)
-        // {
-        //     TypeHandler* typeHandler = Repository::GetResourceTypeHandler(component);
-        //     if (typeHandler)
-        //     {
-        //         bool propClicked = false;
-        //         bool open = ImGui::CollapsingHeaderProps(HashValue(component), FormatName(typeHandler->GetSimpleName()).CStr(), &propClicked);
-        //         if (propClicked)
-        //         {
-        //             openComponentSettings = true;
-        //             m_selectedComponent = component;
-        //         }
-        //         if (open)
-        //         {
-        //             ImGui::Indent();
-        //             ImGui::DrawType(ImGui::DrawTypeDesc{
-        //                 .itemId = component.id,
-        //                 .rid = component,
-        //                 .typeHandler = typeHandler,
-        //                 .instance = Repository::ReadData(component),
-        //                 .flags = readOnly ? ImGuiDrawTypeFlags_ReadOnly : 0u,
-        //                 .userData = &m_sceneEditor,
-        //                 .callback = [](ImGui::DrawTypeDesc& desc, ConstPtr newValue)
-        //                 {
-        //                     static_cast<SceneEditor*>(desc.userData)->UpdateComponent(desc.rid, newValue);
-        //                 },
-        //                 .onCreateSubobject = [](ImGui::DrawTypeDesc& desc, RID subobject)
-        //                 {
-        //                     int a = 0;
-        //                 }
-        //             });
-        //             ImGui::Unindent();
-        //         }
-        //     }
-        // }
+        for (Component* component : object.GetComponents())
+        {
+            bool propClicked = false;
+            bool open = ImGui::CollapsingHeaderProps(HashValue(reinterpret_cast<usize>(component)), FormatName(component->typeHandler->GetSimpleName()).CStr(), &propClicked);
+            if (propClicked)
+            {
+                openComponentSettings = true;
+                selectedComponent = component;
+            }
+
+            if (open)
+            {
+                // ImGui::Indent();
+                // ImGui::DrawType(ImGui::DrawTypeDesc{
+                //     .itemId = component.id,
+                //     .rid = component,
+                //     .typeHandler = typeHandler,
+                //     .instance = Repository::ReadData(component),
+                //     .flags = readOnly ? ImGuiDrawTypeFlags_ReadOnly : 0u,
+                //     .userData = &m_sceneEditor,
+                //     .callback = [](ImGui::DrawTypeDesc& desc, ConstPtr newValue)
+                //     {
+                //         static_cast<SceneEditor*>(desc.userData)->UpdateComponent(desc.rid, newValue);
+                //     },
+                //     .onCreateSubobject = [](ImGui::DrawTypeDesc& desc, RID subobject)
+                //     {
+                //         int a = 0;
+                //     }
+                // });
+                // ImGui::Unindent();
+            }
+        }
 
         if (addComponent)
         {
@@ -234,13 +231,13 @@ namespace Fyrion
         {
             if (ImGui::MenuItem("Reset"))
             {
-                //m_sceneEditor.ResetComponent(m_selectedComponent);
+                m_sceneEditor.ResetComponent(object, selectedComponent);
                 ImGui::CloseCurrentPopup();
             }
 
             if (ImGui::MenuItem("Remove"))
             {
-                //m_sceneEditor.RemoveComponent(rid, m_selectedComponent);
+                m_sceneEditor.RemoveComponent(object, selectedComponent);
                 ImGui::CloseCurrentPopup();
             }
         }

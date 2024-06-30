@@ -100,7 +100,6 @@ namespace Fyrion
     void Asset::RegisterType(NativeTypeHandler<Asset>& type)
     {
         type.Field<&Asset::uuid, &Asset::GetUUID, &Asset::SetUUID>("uuid");
-        type.Field<&Asset::name>("name");
         type.Function<&Asset::GetName>("GetName");
     }
 }

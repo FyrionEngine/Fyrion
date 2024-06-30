@@ -25,37 +25,28 @@ namespace Fyrion
         static void RegisterType(NativeTypeHandler<OpenSceneAction>& type);
     };
 
-    struct CreateSceneObjectAction : EditorAction
+
+    enum class SceneObjectActionType
     {
-        FY_BASE_TYPES(EditorAction);
-
-        SceneEditor& sceneEditor;
-        SceneObject* parent;
-        SceneObject* current;
-        usize        pos;
-
-        CreateSceneObjectAction(SceneEditor& sceneEditor, SceneObject* parent);
-        ~CreateSceneObjectAction() override;
-
-        static void RegisterType(NativeTypeHandler<CreateSceneObjectAction>& type);
-
-        void Commit() override;
-        void Rollback() override;
+        Create,
+        Destroy,
+        Rename
     };
 
-
-    struct DestroySceneObjectAction : EditorAction
+    struct SceneObjectAction : EditorAction
     {
         FY_BASE_TYPES(EditorAction);
 
-        SceneObject* object;
-        SceneObject* parent;
-        usize        pos;
+        SceneEditor&          sceneEditor;
+        SceneObjectActionType type ;
+        SceneObject*          parent = nullptr;
+        SceneObject*          current = nullptr;
+        usize                 pos = 0;
+        String                newName = "";
 
-        DestroySceneObjectAction(SceneObject* object);
-        ~DestroySceneObjectAction() override;
+        SceneObjectAction(SceneEditor& sceneEditor, SceneObjectActionType type);
 
-        static void RegisterType(NativeTypeHandler<DestroySceneObjectAction>& type);
+        static void RegisterType(NativeTypeHandler<SceneObjectAction>& type);
 
         void Commit() override;
         void Rollback() override;

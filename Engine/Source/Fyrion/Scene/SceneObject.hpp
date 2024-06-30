@@ -2,7 +2,6 @@
 
 #include "Component.hpp"
 #include "Fyrion/Common.hpp"
-#include "Fyrion/Core/HashMap.hpp"
 #include "Fyrion/Core/UUID.hpp"
 
 namespace Fyrion
@@ -41,20 +40,16 @@ namespace Fyrion
             return children;
         }
 
-        FY_FINLINE UUID GetUUID()
-        {
-            return {};
-        }
+        UUID              GetUUID() const;
+        SceneObjectAsset* GetPrototype() const;
+        SceneObject*      NewChild();
 
-        SceneObjectAsset* GetPrototype()
-        {
-            return nullptr;
-        }
+        static void RegisterType(NativeTypeHandler<SceneObject>& type);
 
     private:
-        String name;
-        Array<Component*> components{};
+        String              name;
+        Array<Component*>   components{};
         Array<SceneObject*> children{};
-        SceneObject* parent = nullptr;
+        SceneObject*        parent = nullptr;
     };
 }

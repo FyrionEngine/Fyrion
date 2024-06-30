@@ -28,7 +28,7 @@ namespace Fyrion
     }
 
 
-    CreateSceneObjectAction::CreateSceneObjectAction(SceneEditor& sceneEditor, SceneObject* parent) : sceneEditor(sceneEditor), parent(parent), current(nullptr)
+    SceneObjectAction::SceneObjectAction(SceneEditor& sceneEditor, SceneObjectActionType type) : sceneEditor(sceneEditor), type(type)
     {
         // current = AssetDatabase::Create<SceneObjectAsset>();
         // current->SetName("New Object");
@@ -36,73 +36,48 @@ namespace Fyrion
         // pos = parent->GetChildren().Count();
     }
 
-    CreateSceneObjectAction::~CreateSceneObjectAction()
+    void SceneObjectAction::Commit()
     {
-        // if (current != nullptr && !current->IsActive())
-        // {
-        //     AssetDatabase::Destroy(current);
-        // }
-    }
+        sceneEditor.GetScene()->Modify();
 
-    void CreateSceneObjectAction::Commit()
-    {
-        // sceneEditor.SelectObject(*current);
+        switch (type)
+        {
+            case SceneObjectActionType::Create:
+            {
+                sceneEditor.SelectObject(*current);
+                break;
+            }
+            case SceneObjectActionType::Destroy:
+            {
+                break;
+            }
+            case SceneObjectActionType::Rename:
+            {
+                break;
+            }
+        }
+
         // parent->GetChildren().Insert(current, pos);
         // current->SetActive(true);
     }
 
-    void CreateSceneObjectAction::Rollback()
+    void SceneObjectAction::Rollback()
     {
+        sceneEditor.GetScene()->Modify();
+
         // sceneEditor.DeselectObject(*current);
         // current->SetActive(false);
         // parent->GetChildren().Remove(current);
     }
 
-    void CreateSceneObjectAction::RegisterType(NativeTypeHandler<CreateSceneObjectAction>& type)
+    void SceneObjectAction::RegisterType(NativeTypeHandler<SceneObjectAction>& type)
     {
-        type.Constructor<SceneEditor, SceneObject*>();
-    }
-
-    DestroySceneObjectAction::DestroySceneObjectAction(SceneObject* object) : object(object), parent(object->GetParent())
-    {
-    }
-
-    DestroySceneObjectAction::~DestroySceneObjectAction()
-    {
-        // if (!object->IsActive())
-        // {
-        //     AssetDatabase::Destroy(object);
-        // }
-    }
-
-    void DestroySceneObjectAction::Commit()
-    {
-        // object->SetActive(false);
-        // pos = parent->GetChildren().IndexOf(object);
-        // if (pos != nPos)
-        // {
-        //     parent->GetChildren().Remove(object);\
-        // }
-    }
-
-    void DestroySceneObjectAction::Rollback()
-    {
-        // if (pos != nPos)
-        // {
-        //     parent->GetChildren().Insert(object, pos);
-        // }
-        // object->SetActive(true);
-    }
-
-    void DestroySceneObjectAction::RegisterType(NativeTypeHandler<DestroySceneObjectAction>& type)
-    {
-        type.Constructor<SceneObject*>();
+        type.Constructor<SceneEditor, SceneObjectActionType>();
     }
 
     void InitSceneEditorAction()
     {
         Registry::Type<OpenSceneAction>();
-        Registry::Type<CreateSceneObjectAction>();
-        Registry::Type<DestroySceneObjectAction>();
+        Registry::Type<SceneObjectAction>();
     }
 }

@@ -298,7 +298,7 @@ namespace Fyrion
             return assetType->GetTypeInfo().typeId;
         }
 
-        StringView GetName() const
+        virtual StringView GetName() const
         {
             return name;
         }
@@ -313,7 +313,7 @@ namespace Fyrion
             return absolutePath;
         }
 
-        void SetName(StringView p_name);
+        virtual void SetName(StringView p_name);
 
         bool IsActive() const
         {

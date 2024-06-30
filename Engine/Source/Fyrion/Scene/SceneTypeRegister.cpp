@@ -9,5 +9,6 @@ namespace Fyrion
         Registry::Type<SceneObjectAsset>();
         Registry::Type<Component>();
         Registry::Type<TransformComponent>();
+        Registry::Type<SceneObject>();
     }
 }

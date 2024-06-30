@@ -12,4 +12,27 @@ namespace Fyrion
         components.EmplaceBack(component);
         return *component;
     }
+
+    UUID SceneObject::GetUUID() const
+    {
+        return {};
+    }
+
+    SceneObjectAsset* SceneObject::GetPrototype() const
+    {
+        return nullptr;
+    }
+
+    SceneObject* SceneObject::NewChild()
+    {
+        SceneObject* child = MemoryGlobals::GetDefaultAllocator().Alloc<SceneObject>();
+        child->parent = this;
+        children.EmplaceBack(child);
+        return child;
+    }
+
+    void SceneObject::RegisterType(NativeTypeHandler<SceneObject>& type)
+    {
+        type.Field<&SceneObject::name>("name");
+    }
 }

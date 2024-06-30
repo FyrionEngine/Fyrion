@@ -21,10 +21,11 @@ namespace Fyrion
             return object;
         }
 
+        void SetName(StringView p_name) override;
+
         static void RegisterType(NativeTypeHandler<SceneObjectAsset>& type);
 
     private:
         SceneObject object;
     };
-
 }

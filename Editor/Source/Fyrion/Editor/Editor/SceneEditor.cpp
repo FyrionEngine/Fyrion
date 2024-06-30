@@ -58,7 +58,8 @@ namespace Fyrion
         EditorTransaction* transaction = Editor::CreateTransaction();
         for (const auto it : selectedObjects)
         {
-            transaction->CreateAction<DestroySceneObjectAction>(reinterpret_cast<SceneObjectAsset*>(it.first));
+            SceneObjectAction* action = transaction->CreateAction<SceneObjectAction>(*this, SceneObjectActionType::Create);
+            action->current = reinterpret_cast<SceneObject*>(it.first);
         }
         transaction->Commit();
         selectedObjects.Clear();
@@ -80,7 +81,9 @@ namespace Fyrion
         {
             EditorTransaction* transaction = Editor::CreateTransaction();
             transaction->AddPreExecute(this, ClearSelectionStatic);
-            transaction->CreateAction<CreateSceneObjectAction>(*this, GetRootObject())->Commit();
+            SceneObjectAction* action = transaction->CreateAction<SceneObjectAction>(*this, SceneObjectActionType::Create);
+            action->parent = GetRootObject();
+            action->Commit();
         }
         else
         {
@@ -88,7 +91,8 @@ namespace Fyrion
             transaction->AddPreExecute(this, ClearSelectionStatic);
             for (const auto it : selectedObjects)
             {
-                transaction->CreateAction<CreateSceneObjectAction>(*this, reinterpret_cast<SceneObject*>(it.first));
+                SceneObjectAction* action = transaction->CreateAction<SceneObjectAction>(*this, SceneObjectActionType::Create);
+                action->parent = reinterpret_cast<SceneObject*>(it.first);
             }
             onSceneObjectAssetSelection.Invoke(nullptr);
             selectedObjects.Clear();
@@ -131,7 +135,10 @@ namespace Fyrion
 
     void SceneEditor::RenameObject(SceneObject& asset, StringView newName)
     {
-       // Editor::CreateTransaction()->CreateAction<RenameAssetAction>(static_cast<Asset*>(&asset), newName)->Commit();
+        SceneObjectAction* action = Editor::CreateTransaction()->CreateAction<SceneObjectAction>(*this, SceneObjectActionType::Rename);
+        action->current = &asset;
+        action->newName = newName;
+        action->Commit();
     }
 }
 

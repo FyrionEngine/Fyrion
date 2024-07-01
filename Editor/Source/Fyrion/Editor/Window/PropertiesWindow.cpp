@@ -165,24 +165,19 @@ namespace Fyrion
 
             if (open)
             {
-                // ImGui::Indent();
-                // ImGui::DrawType(ImGui::DrawTypeDesc{
-                //     .itemId = component.id,
-                //     .rid = component,
-                //     .typeHandler = typeHandler,
-                //     .instance = Repository::ReadData(component),
-                //     .flags = readOnly ? ImGuiDrawTypeFlags_ReadOnly : 0u,
-                //     .userData = &m_sceneEditor,
-                //     .callback = [](ImGui::DrawTypeDesc& desc, ConstPtr newValue)
-                //     {
-                //         static_cast<SceneEditor*>(desc.userData)->UpdateComponent(desc.rid, newValue);
-                //     },
-                //     .onCreateSubobject = [](ImGui::DrawTypeDesc& desc, RID subobject)
-                //     {
-                //         int a = 0;
-                //     }
-                // });
-                // ImGui::Unindent();
+                ImGui::Indent();
+                ImGui::DrawType(ImGui::DrawTypeDesc{
+                    .itemId = reinterpret_cast<usize>(component),
+                    .typeHandler = component->typeHandler,
+                    .instance = component,
+                    .flags = readOnly ? ImGuiDrawTypeFlags_ReadOnly : 0u,
+                    .userData = &m_sceneEditor,
+                    .callback = [](ImGui::DrawTypeDesc& desc, VoidPtr newValue)
+                    {
+                        static_cast<SceneEditor*>(desc.userData)->UpdateComponent(static_cast<Component*>(desc.instance), static_cast<Component*>(newValue));
+                    },
+                });
+                ImGui::Unindent();
             }
         }
 

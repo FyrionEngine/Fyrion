@@ -111,7 +111,7 @@ namespace Fyrion
 
     void SceneEditor::LoadScene(SceneObjectAsset* asset)
     {
-        selectedObjects.Clear();
+        ClearSelection();
         scene = asset;
     }
 
@@ -138,14 +138,21 @@ namespace Fyrion
 
     }
 
-    void SceneEditor::ResetComponent(SceneObject& asset, Component* component)
+    void SceneEditor::ResetComponent(SceneObject& object, Component* component)
     {
 
     }
 
-    void SceneEditor::RemoveComponent(SceneObject& asset, Component* component)
+    void SceneEditor::RemoveComponent(SceneObject& object, Component* component)
     {
+        //TODO - make action
+        object.RemoveComponent(component);
+        Modify();
+    }
 
+    void SceneEditor::UpdateComponent(Component* oldValue, Component* newValue)
+    {
+        //newValue->typeHandler->Serialize()
     }
 
     void SceneEditor::RenameObject(SceneObject& asset, StringView newName)

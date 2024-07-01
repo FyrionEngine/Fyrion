@@ -166,6 +166,7 @@ namespace Fyrion
         if (ArchiveObject childrenArr = reader.ReadObject(object, "children"))
         {
             usize childrenArrSize = reader.ArrSize(childrenArr);
+
             ArchiveObject childObject{};
             for (usize i = 0; i < childrenArrSize; ++i)
             {

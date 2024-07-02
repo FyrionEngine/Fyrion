@@ -139,14 +139,14 @@ namespace Fyrion
 
     void SceneEditor::ResetComponent(SceneObject& object, Component* component)
     {
-
+        Component* newValue = component->typeHandler->Cast<Component>(component->typeHandler->NewInstance());
+        Editor::CreateTransaction()->CreateAction<UpdateComponentSceneObjectAction>(*this, component, newValue);
+        component->typeHandler->Destroy(newValue);
     }
 
     void SceneEditor::RemoveComponent(SceneObject& object, Component* component)
     {
-        //TODO - make action
-        object.RemoveComponent(component);
-        Modify();
+        Editor::CreateTransaction()->CreateAction<RemoveComponentObjectAction>(*this, &object, component)->Commit();
     }
 
     void SceneEditor::UpdateComponent(Component* component, Component* newValue)

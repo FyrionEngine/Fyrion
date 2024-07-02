@@ -195,4 +195,14 @@ namespace Fyrion
             }
         }
     }
+
+    bool SceneObject::IsAlive() const
+    {
+        return alive;
+    }
+
+    void SceneObject::SetAlive(bool p_alive)
+    {
+        alive = p_alive;
+    }
 }

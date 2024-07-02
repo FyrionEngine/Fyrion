@@ -71,7 +71,7 @@ namespace Fyrion
 
     DestroySceneObjectAction::~DestroySceneObjectAction()
     {
-        if (object)
+        if (object && !object->IsAlive())
         {
             SceneManager::Destroy(object);
         }
@@ -88,8 +88,10 @@ namespace Fyrion
         if (pos != nPos)
         {
             parent->RemoveChildAt(pos);
-            sceneEditor.Modify();
         }
+
+        sceneEditor.Modify();
+        parent->SetAlive(false);
     }
 
     void DestroySceneObjectAction::Rollback()
@@ -97,8 +99,10 @@ namespace Fyrion
         if (pos != nPos)
         {
             parent->AddChildAt(object, pos);
+
             sceneEditor.Modify();
         }
+        parent->SetAlive(true);
     }
 
     RenameSceneObjectAction::RenameSceneObjectAction(SceneEditor& sceneEditor, SceneObject* sceneObject, StringView newName)
@@ -147,17 +151,18 @@ namespace Fyrion
         type.Constructor<SceneEditor, SceneObject*, TypeHandler*>();
     }
 
-    UpdateComponentSceneObjectAction::UpdateComponentSceneObjectAction(SceneEditor& sceneEditor, Component* component, Component* newValue) : sceneEditor(sceneEditor),  component(component)
+    UpdateComponentSceneObjectAction::UpdateComponentSceneObjectAction(SceneEditor& sceneEditor, Component* component, Component* newValue) : sceneEditor(sceneEditor), component(component)
     {
         JsonAssetWriter writer;
-        currentStrValue = JsonAssetWriter::Stringify(newValue->typeHandler->Serialize(writer, component));
-        newStrValue = JsonAssetWriter::Stringify(newValue->typeHandler->Serialize(writer, newValue));
+        currentStrValue = JsonAssetWriter::Stringify(component->typeHandler->Serialize(writer, component));
+        newStrValue = JsonAssetWriter::Stringify(component->typeHandler->Serialize(writer, newValue));
 
         JsonAssetReader reader(newStrValue);
         component->typeHandler->Deserialize(reader, reader.ReadObject(), component);
 
         sceneEditor.Modify();
         component->OnChange();
+        ImGui::ClearDrawType(reinterpret_cast<usize>(component));
     }
 
     void UpdateComponentSceneObjectAction::Commit()
@@ -170,7 +175,6 @@ namespace Fyrion
 
         sceneEditor.Modify();
         component->OnChange();
-
     }
 
     void UpdateComponentSceneObjectAction::Rollback()
@@ -190,6 +194,35 @@ namespace Fyrion
         type.Constructor<SceneEditor, Component*, Component*>();
     }
 
+    RemoveComponentObjectAction::RemoveComponentObjectAction(SceneEditor& sceneEditor, SceneObject* object, Component* component) : sceneEditor(sceneEditor),
+                                                                                                                                    component(component),
+                                                                                                                                    typeHandler(component->typeHandler),
+                                                                                                                                    object(object) {}
+
+    void RemoveComponentObjectAction::Commit()
+    {
+        JsonAssetWriter writer;
+        value = JsonAssetWriter::Stringify(typeHandler->Serialize(writer, component));
+        object->RemoveComponent(component);
+        sceneEditor.Modify();
+        typeHandler->Destroy(component);
+    }
+
+    void RemoveComponentObjectAction::Rollback()
+    {
+        component = &object->AddComponent(typeHandler);
+
+        JsonAssetReader reader(value);
+        typeHandler->Deserialize(reader, reader.ReadObject(), component);
+
+        sceneEditor.Modify();
+    }
+
+    void RemoveComponentObjectAction::RegisterType(NativeTypeHandler<RemoveComponentObjectAction>& type)
+    {
+        type.Constructor<SceneEditor, SceneObject*, Component*>();
+    }
+
     void InitSceneEditorAction()
     {
         Registry::Type<OpenSceneAction>();
@@ -198,5 +231,6 @@ namespace Fyrion
         Registry::Type<RenameSceneObjectAction>();
         Registry::Type<AddComponentSceneObjectAction>();
         Registry::Type<UpdateComponentSceneObjectAction>();
+        Registry::Type<RemoveComponentObjectAction>();
     }
 }

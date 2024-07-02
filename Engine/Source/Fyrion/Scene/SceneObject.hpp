@@ -33,6 +33,8 @@ namespace Fyrion
         void               Destroy();
         ArchiveObject      Serialize(ArchiveWriter& writer) const;
         void               Deserialize(ArchiveReader& reader, ArchiveObject object);
+        bool               IsAlive() const;
+        void               SetAlive(bool p_alive);
 
 
         template <typename T, Traits::EnableIf<Traits::IsBaseOf<Component, T>>* = nullptr>
@@ -50,6 +52,7 @@ namespace Fyrion
         Array<Component*>   components{};
         Array<SceneObject*> children{};
         SceneObject*        parent = nullptr;
+        bool                alive = true;
     };
 
 

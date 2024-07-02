@@ -48,7 +48,10 @@ namespace Fyrion
         return MemoryGlobals::GetDefaultAllocator().Alloc<SceneObject>();
     }
 
-    void SceneManager::SetActiveObject(SceneObject* sceneObject) {}
+    void SceneManager::SetActiveObject(SceneObject* sceneObject)
+    {
+        activeSceneObject = sceneObject;
+    }
 
 
     void SceneManagerInit()

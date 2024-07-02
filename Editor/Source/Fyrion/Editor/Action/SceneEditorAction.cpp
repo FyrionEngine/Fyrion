@@ -214,7 +214,7 @@ namespace Fyrion
 
         JsonAssetReader reader(value);
         typeHandler->Deserialize(reader, reader.ReadObject(), component);
-
+        component->OnChange();
         sceneEditor.Modify();
     }
 

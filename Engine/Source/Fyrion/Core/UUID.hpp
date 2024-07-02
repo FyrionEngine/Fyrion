@@ -39,12 +39,12 @@ namespace Fyrion
 		}
 
 
-		static inline UUID RandomUUID()
+		static UUID RandomUUID()
 		{
 			return {Random::Xorshift64star(), Random::Xorshift64star()};
 		}
 
-		static inline UUID FromString(const StringView& str)
+		static UUID FromString(const StringView& str)
 		{
 
 			if (str.Empty())
@@ -175,5 +175,30 @@ namespace Fyrion
 			return bufferCount;
 		}
 	};
+
+
+	template<>
+	struct ArchiveType<UUID>
+	{
+		static void WriteField(ArchiveWriter& writer, ArchiveObject object, const StringView& name, const UUID& value)
+		{
+			if (value)
+			{
+				char buffer[StringConverter<UUID>::bufferCount] = {};
+				StringConverter<UUID>::ToString(buffer, 0, value);
+				writer.WriteString(object, name, StringView{buffer, StringConverter<UUID>::bufferCount});
+			}
+		}
+
+		static void ReadField(ArchiveReader& reader, ArchiveObject object, const StringView& name, UUID& value)
+		{
+			StringView str = reader.ReadString(object, name);
+			if (!str.Empty())
+			{
+				value = UUID::FromString(str);
+			}
+		}
+	};
+
 
 }

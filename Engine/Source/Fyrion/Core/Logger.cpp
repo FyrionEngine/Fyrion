@@ -4,6 +4,7 @@
 #include "FormatUtils.hpp"
 
 #include <chrono>
+#include <algorithm>
 
 namespace Fyrion
 {
@@ -162,7 +163,4 @@ namespace Fyrion
         logContext.sinks.ShrinkToFit();
         logContext.loggers.Clear();
     }
-
-
-
 }

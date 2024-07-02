@@ -1,353 +1,208 @@
 #include "SceneObject.hpp"
 
-#include "Component.hpp"
 #include "SceneManager.hpp"
-#include "SceneAssets.hpp"
-#include "Fyrion/Core/Registry.hpp"
-#include "Fyrion/Resource/Repository.hpp"
+#include "Assets/SceneObjectAsset.hpp"
+
 
 namespace Fyrion
 {
-    SceneObjectIterator::SceneObjectIterator(SceneObject* object) : m_object(object)
+    SceneObject::SceneObject(SceneObjectAsset* asset) : asset(asset) {}
+
+    Component& SceneObject::AddComponent(TypeID typeId)
     {
+        return AddComponent(Registry::FindTypeById(typeId));
     }
 
-    SceneObjectIterator SceneObjectIterator::begin() const
+    Component& SceneObject::AddComponent(TypeHandler* typeHandler)
     {
-        return {m_object->m_head};
+        Component* component = typeHandler->Cast<Component>(typeHandler->NewInstance());
+        component->typeHandler = typeHandler;
+        component->object = this;
+        components.EmplaceBack(component);
+        return *component;
     }
 
-    SceneObjectIterator SceneObjectIterator::end() const
+    void SceneObject::RemoveComponent(Component* component)
     {
-        return {nullptr};
-    }
-
-    SceneObject& SceneObjectIterator::operator*() const
-    {
-        return *m_object;
-    }
-
-    SceneObject* SceneObjectIterator::operator->() const
-    {
-        return m_object;
-    }
-
-    bool operator==(const SceneObjectIterator& a, const SceneObjectIterator& b)
-    {
-        return a.m_object == b.m_object;
-    }
-
-    bool operator!=(const SceneObjectIterator& a, const SceneObjectIterator& b)
-    {
-        return !(a == b);
-    }
-
-    SceneObjectIterator& SceneObjectIterator::operator++()
-    {
-        m_object = m_object->m_next;
-        return *this;
-    }
-
-    SceneObject::SceneObject(StringView name, SceneObject* parent) : m_name(name), m_parent(parent), m_sceneGlobals(m_parent->m_sceneGlobals)
-    {
-        m_sceneGlobals->SceneObjectAdded(this);
-    }
-
-    SceneObject::SceneObject(RID asset, SceneObject* parent) : m_asset(asset), m_parent(parent), m_sceneGlobals(m_parent->m_sceneGlobals)
-    {
-        m_sceneGlobals->SceneObjectAdded(this);
-        LoadAsset(asset);
-    }
-
-    SceneObject::SceneObject(StringView name, RID asset, SceneGlobals* sceneGlobals) : m_name(name), m_asset(asset), m_sceneGlobals(sceneGlobals)
-    {
-        m_sceneGlobals->SceneObjectAdded(this);
-        LoadAsset(asset);
-    }
-
-    SceneObject::~SceneObject()
-    {
-        for (const auto& it : m_components)
+        usize index = components.IndexOf(component);
+        if (index != nPos)
         {
-            for (Component* instance : it.second.instances)
-            {
-                instance->OnDestroy();
-                instance->DisableComponentUpdate();
-                it.second.typeHandler->Destroy(instance);
-            }
-        }
-
-        m_sceneGlobals->SceneObjectRemoved(this);
-
-        SceneObject* current = m_head;
-        while(current != nullptr)
-        {
-            SceneObject* next = current->m_next;
-            MemoryGlobals::GetDefaultAllocator().DestroyAndFree(current);
-            current = next;
+            components.Remove(index);
         }
     }
 
-    SceneObject* SceneObject::NewChild(const StringView& name)
+    Span<Component*> SceneObject::GetComponents() const
     {
-        SceneObject* sceneObject = MemoryGlobals::GetDefaultAllocator().Alloc<SceneObject>(name, this);
-        AddChild(sceneObject);
-        return sceneObject;
-    }
-
-    SceneObject* SceneObject::NewChild(const RID& asset)
-    {
-        SceneObject* sceneObject = MemoryGlobals::GetDefaultAllocator().Alloc<SceneObject>(asset, this);
-        AddChild(sceneObject);
-        return sceneObject;
-    }
-
-    SceneObject* SceneObject::Duplicate() const
-    {
-        if (m_parent)
-        {
-            SceneObject* sceneObject = m_parent->NewChild(m_name);
-            //TODO;
-            return sceneObject;
-        }
-        FY_ASSERT(false, "Root entity cannot be duplicated");
-        return nullptr;
-    }
-
-    u64 SceneObject::GetChildrenCount() const
-    {
-        return m_count;
-    }
-
-    SceneObjectIterator SceneObject::GetChildren()
-    {
-        return {this};
-    }
-
-    SceneGlobals* SceneObject::GetSceneGlobals() const
-    {
-        return m_sceneGlobals;
-    }
-
-    SceneObject* SceneObject::GetParent() const
-    {
-        return m_parent;
+        return components;
     }
 
     StringView SceneObject::GetName() const
     {
-        return m_name;
+        return name;
     }
 
-    void SceneObject::SetName(const StringView& newName)
+    void SceneObject::SetName(const StringView& p_name)
     {
-        m_name = newName;
+        name = p_name;
     }
 
-    RID SceneObject::GetAsset() const
+    SceneObject* SceneObject::GetParent() const
     {
-        return m_asset;
+        return parent;
     }
 
-    Component& SceneObject::AddComponent(TypeID typeId)
+    Span<SceneObject*> SceneObject::GetChildren() const
     {
-        auto it = m_components.Find(typeId);
-        if (it == m_components.end())
-        {
-            TypeHandler* typeHandler = Registry::FindTypeById(typeId);
-            FY_ASSERT(typeHandler, "Type not registered");
-            it = m_components.Emplace(typeId, ComponentStorage{.typeHandler = typeHandler}).first;
-        }
-
-        ComponentStorage& storage = it->second;
-        Component* component = storage.typeHandler->Cast<Component>(storage.typeHandler->NewInstance());
-
-        component->object = this;
-        storage.instances.EmplaceBack(component);
-
-        m_sceneGlobals->EnqueueStart(component);
-
-        return *component;
+        return children;
     }
 
-    void SceneObject::RemoveComponent(TypeID typeId, u32 index)
+    void SceneObject::SetUUID(UUID p_uuid)
     {
-        if (auto it = m_components.Find(typeId))
-        {
-            if (index < it->second.instances.Size())
-            {
-                Component* instance = it->second.instances[index];
-                instance->OnDestroy();
+        uuid = p_uuid;
+    }
 
-                if (instance->m_started)
-                {
-                    it->second.typeHandler->Destroy(instance);
-                }
-                else
-                {
-                    m_sceneGlobals->EnqueueDestroy(instance, it->second.typeHandler);
-                }
-                it->second.instances.Erase(
-                    it->second.instances.begin() + index,
-                    it->second.instances.begin() + index + 1
-                );
-            }
+    UUID SceneObject::GetUUID() const
+    {
+        if (uuid)
+        {
+            return uuid;
+        }
+
+        if (asset)
+        {
+            return asset->GetUUID();
+        }
+
+        return {};
+    }
+
+    SceneObjectAsset* SceneObject::GetPrototype() const
+    {
+        return asset;
+    }
+
+    void SceneObject::AddChild(SceneObject* sceneObject)
+    {
+        sceneObject->parent = this;
+        children.EmplaceBack(sceneObject);
+    }
+
+    void SceneObject::AddChildAt(SceneObject* sceneObject, usize pos)
+    {
+        sceneObject->parent = this;
+        children.Insert(children.begin() + pos, &sceneObject, &sceneObject + 1);
+    }
+
+    void SceneObject::RemoveChild(SceneObject* sceneObject)
+    {
+        if (const auto it = FindFirst(children.begin(), children.end(), sceneObject))
+        {
+            children.Erase(it);
         }
     }
 
-    Component* SceneObject::GetComponent(TypeID typeId, u32 index)
+    void SceneObject::RemoveChildAt(usize pos)
     {
-        if (auto it = m_components.Find(typeId))
-        {
-            if (index < it->second.instances.Size())
-            {
-                return it->second.instances[index];
-            }
-        }
-        return nullptr;
-    }
-
-    u32 SceneObject::GetComponentTypeCount(TypeID typeId) const
-    {
-        if (const auto it = m_components.Find(typeId))
-        {
-            return it->second.instances.Size();
-        }
-
-        return 0;
-    }
-
-    u32 SceneObject::GetComponentCount() const
-    {
-        u32 total{};
-        for(const auto& it: m_components)
-        {
-            total += it.second.instances.Size();
-        }
-        return total;
-    }
-
-    void SceneObject::RemoveChild(const SceneObject* child)
-    {
-        if (m_head == child)
-        {
-            m_head = child->m_next;
-        }
-
-        if (m_tail == child)
-        {
-            m_tail = child->m_prev;
-        }
-
-        if (child->m_prev)
-        {
-            child->m_prev->m_next = child->m_next;
-        }
-
-        if (child->m_next)
-        {
-            child->m_next->m_prev = child->m_prev;
-        }
-        m_count--;
+        children.Remove(pos);
     }
 
     void SceneObject::Destroy()
     {
-        if (!m_markedToDestroy)
-        {
-            m_markedToDestroy = true;
-            if (GetSceneGlobals()->m_updating)
-            {
-                GetSceneGlobals()->EnqueueDestroy(this);
-            }
-            else
-            {
-                DestroyImmediate();
-            }
-        }
-    }
-
-    void SceneObject::Notify(i64 notificationId)
-    {
-        for (const auto& it : m_components)
-        {
-            for (Component* instance : it.second.instances)
-            {
-                instance->OnNotify(notificationId);
-            }
-        }
-
-        for (SceneObject& child : GetChildren())
-        {
-            child.Notify(notificationId);
-        }
-    }
-
-    void SceneObject::AddChild(SceneObject* object)
-    {
-        if (!m_head)
-        {
-            m_head = object;
-        }
-        if (m_tail)
-        {
-            object->m_prev = m_tail;
-            m_tail->m_next = object;
-        }
-        m_tail = object;
-        m_count++;
-    }
-
-    void SceneObject::DestroyImmediate()
-    {
-        if (m_parent)
-        {
-            m_parent->RemoveChild(this);
-        }
-        MemoryGlobals::GetDefaultAllocator().DestroyAndFree(this);
-    }
-
-    void SceneObject::LoadAsset(RID asset)
-    {
-        // if (!asset) return;
-        //
-        // ResourceObject resource = Repository::Read(asset);
-        // if (m_name.Empty() && resource.Has(SceneObjectAsset::Name))
-        // {
-        //     m_name = resource[SceneObjectAsset::Name].As<String>();
-        // }
-        //
-        //
-        //
-        // //TODO find a better way to sort entities, since GetSubObjectSetAsArray is not sorted.
-        //
-        // Array<RID> children = resource.GetSubObjectSetAsArray(SceneObjectAsset::Children);
-        //
-        // Array<SceneObject*> childrenObj{};
-        // childrenObj.Reserve(children.Size());
-        //
-        // for (RID child : children)
-        // {
-        //     SceneObject* childObject = GetSceneGlobals()->FindByRID(child);
-        //     if (childObject == nullptr)
-        //     {
-        //         childObject = MemoryGlobals::GetDefaultAllocator().Alloc<SceneObject>(child, this);
-        //     }
-        //     childrenObj.EmplaceBack(childObject);
-        // }
-        //
-        // Sort(childrenObj.begin(), childrenObj.end(), [](const SceneObject* a, const SceneObject* b)
-        // {
-        //     return a->m_order < b->m_order;
-        // });
-        //
-        // for(SceneObject* child: childrenObj)
-        // {
-        //     AddChild(child);
-        // }
+        SceneManager::Destroy(this);
     }
 
     void SceneObject::RegisterType(NativeTypeHandler<SceneObject>& type)
     {
+        type.Field<&SceneObject::name>("name");
+    }
+
+    ArchiveObject SceneObject::Serialize(ArchiveWriter& writer) const
+    {
+        ArchiveObject object = writer.CreateObject();
+        writer.WriteString(object, "name", name);
+
+        if (uuid)
+        {
+            writer.WriteString(object, "uuid", ToString(uuid));
+        }
+
+        ArchiveObject objChildren = writer.CreateArray();
+        for (const SceneObject* child : children)
+        {
+            writer.AddValue(objChildren, child->Serialize(writer));
+        }
+
+        if (!children.Empty())
+        {
+            writer.WriteValue(object, "children", objChildren);
+        }
+
+        ArchiveObject objComponents = writer.CreateArray();
+
+        for (const Component* component : components)
+        {
+            ArchiveObject componentObject = component->typeHandler->Serialize(writer, component);
+            writer.WriteString(componentObject, "_type", component->typeHandler->GetName());
+            writer.AddValue(objComponents, componentObject);
+        }
+
+        if (!components.Empty())
+        {
+            writer.WriteValue(object, "components", objComponents);
+        }
+
+        return object;
+    }
+
+    void SceneObject::Deserialize(ArchiveReader& reader, ArchiveObject object)
+    {
+        name = reader.ReadString(object, "name");
+
+        if (StringView uuidStr = reader.ReadString(object, "uuid"); !uuidStr.Empty())
+        {
+            uuid = UUID::FromString(uuidStr);
+        }
+
+        if (ArchiveObject childrenArr = reader.ReadObject(object, "children"))
+        {
+            usize childrenArrSize = reader.ArrSize(childrenArr);
+
+            ArchiveObject childObject{};
+            for (usize i = 0; i < childrenArrSize; ++i)
+            {
+                childObject = reader.Next(childrenArr, childObject);
+
+                SceneObject* child = SceneManager::CreateObject();
+                child->Deserialize(reader, childObject);
+                AddChild(child);
+            }
+        }
+
+        if (ArchiveObject compArr = reader.ReadObject(object, "components"))
+        {
+            usize compArrSize = reader.ArrSize(compArr);
+
+            ArchiveObject compObj{};
+            for (usize i = 0; i < compArrSize; ++i)
+            {
+                compObj = reader.Next(compArr, compObj);
+
+                if (TypeHandler* typeHandler = Registry::FindTypeByName(reader.ReadString(compObj, "_type")))
+                {
+                    Component& component = AddComponent(typeHandler);
+                    typeHandler->Deserialize(reader, compObj, &component);
+                }
+            }
+        }
+    }
+
+    bool SceneObject::IsAlive() const
+    {
+        return alive;
+    }
+
+    void SceneObject::SetAlive(bool p_alive)
+    {
+        alive = p_alive;
     }
 }

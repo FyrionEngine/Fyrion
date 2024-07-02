@@ -2,44 +2,40 @@
 
 #include "Fyrion/Common.hpp"
 #include "Fyrion/Core/HashSet.hpp"
-#include "Fyrion/Resource/ResourceTypes.hpp"
-#include "Fyrion/Scene/SceneObject.hpp"
+#include "Fyrion/Editor/EditorTypes.hpp"
+#include "Fyrion/Scene/Assets/SceneObjectAsset.hpp"
 
 namespace Fyrion
 {
-    class FY_API SceneEditor final
+    class FY_API SceneEditor
     {
     public:
-        SceneEditor() = default;
-        SceneEditor(const SceneEditor& other) = delete;
-        SceneEditor(SceneEditor&& other) noexcept = default;
+        SceneObject* GetRootObject() const;
+        void         Modify() const;
+        void         ClearSelection();
+        void         SelectObject(SceneObject& object);
+        void         DeselectObject(SceneObject& object);
+        bool         IsSelected(SceneObject& object) const;
+        bool         IsParentOfSelected(SceneObject& object) const;
+        void         RenameObject(SceneObject& asset, StringView newName);
+        void         DestroySelectedObjects();
+        void         CreateObject();
+        bool         IsSimulating();
+        bool         IsRootSelected() const;
+        void         AddComponent(SceneObject& object, TypeHandler* typeHandler);
+        void         ResetComponent(SceneObject& object, Component* component);
+        void         RemoveComponent(SceneObject& object, Component* component);
+        void         UpdateComponent(Component* component, Component* newValue);
 
-        void          LoadScene(RID rid);
-        bool          IsLoaded() const;
-        RID           GetRootObject() const;
-        StringView    GetRootName() const;
-        void          CreateObject();
-        void          DestroySelectedObjects();
-        void          ClearSelection();
-        void          SelectObject(RID object);
-        bool          IsSelected(RID object) const;
-        bool          IsParentOfSelected(RID object) const;
-        bool          IsSimulating();
-        RID           GetLastSelectedObject() const;
-        void          RenameObject(RID rid, const StringView& newName);
-        void          AddComponent(RID object, TypeHandler* typeHandler);
-        void          RemoveComponent(RID object, RID component);
-        void          ResetComponent(RID component);
-        void          UpdateComponent(RID component, ConstPtr value);
+        void              LoadScene(SceneObjectAsset* asset);
+        SceneObjectAsset* GetScene() const;
 
     private:
-        RID          m_rootObject{};
-        RID          m_asset{};
-        String       m_rootName{};
-        HashSet<RID> m_selectedObjects{};
-        RID          m_lastSelectedRid{};
-        u64          m_count{}; //TODO this count is just for creating the object names, but it doesn't work correct.
+        SceneObjectAsset* scene = nullptr;
+        HashSet<usize>    selectedObjects{};
 
-        static u64 SubObjectCount(RID rid);
+        EventHandler<OnSceneObjectSelection> onSceneObjectAssetSelection{};
+
+        static void ClearSelectionStatic(VoidPtr userData);
     };
 }

@@ -2,19 +2,22 @@
 
 #include "GraphEditorWindow.hpp"
 #include "imgui_internal.h"
-#include "Fyrion/Assets/AssetTypes.hpp"
 #include "Fyrion/Core/StringUtils.hpp"
 #include "Fyrion/Editor/Editor.hpp"
 #include "Fyrion/Editor/Editor/SceneEditor.hpp"
 #include "Fyrion/ImGui/IconsFontAwesome6.h"
 #include "Fyrion/ImGui/ImGui.hpp"
-#include "Fyrion/Resource/Repository.hpp"
-#include "Fyrion/Scene/SceneAssets.hpp"
 
 namespace Fyrion
 {
     PropertiesWindow::PropertiesWindow() : m_sceneEditor(Editor::GetSceneEditor())
     {
+        Event::Bind<OnSceneObjectSelection, &PropertiesWindow::SceneObjectSelection>(this);
+    }
+
+    PropertiesWindow::~PropertiesWindow()
+    {
+        Event::Unbind<OnSceneObjectSelection, &PropertiesWindow::SceneObjectSelection>(this);
     }
 
     void PropertiesWindow::Draw(u32 id, bool& open)
@@ -23,18 +26,23 @@ namespace Fyrion
 
         ImGui::Begin(id, ICON_FA_CIRCLE_INFO " Properties", &open, ImGuiWindowFlags_NoScrollbar);
 
-        //TODO temporary
-        if (RID object = m_sceneEditor.GetLastSelectedObject())
+        if (selectedObject)
         {
-            DrawSceneObject(id, object);
+            DrawSceneObject(id, *selectedObject);
         }
-        else if (GraphEditor* graphEditor = GraphEditorWindow::GetLastGraphEditorSelected())
-        {
-            if (graphEditor->lastNodeSelected)
-            {
-                DrawGraphNode(graphEditor, graphEditor->lastNodeSelected);
-            }
-        }
+
+        // //TODO temporary
+        // if (RID object = m_sceneEditor.GetLastSelectedObject())
+        // {
+        //     DrawSceneObject(id, object);
+        // }
+        // else if (GraphEditor* graphEditor = GraphEditorWindow::GetLastGraphEditorSelected())
+        // {
+        //     if (graphEditor->lastNodeSelected)
+        //     {
+        //         DrawGraphNode(graphEditor, graphEditor->lastNodeSelected);
+        //     }
+        // }
 
         ImGui::End();
     }
@@ -44,10 +52,9 @@ namespace Fyrion
         Editor::OpenWindow<PropertiesWindow>();
     }
 
-    void PropertiesWindow::DrawSceneObject(u32 id, RID rid)
+    void PropertiesWindow::DrawSceneObject(u32 id, SceneObject& object)
     {
-        bool           root = m_sceneEditor.GetRootObject() == rid;
-        ResourceObject read = Repository::Read(rid);
+        bool root = m_sceneEditor.GetRootObject() == &object;
 
         ImGuiStyle& style = ImGui::GetStyle();
         bool        readOnly = false;
@@ -72,22 +79,19 @@ namespace Fyrion
             ImGui::TableNextColumn();
             ImGui::SetNextItemWidth(-1);
 
-
-
-            StringView objectName = root ? m_sceneEditor.GetRootName() : read[SceneObjectAsset::Name].Value<StringView>();
-            m_stringCache = objectName;
-            u32 hash = HashValue(rid);
+            m_stringCache = object.GetName();
+            u32 hash = HashValue(reinterpret_cast<usize>(&object));
 
             if (ImGui::InputText(hash, m_stringCache, nameFlags))
             {
                 m_renamingCache = m_stringCache;
                 m_renamingFocus = true;
-                m_renamingObject = rid;
+                m_renamingObject = &object;
             }
 
             if (!ImGui::IsItemActive() && m_renamingFocus)
             {
-                m_sceneEditor.RenameObject(m_renamingObject, m_renamingCache);
+                m_sceneEditor.RenameObject(*m_renamingObject, m_renamingCache);
                 m_renamingObject = {};
                 m_renamingFocus = false;
                 m_renamingCache.Clear();
@@ -98,7 +102,8 @@ namespace Fyrion
             ImGui::Text("UUID");
             ImGui::TableNextColumn();
             ImGui::SetNextItemWidth(-1);
-            String uuid = ToString(Repository::GetUUID(rid));
+
+            String uuid = ToString(object.GetUUID());
             ImGui::InputText(hash + 10, uuid, ImGuiInputTextFlags_ReadOnly);
             ImGui::EndDisabled();
             ImGui::EndTable();
@@ -129,13 +134,12 @@ namespace Fyrion
 
         ImGui::EndHorizontal();
 
-        RID prototype = Repository::GetPrototype(rid);
-        if (prototype)
+        if (object.GetPrototype() != nullptr && !root)
         {
             ImGui::BeginHorizontal(9999, ImVec2(width, size));
             ImGui::Spring(1.f);
 
-            if (ImGui::BorderedButton("horizontal-01-02", ImVec2((width * 2) / 3, size)))
+            if (ImGui::BorderedButton("Open Prototype", ImVec2((width * 2) / 3, size)))
             {
                 int a = 0;
                 //openAsset = entityData.rid;
@@ -147,43 +151,33 @@ namespace Fyrion
 
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5 * style.ScaleFactor);
 
-        Array<RID> components = read.GetSubObjectSetAsArray(SceneObjectAsset::Components);
-
         bool openComponentSettings = false;
 
-        for (RID component : components)
+        for (Component* component : object.GetComponents())
         {
-            TypeHandler* typeHandler = Repository::GetResourceTypeHandler(component);
-            if (typeHandler)
+            bool propClicked = false;
+            bool open = ImGui::CollapsingHeaderProps(HashValue(reinterpret_cast<usize>(component)), FormatName(component->typeHandler->GetSimpleName()).CStr(), &propClicked);
+            if (propClicked)
             {
-                bool propClicked = false;
-                bool open = ImGui::CollapsingHeaderProps(HashValue(component), FormatName(typeHandler->GetSimpleName()).CStr(), &propClicked);
-                if (propClicked)
-                {
-                    openComponentSettings = true;
-                    m_selectedComponent = component;
-                }
-                if (open)
-                {
-                    ImGui::Indent();
-                    ImGui::DrawType(ImGui::DrawTypeDesc{
-                        .itemId = component.id,
-                        .rid = component,
-                        .typeHandler = typeHandler,
-                        .instance = Repository::ReadData(component),
-                        .flags = readOnly ? ImGuiDrawTypeFlags_ReadOnly : 0u,
-                        .userData = &m_sceneEditor,
-                        .callback = [](ImGui::DrawTypeDesc& desc, ConstPtr newValue)
-                        {
-                            static_cast<SceneEditor*>(desc.userData)->UpdateComponent(desc.rid, newValue);
-                        },
-                        .onCreateSubobject = [](ImGui::DrawTypeDesc& desc, RID subobject)
-                        {
-                            int a = 0;
-                        }
-                    });
-                    ImGui::Unindent();
-                }
+                openComponentSettings = true;
+                selectedComponent = component;
+            }
+
+            if (open)
+            {
+                ImGui::Indent();
+                ImGui::DrawType(ImGui::DrawTypeDesc{
+                    .itemId = reinterpret_cast<usize>(component),
+                    .typeHandler = component->typeHandler,
+                    .instance = component,
+                    .flags = readOnly ? ImGuiDrawTypeFlags_ReadOnly : 0u,
+                    .userData = &m_sceneEditor,
+                    .callback = [](ImGui::DrawTypeDesc& desc, VoidPtr newValue)
+                    {
+                        static_cast<SceneEditor*>(desc.userData)->UpdateComponent(static_cast<Component*>(desc.instance), static_cast<Component*>(newValue));
+                    },
+                });
+                ImGui::Unindent();
             }
         }
 
@@ -214,7 +208,7 @@ namespace Fyrion
                         String name = FormatName(typeHandler->GetSimpleName());
                         if (ImGui::Selectable(name.CStr()))
                         {
-                            m_sceneEditor.AddComponent(rid, typeHandler);
+                            m_sceneEditor.AddComponent(object, typeHandler);
                         }
                     }
                 }
@@ -232,19 +226,25 @@ namespace Fyrion
         {
             if (ImGui::MenuItem("Reset"))
             {
-                m_sceneEditor.ResetComponent(m_selectedComponent);
+                m_sceneEditor.ResetComponent(object, selectedComponent);
                 ImGui::CloseCurrentPopup();
             }
 
             if (ImGui::MenuItem("Remove"))
             {
-                m_sceneEditor.RemoveComponent(rid, m_selectedComponent);
+                m_sceneEditor.RemoveComponent(object, selectedComponent);
                 ImGui::CloseCurrentPopup();
             }
         }
         ImGui::EndPopupMenu(popupOpenSettings);
     }
 
+    void PropertiesWindow::SceneObjectSelection(SceneObject* objectAsset)
+    {
+        selectedObject = objectAsset;
+    }
+
+#if FY_ASSET_REFACTOR
     void PropertiesWindow::DrawGraphNode(GraphEditor* graphEditor, RID node)
     {
         bool readOnly = false;
@@ -389,6 +389,7 @@ namespace Fyrion
         }
         ImGui::EndPopupMenu(popupOpenSettings);
     }
+#endif
 
     void PropertiesWindow::RegisterType(NativeTypeHandler<PropertiesWindow>& type)
     {
@@ -402,6 +403,6 @@ namespace Fyrion
 
     void InitPropertiesWindow()
     {
-        Registry::Type<PropertiesWindow, EditorWindow>();
+        Registry::Type<PropertiesWindow>();
     }
 }

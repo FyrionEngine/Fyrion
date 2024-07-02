@@ -70,6 +70,11 @@ namespace Fyrion
         void ShrinkToFit();
         void Swap(Array& other);
 
+        usize IndexOf(T object)
+        {
+            return FindFirstIndex(begin(), end(), object);
+        }
+
         ~Array();
     private:
         T* m_first{};
@@ -109,6 +114,8 @@ namespace Fyrion
     template<typename T>
     FY_FINLINE Array<T>::Array(Array&& other) noexcept
     {
+        this->~Array();
+
         m_first     = other.m_first;
         m_last      = other.m_last;
         m_capacity  = other.m_capacity;
@@ -334,11 +341,11 @@ namespace Fyrion
 
         if (m_last == m_capacity)
         {
-            Reserve(((m_last - m_first) * 3 / 2) + 1);
+            Reserve((m_last - m_first) * 3 / 2 + 1);
             where = m_first + (m_last - m_first);
         }
 
-        m_last++;
+        ++m_last;
 
         if constexpr (Traits::IsAggregate<T>)
         {

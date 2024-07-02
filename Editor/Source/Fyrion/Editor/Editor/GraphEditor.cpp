@@ -1,3 +1,6 @@
+#if FY_ASSET_REFACTOR
+
+#include <algorithm>
 #include "GraphEditor.hpp"
 
 #include "Fyrion/Assets/AssetTypes.hpp"
@@ -568,3 +571,5 @@ namespace Fyrion
         return m_graph;
     }
 }
+
+#endif

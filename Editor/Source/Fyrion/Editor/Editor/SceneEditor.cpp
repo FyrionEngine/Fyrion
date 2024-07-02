@@ -1,160 +1,55 @@
 #include "SceneEditor.hpp"
 
 #include "Fyrion/Editor/Editor.hpp"
-#include "Fyrion/Resource/AssetTree.hpp"
-#include "Fyrion/Resource/Repository.hpp"
-#include "Fyrion/Scene/SceneAssets.hpp"
+#include "Fyrion/Editor/Action/AssetEditorActions.hpp"
+#include "Fyrion/Editor/Action/SceneEditorAction.hpp"
 
 namespace Fyrion
 {
-    void SceneEditor::LoadScene(const RID rid)
+    SceneObject* SceneEditor::GetRootObject() const
     {
-        m_asset = rid;
-
-        ResourceObject asset = Repository::Read(rid);
-        m_rootObject = asset[Asset::Object].Value<RID>();
-        m_rootName = asset[Asset::Name].Value<String>();
-
-        m_count = SubObjectCount(m_rootObject); //TODO(Fyrion) : maybe m_count storing it will be better.
-    }
-
-    u64 SceneEditor::SubObjectCount(RID rid)
-    {
-        u64 count{};
-
-        ResourceObject object = Repository::Read(rid);
-        if (object.Has(SceneObjectAsset::Children))
+        if (scene)
         {
-            Array<RID> children = object.GetSubObjectSetAsArray(SceneObjectAsset::Children);
-            count = children.Size();
-
-            for (RID child : children)
-            {
-                count += SubObjectCount(child);
-            }
+            return &scene->GetObject();
         }
-        return count;
+        return nullptr;
     }
 
-    RID SceneEditor::GetRootObject() const
+    void SceneEditor::Modify() const
     {
-        return m_rootObject;
-    }
-
-    StringView SceneEditor::GetRootName() const
-    {
-        ResourceObject asset = Repository::Read(m_asset);
-        return asset[Asset::Name].Value<StringView>();
-    }
-
-    bool SceneEditor::IsLoaded() const
-    {
-        return m_rootObject;
-    }
-
-    void SceneEditor::CreateObject()
-    {
-        if (!m_rootObject) return;
-
-        if (m_selectedObjects.Empty())
+        if (scene)
         {
-            RID object = Repository::CreateResource<SceneObjectAsset>();
-
-            ResourceObject root = Repository::Write(m_rootObject);
-
-            ResourceObject write = Repository::Write(object);
-            write[SceneObjectAsset::Name] = "Object " + ToString(m_count++);
-            write.Commit();
-
-            Repository::SetUUID(object, UUID::RandomUUID());
-
-            Array<RID> children = root[SceneObjectAsset::ChildrenSort].Value<Array<RID>>();
-            children.EmplaceBack(object);
-            root[SceneObjectAsset::ChildrenSort] = children;
-
-            root.AddToSubObjectSet(SceneObjectAsset::Children, object);
-            root.Commit();
+            scene->Modify();
         }
-        else
-        {
-            HashSet<RID> selected = m_selectedObjects;
-            ClearSelection();
-
-            for (const auto& it : selected)
-            {
-                ResourceObject writeParent = Repository::Write(it.first);
-
-                RID object = Repository::CreateResource<SceneObjectAsset>();
-                m_selectedObjects.Emplace(object);
-                m_lastSelectedRid = object;
-
-                ResourceObject write = Repository::Write(object);
-                write[SceneObjectAsset::Name] = "Object " + ToString(m_count++);
-                write.Commit();
-
-                Repository::SetUUID(object, UUID::RandomUUID());
-
-                Array<RID> children = writeParent[SceneObjectAsset::ChildrenSort].Value<Array<RID>>();
-                children.EmplaceBack(object);
-                writeParent[SceneObjectAsset::ChildrenSort] = children;
-                writeParent.AddToSubObjectSet(SceneObjectAsset::Children, object);
-                writeParent.Commit();
-            }
-        }
-        Editor::GetAssetTree().MarkDirty();
-    }
-
-    void SceneEditor::DestroySelectedObjects()
-    {
-        if (!m_rootObject) return;
-
-        for (const auto& it : m_selectedObjects)
-        {
-            if (m_rootObject == it.first) continue;
-
-            if (RID parent = Repository::GetParent(it.first))
-            {
-                ResourceObject writeParent = Repository::Write(parent);
-                Array<RID> children = writeParent[SceneObjectAsset::ChildrenSort].Value<Array<RID>>();
-                auto itArr = FindFirst(children.begin(), children.end(), it.first);
-                if (itArr)
-                {
-                    children.Erase(itArr, itArr + 1);
-                }
-                writeParent[SceneObjectAsset::ChildrenSort] = children;
-                writeParent.Commit();
-            }
-            Repository::DestroyResource(it.first);
-        }
-
-        m_selectedObjects.Clear();
-        m_lastSelectedRid = {};
-
-        Editor::GetAssetTree().MarkDirty();
     }
 
     void SceneEditor::ClearSelection()
     {
-        m_selectedObjects.Clear();
-        m_lastSelectedRid = {};
+        selectedObjects.Clear();
+        onSceneObjectAssetSelection.Invoke(nullptr);
     }
 
-    void SceneEditor::SelectObject(RID object)
+    void SceneEditor::SelectObject(SceneObject& object)
     {
-        m_selectedObjects.Emplace(object);
-        m_lastSelectedRid = object;
+        selectedObjects.Emplace(reinterpret_cast<usize>(&object));
+        onSceneObjectAssetSelection.Invoke(&object);
     }
 
-    bool SceneEditor::IsSelected(RID object) const
+    void SceneEditor::DeselectObject(SceneObject& object)
     {
-        return m_selectedObjects.Has(object);
+        selectedObjects.Erase(reinterpret_cast<usize>(&object));
     }
 
-    bool SceneEditor::IsParentOfSelected(RID object) const
+    bool SceneEditor::IsSelected(SceneObject& object) const
     {
-        for (const auto& it : m_selectedObjects)
+        return selectedObjects.Has(reinterpret_cast<usize>(&object));
+    }
+
+    bool SceneEditor::IsParentOfSelected(SceneObject& object) const
+    {
+        for (const auto& it : selectedObjects)
         {
-            if (Repository::GetParent(it.first) == object)
+            if (reinterpret_cast<SceneObject*>(it.first)->GetParent() == &object)
             {
                 return true;
             }
@@ -162,51 +57,105 @@ namespace Fyrion
         return false;
     }
 
+    void SceneEditor::DestroySelectedObjects()
+    {
+        if (scene == nullptr) return;
+
+        scene->Modify();
+
+        EditorTransaction* transaction = Editor::CreateTransaction();
+        for (const auto it : selectedObjects)
+        {
+            transaction->CreateAction<DestroySceneObjectAction>(*this, reinterpret_cast<SceneObject*>(it.first));
+        }
+        transaction->Commit();
+        selectedObjects.Clear();
+        onSceneObjectAssetSelection.Invoke(nullptr);
+    }
+
+    void SceneEditor::ClearSelectionStatic(VoidPtr userData)
+    {
+        static_cast<SceneEditor*>(userData)->ClearSelection();
+    }
+
+    void SceneEditor::CreateObject()
+    {
+        if (scene == nullptr) return;
+
+        scene->Modify();
+
+        if (selectedObjects.Empty())
+        {
+            EditorTransaction* transaction = Editor::CreateTransaction();
+            transaction->AddPreExecute(this, ClearSelectionStatic);
+            transaction->CreateAction<CreateSceneObjectAction>(*this, GetRootObject())->Commit();
+        }
+        else
+        {
+            EditorTransaction* transaction = Editor::CreateTransaction();
+            transaction->AddPreExecute(this, ClearSelectionStatic);
+            for (const auto it : selectedObjects)
+            {
+                transaction->CreateAction<CreateSceneObjectAction>(*this, reinterpret_cast<SceneObject*>(it.first));
+            }
+            onSceneObjectAssetSelection.Invoke(nullptr);
+            selectedObjects.Clear();
+            transaction->Commit();
+        }
+    }
+
     bool SceneEditor::IsSimulating()
     {
         return false;
     }
 
-    void SceneEditor::RenameObject(RID rid, const StringView& newName)
+    void SceneEditor::LoadScene(SceneObjectAsset* asset)
     {
-
+        ClearSelection();
+        scene = asset;
     }
 
-    RID SceneEditor::GetLastSelectedObject() const
+    SceneObjectAsset* SceneEditor::GetScene() const
     {
-        return m_lastSelectedRid;
+        return scene;
     }
 
-    void SceneEditor::AddComponent(RID object, TypeHandler* typeHandler)
+    bool SceneEditor::IsRootSelected() const
     {
-        RID component = Repository::CreateResource(typeHandler->GetTypeInfo().typeId);
-        VoidPtr instance = typeHandler->NewInstance();
-        Repository::Commit(component, instance);
-        typeHandler->Destroy(instance);
-
-        ResourceObject write = Repository::Write(object);
-        write.AddToSubObjectSet(SceneObjectAsset::Components, component);
-        write.Commit();
-
-        Editor::GetAssetTree().MarkDirty();
+        for (const auto it : selectedObjects)
+        {
+            if (reinterpret_cast<SceneObject*>(it.first) == &scene->GetObject())
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
-    void SceneEditor::RemoveComponent(RID object, RID component)
+    void SceneEditor::AddComponent(SceneObject& object, TypeHandler* typeHandler)
     {
-        Repository::DestroyResource(component);
-
-        Editor::GetAssetTree().MarkDirty();
+        Editor::CreateTransaction()->CreateAction<AddComponentSceneObjectAction>(*this, &object, typeHandler)->Commit();
     }
 
-    void SceneEditor::ResetComponent(RID component)
+    void SceneEditor::ResetComponent(SceneObject& object, Component* component)
     {
-        Repository::Commit(component, nullptr);
-        Editor::GetAssetTree().MarkDirty();
+        Component* newValue = component->typeHandler->Cast<Component>(component->typeHandler->NewInstance());
+        Editor::CreateTransaction()->CreateAction<UpdateComponentSceneObjectAction>(*this, component, newValue);
+        component->typeHandler->Destroy(newValue);
     }
 
-    void SceneEditor::UpdateComponent(RID component, ConstPtr value)
+    void SceneEditor::RemoveComponent(SceneObject& object, Component* component)
     {
-        Repository::Commit(component, value);
-        Editor::GetAssetTree().MarkDirty();
+        Editor::CreateTransaction()->CreateAction<RemoveComponentObjectAction>(*this, &object, component)->Commit();
+    }
+
+    void SceneEditor::UpdateComponent(Component* component, Component* newValue)
+    {
+        Editor::CreateTransaction()->CreateAction<UpdateComponentSceneObjectAction>(*this, component, newValue);
+    }
+
+    void SceneEditor::RenameObject(SceneObject& asset, StringView newName)
+    {
+        Editor::CreateTransaction()->CreateAction<RenameSceneObjectAction>(*this, &asset, newName)->Commit();
     }
 }

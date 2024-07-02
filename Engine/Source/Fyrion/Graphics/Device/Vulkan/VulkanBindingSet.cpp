@@ -1,14 +1,11 @@
 #include "VulkanBindingSet.hpp"
 
-#include "Fyrion/Assets/AssetTypes.hpp"
-#include "Fyrion/Resource/Repository.hpp"
-
 namespace Fyrion
 {
-    VulkanBindingSet::VulkanBindingSet(VulkanDevice& vulkanDevice, const RID& shader, BindingSetType bindingSetType) : vulkanDevice(vulkanDevice), shader(shader), bindingSetType(bindingSetType)
+    VulkanBindingSet::VulkanBindingSet(VulkanDevice& vulkanDevice, BindingSetType bindingSetType) : vulkanDevice(vulkanDevice), bindingSetType(bindingSetType)
     {
-        ResourceObject shaderAsset = Repository::Read(shader);
-        const ShaderInfo& shaderInfo = shaderAsset[ShaderAsset::Info].As<ShaderInfo>();
+
+        const ShaderInfo& shaderInfo = ShaderInfo{};  //shaderAsset[ShaderAsset::Info].As<ShaderInfo>();
 
         for(const DescriptorLayout& descriptorLayout: shaderInfo.descriptors)
         {

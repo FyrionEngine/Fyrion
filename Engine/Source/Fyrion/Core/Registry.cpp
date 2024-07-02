@@ -14,6 +14,7 @@ namespace Fyrion
         HashMap<String, SharedPtr<FunctionHandler>>         functionsByName{};
         HashMap<TypeID, Array<TypeHandler*>>                typesByAttribute{};
         HashMap<TypeID, Array<FunctionHandler*>>            functionsByAttribute{};
+        EventHandler<OnTypeAdded>                           onTypeAddedEvent{};
         Logger&                                             logger = Logger::GetLogger("Fyrion::Registry");
     }
 
@@ -121,47 +122,81 @@ namespace Fyrion
         }
     }
 
-    FieldHandler::FieldHandler(const String& name) : m_name(name)
+    FieldHandler::FieldHandler(const String& name, TypeHandler& owner) : name(name), owner(owner)
     {
-
+        ownerCast = ForwardDerived;
     }
 
     StringView FieldHandler::GetName() const
     {
-        return m_name;
+        return name;
     }
 
     FieldInfo FieldHandler::GetFieldInfo() const
     {
-        if (m_fnGetFieldInfo)
+        if (fnGetFieldInfo)
         {
-            return m_fnGetFieldInfo(this);
+            return fnGetFieldInfo(this);
         }
         return {};
     }
 
     VoidPtr FieldHandler::GetFieldPointer(VoidPtr instance) const
     {
-        if (m_fnGetFieldPointer)
+        if (fnGetFieldPointer)
         {
-            return m_fnGetFieldPointer(this, instance);
+            return fnGetFieldPointer(this, instance);
         }
         return nullptr;
     }
 
-    void FieldHandler::CopyValueTo(ConstPtr instance, VoidPtr value)
+    void FieldHandler::CopyValueTo(ConstPtr instance, VoidPtr value) const
     {
-        if (m_fnCopyValueTo)
+        if (fnCopyValueTo)
         {
-            m_fnCopyValueTo(this, instance, value);
+            fnCopyValueTo(this, instance, value);
         }
     }
 
-    void FieldHandler::SetValue(VoidPtr instance, ConstPtr value)
+    void FieldHandler::SetValue(VoidPtr instance, ConstPtr value) const
     {
-        if (m_fnSetValue)
+        if (fnSetValue)
         {
-            m_fnSetValue(this, instance, value);
+            fnSetValue(this, instance, value);
+        }
+    }
+
+    FnCast FieldHandler::GetOwnerCaster() const
+    {
+        return ownerCast;
+    }
+
+    TypeHandler& FieldHandler::GetOwner() const
+    {
+        return owner;
+    }
+
+    void FieldHandler::Serialize(ArchiveWriter& writer, ConstPtr instance, ArchiveObject object) const
+    {
+        if (fnSerialize)
+        {
+            fnSerialize(this, instance, writer, object);
+        }
+        else if (TypeHandler* typeHandler = Registry::FindTypeById(GetFieldInfo().typeInfo.typeId))
+        {
+            writer.WriteValue(object, GetName(), typeHandler->Serialize(writer, GetFieldPointer(const_cast<VoidPtr>(instance))));
+        }
+    }
+
+    void FieldHandler::Deserialize(ArchiveReader& reader, VoidPtr instance, ArchiveObject object) const
+    {
+        if (fnDeserialize)
+        {
+            fnDeserialize(this, instance, reader, object);
+        }
+        else if (TypeHandler* typeHandler = Registry::FindTypeById(GetFieldInfo().typeInfo.typeId))
+        {
+            typeHandler->Deserialize(reader, reader.ReadObject(object, GetName()), GetFieldPointer(instance));
         }
     }
 
@@ -176,6 +211,11 @@ namespace Fyrion
         return m_simpleName;
     }
 
+    TypeID FunctionHandler::GetFunctionId() const
+    {
+        return m_functionId;
+    }
+
     Span<ParamHandler> FunctionHandler::GetParams() const
     {
         return m_params;
@@ -186,7 +226,7 @@ namespace Fyrion
         return m_return;
     }
 
-    TypeID FunctionHandler::GetOwner() const
+    TypeHandler* FunctionHandler::GetOwner() const
     {
         return m_owner;
     }
@@ -194,6 +234,16 @@ namespace Fyrion
     VoidPtr FunctionHandler::GetFunctionPointer() const
     {
         return m_functionPointer;
+    }
+
+    FunctionHandler::FnInvoke FunctionHandler::GetInvoker() const
+    {
+        return m_fnInvoke;
+    }
+
+    FnCast FunctionHandler::GetOwnerCaster() const
+    {
+        return m_ownerCast;
     }
 
     void FunctionHandler::Invoke(VoidPtr instance, VoidPtr ret, VoidPtr* params) const
@@ -214,15 +264,15 @@ namespace Fyrion
         fIt->second.EmplaceBack(this);
     }
 
-    TypeHandler::TypeHandler(const StringView& name, const TypeInfo& typeInfo, u32 version) : m_name(name), m_typeInfo(typeInfo), m_version(version)
+    TypeHandler::TypeHandler(const StringView& name, const TypeInfo& typeInfo, u32 version) : name(name), typeInfo(typeInfo), version(version)
     {
-        m_simpleName = Fyrion::GetSimpleName(name);
+        simpleName = Fyrion::GetSimpleName(name);
     }
 
     ConstructorHandler* TypeHandler::FindConstructor(TypeID* ids, usize size) const
     {
         u64 constructorId = size > 0 ? MurmurHash64(ids, size * sizeof(TypeID), HashSeed64) : 0;
-        if (auto it = m_constructors.Find(constructorId))
+        if (auto it = constructors.Find(constructorId))
         {
             return it->second.Get();
         }
@@ -231,12 +281,12 @@ namespace Fyrion
 
     Span<ConstructorHandler*> TypeHandler::GetConstructors() const
     {
-        return m_constructorArray;
+        return constructorArray;
     }
 
     FieldHandler* TypeHandler::FindField(const StringView& fieldName) const
     {
-        if (auto it = m_fields.Find(fieldName))
+        if (auto it = fields.Find(fieldName))
         {
             return it->second.Get();
         }
@@ -245,12 +295,12 @@ namespace Fyrion
 
     Span<FieldHandler*> TypeHandler::GetFields() const
     {
-        return m_fieldArray;
+        return fieldArray;
     }
 
     FunctionHandler* TypeHandler::FindFunction(const StringView& functionName) const
     {
-        if (auto it = m_functions.Find(functionName))
+        if (auto it = functions.Find(functionName))
         {
             return it->second.Get();
         }
@@ -259,12 +309,12 @@ namespace Fyrion
 
     Span<FunctionHandler*> TypeHandler::GetFunctions() const
     {
-        return m_functionArray;
+        return functionArray;
     }
 
     ValueHandler* TypeHandler::FindValueByName(const StringView& valueName) const
     {
-        if(auto it = m_values.Find(valueName))
+        if(auto it = values.Find(valueName))
         {
             return it->second.Get();
         }
@@ -273,7 +323,7 @@ namespace Fyrion
 
     ValueHandler* TypeHandler::FindValueByCode(i64 code) const
     {
-        if(auto it = m_valuesByCode.Find(code))
+        if(auto it = valuesByCode.Find(code))
         {
             return it->second;
         }
@@ -282,90 +332,154 @@ namespace Fyrion
 
     Span<ValueHandler*> TypeHandler::GetValues() const
     {
-        return m_valuesArray;
+        return valuesArray;
     }
 
     Span<DerivedType> TypeHandler::GetDerivedTypes() const
     {
-        return m_derivedTypes;
+        return derivedTypes;
     }
 
     Array<TypeID> TypeHandler::GetBaseTypes() const
     {
-        return m_baseTypesArray;
+        return baseTypesArray;
+    }
+
+    bool TypeHandler::IsDerivedFrom(TypeID typeId) const
+    {
+        if (baseTypes.Has(typeId))
+        {
+            return true;
+        }
+
+        for (auto& baseTypeId : baseTypesArray)
+        {
+            if (TypeHandler* typeHandler = Registry::FindTypeById(baseTypeId))
+            {
+                if (typeHandler->IsDerivedFrom(typeId))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    ArchiveObject TypeHandler::Serialize(ArchiveWriter& writer, ConstPtr instance) const
+    {
+        const ArchiveObject object = writer.CreateObject();
+
+        if (fnSerialize)
+        {
+            fnSerialize(this, instance, writer, object);
+        }
+        else
+        {
+            for (FieldHandler* field : GetFields())
+            {
+                field->Serialize(writer, instance, object);
+            }
+        }
+        return object;
+    }
+
+    void TypeHandler::Deserialize(ArchiveReader& reader, ArchiveObject object, VoidPtr instance) const
+    {
+        if (fnDeserialize)
+        {
+            fnDeserialize(this, instance, reader, object);
+        }
+        else
+        {
+            for (FieldHandler* field : GetFields())
+            {
+                field->Deserialize(reader, instance, object);
+            }
+        }
     }
 
     StringView TypeHandler::GetName() const
     {
-        return m_name;
+        return name;
     }
 
     StringView TypeHandler::GetSimpleName() const
     {
-        return m_simpleName;
+        return simpleName;
     }
 
     const TypeInfo& TypeHandler::GetTypeInfo() const
     {
-        return m_typeInfo;
+        return typeInfo;
     }
 
     u32 TypeHandler::GetVersion() const
     {
-        return m_version;
+        return version;
+    }
+
+    FnCast TypeHandler::GetCaster(TypeID typeId) const
+    {
+        if (const auto it = baseTypes.Find(typeId))
+        {
+            return it->second;
+        }
+        return nullptr;
     }
 
     void TypeHandler::Destroy(VoidPtr instance, Allocator& allocator) const
     {
-        if (m_fnDestroy)
+        if (fnDestroy)
         {
-            m_fnDestroy(this, allocator, instance);
+            fnDestroy(this, allocator, instance);
         }
     }
 
     void TypeHandler::Release(VoidPtr instance) const
     {
-        if (m_fnRelease)
+        if (fnRelease)
         {
-            m_fnRelease(this, instance);
+            fnRelease(this, instance);
         }
     }
 
     void TypeHandler::Destructor(VoidPtr instance) const
     {
-        if (m_fnDestructor)
+        if (fnDestructor)
         {
-            m_fnDestructor(this, instance);
+            fnDestructor(this, instance);
         }
     }
 
     void TypeHandler::Copy(ConstPtr source, VoidPtr dest) const
     {
-        if (m_fnCopy)
+        if (fnCopy)
         {
-            m_fnCopy(this, source, dest);
+            fnCopy(this, source, dest);
         }
     }
 
     void TypeHandler::Move(VoidPtr source, VoidPtr dest) const
     {
-        if (m_fnMove)
+        if (fnMove)
         {
-            m_fnMove(this, source, dest);
+            fnMove(this, source, dest);
         }
     }
 
     VoidPtr TypeHandler::Cast(TypeID typeId, VoidPtr instance) const
     {
-        if (typeId == m_typeInfo.typeId)
+        if (typeId == typeInfo.typeId)
         {
             return instance;
         }
-        if (auto it = m_baseTypes.Find(typeId))
+
+        if (FnCast caster = GetCaster(typeId))
         {
-            return it->second(this, instance);
+            return caster(this, instance);
         }
-        return instance;
+
+        return nullptr;
     }
 
     void TypeHandler::OnAttributeCreated(TypeID attributeId)
@@ -430,33 +544,49 @@ namespace Fyrion
         m_constructorHandler.m_newInstanceFn = newInstance;
     }
 
-    FieldBuilder::FieldBuilder(FieldHandler& fieldHandler) : m_fieldHandler(fieldHandler)
+    FieldBuilder::FieldBuilder(FieldHandler& fieldHandler) : fieldHandler(fieldHandler)
     {
     }
 
     FieldHandler& FieldBuilder::GetFieldHandler() const
     {
-        return m_fieldHandler;
+        return fieldHandler;
     }
 
     void FieldBuilder::SetFnGetFieldInfo(FieldHandler::FnGetFieldInfo fnGetFieldInfo)
     {
-        m_fieldHandler.m_fnGetFieldInfo = fnGetFieldInfo;
+        fieldHandler.fnGetFieldInfo = fnGetFieldInfo;
     }
 
     void FieldBuilder::SetFnGetFieldPointer(FieldHandler::FnGetFieldPointer fnGetFieldPointer)
     {
-        m_fieldHandler.m_fnGetFieldPointer = fnGetFieldPointer;
+        fieldHandler.fnGetFieldPointer = fnGetFieldPointer;
     }
 
     void FieldBuilder::SetFnCopyValueTo(FieldHandler::FnCopyValueTo fnCopyValueTo)
     {
-        m_fieldHandler.m_fnCopyValueTo = fnCopyValueTo;
+        fieldHandler.fnCopyValueTo = fnCopyValueTo;
     }
 
     void FieldBuilder::SetFnSetValue(FieldHandler::FnSetValue fnSetValue)
     {
-        m_fieldHandler.m_fnSetValue = fnSetValue;
+        fieldHandler.fnSetValue = fnSetValue;
+    }
+
+    void FieldBuilder::SetFnSerialize(FieldHandler::FnSerialize fnSerialize)
+    {
+        fieldHandler.fnSerialize = fnSerialize;
+    }
+
+    void FieldBuilder::SetFnDeserialize(FieldHandler::FnDeserialize fnDeserialize)
+    {
+        fieldHandler.fnDeserialize = fnDeserialize;
+    }
+
+    void FieldBuilder::Copy(const FieldHandler& p_fieldHandler, TypeHandler& owner)
+    {
+        new(&fieldHandler) FieldHandler{p_fieldHandler};
+        fieldHandler.ownerCast = owner.GetCaster(fieldHandler.owner.GetTypeInfo().typeId);
     }
 
     FunctionBuilder::FunctionBuilder(FunctionHandler& functionHandler) : m_functionHandler(functionHandler)
@@ -469,7 +599,8 @@ namespace Fyrion
         m_functionHandler.m_name = creation.name;
         m_functionHandler.m_functionId = creation.functionId;
         m_functionHandler.m_return = creation.retInfo;
-        m_functionHandler.m_owner = creation.owner;
+        m_functionHandler.m_owner =  Registry::FindTypeById(creation.owner);
+        m_functionHandler.m_ownerCast = ForwardDerived;
 
         m_functionHandler.m_simpleName = GetSimpleName(m_functionHandler.m_name);
 
@@ -477,6 +608,13 @@ namespace Fyrion
         {
             m_functionHandler.m_params.EmplaceBack(i, creation.params[i]);
         }
+    }
+
+    void FunctionBuilder::Create(FunctionHandler& functionHandler, TypeHandler& owner)
+    {
+        m_functionHandler = functionHandler;
+        m_functionHandler.m_owner = &owner;
+        m_functionHandler.m_ownerCast = owner.GetCaster(functionHandler.m_owner->GetTypeInfo().typeId);
     }
 
     FunctionHandler& FunctionBuilder::GetFunctionHandler() const
@@ -499,99 +637,133 @@ namespace Fyrion
         m_functionHandler.m_functionPointer = functionPointer;
     }
 
-    TypeBuilder::TypeBuilder(TypeHandler& typeHandler) :  m_typeHandler(typeHandler)
+    TypeBuilder::TypeBuilder(TypeHandler& typeHandler) :  typeHandler(typeHandler)
     {
 
     }
 
     void TypeBuilder::SetFnDestroy(TypeHandler::FnDestroy fnDestroy)
     {
-        m_typeHandler.m_fnDestroy = fnDestroy;
+        typeHandler.fnDestroy = fnDestroy;
     }
 
     void TypeBuilder::SetFnCopy(TypeHandler::FnCopy fnCopy)
     {
-        m_typeHandler.m_fnCopy = fnCopy;
+        typeHandler.fnCopy = fnCopy;
     }
 
     void TypeBuilder::SetFnDestructor(TypeHandler::FnDestructor destructor)
     {
-        m_typeHandler.m_fnDestructor = destructor;
+        typeHandler.fnDestructor = destructor;
     }
 
     void TypeBuilder::SetFnRelease(TypeHandler::FnRelease fnRelease)
     {
-        m_typeHandler.m_fnRelease = fnRelease;
+        typeHandler.fnRelease = fnRelease;
+    }
+
+    void TypeBuilder::SetFnSerialize(TypeHandler::FnSerialize fnSerialize)
+    {
+        typeHandler.fnSerialize = fnSerialize;
+    }
+
+    void TypeBuilder::SetFnDeserialize(TypeHandler::FnDeserialize fnDeserialize)
+    {
+        typeHandler.fnDeserialize = fnDeserialize;
     }
 
     void TypeBuilder::SetFnMove(TypeHandler::FnMove fnMove)
     {
-        m_typeHandler.m_fnMove = fnMove;
+        typeHandler.fnMove = fnMove;
     }
 
     ConstructorBuilder TypeBuilder::NewConstructor(TypeID* ids, FieldInfo* params, usize size)
     {
         u64 constructorId = size > 0 ? MurmurHash64(ids, size * sizeof(TypeID), HashSeed64) : 0;
-        auto it = m_typeHandler.m_constructors.Find(constructorId);
+        auto it = typeHandler.constructors.Find(constructorId);
 
-        if (it == m_typeHandler.m_constructors.end())
+        if (it == typeHandler.constructors.end())
         {
-            it = m_typeHandler.m_constructors.Emplace(constructorId, MakeShared<ConstructorHandler>(params, size)).first;
-            m_typeHandler.m_constructorArray.EmplaceBack(it->second.Get());
+            it = typeHandler.constructors.Emplace(constructorId, MakeShared<ConstructorHandler>(params, size)).first;
+            typeHandler.constructorArray.EmplaceBack(it->second.Get());
         }
         return *it->second;
     }
 
     FieldBuilder TypeBuilder::NewField(const StringView& fieldName)
     {
-        auto it = m_typeHandler.m_fields.Find(fieldName);
-        if (it == m_typeHandler.m_fields.end())
+        auto it = typeHandler.fields.Find(fieldName);
+        if (it == typeHandler.fields.end())
         {
-            it = m_typeHandler.m_fields.Emplace(fieldName, MakeShared<FieldHandler>(fieldName)).first;
-            m_typeHandler.m_fieldArray.EmplaceBack(it->second.Get());
+            it = typeHandler.fields.Emplace(fieldName, MakeShared<FieldHandler>(fieldName, typeHandler)).first;
+            typeHandler.fieldArray.EmplaceBack(it->second.Get());
         }
         return FieldBuilder{*it->second};
     }
 
     ValueBuilder TypeBuilder::NewValue(const StringView& valueDesc, i64 code)
     {
-        auto it = m_typeHandler.m_values.Find(valueDesc);
-        if (it == m_typeHandler.m_values.end())
+        auto it = typeHandler.values.Find(valueDesc);
+        if (it == typeHandler.values.end())
         {
-            it = m_typeHandler.m_values.Emplace(valueDesc, MakeShared<ValueHandler>(valueDesc)).first;
-            m_typeHandler.m_valuesArray.EmplaceBack(it->second.Get());
-            m_typeHandler.m_valuesByCode.Emplace(code, it->second.Get());
+            it = typeHandler.values.Emplace(valueDesc, MakeShared<ValueHandler>(valueDesc)).first;
+            typeHandler.valuesArray.EmplaceBack(it->second.Get());
+            typeHandler.valuesByCode.Emplace(code, it->second.Get());
         }
         return ValueBuilder{*it->second};
     }
 
     FunctionBuilder TypeBuilder::NewFunction(const FunctionHandlerCreation& creation)
     {
-        auto it = m_typeHandler.m_functions.Find(creation.name);
-        if (it == m_typeHandler.m_functions.end())
-        {
-            it = m_typeHandler.m_functions.Emplace(String{creation.name}, MakeShared<FunctionHandler>()).first;
-            m_typeHandler.m_functionArray.EmplaceBack(it->second.Get());
-        }
-
-        FunctionBuilder builder{*it->second};
+        FunctionBuilder builder = NewFunction(creation.name);
         builder.Create(creation);
         return builder;
+    }
+
+    FunctionBuilder TypeBuilder::NewFunction(StringView functionName)
+    {
+        auto it = typeHandler.functions.Find(functionName);
+        if (it == typeHandler.functions.end())
+        {
+            it = typeHandler.functions.Emplace(String{functionName}, MakeShared<FunctionHandler>()).first;
+            typeHandler.functionArray.EmplaceBack(it->second.Get());
+        }
+
+        return FunctionBuilder{*it->second};
     }
 
     void TypeBuilder::AddBaseType(TypeID typeId, FnCast fnCast)
     {
         TypeHandler* baseType = Registry::FindTypeById(typeId);
         FY_ASSERT(baseType, "Base Type not found");
+        if (baseType)
+        {
+            baseType->derivedTypes.EmplaceBack(typeHandler.GetTypeInfo().typeId, fnCast);
+            typeHandler.baseTypes.Insert(typeId, fnCast);
+            typeHandler.baseTypesArray.EmplaceBack(typeId);
 
-        baseType->m_derivedTypes.EmplaceBack(m_typeHandler.GetTypeInfo().typeId, fnCast);
-        m_typeHandler.m_baseTypes.Insert(typeId, fnCast);
-        m_typeHandler.m_baseTypesArray.EmplaceBack(typeId);
+            for(const auto& it : baseType->functions)
+            {
+                FunctionBuilder functionBuilder = NewFunction(it.first);
+                functionBuilder.Create(*it.second, typeHandler);
+            }
+
+            for (const auto& it : baseType->fields)
+            {
+                FieldBuilder builder = NewField(it.first);
+                builder.Copy(*it.second, typeHandler);
+            }
+        }
+    }
+
+    void TypeBuilder::Build() const
+    {
+        onTypeAddedEvent.Invoke(typeHandler);
     }
 
     TypeHandler& TypeBuilder::GetTypeHandler() const
     {
-        return m_typeHandler;
+        return typeHandler;
     }
 
 

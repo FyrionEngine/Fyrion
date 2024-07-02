@@ -5,7 +5,6 @@
 #include "Fyrion/Core/Math.hpp"
 #include "Fyrion/Core/String.hpp"
 #include "Fyrion/Core/Array.hpp"
-#include "Fyrion/Core/Span.hpp"
 
 namespace Fyrion::Platform
 {

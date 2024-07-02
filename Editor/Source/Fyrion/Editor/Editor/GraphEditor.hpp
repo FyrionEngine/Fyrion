@@ -1,4 +1,6 @@
 #pragma once
+#if FY_ASSET_REFACTOR
+
 #include "Fyrion/Core/HashMap.hpp"
 #include "Fyrion/Core/HashSet.hpp"
 #include "Fyrion/Core/Math.hpp"
@@ -149,3 +151,5 @@ namespace Fyrion
         void AddOutputPinCache(RID value, GraphEditorNode* node);
     };
 }
+
+#endif

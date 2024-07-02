@@ -3,16 +3,16 @@
 #include "Fyrion/IO/InputTypes.hpp"
 #include "ImGuiPlatform.hpp"
 #include "Fyrion/Graphics/Device/RenderDevice.hpp"
-#include "Fyrion/Resource/ResourceObject.hpp"
-#include "Fyrion/Resource/Repository.hpp"
-#include "Fyrion/Assets/AssetTypes.hpp"
 #include "IconsFontAwesome6.h"
 #include "Fyrion/Engine.hpp"
+#include "Fyrion/Asset/AssetDatabase.hpp"
+#include "Fyrion/Asset/AssetTypes.hpp"
 #include "Fyrion/Core/StringUtils.hpp"
 #include "Fyrion/Core/UniquePtr.hpp"
 #include "Fyrion/ImGui/Lib/imgui_internal.h"
 #include "Fyrion/ImGui/Lib/ImGuizmo.h"
-#include "Fyrion/Resource/ResourceGraph.hpp"
+#include "Fyrion/Core/HashMap.hpp"
+#include "Fyrion/Core/Registry.hpp"
 
 using namespace Fyrion;
 
@@ -910,16 +910,14 @@ namespace ImGui
 
         ImGuiIO& io = ImGui::GetIO();
         io.Fonts->Clear();
-        ResourceObject dejaVuSans = Repository::Read(Repository::GetByPath("Fyrion://Fonts/DejaVuSans.ttf"));
-        if (dejaVuSans)
-        {
-            const Array<u8>& dejaVuSansBytes = dejaVuSans.GetValue<Array<u8>>(UIFont::FontBytes);
 
+        if (UIFontAsset* fontAsset = AssetDatabase::FindByPath<UIFontAsset>("Fyrion://Fonts/DejaVuSans.ttf"))
+        {
             auto font = ImFontConfig();
             font.SizePixels = fontSize * scaleFactor;
-            memcpy(font.Name, "NotoSans", 10);
+            memcpy(font.Name, "NotoSans", 9);
             font.FontDataOwnedByAtlas = false;
-            io.Fonts->AddFontFromMemoryTTF((void*)dejaVuSansBytes.Data(), dejaVuSansBytes.Size(), font.SizePixels, &font);
+            io.Fonts->AddFontFromMemoryTTF(fontAsset->fontBytes.Data(), fontAsset->fontBytes.Size(), font.SizePixels, &font);
         }
         else
         {
@@ -928,11 +926,9 @@ namespace ImGui
             io.Fonts->AddFontDefault(&config);
         }
 
-        ResourceObject faSolid = Repository::Read(Repository::GetByPath("Fyrion://Fonts/fa-solid-900.otf"));
-        if (faSolid)
+        if (UIFontAsset* fontAsset = AssetDatabase::FindByPath<UIFontAsset>("Fyrion://Fonts/fa-solid-900.otf"))
         {
             static const ImWchar icon_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
-            static const ImWchar icon_ranges_[] = {ICON_MIN_FA + ICON_MAX_FA, ICON_MAX_FA + ICON_MAX_FA, 0};
 
             ImFontConfig config = ImFontConfig();
             config.SizePixels = fontSize * scaleFactor;
@@ -942,8 +938,7 @@ namespace ImGui
             config.FontDataOwnedByAtlas = false;
             memcpy(config.Name, "FontAwesome", 11);
 
-            const Array<u8>& faSolidBytes = faSolid.GetValue<Array<u8>>(UIFont::FontBytes);
-            io.Fonts->AddFontFromMemoryTTF((void*)faSolidBytes.Data(), faSolidBytes.Size(), config.SizePixels, &config, icon_ranges);
+            io.Fonts->AddFontFromMemoryTTF(fontAsset->fontBytes.Data(), fontAsset->fontBytes.Size(), config.SizePixels, &config, icon_ranges);
         }
     }
 
@@ -1040,12 +1035,14 @@ namespace ImGui
                             {
                                 if (drawTypeContent->desc.callback)
                                 {
-                                    drawTypeContent->fieldShowSelection->SetValueAs(drawTypeContent->instance, RID{});
+                                    //drawTypeContent->fieldShowSelection->SetValueAs(drawTypeContent->instance, RID{});
                                     drawTypeContent->desc.callback(drawTypeContent->desc, drawTypeContent->instance);
                                 }
                                 drawTypeContent->showResourceSelection = false;
                             }
                         }
+
+#if 0
 
                         Array<RID> resources = Repository::GetResourcesByType(drawTypeContent->resourceTypeSelection);
                         for(RID rid: resources)
@@ -1083,6 +1080,7 @@ namespace ImGui
                             }
                         }
                         ImGui::EndContentTable();
+#endif
                     }
                     ImGui::EndChild();
                     ImGui::SetWindowFontScale(1);
@@ -1164,6 +1162,14 @@ namespace ImGui
         fieldRenders.Emplace(typeId, Traits::Move(fieldRendererFn));
     }
 
+    void ClearDrawType(usize itemId)
+    {
+        if (auto it = drawTypes.Find(itemId); it != drawTypes.end())
+        {
+            it->second->dirty = true;
+        }
+    }
+
     void DrawType(const ImGui::DrawTypeDesc& desc)
     {
         bool readOnly = desc.flags & ImGuiDrawTypeFlags_ReadOnly;
@@ -1199,6 +1205,12 @@ namespace ImGui
 
         DrawTypeContent* content = it->second.Get();
 
+        if (content->dirty)
+        {
+            desc.typeHandler->Copy(desc.instance, content->instance);
+            content->dirty = false;
+        }
+
         if (desc.instance != nullptr && desc.instance != content->desc.instance)
         {
             desc.typeHandler->Copy(desc.instance, it->second->instance);
@@ -1206,7 +1218,6 @@ namespace ImGui
         }
 
         content->lastFrameUsage = Engine::GetFrame();
-
 
         if (!content->desc.typeHandler->GetFields().Empty())
         {
@@ -1241,5 +1252,10 @@ namespace ImGui
         {
             it->second(content, nullptr, content->instance, &content->hasChanged);
         }
+    }
+
+    void ClearTextData()
+    {
+        ImGui::ClearActiveID();
     }
 }

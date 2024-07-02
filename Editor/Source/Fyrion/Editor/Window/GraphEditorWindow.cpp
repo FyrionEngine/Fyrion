@@ -1,3 +1,4 @@
+
 #include "GraphEditorWindow.hpp"
 
 #include "Fyrion/Core/Registry.hpp"
@@ -13,14 +14,13 @@
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Core/Event.hpp"
 #include "Fyrion/Core/StringUtils.hpp"
-#include "Fyrion/Resource/Repository.hpp"
-#include "Fyrion/Resource/ResourceGraph.hpp"
 
 namespace ed = ax::NodeEditor;
 
 
 namespace Fyrion
 {
+#if FY_ASSET_REFACTOR
     MenuItemContext GraphEditorWindow::s_menuItemContext = {};
 
     namespace
@@ -440,4 +440,11 @@ namespace Fyrion
     {
         Registry::Type<GraphEditorWindow, EditorWindow>();
     }
+#else
+    void InitGraphEditorWindow()
+    {
+
+    }
+#endif
 }
+

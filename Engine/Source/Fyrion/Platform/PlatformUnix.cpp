@@ -1,4 +1,3 @@
-
 #include "Platform.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
 #include "Fyrion/IO/Path.hpp"
@@ -7,6 +6,7 @@
 #ifdef FY_UNIX
 
 #include <dlfcn.h>
+#include <ctime>
 
 namespace Fyrion
 {
@@ -30,13 +30,6 @@ namespace Fyrion
     void Platform::ApplyDarkStyle(VoidPtr internal)
     {
 
-    }
-
-    f64 Platform::GetTime()
-    {
-        struct timespec now{};
-        clock_gettime(CLOCK_MONOTONIC_RAW, &now);
-        return now.tv_sec + now.tv_nsec * 0.000000001;
     }
 
     void Platform::ShowInExplorer(const StringView& path)

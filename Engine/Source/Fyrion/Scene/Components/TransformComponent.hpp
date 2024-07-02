@@ -1,57 +1,72 @@
 #pragma once
-#include "Fyrion/Core/Math.hpp"
-#include "Fyrion/Scene/Component.hpp"
 
+#include "Fyrion/Common.hpp"
+#include "Fyrion/Core/Math.hpp"
+#include "Fyrion/Core/Registry.hpp"
+#include "Fyrion/Scene/Component.hpp"
 
 namespace Fyrion
 {
     class FY_API TransformComponent : public Component
     {
     public:
+        FY_BASE_TYPES(Component);
 
-        FY_FINLINE void SetPosition(const Vec3& position)
+        FY_FINLINE void SetPosition(const Vec3& p_position)
         {
-            m_position = position;
-            NotifyTransformChange();
+            position = p_position;
+            OnChange();
         }
 
-        FY_FINLINE void SetRotation(const Quat& rotation)
+        FY_FINLINE void SetRotation(const Quat& p_rotation)
         {
-            m_rotation = rotation;
-            NotifyTransformChange();
+            rotation = p_rotation;
+            OnChange();
         }
 
-        FY_FINLINE void SetScale(const Vec3& scale)
+        FY_FINLINE void SetScale(const Vec3& p_scale)
         {
-            m_scale = scale;
-            NotifyTransformChange();
+            scale = p_scale;
+            OnChange();
         }
 
-        FY_FINLINE void SetTransform(const Vec3& position, const Quat& rotation, const Vec3& scale)
+        FY_FINLINE void SetTransform(const Vec3& p_position, const Quat& p_rotation, const Vec3& p_scale)
         {
-            m_position = position;
-            m_rotation = rotation;
-            m_scale = scale;
-            NotifyTransformChange();
+            position = p_position;
+            rotation = p_rotation;
+            scale = p_scale;
+            OnChange();
         }
 
-        FY_FINLINE const Vec3& GetPosition() const { return m_position; }
-        FY_FINLINE const Quat& GetRotation() const { return m_rotation; }
-        FY_FINLINE const Vec3& GetScale() const { return m_scale; }
-        FY_FINLINE const Mat4& GetWorldTransform() const { return m_worldTransform; }
+        FY_FINLINE const Vec3& GetPosition() const
+        {
+            return position;
+        }
 
-        void OnNotify(i64 type) override;
+        FY_FINLINE const Quat& GetRotation() const
+        {
+            return rotation;
+        }
 
-        inline static i64 TransformChanged = 1001;
+        FY_FINLINE const Vec3& GetScale() const
+        {
+            return scale;
+        }
+
+        FY_FINLINE const Mat4& GetWorldTransform() const
+        {
+            return worldTransform;
+        }
+
+        void OnChange() override;
 
         static void RegisterType(NativeTypeHandler<TransformComponent>& type);
+
     private:
-        Vec3 m_position{0, 0, 0};
-        Quat m_rotation{0, 0, 0, 1};
-        Vec3 m_scale{1, 1, 1};
+        Vec3 position{0, 0, 0};
+        Quat rotation{0, 0, 0, 1};
+        Vec3 scale{1, 1, 1};
 
-        Mat4 m_worldTransform{1.0};
-
-        void NotifyTransformChange() const;
+        Mat4 worldTransform{1.0};
     };
 }

@@ -26,7 +26,7 @@ namespace Fyrion
     struct VulkanBindingSet : BindingSet
     {
         VulkanDevice&  vulkanDevice;
-        RID            shader;
+        //RID            shader;
         BindingSetType bindingSetType;
 
         HashMap<String, SharedPtr<VulkanBindingValue>> bindingValues;
@@ -34,7 +34,7 @@ namespace Fyrion
         HashMap<u32, DescriptorLayout>                 descriptorLayoutLookup{};
 
 
-        VulkanBindingSet(VulkanDevice& vulkanDevice, const RID& shader, BindingSetType bindingSetType);
+        VulkanBindingSet(VulkanDevice& vulkanDevice, BindingSetType bindingSetType);
 
 
         BindingValue& GetBindingValue(const StringView& name) override;

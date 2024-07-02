@@ -10,28 +10,6 @@
 
 namespace Fyrion
 {
-    static f64              clockFrequency{};
-    static LARGE_INTEGER    startTime{};
-
-    void ClockSetup()
-    {
-        LARGE_INTEGER frequency;
-        QueryPerformanceFrequency(&frequency);
-        clockFrequency = 1.0 / (f64)frequency.QuadPart;
-        QueryPerformanceCounter(&startTime);
-    }
-
-    f64 Platform::GetTime()
-    {
-        if (clockFrequency == 0)
-        {
-            ClockSetup();
-        }
-
-        LARGE_INTEGER nowTime;
-        QueryPerformanceCounter(&nowTime);
-        return (f64) nowTime.QuadPart * clockFrequency;
-    }
 
     void Platform::ShowInExplorer(const StringView& path)
     {

@@ -1,15 +1,15 @@
 #include "Editor.hpp"
 
 #include "EditorTypes.hpp"
+#include "Action/EditorAction.hpp"
 #include "Fyrion/Engine.hpp"
+#include "Fyrion/Asset/AssetDatabase.hpp"
 #include "Fyrion/Core/Event.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Core/UniquePtr.hpp"
 #include "Fyrion/ImGui/ImGui.hpp"
 #include "Fyrion/ImGui/Lib/imgui_internal.h"
 #include "Fyrion/IO/Path.hpp"
-#include "Fyrion/Resource/AssetTree.hpp"
-#include "Fyrion/Resource/ResourceAssets.hpp"
 
 namespace Fyrion
 {
@@ -18,43 +18,47 @@ namespace Fyrion
     void InitSceneViewWindow();
     void InitSceneTreeWindow();
     void InitGraphEditorWindow();
+    void InitEditorAction();
 
     struct EditorWindowStorage
     {
-        TypeID typeId{};
-        FnCast fnCast{};
+        TypeID       typeId{};
+        FnCast       fnCast{};
         DockPosition dockPosition{};
-        bool createOnInit{};
+        bool         createOnInit{};
     };
 
     struct OpenWindowStorage
     {
-        u32 id{};
+        u32           id{};
         EditorWindow* instance{};
-        TypeHandler* typeHandler{};
+        TypeHandler*  typeHandler{};
     };
 
     namespace
     {
         Array<EditorWindowStorage> editorWindowStorages{};
-        Array<OpenWindowStorage> openWindows{};
-        Array<RID> updatedItems{};
+        Array<OpenWindowStorage>   openWindows{};
+        Array<Asset*> updatedItems{};
 
         MenuItemContext menuContext{};
-        bool dockInitialized = false;
-        u32  dockSpaceId{10000};
-        u32  centerSpaceId{10000};
-        u32  topRightDockId{};
-        u32  bottomRightDockId{};
-        u32  bottomDockId{};
-        u32  leftDockId{};
-        u32  idCounter{100000};
-        bool showImGuiDemo = false;
+        bool            dockInitialized = false;
+        u32             dockSpaceId{10000};
+        u32             centerSpaceId{10000};
+        u32             topRightDockId{};
+        u32             bottomRightDockId{};
+        u32             bottomDockId{};
+        u32             leftDockId{};
+        u32             idCounter{100000};
+        bool            showImGuiDemo = false;
 
         bool forceClose{};
 
-        AssetTree assetTree{};
         UniquePtr<SceneEditor> sceneEditor{};
+        Array<AssetDirectory*> directories{};
+
+        Array<SharedPtr<EditorTransaction>> undoActions{};
+        Array<SharedPtr<EditorTransaction>> redoActions{};
 
         void SaveAll();
 
@@ -66,18 +70,26 @@ namespace Fyrion
             openWindows.ShrinkToFit();
             editorWindowStorages.Clear();
             editorWindowStorages.ShrinkToFit();
+            directories.Clear();
+            directories.ShrinkToFit();
             idCounter = 100000;
+
+            undoActions.Clear();
+            undoActions.ShrinkToFit();
+
+            redoActions.Clear();
+            redoActions.ShrinkToFit();
         }
 
         void InitEditor()
         {
             //TODO - this needs to be update on reload.
-            TypeHandler* editorWindow = Registry::FindType<EditorWindow>();
+            TypeHandler*      editorWindow = Registry::FindType<EditorWindow>();
             Span<DerivedType> derivedTypes = editorWindow->GetDerivedTypes();
-            for(const DerivedType& derivedType : derivedTypes)
+            for (const DerivedType& derivedType : derivedTypes)
             {
                 EditorWindowProperties properties{};
-                TypeHandler* typeHandler = Registry::FindTypeById(derivedType.typeId);
+                TypeHandler*           typeHandler = Registry::FindTypeById(derivedType.typeId);
                 if (typeHandler)
                 {
                     const EditorWindowProperties* editorWindowProperties = typeHandler->GetAttribute<EditorWindowProperties>();
@@ -97,12 +109,12 @@ namespace Fyrion
             }
 
             //TODO: Create a setting for that.
-            Editor::OpenProject(ResourceAssets::GetAssetRootByName("Fyrion"));
+            Editor::OpenDirectory(AssetDatabase::FindByPath<AssetDirectory>("Fyrion:/"));
 
             if (Engine::HasArgByName("projectPath"))
             {
                 String projectPath = Engine::GetArgByName("projectPath");
-                Editor::OpenProject(ResourceAssets::LoadAssetsFromDirectory(Path::Name(projectPath), Path::Join(projectPath, "Assets")));
+                Editor::OpenDirectory(AssetDatabase::LoadFromDirectory(Path::Name(projectPath), Path::Join(projectPath, "Assets")));
             }
         }
 
@@ -113,7 +125,6 @@ namespace Fyrion
 
         void NewProject(const MenuItemEventData& eventData)
         {
-
         }
 
         void SaveAll(const MenuItemEventData& eventData)
@@ -126,17 +137,46 @@ namespace Fyrion
             showImGuiDemo = true;
         }
 
+        void Undo(const MenuItemEventData& eventData)
+        {
+            SharedPtr<EditorTransaction> action = undoActions.Back();
+            action->Rollback();
+            redoActions.EmplaceBack(action);
+            undoActions.PopBack();
+        }
+
+        bool UndoEnabled(const MenuItemEventData& eventData)
+        {
+            return !undoActions.Empty();
+        }
+
+        void Redo(const MenuItemEventData& eventData)
+        {
+            SharedPtr<EditorTransaction> action = redoActions.Back();
+            action->Commit();
+
+            redoActions.PopBack();
+            undoActions.EmplaceBack(action);
+        }
+
+        bool RedoEnabled(const MenuItemEventData& eventData)
+        {
+            return !redoActions.Empty();
+        }
+
         void CreateMenuItems()
         {
             Editor::AddMenuItem(MenuItemCreation{.itemName = "File", .priority = 0});
             Editor::AddMenuItem(MenuItemCreation{.itemName = "File/New Project", .priority = 0, .action = NewProject});
-            Editor::AddMenuItem(MenuItemCreation{.itemName = "File/Save All", .priority = 1000, .itemShortcut{.ctrl=true, .presKey = Key::S}, .action = SaveAll});
-            Editor::AddMenuItem(MenuItemCreation{.itemName = "File/Exit", .priority = I32_MAX, .itemShortcut{.ctrl=true, .presKey = Key::Q}, .action = CloseEngine});
+            Editor::AddMenuItem(MenuItemCreation{.itemName = "File/Save All", .priority = 1000, .itemShortcut{.ctrl = true, .presKey = Key::S}, .action = SaveAll});
+            Editor::AddMenuItem(MenuItemCreation{.itemName = "File/Exit", .priority = I32_MAX, .itemShortcut{.ctrl = true, .presKey = Key::Q}, .action = CloseEngine});
             Editor::AddMenuItem(MenuItemCreation{.itemName = "Edit", .priority = 30});
+            Editor::AddMenuItem(MenuItemCreation{.itemName = "Edit/Undo", .priority = 10, .itemShortcut{.ctrl = true, .presKey = Key::Z}, .action = Undo, .enable = UndoEnabled});
+            Editor::AddMenuItem(MenuItemCreation{.itemName = "Edit/Redo", .priority = 20, .itemShortcut{.ctrl = true, .shift = true,  .presKey = Key::Z}, .action = Redo, .enable = RedoEnabled});
             Editor::AddMenuItem(MenuItemCreation{.itemName = "Build", .priority = 40});
             Editor::AddMenuItem(MenuItemCreation{.itemName = "Window", .priority = 50});
             Editor::AddMenuItem(MenuItemCreation{.itemName = "Help", .priority = 60});
-            Editor::AddMenuItem(MenuItemCreation{.itemName = "Window/Dear ImGui Demo", .priority = I32_MAX, .action=ShowImGuiDemo});
+            Editor::AddMenuItem(MenuItemCreation{.itemName = "Window/Dear ImGui Demo", .priority = I32_MAX, .action = ShowImGuiDemo});
         }
 
 
@@ -147,7 +187,7 @@ namespace Fyrion
                 case DockPosition::None: return U32_MAX;
                 case DockPosition::Center: return centerSpaceId;
                 case DockPosition::Left: return leftDockId;
-                case DockPosition::TopRight:return topRightDockId;
+                case DockPosition::TopRight: return topRightDockId;
                 case DockPosition::BottomRight: return bottomRightDockId;
                 case DockPosition::Bottom: return bottomDockId;
             }
@@ -157,7 +197,7 @@ namespace Fyrion
         u32 CreateWindow(const EditorWindowStorage& editorWindowStorage, VoidPtr userData)
         {
             TypeHandler* typeHandler = Registry::FindTypeById(editorWindowStorage.typeId);
-            u32 windowId = idCounter;
+            u32          windowId = idCounter;
 
             OpenWindowStorage openWindowStorage = OpenWindowStorage{
                 .id = windowId,
@@ -183,7 +223,9 @@ namespace Fyrion
             for (u32 i = 0; i < openWindows.Size(); ++i)
             {
                 OpenWindowStorage& openWindowStorage = openWindows[i];
+
                 bool open = true;
+
                 openWindowStorage.instance->Draw(openWindowStorage.id, open);
                 if (!open)
                 {
@@ -214,13 +256,13 @@ namespace Fyrion
                 ImGui::DockBuilderReset(dockSpaceId);
 
                 //create default windows
-                centerSpaceId     = dockSpaceId;
-                topRightDockId    = ImGui::DockBuilderSplitNode(centerSpaceId, ImGuiDir_Right, 0.15f, nullptr, &centerSpaceId);
+                centerSpaceId = dockSpaceId;
+                topRightDockId = ImGui::DockBuilderSplitNode(centerSpaceId, ImGuiDir_Right, 0.15f, nullptr, &centerSpaceId);
                 bottomRightDockId = ImGui::DockBuilderSplitNode(topRightDockId, ImGuiDir_Down, 0.50f, nullptr, &topRightDockId);
-                bottomDockId      = ImGui::DockBuilderSplitNode(centerSpaceId, ImGuiDir_Down, 0.20f, nullptr, &centerSpaceId);
-                leftDockId        = ImGui::DockBuilderSplitNode(centerSpaceId, ImGuiDir_Left, 0.12f, nullptr, &centerSpaceId);
+                bottomDockId = ImGui::DockBuilderSplitNode(centerSpaceId, ImGuiDir_Down, 0.20f, nullptr, &centerSpaceId);
+                leftDockId = ImGui::DockBuilderSplitNode(centerSpaceId, ImGuiDir_Left, 0.12f, nullptr, &centerSpaceId);
 
-                for (const auto& windowType: editorWindowStorages)
+                for (const auto& windowType : editorWindowStorages)
                 {
                     if (windowType.createOnInit)
                     {
@@ -259,33 +301,23 @@ namespace Fyrion
                                 ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_None, 200.f * style.ScaleFactor);
                                 ImGui::TableHeadersRow();
 
-                                for(const RID& rid: updatedItems)
+                                for(const Asset* asset: updatedItems)
                                 {
-                                    AssetNode* node = assetTree.GetNode(rid);
-                                    if (node == nullptr) continue;
-
                                     ImGui::TableNextRow();
 
                                     ImVec4 color = style.Colors[ImGuiCol_Text];
-                                    if (!node->active)
+                                    if (!asset->IsActive())
                                     {
-                                        color = ImVec4{180.f/255.f, 85.f/255.f, 85.f/255.f, 255};
+                                        color = ImVec4{180.f / 255.f, 85.f / 255.f, 85.f / 255.f, 255};
                                     }
 
                                     ImGui::TableSetColumnIndex(0);
-                                    ImGui::TextColored(color, "%s", node->name.CStr());
+                                    ImGui::TextColored(color, "%s", asset->GetName().CStr());
                                     ImGui::TableSetColumnIndex(1);
-                                    ImGui::TextColored(color, "%s", node->path.CStr());
+                                    ImGui::TextColored(color, "%s", asset->GetPath().CStr());
                                     ImGui::TableSetColumnIndex(2);
 
-                                    if (node->type == GetTypeID<AssetDirectory>())
-                                    {
-                                        ImGui::TextColored(color, "%s", "Directory");
-                                    }
-                                    else if (!node->assetDesc.Empty())
-                                    {
-                                        ImGui::TextColored(color, "%s", node->assetDesc.CStr());
-                                    }
+                                    ImGui::TextColored(color, "%s", asset->GetDisplayName().CStr());
 
                                 }
                                 ImGui::EndTable();
@@ -330,11 +362,10 @@ namespace Fyrion
 
         void SaveAll()
         {
-            for (RID assetRoot: assetTree.GetAssetRoots())
+            for (AssetDirectory* directory : directories)
             {
-                ResourceAssets::SaveAssetsToDirectory(assetRoot, ResourceAssets::GetAbsolutePath(assetRoot));
+                AssetDatabase::SaveOnDirectory(directory, directory->GetAbsolutePath());
             }
-            assetTree.MarkDirty();
         }
 
         void EditorUpdate(f64 deltaTime)
@@ -355,16 +386,17 @@ namespace Fyrion
             ProjectUpdate();
         }
 
-        void EditorEndFrame()
-        {
-            assetTree.Update();
-        }
-
         void OnEditorShutdownRequest(bool* canClose)
         {
             if (forceClose) return;
 
-            assetTree.GetUpdated(updatedItems);
+            updatedItems.Clear();
+
+            for (AssetDirectory* directory : directories)
+            {
+                AssetDatabase::GetUpdatedAssets(directory, updatedItems);
+            }
+
             if (!updatedItems.Empty())
             {
                 ImGui::OpenPopup("Save Content");
@@ -377,7 +409,7 @@ namespace Fyrion
     {
         for (const EditorWindowStorage& window : editorWindowStorages)
         {
-            if (window.typeId== windowType)
+            if (window.typeId == windowType)
             {
                 CreateWindow(window, initUserData);
                 break;
@@ -385,13 +417,27 @@ namespace Fyrion
         }
     }
 
-    void Editor::OpenProject(RID rid)
+    void Editor::OpenDirectory(AssetDirectory* directory)
     {
-        if (rid)
-        {
-            assetTree.AddAssetRoot(rid);
-        }
+        directories.EmplaceBack(directory);
     }
+
+    Span<AssetDirectory*> Editor::GetOpenDirectories()
+    {
+        return directories;
+    }
+
+    SceneEditor& Editor::GetSceneEditor()
+    {
+        return *sceneEditor.Get();
+    }
+
+    EditorTransaction* Editor::CreateTransaction()
+    {
+        redoActions.Clear();
+        return undoActions.EmplaceBack(MakeShared<EditorTransaction>()).Get();
+    }
+
 
     void Editor::AddMenuItem(const MenuItemCreation& menuItem)
     {
@@ -404,28 +450,18 @@ namespace Fyrion
 
         Registry::Type<EditorWindow>();
 
+        InitEditorAction();
         InitProjectBrowser();
         InitSceneTreeWindow();
         InitSceneViewWindow();
         InitPropertiesWindow();
         InitGraphEditorWindow();
 
-        Event::Bind<OnInit , &InitEditor>();
+        Event::Bind<OnInit, &InitEditor>();
         Event::Bind<OnUpdate, &EditorUpdate>();
-        Event::Bind<OnEndFrame , &EditorEndFrame>();
         Event::Bind<OnShutdown, &Shutdown>();
         Event::Bind<OnShutdownRequest, &OnEditorShutdownRequest>();
 
         CreateMenuItems();
-    }
-
-    AssetTree& Editor::GetAssetTree()
-    {
-        return assetTree;
-    }
-
-    SceneEditor& Editor::GetSceneEditor()
-    {
-        return *sceneEditor.Get();
     }
 }

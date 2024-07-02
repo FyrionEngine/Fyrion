@@ -4,7 +4,6 @@
 #include "Math.hpp"
 #include "Registry.hpp"
 #include "UUID.hpp"
-#include "Fyrion/Resource/Repository.hpp"
 
 namespace Fyrion
 {

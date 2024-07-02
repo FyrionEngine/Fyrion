@@ -34,8 +34,7 @@ namespace ImGui
 {
 
     struct DrawTypeDesc;
-    typedef void (*DrawTypeCallbackFn)(DrawTypeDesc& desc, ConstPtr newValue);
-    typedef void (*OnCreateSubobjectFn)(DrawTypeDesc& desc, RID newSubobject);
+    typedef void (*DrawTypeCallbackFn)(DrawTypeDesc& desc, VoidPtr newValue);
 
     struct ContentItemDesc
     {
@@ -56,19 +55,18 @@ namespace ImGui
     struct DrawTypeDesc
     {
         usize               itemId{};
-        RID                 rid;
         TypeHandler*        typeHandler{};
-        ConstPtr            instance{};
+        VoidPtr             instance{};
         ImGuiDrawTypeFlags  flags{};
         VoidPtr             userData{};
         DrawTypeCallbackFn  callback{};
-        OnCreateSubobjectFn onCreateSubobject{};
     };
 
     struct DrawTypeContent
     {
         DrawTypeDesc  desc{};
         VoidPtr       instance{};
+        bool          dirty = false;
         u64           lastFrameUsage{};
         bool          readOnly{};
         bool          hasChanged{};
@@ -150,8 +148,11 @@ namespace ImGui
     FY_API StringView ContentRenameString();
     FY_API void       EndContentTable();
 
+
     FY_API void AddFieldRenderer(TypeID typeId, FieldRendererFn fieldRendererFn);
+    FY_API void ClearDrawType(usize itemId);
     FY_API void DrawType(const DrawTypeDesc& drawTypeDesc);
+    FY_API void ClearTextData();
 
     FY_API ImGuiKey GetImGuiKey(Key key);
 

@@ -5,6 +5,7 @@
 #include "Hash.hpp"
 #include "StringConverter.hpp"
 #include "Format.hpp"
+#include "Serialization.hpp"
 
 
 namespace Fyrion
@@ -70,10 +71,10 @@ namespace Fyrion
         void Assign(ConstPointer first, ConstPointer last);
         void Assign(const BasicString& other);
         void PushBack(Type ch);
-        void Append(ConstPointer sz);
-        void Append(Type c);
-        void Append(ConstPointer first, ConstPointer last);
-        void Append(const BasicString& other);
+        BasicString& Append(ConstPointer sz);
+        BasicString& Append(Type c);
+        BasicString& Append(ConstPointer first, ConstPointer last);
+        BasicString& Append(const BasicString& other);
         void Insert(Iterator where, Type ch);
         void Insert(Iterator where, ConstPointer sz);
         void Insert(Iterator where, ConstPointer first, ConstPointer last);
@@ -84,7 +85,7 @@ namespace Fyrion
         usize Find(char s) const;
 
 		template<typename Type>
-		BasicString<T, BufferSize>& Append(const Type& value)
+		BasicString& Append(const Type& value)
 		{
 			static_assert(StringConverter<Type>::hasConverter, "[StringConverter] type has no converter");
 			if constexpr (StringConverter<Type>::bufferCount > 0)
@@ -155,6 +156,8 @@ namespace Fyrion
     template<typename T, usize BufferSize>
     BasicString<T, BufferSize>::BasicString(BasicString&& other) noexcept : m_size(0)
     {
+        this->~BasicString();
+
         m_size = other.m_size;
         m_allocator = other.m_allocator;
         if (other.m_size & c_longFlag)
@@ -171,6 +174,8 @@ namespace Fyrion
             m_buffer[other.Size()] = 0;
         }
         other.m_size = 0;
+        other.m_first = nullptr;
+        other.m_capacity = nullptr;
     }
 
     template<typename T, usize BufferSize>
@@ -225,7 +230,10 @@ namespace Fyrion
     template<typename T, usize BufferSize>
     FY_FINLINE BasicString<T, BufferSize>& BasicString<T, BufferSize>::operator=(BasicString&& other) noexcept
     {
+        this->~BasicString();
+
         m_size = other.m_size;
+        m_allocator = other.m_allocator;
 
         if (other.m_size & c_longFlag)
         {
@@ -241,6 +249,8 @@ namespace Fyrion
             m_buffer[other.Size()] = 0;
         }
         other.m_size = 0;
+        other.m_first = nullptr;
+        other.m_capacity = nullptr;
         return *this;
     }
 
@@ -524,7 +534,7 @@ namespace Fyrion
     }
 
     template<typename T, usize BufferSize>
-    FY_FINLINE void BasicString<T, BufferSize>::Append(ConstPointer sz)
+    FY_FINLINE BasicString<T, BufferSize>& BasicString<T, BufferSize>::Append(ConstPointer sz)
     {
         usize len = 0;
         for (ConstPointer it = sz; *it; ++it)
@@ -532,10 +542,11 @@ namespace Fyrion
             ++len;
         }
         Append(sz, sz + len);
+        return *this;
     }
 
     template<typename T, usize BufferSize>
-    FY_FINLINE void BasicString<T, BufferSize>::Append(ConstPointer first, ConstPointer last)
+    FY_FINLINE BasicString<T, BufferSize>& BasicString<T, BufferSize>::Append(ConstPointer first, ConstPointer last)
     {
         const usize newsize = (usize) (Size() + (last - first));
         if (newsize > Capacity())
@@ -551,18 +562,21 @@ namespace Fyrion
 
         *newit = 0;
         m_size = newsize | (m_size & c_longFlag);
+        return *this;
     }
 
     template<typename T, usize BufferSize>
-    FY_FINLINE void BasicString<T, BufferSize>::Append(const BasicString& other)
+    FY_FINLINE BasicString<T, BufferSize>& BasicString<T, BufferSize>::Append(const BasicString& other)
     {
         Append(other.begin(), other.end());
+        return *this;
     }
 
     template<typename T, usize BufferSize>
-    FY_FINLINE void BasicString<T, BufferSize>::Append(T c)
+    FY_FINLINE BasicString<T, BufferSize>& BasicString<T, BufferSize>::Append(T c)
     {
         Append(&c, &c + 1);
+        return *this;
     }
 
     template<typename T, usize BufferSize>
@@ -942,6 +956,20 @@ namespace Fyrion
 			StrCopy(string.begin(), str, size);
 		}
 	};
+
+    template<usize BufferSize>
+    struct ArchiveType<BasicString<char, BufferSize>>
+    {
+        static void WriteField(ArchiveWriter& writer, ArchiveObject object, const StringView& name, const BasicString<char, BufferSize>& value)
+        {
+            writer.WriteString(object, name, value);
+        }
+
+        static void ReadField(ArchiveReader& reader, ArchiveObject object, const StringView& name, BasicString<char, BufferSize>& string)
+        {
+            string = reader.ReadString(object, name);
+        }
+    };
 
     template<usize BufferSize>
     using BufferString = BasicString<char, BufferSize>;

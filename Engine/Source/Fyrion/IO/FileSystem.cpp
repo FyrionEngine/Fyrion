@@ -66,6 +66,7 @@ namespace Fyrion
         FileHandler fileHandler = OpenFile(path, AccessMode::ReadOnly);
         ret.Resize(GetFileSize(fileHandler));
         ReadFile(fileHandler, ret.begin(), ret.Size());
+        CloseFile(fileHandler);
         return ret;
     }
 
@@ -75,6 +76,7 @@ namespace Fyrion
         FileHandler fileHandler = OpenFile(path, AccessMode::ReadOnly);
         ret.Resize(GetFileSize(fileHandler));
         ReadFile(fileHandler, ret.begin(), ret.Size());
+        CloseFile(fileHandler);
         return ret;
     }
 }

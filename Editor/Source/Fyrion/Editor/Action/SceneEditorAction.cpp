@@ -1,8 +1,11 @@
 #include "SceneEditorAction.hpp"
 
+#include "imgui_internal.h"
 #include "Fyrion/Asset/AssetDatabase.hpp"
+#include "Fyrion/Asset/AssetSerialization.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Editor/Editor/SceneEditor.hpp"
+#include "Fyrion/ImGui/ImGui.hpp"
 #include "Fyrion/Scene/SceneManager.hpp"
 
 namespace Fyrion
@@ -144,6 +147,49 @@ namespace Fyrion
         type.Constructor<SceneEditor, SceneObject*, TypeHandler*>();
     }
 
+    UpdateComponentSceneObjectAction::UpdateComponentSceneObjectAction(SceneEditor& sceneEditor, Component* component, Component* newValue) : sceneEditor(sceneEditor),  component(component)
+    {
+        JsonAssetWriter writer;
+        currentStrValue = JsonAssetWriter::Stringify(newValue->typeHandler->Serialize(writer, component));
+        newStrValue = JsonAssetWriter::Stringify(newValue->typeHandler->Serialize(writer, newValue));
+
+        JsonAssetReader reader(newStrValue);
+        component->typeHandler->Deserialize(reader, reader.ReadObject(), component);
+
+        sceneEditor.Modify();
+        component->OnChange();
+    }
+
+    void UpdateComponentSceneObjectAction::Commit()
+    {
+        JsonAssetReader reader(newStrValue);
+        component->typeHandler->Deserialize(reader, reader.ReadObject(), component);
+
+        ImGui::ClearDrawType(reinterpret_cast<usize>(component));
+        ImGui::ClearTextData();
+
+        sceneEditor.Modify();
+        component->OnChange();
+
+    }
+
+    void UpdateComponentSceneObjectAction::Rollback()
+    {
+        JsonAssetReader reader(currentStrValue);
+        component->typeHandler->Deserialize(reader, reader.ReadObject(), component);
+
+        ImGui::ClearDrawType(reinterpret_cast<usize>(component));
+        ImGui::ClearTextData();
+
+        sceneEditor.Modify();
+        component->OnChange();
+    }
+
+    void UpdateComponentSceneObjectAction::RegisterType(NativeTypeHandler<UpdateComponentSceneObjectAction>& type)
+    {
+        type.Constructor<SceneEditor, Component*, Component*>();
+    }
+
     void InitSceneEditorAction()
     {
         Registry::Type<OpenSceneAction>();
@@ -151,5 +197,6 @@ namespace Fyrion
         Registry::Type<DestroySceneObjectAction>();
         Registry::Type<RenameSceneObjectAction>();
         Registry::Type<AddComponentSceneObjectAction>();
+        Registry::Type<UpdateComponentSceneObjectAction>();
     }
 }

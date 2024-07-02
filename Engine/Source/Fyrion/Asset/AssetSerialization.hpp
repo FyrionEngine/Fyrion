@@ -1,20 +1,21 @@
 #pragma once
 
+#include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Core/Serialization.hpp"
 #include "Fyrion/Core/String.hpp"
 
 
 typedef struct yyjson_mut_doc yyjson_mut_doc;
 typedef struct yyjson_mut_val yyjson_mut_val;
-typedef struct yyjson_doc yyjson_doc;
+typedef struct yyjson_doc     yyjson_doc;
 
 namespace Fyrion
 {
     class FY_API JsonAssetWriter : public ArchiveWriter
     {
     public:
-
         FY_NO_COPY_CONSTRUCTOR(JsonAssetWriter);
+        FY_BASE_TYPES(ArchiveWriter);
 
         JsonAssetWriter();
         ~JsonAssetWriter() override;
@@ -48,6 +49,7 @@ namespace Fyrion
     {
     public:
         FY_NO_COPY_CONSTRUCTOR(JsonAssetReader);
+        FY_BASE_TYPES(ArchiveReader);
 
         explicit JsonAssetReader(StringView data);
         ~JsonAssetReader() override;

@@ -4178,7 +4178,7 @@ bool ImGui::InputTextEx(const char* label, const char* hint, char* buf, int buf_
         flags |= ImGuiInputTextFlags_ReadOnly;
     const bool is_readonly = (flags & ImGuiInputTextFlags_ReadOnly) != 0;
     const bool is_password = (flags & ImGuiInputTextFlags_Password) != 0;
-    const bool is_undoable = false; //(flags & ImGuiInputTextFlags_NoUndoRedo) == 0; TODO(Fyrion) workaround
+    const bool is_undoable = false; //(flags & ImGuiInputTextFlags_NoUndoRedo) == 0;
     const bool is_resizable = (flags & ImGuiInputTextFlags_CallbackResize) != 0;
     if (is_resizable)
         IM_ASSERT(callback != NULL); // Must provide a callback if you set the ImGuiInputTextFlags_CallbackResize flag!

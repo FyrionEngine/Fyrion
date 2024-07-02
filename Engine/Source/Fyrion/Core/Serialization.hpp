@@ -128,7 +128,6 @@ namespace Fyrion
     template <typename T>
     constexpr bool HasWriteField = HasWriteFieldImpl<T>::value;
 
-
     template <typename, typename = void>
     struct HasReadFieldImpl : Traits::FalseType {};
 

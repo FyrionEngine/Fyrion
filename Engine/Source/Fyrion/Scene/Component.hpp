@@ -17,6 +17,7 @@ namespace Fyrion
         virtual ~Component() = default;
 
         virtual void OnStart(){}
+        virtual void OnChange() {}
         virtual void OnDestroy(){}
         virtual void OnNotify(i64 type) {}
 

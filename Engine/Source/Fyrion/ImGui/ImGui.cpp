@@ -929,7 +929,6 @@ namespace ImGui
         if (UIFontAsset* fontAsset = AssetDatabase::FindByPath<UIFontAsset>("Fyrion://Fonts/fa-solid-900.otf"))
         {
             static const ImWchar icon_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
-            static const ImWchar icon_ranges_[] = {ICON_MIN_FA + ICON_MAX_FA, ICON_MAX_FA + ICON_MAX_FA, 0};
 
             ImFontConfig config = ImFontConfig();
             config.SizePixels = fontSize * scaleFactor;
@@ -1163,6 +1162,14 @@ namespace ImGui
         fieldRenders.Emplace(typeId, Traits::Move(fieldRendererFn));
     }
 
+    void ClearDrawType(usize itemId)
+    {
+        if (auto it = drawTypes.Find(itemId); it != drawTypes.end())
+        {
+            it->second->dirty = true;
+        }
+    }
+
     void DrawType(const ImGui::DrawTypeDesc& desc)
     {
         bool readOnly = desc.flags & ImGuiDrawTypeFlags_ReadOnly;
@@ -1198,6 +1205,12 @@ namespace ImGui
 
         DrawTypeContent* content = it->second.Get();
 
+        if (content->dirty)
+        {
+            desc.typeHandler->Copy(desc.instance, content->instance);
+            content->dirty = false;
+        }
+
         if (desc.instance != nullptr && desc.instance != content->desc.instance)
         {
             desc.typeHandler->Copy(desc.instance, it->second->instance);
@@ -1205,7 +1218,6 @@ namespace ImGui
         }
 
         content->lastFrameUsage = Engine::GetFrame();
-
 
         if (!content->desc.typeHandler->GetFields().Empty())
         {
@@ -1240,5 +1252,10 @@ namespace ImGui
         {
             it->second(content, nullptr, content->instance, &content->hasChanged);
         }
+    }
+
+    void ClearTextData()
+    {
+        ImGui::ClearActiveID();
     }
 }

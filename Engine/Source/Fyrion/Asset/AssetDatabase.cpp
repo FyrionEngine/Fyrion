@@ -61,7 +61,11 @@ namespace Fyrion
         {
             assetsById.Erase(asset->GetUUID());
         }
-        assetsById.Insert(newUUID, asset);
+
+        if (newUUID)
+        {
+            assetsById.Insert(newUUID, asset);
+        }
     }
 
 
@@ -280,6 +284,8 @@ namespace Fyrion
                 Asset* asset = Create(typeHandler->GetTypeInfo().typeId);
                 typeHandler->Deserialize(reader, root, asset);
 
+                AssetDatabaseUpdateUUID(asset, asset->GetUUID());
+
                 asset->name = Path::Name(filePath);
                 asset->absolutePath = filePath;
                 asset->loadedVersion =  asset->currentVersion;
@@ -297,6 +303,8 @@ namespace Fyrion
                 asset->absolutePath = filePath;
                 asset->loadedVersion =  asset->currentVersion;
                 parentDirectory->AddChild(asset);
+
+                AssetDatabaseUpdateUUID(asset, asset->GetUUID());
             }
         }
     }

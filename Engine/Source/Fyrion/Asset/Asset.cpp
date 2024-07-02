@@ -55,7 +55,6 @@ namespace Fyrion
 
     void Asset::SetUUID(const UUID& p_uuid)
     {
-        AssetDatabaseUpdateUUID(this, p_uuid);
         uuid = p_uuid;
     }
 

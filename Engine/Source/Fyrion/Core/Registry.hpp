@@ -719,6 +719,16 @@ namespace Fyrion
         {
             fieldBuilder.SetFnGetFieldInfo(&GetFieldImpl);
             fieldBuilder.SetFnGetFieldPointer(&FnGetFieldPointerImpl);
+
+            if constexpr (HasWriteField<Field>)
+            {
+                fieldBuilder.SetFnSerialize(&SerializeImpl);
+            }
+
+            if constexpr (HasReadField<Field>)
+            {
+                fieldBuilder.SetFnDeserialize(&DeserializeImpl);
+            }
         }
 
         static FieldInfo GetFieldImpl(const FieldHandler* fieldHandler)
@@ -730,93 +740,6 @@ namespace Fyrion
         {
             instance = fieldHandler->GetOwnerCaster()(&fieldHandler->GetOwner(), instance);
             return &(*static_cast<Owner*>(instance).*mfp);
-        }
-    };
-
-    template<auto mfp, auto getFp, auto setFp, typename Owner, typename Field>
-    class NativeFieldHandler : public NativeFieldHandlerBase<mfp, Owner, Field>
-    {
-    public:
-        explicit NativeFieldHandler(FieldBuilder fieldBuilder): NativeFieldHandlerBase<mfp, Owner, Field>(fieldBuilder)
-        {
-            fieldBuilder.SetFnSetValue(&SetValue);
-            fieldBuilder.SetFnCopyValueTo(&CopyValueToImpl);
-
-            if constexpr (HasWriteField<Field>)
-            {
-                fieldBuilder.SetFnSerialize(&SerializeImpl);
-            }
-
-            if constexpr (HasReadField<Field>)
-            {
-                fieldBuilder.SetFnDeserialize(&DeserializeImpl);
-            }
-        }
-    private:
-        static void CopyValueToImpl(const FieldHandler* fieldHandler, ConstPtr instance, VoidPtr value)
-        {
-            using Return = Traits::FunctionReturnType<getFp>;
-            instance = fieldHandler->GetOwnerCaster()(&fieldHandler->GetOwner(), const_cast<VoidPtr>(instance));
-            *static_cast<Traits::RemoveAll<Return>*>(value) = (*static_cast<const Owner*>(instance).*getFp)();
-        }
-
-        static void SetValue(const FieldHandler* fieldHandler, VoidPtr instance, ConstPtr value)
-        {
-            instance = fieldHandler->GetOwnerCaster()(&fieldHandler->GetOwner(), instance);
-            (*static_cast<Owner*>(instance).*setFp)(*static_cast<const Field*>(value));
-        }
-
-        static void SerializeImpl(const FieldHandler* fieldHandler, ConstPtr instance, ArchiveWriter& writer, ArchiveObject object)
-        {
-            if constexpr (HasWriteField<Field>)
-            {
-                instance = fieldHandler->GetOwnerCaster()(&fieldHandler->GetOwner(), const_cast<VoidPtr>(instance));
-                ArchiveType<Field>::WriteField(writer, object, fieldHandler->GetName(), (*static_cast<const Owner*>(instance).*getFp)());
-            }
-        }
-
-        static void DeserializeImpl(const FieldHandler* fieldHandler, VoidPtr instance, ArchiveReader& reader, ArchiveObject object)
-        {
-            if constexpr (HasReadField<Field>)
-            {
-                instance = fieldHandler->GetOwnerCaster()(&fieldHandler->GetOwner(), instance);
-                Field field = {};
-                ArchiveType<Field>::ReadField(reader, object, fieldHandler->GetName(), field);
-                (*static_cast<Owner*>(instance).*setFp)(field);
-            }
-        }
-    };
-
-    template <auto mfp, typename Owner, typename Field>
-    class NativeFieldHandler<mfp, nullptr, nullptr, Owner, Field> : public NativeFieldHandlerBase<mfp, Owner, Field>
-    {
-    public:
-        explicit NativeFieldHandler(FieldBuilder fieldBuilder): NativeFieldHandlerBase<mfp, Owner, Field>(fieldBuilder)
-        {
-            fieldBuilder.SetFnCopyValueTo(&CopyValueToImpl);
-            fieldBuilder.SetFnSetValue(&SetValue);
-
-            if constexpr (HasWriteField<Field>)
-            {
-                fieldBuilder.SetFnSerialize(&SerializeImpl);
-            }
-
-            if constexpr (HasReadField<Field>)
-            {
-                fieldBuilder.SetFnDeserialize(&DeserializeImpl);
-            }
-        }
-    private:
-        static void CopyValueToImpl(const FieldHandler* fieldHandler, ConstPtr instance, VoidPtr value)
-        {
-            instance = fieldHandler->GetOwnerCaster()(&fieldHandler->GetOwner(), const_cast<VoidPtr>(instance));
-            *static_cast<Field*>(value) = *static_cast<const Owner*>(instance).*mfp;
-        }
-
-        static void SetValue(const FieldHandler* fieldHandler, VoidPtr instance, ConstPtr value)
-        {
-            instance = fieldHandler->GetOwnerCaster()(&fieldHandler->GetOwner(), instance);
-            *static_cast<Owner*>(instance).*mfp = *static_cast<const Field*>(value);
         }
 
         static void SerializeImpl(const FieldHandler* fieldHandler, ConstPtr instance, ArchiveWriter& writer, ArchiveObject object)
@@ -835,6 +758,53 @@ namespace Fyrion
                 instance = fieldHandler->GetOwnerCaster()(&fieldHandler->GetOwner(), instance);
                 ArchiveType<Field>::ReadField(reader, object, fieldHandler->GetName(), static_cast<Owner*>(instance)->*mfp);
             }
+        }
+    };
+
+    template<auto mfp, auto getFp, auto setFp, typename Owner, typename Field>
+    class NativeFieldHandler : public NativeFieldHandlerBase<mfp, Owner, Field>
+    {
+    public:
+        explicit NativeFieldHandler(FieldBuilder fieldBuilder): NativeFieldHandlerBase<mfp, Owner, Field>(fieldBuilder)
+        {
+            fieldBuilder.SetFnSetValue(&SetValue);
+            fieldBuilder.SetFnCopyValueTo(&CopyValueToImpl);
+        }
+    private:
+        static void CopyValueToImpl(const FieldHandler* fieldHandler, ConstPtr instance, VoidPtr value)
+        {
+            using Return = Traits::FunctionReturnType<getFp>;
+            instance = fieldHandler->GetOwnerCaster()(&fieldHandler->GetOwner(), const_cast<VoidPtr>(instance));
+            *static_cast<Traits::RemoveAll<Return>*>(value) = (*static_cast<const Owner*>(instance).*getFp)();
+        }
+
+        static void SetValue(const FieldHandler* fieldHandler, VoidPtr instance, ConstPtr value)
+        {
+            instance = fieldHandler->GetOwnerCaster()(&fieldHandler->GetOwner(), instance);
+            (*static_cast<Owner*>(instance).*setFp)(*static_cast<const Field*>(value));
+        }
+    };
+
+    template <auto mfp, typename Owner, typename Field>
+    class NativeFieldHandler<mfp, nullptr, nullptr, Owner, Field> : public NativeFieldHandlerBase<mfp, Owner, Field>
+    {
+    public:
+        explicit NativeFieldHandler(FieldBuilder fieldBuilder): NativeFieldHandlerBase<mfp, Owner, Field>(fieldBuilder)
+        {
+            fieldBuilder.SetFnCopyValueTo(&CopyValueToImpl);
+            fieldBuilder.SetFnSetValue(&SetValue);
+        }
+    private:
+        static void CopyValueToImpl(const FieldHandler* fieldHandler, ConstPtr instance, VoidPtr value)
+        {
+            instance = fieldHandler->GetOwnerCaster()(&fieldHandler->GetOwner(), const_cast<VoidPtr>(instance));
+            *static_cast<Field*>(value) = *static_cast<const Owner*>(instance).*mfp;
+        }
+
+        static void SetValue(const FieldHandler* fieldHandler, VoidPtr instance, ConstPtr value)
+        {
+            instance = fieldHandler->GetOwnerCaster()(&fieldHandler->GetOwner(), instance);
+            *static_cast<Owner*>(instance).*mfp = *static_cast<const Field*>(value);
         }
     };
 

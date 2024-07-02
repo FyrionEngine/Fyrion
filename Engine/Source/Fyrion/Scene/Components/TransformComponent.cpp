@@ -2,12 +2,10 @@
 
 namespace Fyrion
 {
-
-    void TransformComponent::TransformChanged()
+    void TransformComponent::OnChange()
     {
 
     }
-
 
     void TransformComponent::RegisterType(NativeTypeHandler<TransformComponent>& type)
     {

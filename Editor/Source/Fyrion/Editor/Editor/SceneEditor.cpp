@@ -135,7 +135,6 @@ namespace Fyrion
     void SceneEditor::AddComponent(SceneObject& object, TypeHandler* typeHandler)
     {
         Editor::CreateTransaction()->CreateAction<AddComponentSceneObjectAction>(*this, &object, typeHandler)->Commit();
-
     }
 
     void SceneEditor::ResetComponent(SceneObject& object, Component* component)
@@ -150,9 +149,9 @@ namespace Fyrion
         Modify();
     }
 
-    void SceneEditor::UpdateComponent(Component* oldValue, Component* newValue)
+    void SceneEditor::UpdateComponent(Component* component, Component* newValue)
     {
-        //newValue->typeHandler->Serialize()
+        Editor::CreateTransaction()->CreateAction<UpdateComponentSceneObjectAction>(*this, component, newValue);
     }
 
     void SceneEditor::RenameObject(SceneObject& asset, StringView newName)

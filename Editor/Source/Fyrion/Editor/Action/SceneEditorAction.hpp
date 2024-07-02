@@ -96,4 +96,21 @@ namespace Fyrion
 
         static void RegisterType(NativeTypeHandler<AddComponentSceneObjectAction>& type);
     };
+
+    struct UpdateComponentSceneObjectAction : EditorAction
+    {
+        FY_BASE_TYPES(EditorAction);
+
+        SceneEditor& sceneEditor;
+        Component*   component;
+        String       currentStrValue;
+        String       newStrValue;
+
+        UpdateComponentSceneObjectAction(SceneEditor& sceneEditor, Component* component, Component* newValue);
+
+        void Commit() override;
+        void Rollback() override;
+
+        static void RegisterType(NativeTypeHandler<UpdateComponentSceneObjectAction>& type);
+    };
 }

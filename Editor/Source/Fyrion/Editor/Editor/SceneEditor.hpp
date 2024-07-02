@@ -25,7 +25,7 @@ namespace Fyrion
         void         AddComponent(SceneObject& object, TypeHandler* typeHandler);
         void         ResetComponent(SceneObject& object, Component* component);
         void         RemoveComponent(SceneObject& object, Component* component);
-        void         UpdateComponent(Component* oldValue, Component* newValue);
+        void         UpdateComponent(Component* component, Component* newValue);
 
         void              LoadScene(SceneObjectAsset* asset);
         SceneObjectAsset* GetScene() const;

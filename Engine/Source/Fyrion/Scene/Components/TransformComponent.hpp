@@ -10,25 +10,24 @@ namespace Fyrion
     class FY_API TransformComponent : public Component
     {
     public:
-
         FY_BASE_TYPES(Component);
 
         FY_FINLINE void SetPosition(const Vec3& p_position)
         {
             position = p_position;
-            TransformChanged();
+            OnChange();
         }
 
         FY_FINLINE void SetRotation(const Quat& p_rotation)
         {
             rotation = p_rotation;
-            TransformChanged();
+            OnChange();
         }
 
         FY_FINLINE void SetScale(const Vec3& p_scale)
         {
             scale = p_scale;
-            TransformChanged();
+            OnChange();
         }
 
         FY_FINLINE void SetTransform(const Vec3& p_position, const Quat& p_rotation, const Vec3& p_scale)
@@ -36,7 +35,7 @@ namespace Fyrion
             position = p_position;
             rotation = p_rotation;
             scale = p_scale;
-            TransformChanged();
+            OnChange();
         }
 
         FY_FINLINE const Vec3& GetPosition() const
@@ -59,6 +58,8 @@ namespace Fyrion
             return worldTransform;
         }
 
+        void OnChange() override;
+
         static void RegisterType(NativeTypeHandler<TransformComponent>& type);
 
     private:
@@ -67,7 +68,5 @@ namespace Fyrion
         Vec3 scale{1, 1, 1};
 
         Mat4 worldTransform{1.0};
-
-        void TransformChanged();
     };
 }

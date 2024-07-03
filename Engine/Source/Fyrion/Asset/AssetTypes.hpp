@@ -1,5 +1,6 @@
 #pragma once
 #include "Asset.hpp"
+#include "Fyrion/Core/Span.hpp"
 
 namespace Fyrion
 {
@@ -29,6 +30,8 @@ namespace Fyrion
 
         void BuildPath() override;
         void OnActiveChanged() override;
+
+        void SetExtension(StringView p_extension) override {}
 
         StringView GetDisplayName() const override;
         void AddChild(Asset* child);

@@ -6,7 +6,6 @@
 #include "StringConverter.hpp"
 #include "StringView.hpp"
 
-
 namespace Fyrion
 {
 	struct FY_API UUID

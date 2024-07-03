@@ -17,6 +17,7 @@ namespace Fyrion::Platform
     FY_API void         DestroyWindow(Window window);
     FY_API f32          GetWindowScale(Window window);
     FY_API void         SetWindowShouldClose(Window window, bool shouldClose);
+    FY_API void         SetClipboardString(Window window, StringView string);
 
     FY_API f64          GetTime();
     FY_API f64          GetElapsedTime();

@@ -249,6 +249,21 @@ namespace Fyrion
         Static
     };
 
+    enum class RenderGraphResourceType
+    {
+        Buffer     = 0,
+        Texture    = 1,
+        Attachment = 2,
+        Reference  = 3,
+    };
+
+    enum class RenderGraphPassType
+    {
+        Other    = 0,
+        Graphics = 1,
+        Compute  = 2
+    };
+
     struct SwapchainCreation
     {
         Window window{};
@@ -528,6 +543,37 @@ namespace Fyrion
         {
             bindingValue.SetBuffer(value);
         }
+    };
+
+    struct RenderGraphEdge
+    {
+        String origin{};
+        String dest{};
+
+        static void RegisterType(NativeTypeHandler<RenderGraphEdge>& type);
+    };
+
+
+    struct RenderGraphResourceCreation
+    {
+        String                  name{};
+        RenderGraphResourceType type{};
+        Extent3D                size{};
+        Vec2                    scale{};
+        LoadOp                  loadOp{LoadOp::Clear};
+        Vec4                    cleanValue{};
+        Format                  format{};
+        BufferUsage             bufferUsage{};
+        BufferAllocation        bufferAllocation{BufferAllocation::GPUOnly};
+        usize                   bufferInitialSize{};
+    };
+
+    struct RenderGraphPassCreation
+    {
+        String                             name{};
+        Array<RenderGraphResourceCreation> inputs{};
+        Array<RenderGraphResourceCreation> outputs{};
+        RenderGraphPassType                type{};
     };
 
     struct RenderCommands

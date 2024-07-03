@@ -151,9 +151,9 @@ namespace Fyrion
             cmd.SetViewport(viewportInfo);
             cmd.SetScissor(Rect{.x= 0, .y = 0, .width = extent.width, .height = extent.height});
 
-            ImGui::Render(cmd);
-
             onSwapchainRender.Invoke(cmd);
+
+            ImGui::Render(cmd);
 
             cmd.EndRenderPass();
             cmd.End();
@@ -184,6 +184,11 @@ namespace Fyrion
         {
             running = false;
         }
+    }
+
+    Window Engine::GetActiveWindow()
+    {
+        return window;
     }
 
     StringView Engine::GetArgByName(const StringView& name)

@@ -2,6 +2,7 @@
 
 #include "Fyrion/Editor/Editor.hpp"
 #include "Fyrion/Editor/Editor/SceneEditor.hpp"
+#include "Fyrion/Graphics/RenderGraph.hpp"
 #include "Fyrion/ImGui/IconsFontAwesome6.h"
 #include "Fyrion/ImGui/ImGui.hpp"
 #include "Fyrion/ImGui/Lib/ImGuizmo.h"
@@ -14,6 +15,17 @@ namespace Fyrion
 
     void SceneViewWindow::Draw(u32 id, bool& open)
     {
+    	if (m_renderGraph == nullptr)
+    	{
+    		m_renderGraph = AssetDatabase::FindByPath<RenderGraph>("Fyrion://DefaultRenderGraph.fy_asset");
+    	}
+
+    	if (m_renderGraph == nullptr)
+    	{
+    		return;
+    	}
+
+
         ImGuiWindowFlags flags = ImGuiWindowFlags_NoScrollbar;
         auto& style = ImGui::GetStyle();
         ImGui::StyleVar windowPadding(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
@@ -154,20 +166,20 @@ namespace Fyrion
 
         	Extent extent = {static_cast<u32>(size.x), static_cast<u32>(size.y)};
 
-	        // if (m_renderGraph == nullptr)
-	        // {
-		       //  m_renderGraph = RenderGraph::Create(extent, {});
-	        // }
-	        // else if (extent != m_renderGraph->GetViewportExtent())
-	        // {
-		       //  m_renderGraph->Resize(extent);
-	        // }
-	        //
-        	// if (open)
-        	// {
-        	// 	ImGui::DrawImage(m_renderGraph->GetColorOutput(), bb);
-        	// }
+        	if (!m_renderGraph->IsLoaded())
+        	{
+        		m_renderGraph->Load(extent);
+        	}
 
+        	if (extent != m_renderGraph->GetViewportExtent())
+        	{
+        		m_renderGraph->Resize(extent);
+        	}
+
+	        if (open)
+	        {
+		        ImGui::DrawImage(m_renderGraph->GetColorOutput(), bb);
+	        }
         }
         ImGui::End();
     }
@@ -191,6 +203,4 @@ namespace Fyrion
     {
         Registry::Type<SceneViewWindow>();
     }
-
-
 }

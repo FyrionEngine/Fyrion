@@ -287,6 +287,7 @@ namespace Fyrion
                 AssetDatabaseUpdateUUID(asset, asset->GetUUID());
 
                 asset->name = Path::Name(filePath);
+                asset->extension = Path::Extension(filePath);
                 asset->absolutePath = filePath;
                 asset->loadedVersion =  asset->currentVersion;
                 parentDirectory->AddChild(asset);
@@ -298,9 +299,10 @@ namespace Fyrion
             {
                 if (asset->name.Empty())
                 {
-                    asset->name = Path::Name(filePath) + Path::Extension(filePath);
+                    asset->name = Path::Name(filePath);
                 }
                 asset->absolutePath = filePath;
+                asset->extension = Path::Extension(filePath);
                 asset->loadedVersion =  asset->currentVersion;
                 parentDirectory->AddChild(asset);
 

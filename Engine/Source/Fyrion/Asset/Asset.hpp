@@ -1,6 +1,5 @@
 #pragma once
 #include "AssetDatabase.hpp"
-#include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Core/UUID.hpp"
 
 namespace Fyrion
@@ -12,9 +11,6 @@ namespace Fyrion
     {
     public:
         virtual ~Asset() = default;
-
-        virtual void Load() {}
-        virtual void Unload() {}
 
         UUID GetUUID() const
         {
@@ -33,10 +29,7 @@ namespace Fyrion
             return assetType;
         }
 
-        TypeID GetAssetTypeId() const
-        {
-            return assetType->GetTypeInfo().typeId;
-        }
+        TypeID GetAssetTypeId() const;
 
         virtual StringView GetName() const
         {
@@ -54,6 +47,7 @@ namespace Fyrion
         }
 
         virtual void SetName(StringView p_name);
+        virtual void SetExtension(StringView p_extension);
 
         bool IsActive() const
         {
@@ -86,14 +80,7 @@ namespace Fyrion
             return currentVersion != loadedVersion;
         }
 
-        virtual StringView GetDisplayName() const
-        {
-            if (assetType != nullptr)
-            {
-                return assetType->GetSimpleName();
-            }
-            return "Asset";
-        }
+        virtual StringView GetDisplayName() const;
 
         friend class AssetDatabase;
 
@@ -112,6 +99,7 @@ namespace Fyrion
         u64             currentVersion{};
         u64             loadedVersion{};
         String          name{};
+        String          extension;
         String          absolutePath{};
         AssetDirectory* directory{};
         bool            active = true;

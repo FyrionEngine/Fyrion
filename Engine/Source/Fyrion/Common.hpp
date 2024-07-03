@@ -42,8 +42,18 @@ namespace Fyrion
         TypeName(const TypeName& other) = delete;               \
         TypeName& operator=(const TypeName& other) = delete;    \
 
-        constexpr u64 Prime = 1099511628211ULL;
+    constexpr u64 Prime = 1099511628211ULL;
     constexpr u64 OffsetBias = 14695981039346656037ULL;
+
+    template<typename Type>
+    class NativeTypeHandler;
+
+    class TypeHandler;
+
+    template<typename ...Types>
+    struct BaseTypes {};
+
+    #define FY_BASE_TYPES(...) using Bases = BaseTypes<__VA_ARGS__>
 }
 
 inline void* operator new(Fyrion::usize, Fyrion::PlaceHolder, Fyrion::VoidPtr ptr)

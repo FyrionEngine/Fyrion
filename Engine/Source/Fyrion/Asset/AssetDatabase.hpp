@@ -4,7 +4,6 @@
 #include "Fyrion/Core/Array.hpp"
 #include "Fyrion/Core/UUID.hpp"
 
-
 namespace Fyrion
 {
     class Asset;

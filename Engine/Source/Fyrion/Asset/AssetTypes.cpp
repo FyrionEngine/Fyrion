@@ -1,6 +1,8 @@
 #include "AssetTypes.hpp"
 
 #include "AssetDatabase.hpp"
+#include "Fyrion/Core/Registry.hpp"
+#include "Fyrion/Core/Span.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
 
 

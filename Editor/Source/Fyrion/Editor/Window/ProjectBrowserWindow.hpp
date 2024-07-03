@@ -49,6 +49,7 @@ namespace Fyrion
         static bool CheckSelectedAsset(const MenuItemEventData& eventData);
         static void AssetRename(const MenuItemEventData& eventData);
         static void AssetShowInExplorer(const MenuItemEventData& eventData);
+        static void AssetCopyPathToClipboard(const MenuItemEventData& eventData);
         static void AssetNewResourceGraph(const MenuItemEventData& eventData);
         static void AssetNewRenderGraph(const MenuItemEventData& eventData);
 

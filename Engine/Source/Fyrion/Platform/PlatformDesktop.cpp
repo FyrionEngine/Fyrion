@@ -140,6 +140,12 @@ namespace Fyrion
         glfwSetWindowShouldClose((GLFWwindow*)window.handler, shouldClose);
     }
 
+
+    void Platform::SetClipboardString(Window window, StringView string)
+    {
+        glfwSetClipboardString((GLFWwindow*)window.handler, string.CStr());
+    }
+
     f64 Platform::GetElapsedTime()
     {
         return glfwGetTime();

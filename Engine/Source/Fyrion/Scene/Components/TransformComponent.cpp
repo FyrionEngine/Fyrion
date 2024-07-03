@@ -1,4 +1,5 @@
 #include "TransformComponent.hpp"
+#include "Fyrion/Core/Registry.hpp"
 
 namespace Fyrion
 {

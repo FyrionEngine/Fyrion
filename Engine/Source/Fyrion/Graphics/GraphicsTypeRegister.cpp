@@ -1,6 +1,7 @@
 #include "Graphics.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "GraphicsTypes.hpp"
+#include "RenderGraph.hpp"
 
 namespace Fyrion
 {
@@ -30,6 +31,8 @@ namespace Fyrion
         Registry::Type<ShaderInfo>();
         Registry::Type<Buffer>();
         Registry::Type<Texture>();
+        Registry::Type<RenderGraph>();
+        Registry::Type<RenderGraphEdge>();
 
         auto bufferUsage = Registry::Type<BufferUsage>();
         bufferUsage.Value<BufferUsage::VertexBuffer>("VertexBuffer");

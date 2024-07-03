@@ -1,5 +1,6 @@
 #include "Asset.hpp"
 #include "AssetTypes.hpp"
+#include "Fyrion/Core/Registry.hpp"
 
 namespace Fyrion
 {
@@ -11,7 +12,7 @@ namespace Fyrion
         if (directory != nullptr && !name.Empty())
         {
             ValidateName();
-            String newPath = String().Append(directory->GetPath()).Append("/").Append(name);
+            String newPath = String().Append(directory->GetPath()).Append("/").Append(name).Append(extension);
             if (path != newPath)
             {
                 AssetDatabaseUpdatePath(this, path, newPath);
@@ -58,11 +59,21 @@ namespace Fyrion
         uuid = p_uuid;
     }
 
+    TypeID Asset::GetAssetTypeId() const
+    {
+        return assetType->GetTypeInfo().typeId;
+    }
+
     void Asset::SetName(StringView p_name)
     {
         name = p_name;
         BuildPath();
         Modify();
+    }
+
+    void Asset::SetExtension(StringView p_extension)
+    {
+        extension = p_extension;
     }
 
     void Asset::SetActive(bool p_active)
@@ -94,6 +105,15 @@ namespace Fyrion
             return directory->IsChildOf(parent);
         }
         return false;
+    }
+
+    StringView Asset::GetDisplayName() const
+    {
+        if (assetType != nullptr)
+        {
+            return assetType->GetSimpleName();
+        }
+        return "Asset";
     }
 
     void Asset::RegisterType(NativeTypeHandler<Asset>& type)

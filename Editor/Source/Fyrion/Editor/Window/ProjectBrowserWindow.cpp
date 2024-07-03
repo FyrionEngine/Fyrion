@@ -12,6 +12,7 @@
 #include "Fyrion/Asset/AssetDatabase.hpp"
 #include "Fyrion/Editor/Action/AssetEditorActions.hpp"
 #include "Fyrion/Editor/Action/SceneEditorAction.hpp"
+#include "Fyrion/Graphics/RenderGraph.hpp"
 
 #define CONTENT_TABLE_ID 500
 #define ASSET_PAYLOAD "ASSET-PAYLOAD"
@@ -480,12 +481,23 @@ namespace Fyrion
         }
     }
 
+    void ProjectBrowserWindow::AssetCopyPathToClipboard(const MenuItemEventData& eventData)
+    {
+        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
+        Asset* item = projectBrowserWindow->selectedItem ? projectBrowserWindow->selectedItem : projectBrowserWindow->openDirectory;
+        if (item != nullptr)
+        {
+            Platform::SetClipboardString(Engine::GetActiveWindow(), item->GetPath());
+        }
+    }
+
     void ProjectBrowserWindow::AssetNewResourceGraph(const MenuItemEventData& eventData)
     {
     }
 
     void ProjectBrowserWindow::AssetNewRenderGraph(const MenuItemEventData& eventData)
     {
+        static_cast<ProjectBrowserWindow*>(eventData.drawData)->NewAsset(GetTypeID<RenderGraph>());
     }
 
     void ProjectBrowserWindow::NewAsset(TypeID typeId)
@@ -516,6 +528,7 @@ namespace Fyrion
         AddMenuItem(MenuItemCreation{.itemName = "Delete", .icon = ICON_FA_TRASH, .priority = 20, .itemShortcut{.presKey = Key::Delete}, .action = AssetDelete, .enable = CheckSelectedAsset});
         AddMenuItem(MenuItemCreation{.itemName = "Rename", .icon = ICON_FA_PEN_TO_SQUARE, .priority = 30, .itemShortcut{.presKey = Key::F2}, .action = AssetRename, .enable = CheckSelectedAsset});
         AddMenuItem(MenuItemCreation{.itemName = "Show in Explorer", .icon = ICON_FA_FOLDER, .priority = 40, .action = AssetShowInExplorer});
+        AddMenuItem(MenuItemCreation{.itemName = "Copy Path", .priority = 1000, .action = AssetCopyPathToClipboard});
         AddMenuItem(MenuItemCreation{.itemName = "Create New Asset", .icon = ICON_FA_PLUS, .priority = 150});
         AddMenuItem(MenuItemCreation{.itemName = "Create New Asset/Resource Graph", .icon = ICON_FA_DIAGRAM_PROJECT, .priority = 10, .action = AssetNewResourceGraph});
         AddMenuItem(MenuItemCreation{.itemName = "Create New Asset/Behavior Graph", .icon = ICON_FA_DIAGRAM_PROJECT, .priority = 20});

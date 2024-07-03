@@ -4,6 +4,7 @@
 
 namespace Fyrion
 {
+    class RenderGraph;
     struct MenuItemEventData;
     class SceneEditor;
 
@@ -24,7 +25,7 @@ namespace Fyrion
         u32          m_guizmoOperation{};
         bool         m_windowStartedSimulation{};
         bool         m_movingScene{};
-        //RenderGraph* m_renderGraph{};
+        RenderGraph* m_renderGraph{};
 
         static void OpenSceneView(const MenuItemEventData& eventData);
     };

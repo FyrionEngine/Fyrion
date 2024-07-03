@@ -2,7 +2,6 @@
 
 #include "Fyrion/Common.hpp"
 #include "Fyrion/Core/Math.hpp"
-#include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Scene/Component.hpp"
 
 namespace Fyrion

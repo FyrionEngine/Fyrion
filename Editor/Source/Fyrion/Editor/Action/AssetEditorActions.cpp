@@ -52,6 +52,7 @@ namespace Fyrion
     {
         newAsset = AssetDatabase::Create(typeId, UUID::RandomUUID());
         newAsset->SetName(String("New ").Append(newAsset->GetDisplayName()));
+        newAsset->SetExtension(FY_ASSET_EXTENSION);
         directory->AddChild(newAsset);
     }
 

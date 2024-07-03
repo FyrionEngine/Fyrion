@@ -2,6 +2,7 @@
 
 #include "SceneManager.hpp"
 #include "Assets/SceneObjectAsset.hpp"
+#include "Fyrion/Core/Registry.hpp"
 
 
 namespace Fyrion

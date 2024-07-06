@@ -154,11 +154,11 @@ namespace Fyrion
     UpdateComponentSceneObjectAction::UpdateComponentSceneObjectAction(SceneEditor& sceneEditor, Component* component, Component* newValue) : sceneEditor(sceneEditor), component(component)
     {
         JsonAssetWriter writer;
-        currentStrValue = JsonAssetWriter::Stringify(component->typeHandler->Serialize(writer, component));
-        newStrValue = JsonAssetWriter::Stringify(component->typeHandler->Serialize(writer, newValue));
+        currentStrValue = JsonAssetWriter::Stringify(Serialization::Serialize(component->typeHandler, writer, component));
+        newStrValue = JsonAssetWriter::Stringify(Serialization::Serialize(component->typeHandler, writer, newValue));
 
         JsonAssetReader reader(newStrValue);
-        component->typeHandler->Deserialize(reader, reader.ReadObject(), component);
+        Serialization::Deserialize(component->typeHandler, reader, reader.ReadObject(), component);
 
         sceneEditor.Modify();
         component->OnChange();
@@ -168,7 +168,7 @@ namespace Fyrion
     void UpdateComponentSceneObjectAction::Commit()
     {
         JsonAssetReader reader(newStrValue);
-        component->typeHandler->Deserialize(reader, reader.ReadObject(), component);
+        Serialization::Deserialize(component->typeHandler, reader, reader.ReadObject(), component);
 
         ImGui::ClearDrawType(reinterpret_cast<usize>(component));
         ImGui::ClearTextData();
@@ -180,7 +180,7 @@ namespace Fyrion
     void UpdateComponentSceneObjectAction::Rollback()
     {
         JsonAssetReader reader(currentStrValue);
-        component->typeHandler->Deserialize(reader, reader.ReadObject(), component);
+        Serialization::Deserialize(component->typeHandler, reader, reader.ReadObject(), component);
 
         ImGui::ClearDrawType(reinterpret_cast<usize>(component));
         ImGui::ClearTextData();
@@ -202,7 +202,7 @@ namespace Fyrion
     void RemoveComponentObjectAction::Commit()
     {
         JsonAssetWriter writer;
-        value = JsonAssetWriter::Stringify(typeHandler->Serialize(writer, component));
+        value = JsonAssetWriter::Stringify(Serialization::Serialize(typeHandler, writer, component));
         object->RemoveComponent(component);
         sceneEditor.Modify();
         typeHandler->Destroy(component);
@@ -213,7 +213,7 @@ namespace Fyrion
         component = &object->AddComponent(typeHandler);
 
         JsonAssetReader reader(value);
-        typeHandler->Deserialize(reader, reader.ReadObject(), component);
+        Serialization::Deserialize(typeHandler, reader, reader.ReadObject(), component);
         component->OnChange();
         sceneEditor.Modify();
     }

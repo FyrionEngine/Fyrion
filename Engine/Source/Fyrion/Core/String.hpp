@@ -969,6 +969,11 @@ namespace Fyrion
         {
             string = reader.ReadString(object, name);
         }
+
+        static BasicString<char, BufferSize> GetField(ArchiveReader& reader, ArchiveObject val)
+        {
+            return reader.GetString(val);
+        }
     };
 
     template<usize BufferSize>

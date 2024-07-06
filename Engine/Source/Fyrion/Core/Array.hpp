@@ -509,7 +509,57 @@ namespace Fyrion
         }
     }
 
+    namespace Registry
+    {
+        FY_API TypeHandler* FindTypeById(TypeID typeId);
+    }
 
+    template<typename T>
+    struct ArchiveType<Array<T>>
+    {
+        static void WriteField(ArchiveWriter& writer, ArchiveObject object, const StringView& name, const Array<T>& value)
+        {
+            ArchiveObject arr = writer.CreateArray();
+
+            for(const T& item : value)
+            {
+                //writer.AddValue()
+            }
+
+            writer.WriteValue(object, name, arr);
+        }
+
+        static void ReadField(ArchiveReader& reader, ArchiveObject object, const StringView& name, Array<T>& value)
+        {
+            const TypeHandler* typeHandler = nullptr;
+
+            if constexpr (!Serialization::HasGetField<T>)
+            {
+                typeHandler = Registry::FindTypeById(GetTypeID<T>());
+            }
+
+            value.Clear();
+            ArchiveObject arr = reader.ReadObject(object, name);
+            usize  size = reader.ArrSize(arr);
+            value.Reserve(size);
+
+            ArchiveObject item{};
+
+            for (usize i = 0; i < size; ++i)
+            {
+                item = reader.Next(arr, item);
+                if constexpr (Serialization::HasGetField<T>)
+                {
+                    value.EmplaceBack(ArchiveType<T>::GetField(reader, item));
+                }
+                else
+                {
+                    T& itemValue = value.EmplaceBack();
+                    Serialization::Deserialize(typeHandler, reader, item, &itemValue);
+                }
+            }
+        }
+    };
 
 
     struct ArrayApi

@@ -184,7 +184,7 @@ namespace Fyrion
         }
         else if (TypeHandler* typeHandler = Registry::FindTypeById(GetFieldInfo().typeInfo.typeId))
         {
-            writer.WriteValue(object, GetName(), typeHandler->Serialize(writer, GetFieldPointer(const_cast<VoidPtr>(instance))));
+            writer.WriteValue(object, GetName(), Serialization::Serialize(typeHandler, writer, GetFieldPointer(const_cast<VoidPtr>(instance))));
         }
     }
 
@@ -196,7 +196,7 @@ namespace Fyrion
         }
         else if (TypeHandler* typeHandler = Registry::FindTypeById(GetFieldInfo().typeInfo.typeId))
         {
-            typeHandler->Deserialize(reader, reader.ReadObject(object, GetName()), GetFieldPointer(instance));
+            Serialization::Deserialize(typeHandler, reader, reader.ReadObject(object, GetName()), GetFieldPointer(instance));
         }
     }
 
@@ -363,39 +363,6 @@ namespace Fyrion
             }
         }
         return false;
-    }
-
-    ArchiveObject TypeHandler::Serialize(ArchiveWriter& writer, ConstPtr instance) const
-    {
-        const ArchiveObject object = writer.CreateObject();
-
-        if (fnSerialize)
-        {
-            fnSerialize(this, instance, writer, object);
-        }
-        else
-        {
-            for (FieldHandler* field : GetFields())
-            {
-                field->Serialize(writer, instance, object);
-            }
-        }
-        return object;
-    }
-
-    void TypeHandler::Deserialize(ArchiveReader& reader, ArchiveObject object, VoidPtr instance) const
-    {
-        if (fnDeserialize)
-        {
-            fnDeserialize(this, instance, reader, object);
-        }
-        else
-        {
-            for (FieldHandler* field : GetFields())
-            {
-                field->Deserialize(reader, instance, object);
-            }
-        }
     }
 
     StringView TypeHandler::GetName() const

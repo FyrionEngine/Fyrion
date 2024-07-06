@@ -142,7 +142,7 @@ namespace Fyrion
 
         for (const Component* component : components)
         {
-            ArchiveObject componentObject = component->typeHandler->Serialize(writer, component);
+            ArchiveObject componentObject = Serialization::Serialize(component->typeHandler, writer, component);
             writer.WriteString(componentObject, "_type", component->typeHandler->GetName());
             writer.AddValue(objComponents, componentObject);
         }
@@ -191,7 +191,7 @@ namespace Fyrion
                 if (TypeHandler* typeHandler = Registry::FindTypeByName(reader.ReadString(compObj, "_type")))
                 {
                     Component& component = AddComponent(typeHandler);
-                    typeHandler->Deserialize(reader, compObj, &component);
+                    Serialization::Deserialize(typeHandler, reader, compObj, &component);
                 }
             }
         }

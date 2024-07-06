@@ -196,7 +196,7 @@ namespace Fyrion
 
                 JsonAssetWriter writer;
 
-                ArchiveObject object = asset->GetAssetType()->Serialize(writer, asset);
+                ArchiveObject object = Serialization::Serialize(asset->GetAssetType(), writer, asset);
                 writer.WriteString(object, "_type", asset->GetAssetType()->GetName());
                 String str = JsonAssetWriter::Stringify(object);
 
@@ -282,7 +282,7 @@ namespace Fyrion
             if (typeHandler)
             {
                 Asset* asset = Create(typeHandler->GetTypeInfo().typeId);
-                typeHandler->Deserialize(reader, root, asset);
+                Serialization::Deserialize(typeHandler, reader, root, asset);
 
                 AssetDatabaseUpdateUUID(asset, asset->GetUUID());
 

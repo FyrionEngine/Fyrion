@@ -13,8 +13,6 @@
 
 namespace Fyrion
 {
-
-
     class TypeBuilder;
     class ValueBuilder;
     class FunctionBuilder;
@@ -339,9 +337,6 @@ namespace Fyrion
         Span<DerivedType>               GetDerivedTypes() const;
         Array<TypeID>                   GetBaseTypes() const;
         bool                            IsDerivedFrom(TypeID typeId) const;
-
-        ArchiveObject                   Serialize(ArchiveWriter& writer, ConstPtr instance) const;
-        void                            Deserialize(ArchiveReader& reader, ArchiveObject object, VoidPtr instance) const;
 
 
         StringView          GetName() const;
@@ -712,12 +707,12 @@ namespace Fyrion
             fieldBuilder.SetFnGetFieldInfo(&GetFieldImpl);
             fieldBuilder.SetFnGetFieldPointer(&FnGetFieldPointerImpl);
 
-            if constexpr (HasWriteField<Field>)
+            if constexpr (Serialization::HasWriteField<Field>)
             {
                 fieldBuilder.SetFnSerialize(&SerializeImpl);
             }
 
-            if constexpr (HasReadField<Field>)
+            if constexpr (Serialization::HasReadField<Field>)
             {
                 fieldBuilder.SetFnDeserialize(&DeserializeImpl);
             }
@@ -736,7 +731,7 @@ namespace Fyrion
 
         static void SerializeImpl(const FieldHandler* fieldHandler, ConstPtr instance, ArchiveWriter& writer, ArchiveObject object)
         {
-            if constexpr (HasWriteField<Field>)
+            if constexpr (Serialization::HasWriteField<Field>)
             {
                 instance = fieldHandler->GetOwnerCaster()(&fieldHandler->GetOwner(), const_cast<VoidPtr>(instance));
                 ArchiveType<Field>::WriteField(writer, object, fieldHandler->GetName(), static_cast<const Owner*>(instance)->*mfp);
@@ -745,7 +740,7 @@ namespace Fyrion
 
         static void DeserializeImpl(const FieldHandler* fieldHandler, VoidPtr instance, ArchiveReader& reader, ArchiveObject object)
         {
-            if constexpr (HasReadField<Field>)
+            if constexpr (Serialization::HasReadField<Field>)
             {
                 instance = fieldHandler->GetOwnerCaster()(&fieldHandler->GetOwner(), instance);
                 ArchiveType<Field>::ReadField(reader, object, fieldHandler->GetName(), static_cast<Owner*>(instance)->*mfp);
@@ -1086,7 +1081,7 @@ namespace Fyrion
             typeBuilder.SetFnMove(&NativeTypeHandlerFuncs<Type>::MoveImpl);
             typeBuilder.SetFnRelease(&NativeTypeHandlerFuncs<Type>::ReleaseImpl);
 
-            if constexpr (HasWriteType<Type>)
+            if constexpr (Serialization::HasWriteType<Type>)
             {
                 typeBuilder.SetFnSerialize(&NativeTypeHandlerFuncs<Type>::SerializeImpl);
             }

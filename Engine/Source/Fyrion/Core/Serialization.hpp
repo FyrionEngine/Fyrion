@@ -49,6 +49,12 @@ namespace Fyrion
         virtual f64           GetFloat(ArchiveObject object) = 0;
     };
 
+    namespace Serialization
+    {
+        FY_API ArchiveObject Serialize(const TypeHandler* typeHandler, ArchiveWriter& writer, ConstPtr instance);
+        FY_API void          Deserialize(const TypeHandler* typeHandler, ArchiveReader& reader, ArchiveObject object, VoidPtr instance);
+    }
+
 
     template <typename T, typename Enable = void>
     struct ArchiveType {};
@@ -110,30 +116,47 @@ namespace Fyrion
     FY_ARCHIVE_TYPE_FLOAT(f32);
     FY_ARCHIVE_TYPE_FLOAT(f64);
 
-    template <typename, typename = void>
-    struct HasWriteTypeImpl : Traits::FalseType {};
 
-    template <typename T>
-    struct HasWriteTypeImpl<T, Traits::VoidType<decltype(static_cast<void(*)(ArchiveWriter&, ArchiveObject, const T&)>(&ArchiveType<T>::WriteType))>> : Traits::TrueType {};
+    namespace Serialization
+    {
+        //*remove
+        template <typename, typename = void>
+        struct HasWriteTypeImpl : Traits::FalseType {};
 
-    template <typename T>
-    constexpr bool HasWriteType = HasWriteTypeImpl<T>::value;
+        template <typename T>
+        struct HasWriteTypeImpl<T, Traits::VoidType<decltype(static_cast<void(*)(ArchiveWriter&, ArchiveObject, const T&)>(&ArchiveType<T>::WriteType))>> : Traits::TrueType {};
 
-    template <typename, typename = void>
-    struct HasWriteFieldImpl : Traits::FalseType {};
+        template <typename T>
+        constexpr bool HasWriteType = HasWriteTypeImpl<T>::value;
 
-    template <typename T>
-    struct HasWriteFieldImpl<T, Traits::VoidType<decltype(static_cast<void(*)(ArchiveWriter&, ArchiveObject, const StringView& name, const T&)>(&ArchiveType<T>::WriteField))>> : Traits::TrueType {};
+        //*remove
 
-    template <typename T>
-    constexpr bool HasWriteField = HasWriteFieldImpl<T>::value;
+        template <typename, typename = void>
+        struct HasWriteFieldImpl : Traits::FalseType {};
 
-    template <typename, typename = void>
-    struct HasReadFieldImpl : Traits::FalseType {};
+        template <typename T>
+        struct HasWriteFieldImpl<T, Traits::VoidType<decltype(static_cast<void(*)(ArchiveWriter&, ArchiveObject, const StringView& name, const T&)>(&ArchiveType<T>::WriteField))>> : Traits::TrueType {
+        };
 
-    template <typename T>
-    struct HasReadFieldImpl<T, Traits::VoidType<decltype(static_cast<void(*)(ArchiveReader&, ArchiveObject, const StringView& name, T&)>(&ArchiveType<T>::ReadField))>> : Traits::TrueType {};
+        template <typename T>
+        constexpr bool HasWriteField = HasWriteFieldImpl<T>::value;
 
-    template <typename T>
-    constexpr bool HasReadField = HasReadFieldImpl<T>::value;
+        template <typename, typename = void>
+        struct HasReadFieldImpl : Traits::FalseType {};
+
+        template <typename T>
+        struct HasReadFieldImpl<T, Traits::VoidType<decltype(static_cast<void(*)(ArchiveReader&, ArchiveObject, const StringView& name, T&)>(&ArchiveType<T>::ReadField))>> : Traits::TrueType {};
+
+        template <typename T>
+        constexpr bool HasReadField = HasReadFieldImpl<T>::value;
+
+        template <typename, typename = void>
+        struct HasGetFieldImpl : Traits::FalseType {};
+
+        template <typename T>
+        struct HasGetFieldImpl<T, Traits::VoidType<decltype(static_cast<T(*)(ArchiveReader&, ArchiveObject)>(&ArchiveType<T>::GetField))>> : Traits::TrueType {};
+
+        template <typename T>
+        constexpr bool HasGetField = HasGetFieldImpl<T>::value;
+    }
 }

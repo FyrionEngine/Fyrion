@@ -70,6 +70,7 @@ namespace Fyrion
         VkImage         image{};
         VmaAllocation   allocation{};
         TextureView     textureView{};
+        VkDescriptorSet imguiDescriptorSet{};
     };
 
     struct VulkanSampler

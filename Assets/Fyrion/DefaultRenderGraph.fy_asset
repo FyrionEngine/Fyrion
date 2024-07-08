@@ -3,5 +3,7 @@
     "_type": "Fyrion::RenderGraphAsset",
     "passes" : [
         "Fyrion::SceneRenderPass"
-    ]
+    ],
+    "colorOutput" : "Fyrion::SceneRenderPass#Color",
+    "depthOutput" : "Fyrion::SceneRenderPass#Depth"
 }

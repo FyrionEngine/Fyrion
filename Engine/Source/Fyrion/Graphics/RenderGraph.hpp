@@ -19,14 +19,20 @@ namespace Fyrion
             return "Render Graph";
         }
 
-        static void RegisterType(NativeTypeHandler<RenderGraphAsset>& type);
-
         Array<String>          GetPasses() const;
         Array<RenderGraphEdge> GetEdges() const;
 
+        StringView GetColorOutput() const;
+        StringView GetDepthOutput() const;
+
+
+        static void RegisterType(NativeTypeHandler<RenderGraphAsset>& type);
     private:
         Array<String>          passes;
         Array<RenderGraphEdge> edges;
+
+        String colorOutput;
+        String depthOutput;
     };
 
     struct FY_API RenderGraphResource
@@ -84,6 +90,7 @@ namespace Fyrion
     {
     public:
         RenderGraph(Extent extent, RenderGraphAsset* asset);
+        ~RenderGraph();
 
         Extent GetViewportExtent() const;
 
@@ -101,10 +108,14 @@ namespace Fyrion
         Extent                            viewportExtent;
         Array<SharedPtr<RenderGraphNode>> nodes;
         RenderGraphResMap                 resources;
-
+        SharedPtr<RenderGraphResource>    colorOutput;
+        SharedPtr<RenderGraphResource>    depthOutput;
 
         void                           Create();
         SharedPtr<RenderGraphResource> CreateResource(const StringView& fullName, const RenderGraphResourceCreation& creation);
+
+        void RecordCommands(RenderCommands& cmd, f64 deltaTime);
+        void BlitSwapchapin(RenderCommands& cmd);
     };
 
     template <typename T>

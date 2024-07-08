@@ -20,7 +20,7 @@ namespace Fyrion
                     .name = "Color",
                     .type = RenderGraphResourceType::Attachment,
                     .scale = {1.0, 1.0},
-                    .cleanValue = {0.0, 0.0, 0.0, 1.0}, //Color::CORNFLOWER_BLUE.ToVector4()
+                    .cleanValue = {100.f / 255.f, 149.f / 255.f, 237.f/ 255.f, 1.0f},
                     .format = Format::RGBA
                 })
                 .Output(RenderGraphResourceCreation{
@@ -32,7 +32,6 @@ namespace Fyrion
                 });
         }
     };
-
 
     void RegisterSceneRenderPass()
     {

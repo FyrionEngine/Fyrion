@@ -51,6 +51,8 @@ namespace Fyrion
         FixedArray<VkSemaphore, FY_FRAMES_IN_FLIGHT>               renderFinishedSemaphores{};
         FixedArray<SharedPtr<VulkanCommands>, FY_FRAMES_IN_FLIGHT> defaultCommands{};
 
+        Sampler defaultSampler;
+
         u32 currentFrame = 0;
 
         VulkanDevice();

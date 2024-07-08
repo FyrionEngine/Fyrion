@@ -16,6 +16,8 @@ namespace Fyrion
     {
         ImGui_ImplVulkan_Shutdown();
 
+        DestroySampler(defaultSampler);
+
         for (size_t i = 0; i < FY_FRAMES_IN_FLIGHT; i++)
         {
             vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
@@ -48,7 +50,7 @@ namespace Fyrion
         }
 
 #ifdef FY_DEBUG
-        enableValidationLayers = true;
+        enableValidationLayers = false;
 #endif
 
         Platform::SetVulkanLoader(vkGetInstanceProcAddr);
@@ -418,6 +420,8 @@ namespace Fyrion
                 FY_ASSERT(false, "error");
             }
         }
+
+        defaultSampler = CreateSampler(SamplerCreation{});
 
         logger.Info("Vulkan API {}.{}.{} Device: {} ",
                     VK_VERSION_MAJOR(vulkanDeviceProperties.apiVersion),
@@ -1347,7 +1351,14 @@ namespace Fyrion
 
     VoidPtr VulkanDevice::GetImGuiTexture(const Texture& texture)
     {
-        return nullptr;
+        VulkanTexture* vulkanTexture = static_cast<VulkanTexture*>(texture.handler);
+        if (vulkanTexture->imguiDescriptorSet == nullptr)
+        {
+            VulkanTextureView* textureView = static_cast<VulkanTextureView*>(vulkanTexture->textureView.handler);
+            VulkanSampler* vulkanSampler = static_cast<VulkanSampler*>(defaultSampler.handler);
+            vulkanTexture->imguiDescriptorSet = ImGui_ImplVulkan_AddTexture(vulkanSampler->sampler, textureView->imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        }
+        return vulkanTexture->imguiDescriptorSet;
     }
 
 

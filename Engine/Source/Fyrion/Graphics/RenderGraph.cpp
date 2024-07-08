@@ -1,10 +1,10 @@
 #include "RenderGraph.hpp"
 
 #include "Graphics.hpp"
+#include "Fyrion/Engine.hpp"
 #include "Fyrion/Core/Graph.hpp"
 #include "Fyrion/Core/Logger.hpp"
 #include "Fyrion/Core/Registry.hpp"
-#include "Fyrion/Core/StringUtils.hpp"
 
 namespace Fyrion
 {
@@ -30,6 +30,8 @@ namespace Fyrion
     {
         type.Field<&RenderGraphAsset::passes>("passes");
         type.Field<&RenderGraphAsset::edges>("edges");
+        type.Field<&RenderGraphAsset::colorOutput>("colorOutput");
+        type.Field<&RenderGraphAsset::depthOutput>("depthOutput");
     }
 
     Array<String> RenderGraphAsset::GetPasses() const
@@ -40,6 +42,16 @@ namespace Fyrion
     Array<RenderGraphEdge> RenderGraphAsset::GetEdges() const
     {
         return edges;
+    }
+
+    StringView RenderGraphAsset::GetColorOutput() const
+    {
+        return colorOutput;
+    }
+
+    StringView RenderGraphAsset::GetDepthOutput() const
+    {
+        return depthOutput;
     }
 
     RenderGraphResource::~RenderGraphResource()
@@ -120,6 +132,16 @@ namespace Fyrion
         Create();
     }
 
+    RenderGraph::~RenderGraph()
+    {
+        Event::Unbind<OnRecordRenderCommands, &RenderGraph::RecordCommands>(this);
+
+        if (registerSwapchainRenderEvent)
+        {
+            Event::Unbind<OnSwapchainRender, &RenderGraph::BlitSwapchapin>(this);
+        }
+    }
+
     void RenderGraph::Create()
     {
         Graph<String, SharedPtr<RenderGraphNode>> graph{};
@@ -165,10 +187,48 @@ namespace Fyrion
                 String resourceName = node->name + "#" + output.name;
                 SharedPtr<RenderGraphResource> resource = CreateResource(resourceName, output);
                 node->outputs.Insert(output.name, resource);
-                logger.Debug("created output {} ", resourceName);
             }
 
             node->CreateRenderPass();
+
+            TypeHandler* typeHandler = Registry::FindTypeByName(node->name);
+            if (typeHandler)
+            {
+                for (TypeID baseType : typeHandler->GetBaseTypes())
+                {
+                    if (baseType == GetTypeID<RenderGraphPass>())
+                    {
+                        RenderGraphPass* renderGraphPass = typeHandler->Cast<RenderGraphPass>(typeHandler->NewInstance());
+                        renderGraphPass->node = node.Get();
+                        node->renderGraphPass = renderGraphPass;
+                        node->renderGraphPassTypeHandler = typeHandler;
+                    }
+                }
+            }
+
+            if (node->renderGraphPass)
+            {
+                node->renderGraphPass->Init();
+            }
+
+            logger.Debug("node {} created ", node->name);
+        }
+
+        if (auto it = resources.Find(asset->GetColorOutput()))
+        {
+            colorOutput = it->second;
+        }
+
+        if (auto it = resources.Find(asset->GetDepthOutput()))
+        {
+            depthOutput = it->second;
+        }
+
+        Event::Bind<OnRecordRenderCommands, &RenderGraph::RecordCommands>(this);
+
+        if (registerSwapchainRenderEvent)
+        {
+            Event::Bind<OnSwapchainRender, &RenderGraph::BlitSwapchapin>(this);
         }
     }
 
@@ -179,6 +239,8 @@ namespace Fyrion
 
     void RenderGraph::Resize(Extent p_extent)
     {
+        Graphics::WaitQueue();
+
         viewportExtent = p_extent;
 
         for (auto& it : resources)
@@ -220,11 +282,19 @@ namespace Fyrion
 
     Texture RenderGraph::GetColorOutput() const
     {
+        if (colorOutput)
+        {
+            return colorOutput->texture;
+        }
         return {};
     }
 
     Texture RenderGraph::GetDepthOutput() const
     {
+        if (depthOutput)
+        {
+            return depthOutput->texture;
+        }
         return {};
     }
 
@@ -286,6 +356,72 @@ namespace Fyrion
         logger.Debug("Created resource {} ", fullName);
 
         return resource;
+    }
+
+    void RenderGraph::RecordCommands(RenderCommands& cmd, f64 deltaTime)
+    {
+        for(auto& node: nodes)
+        {
+            node->renderGraphPass->Update(deltaTime);
+
+            cmd.BeginLabel(node->name, {0, 0, 0, 1});
+
+            //				GPUDevice::BeginLabel(cmd, node.m_name, {node.m_debugColor.x,
+            //				                                         node.m_debugColor.y,
+            //				                                         node.m_debugColor.z,
+            //				                                         1});
+            for(const auto& inputIt: node->inputs)
+            {
+                // if (inputIt.second->creation.type == RenderGraphResourceType::Texture)
+                // {
+                //     ResourceBarrierInfo resourceBarrierInfo{};
+                //     resourceBarrierInfo.texture = inputIt.second->texture;
+                //     resourceBarrierInfo.oldLayout = inputIt.second->creation.format != Format::Depth ? ResourceLayout::ColorAttachment : ResourceLayout::DepthStencilAttachment;
+                //     resourceBarrierInfo.newLayout = ResourceLayout::ShaderReadOnly;
+                //     resourceBarrierInfo.isDepth = inputIt.second->creation.format == Format::Depth;
+                //     cmd.ResourceBarrier(resourceBarrierInfo);
+                // }
+            }
+
+            if (node->renderPass)
+            {
+                BeginRenderPassInfo renderPassInfo{};
+                renderPassInfo.renderPass = node->renderPass;
+                renderPassInfo.clearValues = node->clearValues;
+                cmd.BeginRenderPass(renderPassInfo);
+
+                ViewportInfo viewportInfo{};
+                viewportInfo.x = 0.;
+                viewportInfo.y = 0.;
+                viewportInfo.y = (f32) node->extent.height;
+                viewportInfo.width = (f32)node->extent.width;
+                viewportInfo.height = -(f32)node->extent.height;
+                viewportInfo.minDepth = 0.;
+                viewportInfo.maxDepth = 1.;
+
+                cmd.SetViewport(viewportInfo);
+
+                auto scissor = Rect{0, 0, node->extent.width, node->extent.height};
+                cmd.SetScissor(scissor);
+            }
+
+            if (node->renderGraphPass)
+            {
+                node->renderGraphPass->Render(deltaTime, cmd);
+            }
+
+            if (node->renderPass)
+            {
+                cmd.EndRenderPass();
+            }
+
+            cmd.EndLabel();
+        }
+    }
+
+    void RenderGraph::BlitSwapchapin(RenderCommands& cmd)
+    {
+        //TODO
     }
 
     void RenderGraph::RegisterType(NativeTypeHandler<RenderGraph>& type)

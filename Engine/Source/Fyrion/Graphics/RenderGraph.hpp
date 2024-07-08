@@ -5,6 +5,27 @@
 
 namespace Fyrion
 {
+    class FY_API RenderGraphAsset : public Asset
+    {
+    public:
+        FY_BASE_TYPES(Asset);
+
+        StringView GetDisplayName() const override
+        {
+            return "Render Graph";
+        }
+
+        static void RegisterType(NativeTypeHandler<RenderGraphAsset>& type);
+
+        Array<String>          GetPasses() const;
+        Array<RenderGraphEdge> GetEdges() const;
+
+    private:
+        Array<String>          passes;
+        Array<RenderGraphEdge> edges;
+    };
+
+
     class FY_API RenderGraphNode
     {
     public:
@@ -12,6 +33,7 @@ namespace Fyrion
 
     class FY_API RenderGraphPass
     {
+    public:
         RenderGraphNode* node = nullptr;
 
         virtual void Init() {}
@@ -23,34 +45,57 @@ namespace Fyrion
     };
 
 
-    class FY_API RenderGraph : public Asset
+    class FY_API RenderGraph
     {
     public:
-        FY_BASE_TYPES(Asset);
+        RenderGraph(Extent extent, RenderGraphAsset* asset);
 
         Extent GetViewportExtent() const;
 
-        bool IsLoaded() const;
-        void Load(Extent p_extent);
         void Resize(Extent p_extent);
 
         Texture GetColorOutput() const;
         Texture GetDepthOutput() const;
-
-        StringView GetDisplayName() const override
-        {
-            return "Render Graph";
-        }
 
         static void RegisterType(NativeTypeHandler<RenderGraph>& type);
         static void RegisterPass(const RenderGraphPassCreation& renderGraphPassCreation);
         static void SetRegisterSwapchainRenderEvent(bool p_registerSwapchainRenderEvent);
 
     private:
-        Array<String>          passes;
-        Array<RenderGraphEdge> edges;
+        RenderGraphAsset* asset = nullptr;
+        Extent            extent;
+    };
 
-        Extent extent;
-        bool loaded = false;
+    template <typename T>
+    class RenderGraphPassBuilder
+    {
+    public:
+
+        static RenderGraphPassBuilder Builder()
+        {
+            RenderGraphPassBuilder builder;
+            builder.creation.name = GetTypeName<T>();
+            return builder;
+        }
+
+        RenderGraphPassBuilder& Input(const RenderGraphResourceCreation& resource)
+        {
+            creation.inputs.EmplaceBack(resource);
+            return *this;
+        }
+
+        RenderGraphPassBuilder& Output(const RenderGraphResourceCreation& resource)
+        {
+            creation.outputs.EmplaceBack(resource);
+            return *this;
+        }
+
+        ~RenderGraphPassBuilder()
+        {
+            RenderGraph::RegisterPass(creation);
+        }
+
+    private:
+        RenderGraphPassCreation creation{};
     };
 }

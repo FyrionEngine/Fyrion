@@ -11,7 +11,6 @@ namespace Fyrion
     class SceneViewWindow : public EditorWindow
     {
     public:
-
         FY_BASE_TYPES(EditorWindow);
 
         SceneViewWindow();
@@ -21,11 +20,11 @@ namespace Fyrion
         static void RegisterType(NativeTypeHandler<SceneViewWindow>& type);
 
     private:
-        SceneEditor& m_sceneEditor;
-        u32          m_guizmoOperation{};
-        bool         m_windowStartedSimulation{};
-        bool         m_movingScene{};
-        RenderGraph* m_renderGraph{};
+        SceneEditor&           sceneEditor;
+        u32                    guizmoOperation{};
+        bool                   windowStartedSimulation{};
+        bool                   movingScene{};
+        SharedPtr<RenderGraph> renderGraph{};
 
         static void OpenSceneView(const MenuItemEventData& eventData);
     };

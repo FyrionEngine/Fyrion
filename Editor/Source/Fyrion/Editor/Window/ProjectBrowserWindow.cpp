@@ -497,7 +497,7 @@ namespace Fyrion
 
     void ProjectBrowserWindow::AssetNewRenderGraph(const MenuItemEventData& eventData)
     {
-        static_cast<ProjectBrowserWindow*>(eventData.drawData)->NewAsset(GetTypeID<RenderGraph>());
+        static_cast<ProjectBrowserWindow*>(eventData.drawData)->NewAsset(GetTypeID<RenderGraphAsset>());
     }
 
     void ProjectBrowserWindow::NewAsset(TypeID typeId)

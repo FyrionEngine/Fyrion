@@ -33,6 +33,8 @@ namespace Fyrion
         Registry::Type<Texture>();
         Registry::Type<RenderGraph>();
         Registry::Type<RenderGraphEdge>();
+        Registry::Type<RenderGraphAsset>();
+        Registry::Type<RenderGraphPass>();
 
         auto bufferUsage = Registry::Type<BufferUsage>();
         bufferUsage.Value<BufferUsage::VertexBuffer>("VertexBuffer");

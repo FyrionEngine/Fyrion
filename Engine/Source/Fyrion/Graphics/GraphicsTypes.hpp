@@ -548,7 +548,9 @@ namespace Fyrion
     struct RenderGraphEdge
     {
         String origin{};
+        String nodeOrigin{};
         String dest{};
+        String nodeDest{};
 
         static void RegisterType(NativeTypeHandler<RenderGraphEdge>& type);
     };
@@ -562,6 +564,7 @@ namespace Fyrion
         Vec2                    scale{};
         LoadOp                  loadOp{LoadOp::Clear};
         Vec4                    cleanValue{};
+        bool                    cleanDepth{};
         Format                  format{};
         BufferUsage             bufferUsage{};
         BufferAllocation        bufferAllocation{BufferAllocation::GPUOnly};

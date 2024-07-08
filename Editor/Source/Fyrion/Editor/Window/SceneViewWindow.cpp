@@ -9,23 +9,12 @@
 
 namespace Fyrion
 {
-    SceneViewWindow::SceneViewWindow() : m_sceneEditor(Editor::GetSceneEditor()),  m_guizmoOperation(ImGuizmo::TRANSLATE)
+    SceneViewWindow::SceneViewWindow() : sceneEditor(Editor::GetSceneEditor()),  guizmoOperation(ImGuizmo::TRANSLATE)
     {
     }
 
     void SceneViewWindow::Draw(u32 id, bool& open)
     {
-    	if (m_renderGraph == nullptr)
-    	{
-    		m_renderGraph = AssetDatabase::FindByPath<RenderGraph>("Fyrion://DefaultRenderGraph.fy_asset");
-    	}
-
-    	if (m_renderGraph == nullptr)
-    	{
-    		return;
-    	}
-
-
         ImGuiWindowFlags flags = ImGuiWindowFlags_NoScrollbar;
         auto& style = ImGui::GetStyle();
         ImGui::StyleVar windowPadding(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
@@ -52,27 +41,27 @@ namespace Fyrion
 				//ImGui::StyleVar itemSpacing(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
 				ImGui::BeginHorizontal("horizontal-sceneview-top", ImVec2(ImGui::GetContentRegionAvail().x, buttonSize.y));
 
-				if (ImGui::SelectionButton(ICON_FA_ARROW_POINTER, m_guizmoOperation == 0, buttonSize)
+				if (ImGui::SelectionButton(ICON_FA_ARROW_POINTER, guizmoOperation == 0, buttonSize)
 					|| (canChangeGuizmo && ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_Q))))
 				{
-					m_guizmoOperation = 0;
+					guizmoOperation = 0;
 				}
 
-				if (ImGui::SelectionButton(ICON_FA_ARROWS_UP_DOWN_LEFT_RIGHT, m_guizmoOperation == ImGuizmo::TRANSLATE, buttonSize)
+				if (ImGui::SelectionButton(ICON_FA_ARROWS_UP_DOWN_LEFT_RIGHT, guizmoOperation == ImGuizmo::TRANSLATE, buttonSize)
 					|| (canChangeGuizmo && ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_W))))
 				{
-					m_guizmoOperation = ImGuizmo::TRANSLATE;
+					guizmoOperation = ImGuizmo::TRANSLATE;
 				}
 
-				if (ImGui::SelectionButton(ICON_FA_ROTATE, m_guizmoOperation == ImGuizmo::ROTATE, buttonSize)
+				if (ImGui::SelectionButton(ICON_FA_ROTATE, guizmoOperation == ImGuizmo::ROTATE, buttonSize)
 					|| (canChangeGuizmo && ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_E))))
 				{
-					m_guizmoOperation = ImGuizmo::ROTATE;
+					guizmoOperation = ImGuizmo::ROTATE;
 				}
-				if (ImGui::SelectionButton(ICON_FA_EXPAND, m_guizmoOperation == ImGuizmo::SCALE, buttonSize)
+				if (ImGui::SelectionButton(ICON_FA_EXPAND, guizmoOperation == ImGuizmo::SCALE, buttonSize)
 					|| (canChangeGuizmo && ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_R))))
 				{
-					m_guizmoOperation = ImGuizmo::SCALE;
+					guizmoOperation = ImGuizmo::SCALE;
 				}
 
 				if (ImGui::Button(ICON_FA_ELLIPSIS, buttonSize))
@@ -91,16 +80,16 @@ namespace Fyrion
 
 				ImGui::Spring(1.f);
 
-				bool isSimulating = m_sceneEditor.IsSimulating();
+				bool isSimulating = sceneEditor.IsSimulating();
 
 				if (!isSimulating)
 				{
 					ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(139, 194, 74, 255));
 				}
 
-				if (m_windowStartedSimulation && !isSimulating)
+				if (windowStartedSimulation && !isSimulating)
 				{
-					m_windowStartedSimulation = false;
+					windowStartedSimulation = false;
 				}
 
 				ImGui::BeginDisabled(isSimulating);
@@ -108,7 +97,7 @@ namespace Fyrion
 				if (ImGui::Button(ICON_FA_PLAY, buttonSize))
 				{
 					//WorldController::StartSimulation(world);
-					m_windowStartedSimulation = true;
+					windowStartedSimulation = true;
 				}
 
 				ImGui::EndDisabled();
@@ -118,7 +107,7 @@ namespace Fyrion
 					ImGui::PopStyleColor();
 				}
 
-				ImGui::BeginDisabled(!m_sceneEditor.IsSimulating() || !m_windowStartedSimulation);
+				ImGui::BeginDisabled(!sceneEditor.IsSimulating() || !windowStartedSimulation);
 
 				if (isSimulating)
 				{
@@ -128,7 +117,7 @@ namespace Fyrion
 				if (ImGui::Button(ICON_FA_STOP, buttonSize))
 				{
 					//WorldController::StopSimulation(world);
-					m_windowStartedSimulation = false;
+					windowStartedSimulation = false;
 				}
 
 				if (isSimulating)
@@ -149,7 +138,7 @@ namespace Fyrion
 				cursor.x = ImGui::GetCursorScreenPos().x;
             }
 
-        	if (m_movingScene)
+        	if (movingScene)
         	{
         		ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouse;
         	}
@@ -158,7 +147,7 @@ namespace Fyrion
         		ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
         	}
 
-        	m_movingScene = !m_windowStartedSimulation && ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) && ImGui::IsMouseDown(ImGuiMouseButton_Right);
+        	movingScene = !windowStartedSimulation && ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) && ImGui::IsMouseDown(ImGuiMouseButton_Right);
 
         	auto diffCursor = cursor - initCursor;
         	size -= diffCursor;
@@ -166,20 +155,20 @@ namespace Fyrion
 
         	Extent extent = {static_cast<u32>(size.x), static_cast<u32>(size.y)};
 
-        	if (!m_renderGraph->IsLoaded())
+        	if (!renderGraph)
         	{
-        		m_renderGraph->Load(extent);
+        		renderGraph = MakeShared<RenderGraph>(extent, AssetDatabase::FindByPath<RenderGraphAsset>("Fyrion://DefaultRenderGraph.fy_asset"));
         	}
 
-        	if (extent != m_renderGraph->GetViewportExtent())
+        	if (extent != renderGraph->GetViewportExtent())
         	{
-        		m_renderGraph->Resize(extent);
+        		renderGraph->Resize(extent);
         	}
 
-	        if (open)
-	        {
-		        ImGui::DrawImage(m_renderGraph->GetColorOutput(), bb);
-	        }
+        	if (open)
+        	{
+        		ImGui::DrawImage(renderGraph->GetColorOutput(), bb);
+        	}
         }
         ImGui::End();
     }

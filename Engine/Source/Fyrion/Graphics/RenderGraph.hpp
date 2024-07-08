@@ -1,10 +1,14 @@
 #pragma once
 #include "GraphicsTypes.hpp"
 #include "Fyrion/Asset/Asset.hpp"
+#include "Fyrion/Core/HashMap.hpp"
+#include "Fyrion/Core/SharedPtr.hpp"
 
 
 namespace Fyrion
 {
+    class RenderGraphPass;
+
     class FY_API RenderGraphAsset : public Asset
     {
     public:
@@ -25,10 +29,39 @@ namespace Fyrion
         Array<RenderGraphEdge> edges;
     };
 
+    struct FY_API RenderGraphResource
+    {
+        String                      fullName{};
+        RenderGraphResourceCreation creation{};
+        TextureCreation             textureCreation{};
+        Texture                     texture{};
+        Buffer                      buffer{};
+        VoidPtr                     reference{};
+
+        ~RenderGraphResource();
+    };
 
     class FY_API RenderGraphNode
     {
     public:
+        RenderGraphNode(const StringView name, const RenderGraphPassCreation& creation) : name(name), creation(creation) {}
+
+        friend class RenderGraph;
+
+        ~RenderGraphNode();
+
+    private:
+        String                                          name{};
+        RenderGraphPassCreation                         creation{};
+        RenderPass                                      renderPass{};
+        RenderGraphPass*                                renderGraphPass = nullptr;
+        TypeHandler*                                    renderGraphPassTypeHandler = nullptr;
+        HashMap<String, SharedPtr<RenderGraphResource>> inputs{};
+        HashMap<String, SharedPtr<RenderGraphResource>> outputs{};
+        Extent3D                                        extent{};
+        Array<Vec4>                                     clearValues{};
+
+        void CreateRenderPass();
     };
 
     class FY_API RenderGraphPass
@@ -38,12 +71,14 @@ namespace Fyrion
 
         virtual void Init() {}
         virtual void Update(f64 deltaTime) {}
-        virtual void Render(f64 deltaTime, const RenderCommands& cmd) {}
+        virtual void Render(f64 deltaTime, RenderCommands& cmd) {}
         virtual void Destroy() {}
-        virtual void Resize(Extent newExtent) {}
+        virtual void Resize(Extent3D newExtent) {}
         virtual      ~RenderGraphPass() = default;
     };
 
+
+    using RenderGraphResMap = HashMap<String, SharedPtr<RenderGraphResource>>;
 
     class FY_API RenderGraph
     {
@@ -62,19 +97,25 @@ namespace Fyrion
         static void SetRegisterSwapchainRenderEvent(bool p_registerSwapchainRenderEvent);
 
     private:
-        RenderGraphAsset* asset = nullptr;
-        Extent            extent;
+        RenderGraphAsset*                 asset = nullptr;
+        Extent                            viewportExtent;
+        Array<SharedPtr<RenderGraphNode>> nodes;
+        RenderGraphResMap                 resources;
+
+
+        void                           Create();
+        SharedPtr<RenderGraphResource> CreateResource(const StringView& fullName, const RenderGraphResourceCreation& creation);
     };
 
     template <typename T>
     class RenderGraphPassBuilder
     {
     public:
-
-        static RenderGraphPassBuilder Builder()
+        static RenderGraphPassBuilder Builder(RenderGraphPassType type)
         {
             RenderGraphPassBuilder builder;
             builder.creation.name = GetTypeName<T>();
+            builder.creation.type = type;
             return builder;
         }
 

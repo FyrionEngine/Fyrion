@@ -547,10 +547,10 @@ namespace Fyrion
 
     struct RenderGraphEdge
     {
-        String origin{};
-        String nodeOrigin{};
-        String dest{};
-        String nodeDest{};
+        String output{};
+        String nodeOutput{};
+        String input{};
+        String nodeInput{};
 
         static void RegisterType(NativeTypeHandler<RenderGraphEdge>& type);
     };

@@ -66,6 +66,15 @@ namespace Fyrion
         {
             menuContext = {};
             sceneEditor = {};
+
+            for (OpenWindowStorage& openWindow : openWindows)
+            {
+                if (openWindow.instance)
+                {
+                    openWindow.typeHandler->Destroy(openWindow.instance);
+                }
+            }
+
             openWindows.Clear();
             openWindows.ShrinkToFit();
             editorWindowStorages.Clear();

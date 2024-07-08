@@ -8,11 +8,14 @@ namespace Fyrion
     public:
         FY_BASE_TYPES(RenderGraphPass);
 
-        void Render(f64 deltaTime, const RenderCommands& cmd) override {}
+        void Render(f64 deltaTime, RenderCommands& cmd) override
+        {
+           // cmd.Draw(3, 1, 0, 0);
+        }
 
         static void RegisterType(NativeTypeHandler<SceneRenderPass>& type)
         {
-            RenderGraphPassBuilder<SceneRenderPass>::Builder()
+            RenderGraphPassBuilder<SceneRenderPass>::Builder(RenderGraphPassType::Graphics)
                 .Output(RenderGraphResourceCreation{
                     .name = "Color",
                     .type = RenderGraphResourceType::Attachment,

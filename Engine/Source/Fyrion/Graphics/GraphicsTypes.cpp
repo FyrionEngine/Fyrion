@@ -5,9 +5,9 @@ namespace Fyrion
 {
     void RenderGraphEdge::RegisterType(NativeTypeHandler<RenderGraphEdge>& type)
     {
-        type.Field<&RenderGraphEdge::origin>("origin");
-        type.Field<&RenderGraphEdge::nodeOrigin>("nodeOrigin");
-        type.Field<&RenderGraphEdge::dest>("dest");
-        type.Field<&RenderGraphEdge::nodeDest>("nodeDest");
+        type.Field<&RenderGraphEdge::output>("output");
+        type.Field<&RenderGraphEdge::nodeOutput>("nodeOutput");
+        type.Field<&RenderGraphEdge::input>("input");
+        type.Field<&RenderGraphEdge::nodeInput>("nodeInput");
     }
 }

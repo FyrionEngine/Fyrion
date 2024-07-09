@@ -2,7 +2,6 @@
 #include "FileSystem.hpp"
 #include "Path.hpp"
 
-//TODO remove filesystem and implement it native files.
 #include <filesystem>
 namespace fs = std::filesystem;
 

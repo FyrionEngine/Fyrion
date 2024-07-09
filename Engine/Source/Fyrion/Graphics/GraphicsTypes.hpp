@@ -9,6 +9,7 @@
 
 namespace Fyrion
 {
+    class ShaderAsset;
     FY_HANDLER(Adapter);
     FY_HANDLER(Swapchain);
     FY_HANDLER(RenderPass);
@@ -332,10 +333,9 @@ namespace Fyrion
         RenderApiType renderApi{};
     };
 
-
     struct GraphicsPipelineCreation
     {
-        //RID               shader{};
+        ShaderAsset*      shader{};
         Span<Format>      attachments{};
         Format            depthFormat = Format::Undefined;
         bool              depthWrite{false};

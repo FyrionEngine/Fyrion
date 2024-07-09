@@ -108,6 +108,9 @@ namespace Fyrion
         {
             args.EmplaceBack(L"-spirv");
             args.EmplaceBack(L"-fspv-target-env=vulkan1.2");
+
+            args.EmplaceBack(L"-fvk-use-dx-layout");
+            args.EmplaceBack(L"-fvk-use-dx-position-w");
         }
 
         IDxcResult* pResults{};

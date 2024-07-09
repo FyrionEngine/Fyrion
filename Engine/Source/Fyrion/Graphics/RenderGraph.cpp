@@ -10,7 +10,7 @@ namespace Fyrion
 {
     namespace
     {
-        Logger& logger = Logger::GetLogger("Fyrion::RenderGraph", LogLevel::Debug);
+        Logger& logger = Logger::GetLogger("Fyrion::RenderGraph");
         bool registerSwapchainRenderEvent = true;
         HashMap<String, RenderGraphPassCreation> passDatabase{};
     }

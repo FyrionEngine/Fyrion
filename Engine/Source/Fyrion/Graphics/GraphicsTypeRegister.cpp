@@ -36,7 +36,7 @@ namespace Fyrion
         Registry::Type<RenderGraphEdge>();
         Registry::Type<RenderGraphAsset>();
         Registry::Type<RenderGraphPass>();
-        Registry::Type<RasterShaderIO>();
+        Registry::Type<ShaderIO>();
         Registry::Type<ShaderAsset>();
 
         auto bufferUsage = Registry::Type<BufferUsage>();

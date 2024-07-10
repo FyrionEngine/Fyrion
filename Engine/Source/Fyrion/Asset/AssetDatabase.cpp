@@ -278,8 +278,7 @@ namespace Fyrion
 
             JsonAssetReader reader(buffer);
             ArchiveObject root = reader.ReadObject();
-            TypeHandler* typeHandler = Registry::FindTypeByName(reader.ReadString(root, "_type"));
-            if (typeHandler)
+            if (TypeHandler* typeHandler = Registry::FindTypeByName(reader.ReadString(root, "_type")))
             {
                 Asset* asset = Create(typeHandler->GetTypeInfo().typeId);
                 Serialization::Deserialize(typeHandler, reader, root, asset);

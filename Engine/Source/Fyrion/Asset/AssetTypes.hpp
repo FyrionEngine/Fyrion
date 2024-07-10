@@ -33,10 +33,11 @@ namespace Fyrion
 
         void SetExtension(StringView p_extension) override {}
 
-        StringView GetDisplayName() const override;
-        void AddChild(Asset* child);
-        void RemoveChild(Asset* child);
+        StringView   GetDisplayName() const override;
+        void         AddChild(Asset* child);
+        void         RemoveChild(Asset* child);
         Span<Asset*> GetChildren();
+
     private:
         Array<Asset*> children;
     };

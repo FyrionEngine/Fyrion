@@ -13,9 +13,9 @@ namespace Fyrion
         Raytrace
     };
 
-    struct FY_API RasterShaderIO : public AssetIO
+    struct FY_API ShaderIO : public AssetIO
     {
-        StringView extension[1] = {".raster"};
+        StringView extension[1] = {".hlsl"};
 
         FY_BASE_TYPES(AssetIO);
 

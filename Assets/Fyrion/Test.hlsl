@@ -12,8 +12,8 @@ VSOutput MainVS(uint vertexIndex : SV_VertexID)
 	return output;
 }
 
-[[vk::binding(0, 0)]] Texture2D     texture;
-[[vk::binding(1, 0)]] SamplerState  samplerState;
+Texture2D texture;
+SamplerState samplerState;
 
 float4 MainPS(VSOutput input) : SV_TARGET
 {

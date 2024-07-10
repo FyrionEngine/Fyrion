@@ -13,8 +13,7 @@ namespace Fyrion
 
         void Init() override
         {
-            defaultShader = AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Test.raster");
-            defaultShader->Compile();
+            defaultShader = AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Test.fy_shader");
         }
 
         void Render(f64 deltaTime, RenderCommands& cmd) override

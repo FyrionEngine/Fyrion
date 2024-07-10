@@ -53,6 +53,8 @@ namespace Fyrion
         static void AssetNewResourceGraph(const MenuItemEventData& eventData);
         static void AssetNewRenderGraph(const MenuItemEventData& eventData);
 
+        static void AssetNew(const MenuItemEventData& eventData);
+
         void NewAsset(TypeID typeId);
     };
 }

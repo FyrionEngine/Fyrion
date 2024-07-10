@@ -16,12 +16,12 @@ namespace Fyrion
         Logger& logger = Logger::GetLogger("Fyrion::ShaderAsset", LogLevel::Debug);
     }
 
-    Span<StringView> RasterShaderIO::GetImportExtensions()
+    Span<StringView> ShaderIO::GetImportExtensions()
     {
         return {extension, 1};
     }
 
-    Asset* RasterShaderIO::ImportAsset(StringView path, Asset* reimportAsset)
+    Asset* ShaderIO::ImportAsset(StringView path, Asset* reimportAsset)
     {
         ShaderAsset* shaderAsset = AssetDatabase::Create<ShaderAsset>();
         shaderAsset->SetShaderSource(FileSystem::ReadFileAsString(path));
@@ -32,13 +32,7 @@ namespace Fyrion
 
     StringView ShaderAsset::GetDisplayName() const
     {
-        switch (shaderType)
-        {
-            case ShaderAssetType::Raster: return "Raster Shader";
-            case ShaderAssetType::Compute: return "Compute Shader";
-            case ShaderAssetType::Raytrace: return "Raytrace Shader";
-            default: return "None";
-        }
+        return "Shader";
     }
 
     void ShaderAsset::Compile()
@@ -47,38 +41,38 @@ namespace Fyrion
 
         StringView source = GetShaderSource();
 
-        if (shaderType == ShaderAssetType::Raster)
-        {
-            if (!ShaderManager::CompileShader(ShaderCreation{.source = source, .entryPoint = "MainVS", .shaderStage = ShaderStage::Vertex, .renderApi = renderApi}, bytes))
-            {
-                return;
-            }
+        // if (shaderType == ShaderAssetType::Raster)
+        // {
+        //     if (!ShaderManager::CompileShader(ShaderCreation{.source = source, .entryPoint = "MainVS", .shaderStage = ShaderStage::Vertex, .renderApi = renderApi}, bytes))
+        //     {
+        //         return;
+        //     }
+        //
+        //     stages.EmplaceBack(ShaderStageInfo{
+        //         .stage = ShaderStage::Vertex,
+        //         .entryPoint = "MainVS",
+        //         .offset = 0,
+        //         .size = (u32)bytes.Size()
+        //     });
+        //
+        //     u32 pixelOffset = (u32)bytes.Size();
+        //
+        //     if (!ShaderManager::CompileShader(ShaderCreation{.source = source, .entryPoint = "MainPS", .shaderStage = ShaderStage::Pixel, .renderApi = renderApi}, bytes))
+        //     {
+        //         return;
+        //     }
+        //
+        //     stages.EmplaceBack(ShaderStageInfo{
+        //         .stage = ShaderStage::Pixel,
+        //         .entryPoint = "MainPS",
+        //         .offset = pixelOffset,
+        //         .size = (u32)bytes.Size() - pixelOffset
+        //     });
+        // }
+        //
+        // shaderInfo = ShaderManager::ExtractShaderInfo(bytes, stages, renderApi);
 
-            stages.EmplaceBack(ShaderStageInfo{
-                .stage = ShaderStage::Vertex,
-                .entryPoint = "MainVS",
-                .offset = 0,
-                .size = (u32)bytes.Size()
-            });
-
-            u32 pixelOffset = (u32)bytes.Size();
-
-            if (!ShaderManager::CompileShader(ShaderCreation{.source = source, .entryPoint = "MainPS", .shaderStage = ShaderStage::Pixel, .renderApi = renderApi}, bytes))
-            {
-                return;
-            }
-
-            stages.EmplaceBack(ShaderStageInfo{
-                .stage = ShaderStage::Pixel,
-                .entryPoint = "MainPS",
-                .offset = pixelOffset,
-                .size = (u32)bytes.Size() - pixelOffset
-            });
-        }
-
-        shaderInfo = ShaderManager::ExtractShaderInfo(bytes, stages, renderApi);
-
-        logger.Debug("Shader {} compiled sucessfully", GetPath());
+        logger.Debug("Shader {} compiled sucessfully", GetName());
     }
 
     void ShaderAsset::RegisterType(NativeTypeHandler<ShaderAsset>& type)

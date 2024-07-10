@@ -500,6 +500,11 @@ namespace Fyrion
         static_cast<ProjectBrowserWindow*>(eventData.drawData)->NewAsset(GetTypeID<RenderGraphAsset>());
     }
 
+    void ProjectBrowserWindow::AssetNew(const MenuItemEventData& eventData)
+    {
+        static_cast<ProjectBrowserWindow*>(eventData.drawData)->NewAsset(reinterpret_cast<TypeID>(eventData.itemData));
+    }
+
     void ProjectBrowserWindow::NewAsset(TypeID typeId)
     {
         AssetCreateAction*    assetCreationAction = Editor::CreateTransaction()->CreateAction<AssetCreateAction>(openDirectory, typeId);
@@ -530,8 +535,9 @@ namespace Fyrion
         AddMenuItem(MenuItemCreation{.itemName = "Show in Explorer", .icon = ICON_FA_FOLDER, .priority = 40, .action = AssetShowInExplorer});
         AddMenuItem(MenuItemCreation{.itemName = "Copy Path", .priority = 1000, .action = AssetCopyPathToClipboard});
         AddMenuItem(MenuItemCreation{.itemName = "Create New Asset", .icon = ICON_FA_PLUS, .priority = 150});
-        AddMenuItem(MenuItemCreation{.itemName = "Create New Asset/Resource Graph", .icon = ICON_FA_DIAGRAM_PROJECT, .priority = 10, .action = AssetNewResourceGraph});
-        AddMenuItem(MenuItemCreation{.itemName = "Create New Asset/Behavior Graph", .icon = ICON_FA_DIAGRAM_PROJECT, .priority = 20});
+        AddMenuItem(MenuItemCreation{.itemName = "Create New Asset/Shader", .icon = ICON_FA_BRUSH, .priority = 10, .action = AssetNew, .menuData = (VoidPtr)GetTypeID<ShaderAsset>()});
+        // AddMenuItem(MenuItemCreation{.itemName = "Create New Asset/Resource Graph", .icon = ICON_FA_DIAGRAM_PROJECT, .priority = 10, .action = AssetNewResourceGraph});
+        // AddMenuItem(MenuItemCreation{.itemName = "Create New Asset/Behavior Graph", .icon = ICON_FA_DIAGRAM_PROJECT, .priority = 20});
         AddMenuItem(MenuItemCreation{.itemName = "Create New Asset/Render Graph", .icon = ICON_FA_DIAGRAM_PROJECT, .priority = 30, .action = AssetNewRenderGraph});
 
         type.Function<&ProjectBrowserWindow::SetOpenDirectory>("SetOpenDirectory");

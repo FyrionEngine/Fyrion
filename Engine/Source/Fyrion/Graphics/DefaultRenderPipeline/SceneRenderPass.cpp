@@ -21,7 +21,7 @@ namespace Fyrion
             };
 
             pipelineState = Graphics::CreateGraphicsPipelineState(graphicsPipelineCreation);
-            bindingSet = Graphics::CreateBindingSet(graphicsPipelineCreation.shader, BindingSetType::Static);
+            bindingSet = Graphics::CreateBindingSet(graphicsPipelineCreation.shader);
         }
 
         void Destroy() override
@@ -32,9 +32,9 @@ namespace Fyrion
 
         void Render(f64 deltaTime, RenderCommands& cmd) override
         {
-            cmd.BindPipelineState(pipelineState);
-            cmd.BindBindingSet(pipelineState, bindingSet);
-            cmd.Draw(3, 1, 0, 0);
+            // cmd.BindPipelineState(pipelineState);
+            // cmd.BindBindingSet(pipelineState, bindingSet);
+            // cmd.Draw(3, 1, 0, 0);
         }
 
         static void RegisterType(NativeTypeHandler<SceneRenderPass>& type)

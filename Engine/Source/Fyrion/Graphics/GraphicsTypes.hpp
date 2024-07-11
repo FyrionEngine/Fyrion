@@ -244,12 +244,6 @@ namespace Fyrion
         Linear
     };
 
-    enum class BindingSetType
-    {
-        Dynamic,
-        Static
-    };
-
     enum class RenderGraphResourceType
     {
         Buffer     = 0,
@@ -469,22 +463,18 @@ namespace Fyrion
         usize size;
     };
 
-    struct BindingValue;
+    struct BindingVar;
 
 
     template<typename T>
     struct BindingValueSetter
     {
-        static void SetValue(BindingValue& bindingValue, const T& value)
-        {
-            static_assert(Traits::AlwaysFalse<T>, "Type not implemented");
-        }
+        static void SetValue(BindingVar& bindingVar, const T& value);
     };
 
-
-    struct FY_API BindingValue
+    struct FY_API BindingVar
     {
-        virtual ~BindingValue() = default;
+        virtual ~BindingVar() = default;
 
         template<typename T>
         void Set(const T& val)
@@ -492,57 +482,59 @@ namespace Fyrion
             BindingValueSetter<T>::SetValue(*this, val);
         }
 
-        template<typename T>
-        void Set(StringView name, const T& value)
-        {
-        }
-
         virtual void SetTexture(const Texture& texture) = 0;
         virtual void SetTextureView(const TextureView& textureView) = 0;
         virtual void SetSampler(const Sampler& sampler) = 0;
         virtual void SetBuffer(const Buffer& buffer) = 0;
+        virtual void SetValue(ConstPtr ptr, usize size) = 0;
     };
+
+    template <typename T>
+    void BindingValueSetter<T>::SetValue(BindingVar& bindingVar, const T& value)
+    {
+        bindingVar.SetValue(&value, sizeof(T));
+    }
 
     struct FY_API BindingSet
     {
         virtual ~BindingSet() = default;
 
-        virtual BindingValue* GetValue(const StringView& name) = 0;
+        virtual BindingVar* GetVar(const StringView& name) = 0;
     };
 
     template<>
     struct BindingValueSetter<Texture>
     {
-        static void SetValue(BindingValue& bindingValue, const Texture& value)
+        static void SetValue(BindingVar& bindingVar, const Texture& value)
         {
-            bindingValue.SetTexture(value);
+            bindingVar.SetTexture(value);
         }
     };
 
     template<>
     struct BindingValueSetter<TextureView>
     {
-        static void SetValue(BindingValue& bindingValue, const TextureView& value)
+        static void SetValue(BindingVar& bindingVar, const TextureView& value)
         {
-            bindingValue.SetTextureView(value);
+            bindingVar.SetTextureView(value);
         }
     };
 
     template<>
     struct BindingValueSetter<Sampler>
     {
-        static void SetValue(BindingValue& bindingValue, const Sampler& value)
+        static void SetValue(BindingVar& bindingVar, const Sampler& value)
         {
-            bindingValue.SetSampler(value);
+            bindingVar.SetSampler(value);
         }
     };
 
     template<>
     struct BindingValueSetter<Buffer>
     {
-        static void SetValue(BindingValue& bindingValue, const Buffer& value)
+        static void SetValue(BindingVar& bindingVar, const Buffer& value)
         {
-            bindingValue.SetBuffer(value);
+            bindingVar.SetBuffer(value);
         }
     };
 

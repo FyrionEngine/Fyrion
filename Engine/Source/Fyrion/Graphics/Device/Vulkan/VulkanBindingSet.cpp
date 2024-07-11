@@ -3,9 +3,8 @@
 
 namespace Fyrion
 {
-    VulkanBindingSet::VulkanBindingSet(ShaderAsset* shaderAsset, VulkanDevice& vulkanDevice, BindingSetType bindingSetType) : shaderAsset(shaderAsset),
-                                                                                                                              vulkanDevice(vulkanDevice),
-                                                                                                                              bindingSetType(bindingSetType)
+    VulkanBindingSet::VulkanBindingSet(ShaderAsset* shaderAsset, VulkanDevice& vulkanDevice) : vulkanDevice(vulkanDevice),
+                                                                                               shaderAsset(shaderAsset)
     {
         const ShaderInfo& shaderInfo = shaderAsset->GetShaderInfo();
 
@@ -28,7 +27,7 @@ namespace Fyrion
         }
     }
 
-    void VulkanBindingValue::SetTexture(const Texture& texture)
+    void VulkanBindingVar::SetTexture(const Texture& texture)
     {
         if (texture != m_texture)
         {
@@ -36,27 +35,35 @@ namespace Fyrion
         }
     }
 
-    void VulkanBindingValue::SetTextureView(const TextureView& textureView)
+    void VulkanBindingVar::SetTextureView(const TextureView& textureView)
     {
         m_textureView = textureView;
     }
 
-    void VulkanBindingValue::SetSampler(const Sampler& sampler)
+    void VulkanBindingVar::SetSampler(const Sampler& sampler)
     {
         m_sampler = sampler;
     }
 
-    void VulkanBindingValue::SetBuffer(const Buffer& buffer)
+    void VulkanBindingVar::SetBuffer(const Buffer& buffer)
     {
         m_buffer = buffer;
     }
 
-    BindingValue* VulkanBindingSet::GetValue(const StringView& name)
+    void VulkanBindingVar::SetValue(ConstPtr ptr, usize size)
+    {
+        if (!m_buffer)
+        {
+
+        }
+    }
+
+    BindingVar* VulkanBindingSet::GetVar(const StringView& name)
     {
         auto it = bindingValues.Find(name);
         if (it == bindingValues.end())
         {
-            it = bindingValues.Emplace(String{name}, MakeShared<VulkanBindingValue>()).first;
+            it = bindingValues.Emplace(String{name}, MakeShared<VulkanBindingVar>(*this)).first;
         }
         return it->second.Get();
     }

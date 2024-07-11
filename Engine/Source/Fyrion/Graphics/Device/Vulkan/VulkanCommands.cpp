@@ -1,4 +1,6 @@
 #include "VulkanCommands.hpp"
+
+#include "VulkanBindingSet.hpp"
 #include "VulkanDevice.hpp"
 #include "VulkanUtils.hpp"
 
@@ -117,6 +119,7 @@ namespace Fyrion
 
     void VulkanCommands::BindBindingSet(const PipelineState& pipeline, BindingSet* bindingSet)
     {
+        VulkanBindingSet* vulkanBindingSet = static_cast<VulkanBindingSet*>(bindingSet);
     }
 
     void VulkanCommands::DrawIndexedIndirect(const Buffer& buffer, usize offset, u32 drawCount, u32 stride)

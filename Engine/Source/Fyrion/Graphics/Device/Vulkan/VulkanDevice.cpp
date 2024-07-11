@@ -1108,9 +1108,9 @@ namespace Fyrion
         return {};
     }
 
-    BindingSet* VulkanDevice::CreateBindingSet(ShaderAsset* shaderAsset, const BindingSetType& bindingSetType)
+    BindingSet* VulkanDevice::CreateBindingSet(ShaderAsset* shaderAsset)
     {
-        return allocator.Alloc<VulkanBindingSet>(shaderAsset, *this, bindingSetType);
+        return allocator.Alloc<VulkanBindingSet>(shaderAsset, *this);
     }
 
     void VulkanDevice::DestroySwapchain(const Swapchain& swapchain)

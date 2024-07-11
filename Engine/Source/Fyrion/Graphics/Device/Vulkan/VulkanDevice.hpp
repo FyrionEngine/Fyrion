@@ -68,7 +68,7 @@ namespace Fyrion
         Sampler         CreateSampler(const SamplerCreation& samplerCreation) override;
         PipelineState   CreateGraphicsPipelineState(const GraphicsPipelineCreation& graphicsPipelineCreation) override;
         PipelineState   CreateComputePipelineState(const ComputePipelineCreation& computePipelineCreation) override;
-        BindingSet&     CreateBindingSet(const BindingSetType& bindingSetType) override;
+        BindingSet*     CreateBindingSet(ShaderAsset* shaderAsset, const BindingSetType& bindingSetType) override;
         void            DestroySwapchain(const Swapchain& swapchain) override;
         void            DestroyRenderPass(const RenderPass& renderPass) override;
         void            DestroyBuffer(const Buffer& buffer) override;
@@ -77,7 +77,7 @@ namespace Fyrion
         void            DestroySampler(const Sampler& sampler) override;
         void            DestroyGraphicsPipelineState(const PipelineState& pipelineState) override;
         void            DestroyComputePipelineState(const PipelineState& pipelineState) override;
-        void            DestroyBindingSet(BindingSet& bindingSet) override;
+        void            DestroyBindingSet(BindingSet* bindingSet) override;
         RenderCommands& BeginFrame() override;
         RenderPass      AcquireNextRenderPass(Swapchain swapchain) override;
         void            EndFrame(Swapchain swapchain) override;

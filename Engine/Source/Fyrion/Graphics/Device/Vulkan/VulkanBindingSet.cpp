@@ -1,13 +1,15 @@
 #include "VulkanBindingSet.hpp"
+#include "Fyrion/Graphics/ShaderAsset.hpp"
 
 namespace Fyrion
 {
-    VulkanBindingSet::VulkanBindingSet(VulkanDevice& vulkanDevice, BindingSetType bindingSetType) : vulkanDevice(vulkanDevice), bindingSetType(bindingSetType)
+    VulkanBindingSet::VulkanBindingSet(ShaderAsset* shaderAsset, VulkanDevice& vulkanDevice, BindingSetType bindingSetType) : shaderAsset(shaderAsset),
+                                                                                                                              vulkanDevice(vulkanDevice),
+                                                                                                                              bindingSetType(bindingSetType)
     {
+        const ShaderInfo& shaderInfo = shaderAsset->GetShaderInfo();
 
-        const ShaderInfo& shaderInfo = ShaderInfo{};  //shaderAsset[ShaderAsset::Info].As<ShaderInfo>();
-
-        for(const DescriptorLayout& descriptorLayout: shaderInfo.descriptors)
+        for (const DescriptorLayout& descriptorLayout : shaderInfo.descriptors)
         {
             auto setIt = descriptorLayoutLookup.Find(descriptorLayout.set);
 
@@ -16,7 +18,7 @@ namespace Fyrion
                 descriptorLayoutLookup.Insert(descriptorLayout.set, descriptorLayout);
             }
 
-            for(const DescriptorBinding& binding: descriptorLayout.bindings)
+            for (const DescriptorBinding& binding : descriptorLayout.bindings)
             {
                 if (auto it = valueDescriptorSetLookup.Find(binding.name); it == valueDescriptorSetLookup.end())
                 {
@@ -49,13 +51,13 @@ namespace Fyrion
         m_buffer = buffer;
     }
 
-    BindingValue& VulkanBindingSet::GetBindingValue(const StringView& name)
+    BindingValue* VulkanBindingSet::GetValue(const StringView& name)
     {
         auto it = bindingValues.Find(name);
         if (it == bindingValues.end())
         {
             it = bindingValues.Emplace(String{name}, MakeShared<VulkanBindingValue>()).first;
         }
-        return *it->second;
+        return it->second.Get();
     }
 }

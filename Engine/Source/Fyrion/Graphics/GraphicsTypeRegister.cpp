@@ -48,5 +48,11 @@ namespace Fyrion
         bufferUsage.Value<BufferUsage::AccelerationStructureBuild>("AccelerationStructureBuild");
         bufferUsage.Value<BufferUsage::AccelerationStructureStorage>("AccelerationStructureStorage");
         bufferUsage.Value<BufferUsage::All>("All");
+
+        auto shaderAssetType = Registry::Type<ShaderAssetType>();
+        shaderAssetType.Value<ShaderAssetType::None>("None");
+        shaderAssetType.Value<ShaderAssetType::Graphics>("Graphics");
+        shaderAssetType.Value<ShaderAssetType::Compute>("Compute");
+        shaderAssetType.Value<ShaderAssetType::Raytrace>("Raytrace");
     }
 }

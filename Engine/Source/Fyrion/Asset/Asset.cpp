@@ -116,6 +116,16 @@ namespace Fyrion
         return "Asset";
     }
 
+    StringView Asset::GetInfoExtension() const
+    {
+        if (extension != FY_ASSET_EXTENSION)
+        {
+            return FY_INFO_EXTENSION;
+        }
+
+        return FY_ASSET_EXTENSION;
+    }
+
     void Asset::RegisterType(NativeTypeHandler<Asset>& type)
     {
         type.Field<&Asset::uuid, &Asset::GetUUID, &Asset::SetUUID>("uuid");

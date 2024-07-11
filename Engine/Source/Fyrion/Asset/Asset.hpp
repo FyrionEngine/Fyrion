@@ -77,10 +77,15 @@ namespace Fyrion
             {
                 return false;
             }
+            if (!GetUUID())
+            {
+                return false;
+            }
             return currentVersion != loadedVersion;
         }
 
         virtual StringView GetDisplayName() const;
+        StringView GetInfoExtension() const;
 
         friend class AssetDatabase;
 
@@ -89,6 +94,13 @@ namespace Fyrion
         friend class AssetDirectory;
 
         static void RegisterType(NativeTypeHandler<Asset>& type);
+
+
+        template <typename T, Traits::EnableIf<Traits::IsBaseOf<Asset, T>>* = nullptr>
+        T* Cast()
+        {
+            return static_cast<T*>(this);
+        }
 
     private:
         usize           index{};

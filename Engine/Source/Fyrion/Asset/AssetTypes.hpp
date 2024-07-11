@@ -11,10 +11,12 @@ namespace Fyrion
             return {};
         }
 
-        virtual Asset* ImportAsset(StringView path, Asset* reimportAsset)
+        virtual Asset* CreateAsset()
         {
             return nullptr;
         }
+
+        virtual void ImportAsset(StringView path, Asset* asset) {}
 
         virtual     ~AssetIO() = default;
         static void RegisterType(NativeTypeHandler<AssetIO>& type);
@@ -58,6 +60,7 @@ namespace Fyrion
         StringView extensions[2] = {".ttf", ".otf"};
 
         Span<StringView> GetImportExtensions() override;
-        Asset*           ImportAsset(StringView path, Asset* reimportAsset) override;
+        Asset*           CreateAsset() override;
+        void             ImportAsset(StringView path, Asset* asset) override;
     };
 }

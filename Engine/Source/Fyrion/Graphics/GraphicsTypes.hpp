@@ -337,6 +337,7 @@ namespace Fyrion
     {
         ShaderAsset*      shader{};
         Span<Format>      attachments{};
+        RenderPass        renderPass{};
         Format            depthFormat = Format::Undefined;
         bool              depthWrite{false};
         bool              stencilTest{false};
@@ -347,6 +348,7 @@ namespace Fyrion
         CompareOp         compareOperator{CompareOp::Always};
         PolygonMode       polygonMode{PolygonMode::Fill};
         PrimitiveTopology primitiveTopology{PrimitiveTopology::TriangleList};
+        PipelineState     pipelineState{};
     };
 
     struct ComputePipelineCreation
@@ -485,10 +487,14 @@ namespace Fyrion
         virtual ~BindingValue() = default;
 
         template<typename T>
-        BindingValue& operator=(const T& val)
+        void Set(const T& val)
         {
             BindingValueSetter<T>::SetValue(*this, val);
-            return *this;
+        }
+
+        template<typename T>
+        void Set(StringView name, const T& value)
+        {
         }
 
         virtual void SetTexture(const Texture& texture) = 0;
@@ -501,12 +507,7 @@ namespace Fyrion
     {
         virtual ~BindingSet() = default;
 
-        virtual BindingValue& GetBindingValue(const StringView& name) = 0;
-
-        BindingValue& operator[](const StringView& name)
-        {
-            return GetBindingValue(name);
-        }
+        virtual BindingValue* GetValue(const StringView& name) = 0;
     };
 
     template<>
@@ -592,7 +593,7 @@ namespace Fyrion
         virtual void DrawIndexed(u32 indexCount, u32 instanceCount, u32 firstIndex, i32 vertexOffset, u32 firstInstance) = 0;
         virtual void Draw(u32 vertexCount, u32 instanceCount, u32 firstVertex, u32 firstInstance) = 0;
         virtual void PushConstants(const PipelineState& pipeline, ShaderStage stages, const void* data, usize size) = 0;
-        virtual void BindBindingSet(const PipelineState& pipeline, const BindingSet& bindingSet) = 0;
+        virtual void BindBindingSet(const PipelineState& pipeline, BindingSet* bindingSet) = 0;
         virtual void DrawIndexedIndirect(const Buffer& buffer, usize offset, u32 drawCount, u32 stride) = 0;
         virtual void BindPipelineState(const PipelineState& pipeline) = 0;
         virtual void Dispatch(u32 x, u32 y, u32 z) = 0;

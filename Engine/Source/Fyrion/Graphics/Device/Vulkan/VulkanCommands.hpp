@@ -26,7 +26,7 @@ namespace Fyrion
         void DrawIndexed(u32 indexCount, u32 instanceCount, u32 firstIndex, i32 vertexOffset, u32 firstInstance) override;
         void Draw(u32 vertexCount, u32 instanceCount, u32 firstVertex, u32 firstInstance) override;
         void PushConstants(const PipelineState& pipeline, ShaderStage stages, const void* data, usize size) override;
-        void BindBindingSet(const PipelineState& pipeline, const BindingSet& bindingSet) override;
+        void BindBindingSet(const PipelineState& pipeline, BindingSet* bindingSet) override;
         void DrawIndexedIndirect(const Buffer& buffer, usize offset, u32 drawCount, u32 stride) override;
         void BindPipelineState(const PipelineState& pipeline) override;
         void Dispatch(u32 x, u32 y, u32 z) override;

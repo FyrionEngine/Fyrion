@@ -56,6 +56,8 @@ namespace Fyrion
 
         ~RenderGraphNode();
 
+        RenderPass GetRenderPass() const;
+
     private:
         String                                          name{};
         RenderGraphPassCreation                         creation{};

@@ -8,19 +8,20 @@ namespace Fyrion
     enum class ShaderAssetType
     {
         None,
-        Raster,
+        Graphics,
         Compute,
         Raytrace
     };
 
     struct FY_API ShaderIO : public AssetIO
     {
-        StringView extension[1] = {".hlsl"};
+        StringView extension[2] = {".raster", ".comp"};
 
         FY_BASE_TYPES(AssetIO);
 
         Span<StringView> GetImportExtensions() override;
-        Asset*           ImportAsset(StringView path, Asset* reimportAsset) override;
+        Asset*           CreateAsset() override;
+        void             ImportAsset(StringView path, Asset* asset) override;
     };
 
     class FY_API ShaderAsset : public Asset
@@ -54,6 +55,9 @@ namespace Fyrion
         {
             return shaderInfo;
         }
+
+        Span<ShaderStageInfo> GetStages() const;
+        Span<u8> GetBytes() const;
 
         void Compile();
 

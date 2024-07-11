@@ -7,6 +7,7 @@
 #include "VulkanBindingSet.hpp"
 #include "VulkanPlatform.hpp"
 #include "VulkanUtils.hpp"
+#include "Fyrion/Graphics/ShaderAsset.hpp"
 #include "Fyrion/Platform/Platform.hpp"
 #include "Fyrion/ImGui/Lib/imgui_impl_vulkan.h"
 
@@ -50,7 +51,7 @@ namespace Fyrion
         }
 
 #ifdef FY_DEBUG
-        enableValidationLayers = false;
+        enableValidationLayers = true;
 #endif
 
         Platform::SetVulkanLoader(vkGetInstanceProcAddr);
@@ -838,11 +839,14 @@ namespace Fyrion
 
     PipelineState VulkanDevice::CreateGraphicsPipelineState(const GraphicsPipelineCreation& graphicsPipelineCreation)
     {
-        //ResourceObject shader = Repository::Read(graphicsPipelineCreation.shader);
+        ShaderAsset* shader = graphicsPipelineCreation.shader;
+        FY_ASSERT(shader, "shader is null");
+        bool invalidPass = graphicsPipelineCreation.attachments.Empty() && !graphicsPipelineCreation.renderPass;
+        FY_ASSERT(!invalidPass, "creation needs attachments or renderpass");
 
-        Span<u8>              bytes =      {};//    shader[ShaderAsset::Bytes].As<Span<u8>>();
-        Span<ShaderStageInfo> stages =     {};//    shader[ShaderAsset::Stages].As<Span<ShaderStageInfo>>();
-        ShaderInfo            shaderInfo = {};//    shader[ShaderAsset::Info].As<ShaderInfo>();
+        Span<u8>              bytes = shader->GetBytes();
+        Span<ShaderStageInfo> stages = shader->GetStages();
+        ShaderInfo            shaderInfo = shader->GetShaderInfo();
 
         VulkanPipelineState* vulkanPipelineState = allocator.Alloc<VulkanPipelineState>();
         vulkanPipelineState->graphicsPipelineCreation = graphicsPipelineCreation;
@@ -982,67 +986,6 @@ namespace Fyrion
         dynamicState.pDynamicStates = dynamicStateEnables.Data();
         dynamicState.dynamicStateCount = dynamicStateEnables.Size();
 
-        Array<VkAttachmentDescription> attachmentDescriptions{};
-        Array<VkAttachmentReference>   colorAttachmentReference{};
-        VkAttachmentReference          depthReference{};
-
-        for (Format attachmentFormat : graphicsPipelineCreation.attachments)
-        {
-            VkAttachmentDescription attachmentDescription{};
-            attachmentDescription.format = Vulkan::CastFormat(attachmentFormat);
-            attachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
-            attachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-            attachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-            attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-            attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-            attachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-            attachmentDescriptions.EmplaceBack(attachmentDescription);
-
-            VkAttachmentReference reference{};
-            reference.attachment = colorAttachmentReference.Size();
-            reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-            colorAttachmentReference.EmplaceBack(reference);
-        }
-
-        if (graphicsPipelineCreation.depthFormat != Format::Undefined)
-        {
-            VkAttachmentDescription attachmentDescription{};
-            attachmentDescription.format = VK_FORMAT_D32_SFLOAT;
-            attachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
-            attachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-            attachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-            attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-            attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-            attachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-            attachmentDescriptions.EmplaceBack(attachmentDescription);
-
-            VkAttachmentReference reference{};
-            depthReference.attachment = colorAttachmentReference.Size();
-            depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-            colorAttachmentReference.EmplaceBack(reference);
-        }
-
-        VkSubpassDescription subPass = {};
-        subPass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        subPass.colorAttachmentCount = colorAttachmentReference.Size();
-        subPass.pColorAttachments = colorAttachmentReference.Data();
-        if (graphicsPipelineCreation.depthFormat != Format::Undefined)
-        {
-            subPass.pDepthStencilAttachment = &depthReference;
-        }
-
-        VkRenderPass           renderPass = {};
-        VkRenderPassCreateInfo renderPassInfo = {VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO};
-        renderPassInfo.attachmentCount = attachmentDescriptions.Size();
-        renderPassInfo.pAttachments = attachmentDescriptions.Data();
-        renderPassInfo.subpassCount = 1;
-        renderPassInfo.pSubpasses = &subPass;
-        renderPassInfo.dependencyCount = 0;
-        vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass);
-
-
         VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
         pipelineInfo.stageCount = shaderStages.Size();
@@ -1057,10 +1000,80 @@ namespace Fyrion
         pipelineInfo.layout = vulkanPipelineState->layout;
         pipelineInfo.subpass = 0;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-        pipelineInfo.renderPass = renderPass;
+
+        bool passHasDepth = false;
+
+        if (!graphicsPipelineCreation.renderPass && !graphicsPipelineCreation.attachments.Empty())
+        {
+            Array<VkAttachmentDescription> attachmentDescriptions{};
+            Array<VkAttachmentReference>   colorAttachmentReference{};
+            VkAttachmentReference          depthReference{};
+
+            for (Format attachmentFormat : graphicsPipelineCreation.attachments)
+            {
+                VkAttachmentDescription attachmentDescription{};
+                attachmentDescription.format = Vulkan::CastFormat(attachmentFormat);
+                attachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
+                attachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+                attachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+                attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+                attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+                attachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+                attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                attachmentDescriptions.EmplaceBack(attachmentDescription);
+
+                VkAttachmentReference reference{};
+                reference.attachment = colorAttachmentReference.Size();
+                reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                colorAttachmentReference.EmplaceBack(reference);
+            }
+
+            if (graphicsPipelineCreation.depthFormat != Format::Undefined)
+            {
+                VkAttachmentDescription attachmentDescription{};
+                attachmentDescription.format = VK_FORMAT_D32_SFLOAT;
+                attachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
+                attachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+                attachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+                attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+                attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+                attachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+                attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+                attachmentDescriptions.EmplaceBack(attachmentDescription);
+
+                VkAttachmentReference reference{};
+                depthReference.attachment = colorAttachmentReference.Size();
+                depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+                colorAttachmentReference.EmplaceBack(reference);
+            }
+
+            VkSubpassDescription subPass = {};
+            subPass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+            subPass.colorAttachmentCount = colorAttachmentReference.Size();
+            subPass.pColorAttachments = colorAttachmentReference.Data();
+            if (graphicsPipelineCreation.depthFormat != Format::Undefined)
+            {
+                subPass.pDepthStencilAttachment = &depthReference;
+            }
+
+            VkRenderPassCreateInfo renderPassInfo = {VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO};
+            renderPassInfo.attachmentCount = attachmentDescriptions.Size();
+            renderPassInfo.pAttachments = attachmentDescriptions.Data();
+            renderPassInfo.subpassCount = 1;
+            renderPassInfo.pSubpasses = &subPass;
+            renderPassInfo.dependencyCount = 0;
+            vkCreateRenderPass(device, &renderPassInfo, nullptr, &pipelineInfo.renderPass);
+        }
+        else if (graphicsPipelineCreation.renderPass)
+        {
+            VulkanRenderPass* renderPass = static_cast<VulkanRenderPass*>(graphicsPipelineCreation.renderPass.handler);
+            pipelineInfo.renderPass = renderPass->renderPass;
+            passHasDepth = renderPass->hasDepth;
+        }
+
 
         VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo = {VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO};
-        if (graphicsPipelineCreation.depthFormat != Format::Undefined)
+        if (graphicsPipelineCreation.depthFormat != Format::Undefined || passHasDepth)
         {
             auto depthTest = graphicsPipelineCreation.compareOperator != CompareOp::Always;
             depthStencilStateCreateInfo.depthTestEnable = depthTest ? VK_TRUE : VK_FALSE;
@@ -1082,7 +1095,10 @@ namespace Fyrion
             vkDestroyShaderModule(device, shaderModule, nullptr);
         }
 
-        vkDestroyRenderPass(device, renderPass, nullptr);
+        if (!graphicsPipelineCreation.attachments.Empty())
+        {
+            vkDestroyRenderPass(device, pipelineInfo.renderPass, nullptr);
+        }
 
         return {vulkanPipelineState};
     }
@@ -1092,9 +1108,9 @@ namespace Fyrion
         return {};
     }
 
-    BindingSet& VulkanDevice::CreateBindingSet( const BindingSetType& bindingSetType)
+    BindingSet* VulkanDevice::CreateBindingSet(ShaderAsset* shaderAsset, const BindingSetType& bindingSetType)
     {
-        return *allocator.Alloc<VulkanBindingSet>(*this, bindingSetType);
+        return allocator.Alloc<VulkanBindingSet>(shaderAsset, *this, bindingSetType);
     }
 
     void VulkanDevice::DestroySwapchain(const Swapchain& swapchain)
@@ -1171,9 +1187,9 @@ namespace Fyrion
     {
     }
 
-    void VulkanDevice::DestroyBindingSet(BindingSet& bindingSet)
+    void VulkanDevice::DestroyBindingSet(BindingSet* bindingSet)
     {
-        allocator.DestroyAndFree(static_cast<VulkanBindingSet*>(&bindingSet));
+        allocator.DestroyAndFree(static_cast<VulkanBindingSet*>(bindingSet));
     }
 
     RenderPass VulkanDevice::AcquireNextRenderPass(Swapchain swapchain)

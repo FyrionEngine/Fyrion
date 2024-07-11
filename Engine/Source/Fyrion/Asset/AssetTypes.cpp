@@ -67,7 +67,6 @@ namespace Fyrion
 
     void UIFontAsset::RegisterType(NativeTypeHandler<UIFontAsset>& type)
     {
-        type.Field<&UIFontAsset::fontBytes>("fontBytes");
     }
 
     Span<StringView> UIFontAssetIO::GetImportExtensions()
@@ -75,11 +74,15 @@ namespace Fyrion
         return {extensions, 2};
     }
 
-    Asset* UIFontAssetIO::ImportAsset(StringView path, Asset* reimportAsset)
+    Asset* UIFontAssetIO::CreateAsset()
     {
-        UIFontAsset* fontAsset = AssetDatabase::Create<UIFontAsset>();
+        return AssetDatabase::Create<UIFontAsset>();
+    }
+
+    void UIFontAssetIO::ImportAsset(StringView path, Asset* asset)
+    {
+        UIFontAsset* fontAsset = asset->Cast<UIFontAsset>();
         fontAsset->fontBytes = FileSystem::ReadFileAsByteArray(path);
-        return fontAsset;
     }
 
     void RegisterAssetTypes()

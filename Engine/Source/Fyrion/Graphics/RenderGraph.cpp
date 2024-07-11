@@ -69,10 +69,21 @@ namespace Fyrion
 
     RenderGraphNode::~RenderGraphNode()
     {
+        if (renderGraphPass && renderGraphPassTypeHandler)
+        {
+            renderGraphPass->Destroy();
+            renderGraphPassTypeHandler->Destroy(renderGraphPass);
+        }
+
         if (renderPass)
         {
             Graphics::DestroyRenderPass(renderPass);
         }
+    }
+
+    RenderPass RenderGraphNode::GetRenderPass() const
+    {
+        return renderPass;
     }
 
     void RenderGraphNode::CreateRenderPass()
@@ -372,15 +383,15 @@ namespace Fyrion
             //				                                         1});
             for(const auto& inputIt: node->inputs)
             {
-                // if (inputIt.second->creation.type == RenderGraphResourceType::Texture)
-                // {
-                //     ResourceBarrierInfo resourceBarrierInfo{};
-                //     resourceBarrierInfo.texture = inputIt.second->texture;
-                //     resourceBarrierInfo.oldLayout = inputIt.second->creation.format != Format::Depth ? ResourceLayout::ColorAttachment : ResourceLayout::DepthStencilAttachment;
-                //     resourceBarrierInfo.newLayout = ResourceLayout::ShaderReadOnly;
-                //     resourceBarrierInfo.isDepth = inputIt.second->creation.format == Format::Depth;
-                //     cmd.ResourceBarrier(resourceBarrierInfo);
-                // }
+                if (inputIt.second->creation.type == RenderGraphResourceType::Texture)
+                {
+                    ResourceBarrierInfo resourceBarrierInfo{};
+                    resourceBarrierInfo.texture = inputIt.second->texture;
+                    resourceBarrierInfo.oldLayout = inputIt.second->creation.format != Format::Depth ? ResourceLayout::ColorAttachment : ResourceLayout::DepthStencilAttachment;
+                    resourceBarrierInfo.newLayout = ResourceLayout::ShaderReadOnly;
+                    resourceBarrierInfo.isDepth = inputIt.second->creation.format == Format::Depth;
+                    cmd.ResourceBarrier(resourceBarrierInfo);
+                }
             }
 
             if (node->renderPass)
@@ -416,6 +427,15 @@ namespace Fyrion
             }
 
             cmd.EndLabel();
+        }
+
+        if (colorOutput)
+        {
+            ResourceBarrierInfo resourceBarrierInfo{};
+            resourceBarrierInfo.texture = colorOutput->texture;
+            resourceBarrierInfo.oldLayout = ResourceLayout::ColorAttachment;
+            resourceBarrierInfo.newLayout = ResourceLayout::ShaderReadOnly;
+            cmd.ResourceBarrier(resourceBarrierInfo);
         }
     }
 

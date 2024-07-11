@@ -115,7 +115,7 @@ namespace Fyrion
         vkCmdPushConstants(commandBuffer, pipelineState.layout, Vulkan::CastStage(stages), 0, size, data);
     }
 
-    void VulkanCommands::BindBindingSet(const PipelineState& pipeline, const BindingSet& bindingSet)
+    void VulkanCommands::BindBindingSet(const PipelineState& pipeline, BindingSet* bindingSet)
     {
     }
 

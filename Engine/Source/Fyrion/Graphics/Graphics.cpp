@@ -90,9 +90,9 @@ namespace Fyrion
         return renderDevice->CreateComputePipelineState(computePipelineCreation);
     }
 
-    BindingSet& Graphics::CreateBindingSet(const BindingSetType& bindingSetType)
+    BindingSet* Graphics::CreateBindingSet(ShaderAsset* shaderAsset, const BindingSetType& bindingSetType)
     {
-        return renderDevice->CreateBindingSet(bindingSetType);
+        return renderDevice->CreateBindingSet(shaderAsset, bindingSetType);
     }
 
     void Graphics::DestroySwapchain(const Swapchain& swapchain)
@@ -135,7 +135,7 @@ namespace Fyrion
         renderDevice->DestroyComputePipelineState(pipelineState);
     }
 
-    void Graphics::DestroyBindingSet(BindingSet& bindingSet)
+    void Graphics::DestroyBindingSet(BindingSet* bindingSet)
     {
         renderDevice->DestroyBindingSet(bindingSet);
     }

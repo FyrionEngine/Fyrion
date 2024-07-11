@@ -185,9 +185,9 @@ namespace Fyrion
                 dir->absolutePath = newPath;
                 SaveOnDirectory(dir, newPath);
             }
-            else if (asset->IsModified() && asset->GetUUID())
+            else if (asset->IsModified())
             {
-                String assetPath = Path::Join(directoryPath, asset->GetName(), FY_ASSET_EXTENSION);
+                String assetPath = Path::Join(directoryPath, asset->GetName(), asset->GetInfoExtension());
                 if (assetPath != asset->GetAbsolutePath() && oldPathExists)
                 {
                     FileSystem::Remove(asset->GetAbsolutePath());
@@ -294,18 +294,16 @@ namespace Fyrion
         }
         else if (auto importer = importers.Find(extension))
         {
-            if (Asset* asset = importer->second->ImportAsset(filePath, nullptr))
+            if (Asset* asset = importer->second->CreateAsset())
             {
-                if (asset->name.Empty())
-                {
-                    asset->name = Path::Name(filePath);
-                }
+                asset->name = Path::Name(filePath);
                 asset->absolutePath = filePath;
                 asset->extension = Path::Extension(filePath);
-                asset->loadedVersion =  asset->currentVersion;
                 parentDirectory->AddChild(asset);
 
                 AssetDatabaseUpdateUUID(asset, asset->GetUUID());
+
+                importer->second->ImportAsset(filePath, asset);
             }
         }
     }

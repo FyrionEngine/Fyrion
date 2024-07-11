@@ -1,4 +1,5 @@
 #include "Fyrion/Core/Registry.hpp"
+#include "Fyrion/Graphics/Graphics.hpp"
 #include "Fyrion/Graphics/RenderGraph.hpp"
 #include "Fyrion/Graphics/ShaderAsset.hpp"
 
@@ -9,16 +10,31 @@ namespace Fyrion
     public:
         FY_BASE_TYPES(RenderGraphPass);
 
-        ShaderAsset* defaultShader = nullptr;
+        PipelineState pipelineState{};
+        BindingSet* bindingSet{};
 
         void Init() override
         {
-            defaultShader = AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Test.fy_shader");
+            GraphicsPipelineCreation graphicsPipelineCreation{
+                .shader = AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Test.raster"),
+                .renderPass = node->GetRenderPass()
+            };
+
+            pipelineState = Graphics::CreateGraphicsPipelineState(graphicsPipelineCreation);
+            bindingSet = Graphics::CreateBindingSet(graphicsPipelineCreation.shader, BindingSetType::Static);
+        }
+
+        void Destroy() override
+        {
+            Graphics::DestroyGraphicsPipelineState(pipelineState);
+            Graphics::DestroyBindingSet(bindingSet);
         }
 
         void Render(f64 deltaTime, RenderCommands& cmd) override
         {
-            // cmd.Draw(3, 1, 0, 0);
+            cmd.BindPipelineState(pipelineState);
+            cmd.BindBindingSet(pipelineState, bindingSet);
+            cmd.Draw(3, 1, 0, 0);
         }
 
         static void RegisterType(NativeTypeHandler<SceneRenderPass>& type)

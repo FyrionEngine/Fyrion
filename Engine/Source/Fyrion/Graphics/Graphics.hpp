@@ -13,7 +13,7 @@ namespace Fyrion::Graphics
     FY_API Sampler       CreateSampler(const SamplerCreation& samplerCreation);
     FY_API PipelineState CreateGraphicsPipelineState(const GraphicsPipelineCreation& graphicsPipelineCreation);
     FY_API PipelineState CreateComputePipelineState(const ComputePipelineCreation& computePipelineCreation);
-    FY_API BindingSet&   CreateBindingSet(const BindingSetType& bindingSetType);
+    FY_API BindingSet*   CreateBindingSet(ShaderAsset* shaderAsset, const BindingSetType& bindingSetType);
     FY_API void          DestroySwapchain(const Swapchain& swapchain);
     FY_API void          DestroyRenderPass(const RenderPass& renderPass);
     FY_API void          DestroyBuffer(const Buffer& buffer);
@@ -22,7 +22,7 @@ namespace Fyrion::Graphics
     FY_API void          DestroySampler(const Sampler& sampler);
     FY_API void          DestroyGraphicsPipelineState(const PipelineState& pipelineState);
     FY_API void          DestroyComputePipelineState(const PipelineState& pipelineState);
-    FY_API void          DestroyBindingSet(BindingSet& bindingSet);
+    FY_API void          DestroyBindingSet(BindingSet* bindingSet);
     FY_API RenderPass    AcquireNextRenderPass(Swapchain swapchain);
     FY_API void          WaitQueue();
     FY_API void          UpdateBufferData(const BufferDataInfo& bufferDataInfo);

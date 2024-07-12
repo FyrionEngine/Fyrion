@@ -2,6 +2,7 @@
 #include "GraphicsTypes.hpp"
 #include "Fyrion/Asset/Asset.hpp"
 #include "Fyrion/Asset/AssetTypes.hpp"
+#include "Fyrion/Asset/StreamObject.hpp"
 #include "Fyrion/Core/Image.hpp"
 
 namespace Fyrion
@@ -93,6 +94,9 @@ namespace Fyrion
         StringView  GetDisplayName() const override;
         static void RegisterType(NativeTypeHandler<TextureAsset>& type);
 
+        void SetImage(StringView path);
+
     private:
+        StreamObject data;
     };
 }

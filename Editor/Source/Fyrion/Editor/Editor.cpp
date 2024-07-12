@@ -472,5 +472,10 @@ namespace Fyrion
         Event::Bind<OnShutdownRequest, &OnEditorShutdownRequest>();
 
         CreateMenuItems();
+
+        if (Engine::HasArgByName("projectPath"))
+        {
+            AssetDatabase::SetDataDirectory(Path::Join(Engine::GetArgByName("projectPath"), "Data"));
+        }
     }
 }

@@ -14,6 +14,7 @@ namespace Fyrion
     public:
         static AssetDirectory* LoadFromDirectory(const StringView& name, const StringView& directory);
         static void            SaveOnDirectory(AssetDirectory* directoryAsset, const StringView& directoryPath);
+        static void            SetDataDirectory(const StringView& directory);
         static void            GetUpdatedAssets(AssetDirectory* directoryAsset, Array<Asset*>& updatedAssets);
         static AssetDirectory* LoadFromFile(const StringView& name, const StringView& file);
         static Asset*          ImportAsset(AssetDirectory* directory, const StringView& path);

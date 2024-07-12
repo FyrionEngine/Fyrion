@@ -144,7 +144,8 @@ namespace Fyrion
 
     void TextureIO::ImportAsset(StringView path, Asset* asset)
     {
-        //TODO
+        TextureAsset* textureAsset = asset->Cast<TextureAsset>();
+        textureAsset->SetImage(path);
     }
 
     StringView TextureAsset::GetDisplayName() const
@@ -152,8 +153,15 @@ namespace Fyrion
         return "Texture";
     }
 
+    void TextureAsset::SetImage(StringView path)
+    {
+        Image image(path);
+        Span<u8> imgData = image.GetData();
+        data.Save(imgData.Data(), imgData.Size());
+    }
+
     void TextureAsset::RegisterType(NativeTypeHandler<TextureAsset>& type)
     {
-
+        type.Field<&TextureAsset::data>("data");
     }
 }

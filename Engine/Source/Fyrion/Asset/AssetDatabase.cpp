@@ -213,6 +213,8 @@ namespace Fyrion
 
     void AssetDatabase::GetUpdatedAssets(AssetDirectory* directoryAsset, Array<Asset*>& updatedAssets)
     {
+        if (!directoryAsset) return;
+
         for (Asset* asset : directoryAsset->GetChildren())
         {
             if (asset->IsModified())

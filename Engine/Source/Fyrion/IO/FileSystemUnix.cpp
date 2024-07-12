@@ -163,6 +163,25 @@ namespace Fyrion
         return read(linuxFileHandler->handler, data, size);
     }
 
+    FileHandler FileSystem::CreateFileMapping(FileHandler fileHandler, AccessMode accessMode, usize size)
+    {
+        return FileHandler{};
+    }
+
+    VoidPtr FileSystem::MapViewOfFile(FileHandler fileHandler)
+    {
+        return null;
+    }
+
+    bool FileSystem::UnmapViewOfFile(VoidPtr map)
+    {
+        return false;
+    }
+
+    void FileSystem::CloseFileMapping(FileHandler fileHandler)
+    {
+
+    }
 
     void FileSystem::CloseFile(FileHandler fileHandler)
     {

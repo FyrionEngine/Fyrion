@@ -155,6 +155,8 @@ namespace Fyrion
 
     void RenderGraph::Create()
     {
+        if (!asset) return;
+
         Graph<String, SharedPtr<RenderGraphNode>> graph{};
 
         for (const String& pass : asset->GetPasses())

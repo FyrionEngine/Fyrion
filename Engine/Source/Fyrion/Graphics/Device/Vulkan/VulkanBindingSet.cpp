@@ -1,5 +1,5 @@
 #include "VulkanBindingSet.hpp"
-#include "Fyrion/Graphics/ShaderAsset.hpp"
+#include "Fyrion/Graphics/GraphicsAssets.hpp"
 
 namespace Fyrion
 {

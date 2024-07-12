@@ -1,4 +1,4 @@
-#include "ShaderAsset.hpp"
+#include "GraphicsAssets.hpp"
 
 #include "Graphics.hpp"
 #include "ShaderManager.hpp"
@@ -130,5 +130,30 @@ namespace Fyrion
     {
         type.Constructor<ShaderAsset>();
         type.Field<&ShaderAsset::shaderType>("shaderType");
+    }
+
+    Span<StringView> TextureIO::GetImportExtensions()
+    {
+        return {extension, 5};
+    }
+
+    Asset* TextureIO::CreateAsset()
+    {
+        return AssetDatabase::Create<TextureAsset>();
+    }
+
+    void TextureIO::ImportAsset(StringView path, Asset* asset)
+    {
+        //TODO
+    }
+
+    StringView TextureAsset::GetDisplayName() const
+    {
+        return "Texture";
+    }
+
+    void TextureAsset::RegisterType(NativeTypeHandler<TextureAsset>& type)
+    {
+
     }
 }

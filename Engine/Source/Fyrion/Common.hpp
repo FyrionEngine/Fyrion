@@ -126,7 +126,10 @@ inline void operator delete(void*, Fyrion::PlaceHolder, Fyrion::VoidPtr) noexcep
 static_assert(false, "Compiler not supported");
 #endif
 
-
+#define FY_COL32_R_SHIFT    0
+#define FY_COL32_G_SHIFT    8
+#define FY_COL32_B_SHIFT    16
+#define FY_COL32_A_SHIFT    24
 
 
 #if defined _MSC_VER

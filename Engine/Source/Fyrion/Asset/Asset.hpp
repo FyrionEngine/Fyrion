@@ -95,7 +95,6 @@ namespace Fyrion
 
         static void RegisterType(NativeTypeHandler<Asset>& type);
 
-
         template <typename T, Traits::EnableIf<Traits::IsBaseOf<Asset, T>>* = nullptr>
         T* Cast()
         {

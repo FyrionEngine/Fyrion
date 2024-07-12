@@ -19,6 +19,10 @@
 #undef CopyFile
 #endif
 
+#ifdef CreateFileMapping
+#undef CreateFileMapping
+#endif
+
 namespace Fyrion
 {
     DirIterator& DirIterator::operator++()
@@ -149,7 +153,7 @@ namespace Fyrion
     usize FileSystem::GetFileSize(FileHandler fileHandler)
     {
         LARGE_INTEGER size;
-        if (!GetFileSizeEx((HANDLE)fileHandler.handler, &size))
+        if (!GetFileSizeEx(fileHandler.handler, &size))
         {
             return 0;
         }
@@ -159,21 +163,58 @@ namespace Fyrion
     u64 FileSystem::WriteFile(FileHandler fileHandler, ConstPtr data, usize size)
     {
         DWORD nWritten;
-        ::WriteFile((HANDLE) fileHandler.handler, data, size, &nWritten, nullptr);
+        ::WriteFile(fileHandler.handler, data, size, &nWritten, nullptr);
         return nWritten;
     }
 
     u64 FileSystem::ReadFile(FileHandler fileHandler, VoidPtr data, usize size)
     {
         DWORD nRead;
-        ::ReadFile((HANDLE) fileHandler.handler, data, size, &nRead, nullptr);
+        ::ReadFile(fileHandler.handler, data, size, &nRead, nullptr);
         return nRead;
     }
 
+	FileHandler FileSystem::CreateFileMapping(FileHandler fileHandler, AccessMode accessMode, usize size)
+    {
+		DWORD protect = 0;
+    	switch (accessMode)
+	    {
+		    case AccessMode::ReadOnly:
+			    protect = PAGE_READONLY;
+    			break;
+		    case AccessMode::WriteOnly:
+		    case AccessMode::ReadAndWrite:
+		    	protect = PAGE_READWRITE;
+			    break;
+	    }
+
+    	HANDLE hout = ::CreateFileMappingA(fileHandler.handler, nullptr, protect, 0, size, nullptr);
+
+		if (hout == INVALID_HANDLE_VALUE)
+    	{
+    		return FileHandler{};
+    	}
+    	return FileHandler{hout};
+    }
+
+	VoidPtr FileSystem::MapViewOfFile(FileHandler fileHandler)
+    {
+    	return ::MapViewOfFile(fileHandler.handler, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+    }
+
+	bool FileSystem::UnmapViewOfFile(VoidPtr map)
+    {
+	    return ::UnmapViewOfFile(map);
+    }
+
+	void FileSystem::CloseFileMapping(FileHandler fileHandler)
+    {
+    	CloseHandle(fileHandler.handler);
+    }
 
     void FileSystem::CloseFile(FileHandler fileHandler)
     {
-        CloseHandle((HANDLE)fileHandler.handler);
+        CloseHandle(fileHandler.handler);
     }
 }
 

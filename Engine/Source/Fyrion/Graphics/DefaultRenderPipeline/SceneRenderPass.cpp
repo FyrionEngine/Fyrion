@@ -1,7 +1,9 @@
+#include <Fyrion/Core/Color.hpp>
+
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Graphics/Graphics.hpp"
 #include "Fyrion/Graphics/RenderGraph.hpp"
-#include "Fyrion/Graphics/ShaderAsset.hpp"
+#include "Fyrion/Graphics/GraphicsAssets.hpp"
 
 namespace Fyrion
 {
@@ -44,7 +46,7 @@ namespace Fyrion
                     .name = "Color",
                     .type = RenderGraphResourceType::Attachment,
                     .scale = {1.0, 1.0},
-                    .cleanValue = {100.f / 255.f, 149.f / 255.f, 237.f / 255.f, 1.0f},
+                    .cleanValue = Color::CORNFLOWER_BLUE.ToVec4(),
                     .format = Format::RGBA
                 })
                 .Output(RenderGraphResourceCreation{

@@ -100,7 +100,7 @@ namespace Fyrion
         FY_ASSERT(typeHandler, "type not found");
 
         Asset* asset = typeHandler->Cast<Asset>(typeHandler->NewInstance());
-        FY_ASSERT(asset, "type cannot be casted to Asset");
+        FY_ASSERT(asset, "type cannot be casted to Asset, check if FY_BASE_TYPES(Asset) is included on the class");
 
         asset->uuid = uuid;
         asset->assetType = typeHandler;

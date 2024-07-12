@@ -47,4 +47,56 @@ namespace
 
         CHECK(FileSystem::Remove(path));
     }
+
+    TEST_CASE("IO:FileSystemMapFile")
+    {
+#ifdef FY_WIN
+        constexpr usize fileSize = 128;
+
+        String path = Path::Join(FY_TEST_FILES, "TestMapFile.bin");
+        {
+            FileHandler fileHandler = FileSystem::OpenFile(path, AccessMode::ReadAndWrite);
+            CHECK(fileHandler);
+            FileHandler mapFile = FileSystem::CreateFileMapping(fileHandler, AccessMode::ReadAndWrite, fileSize);
+            CHECK(mapFile);
+
+            CharPtr memory = (CharPtr) FileSystem::MapViewOfFile(mapFile);
+            CHECK(mapFile);
+
+            for (int i = 0; i < fileSize; ++i)
+            {
+                memory[i] = i * 2;
+            }
+
+            FileSystem::UnmapViewOfFile(memory);
+            FileSystem::CloseFileMapping(mapFile);
+            FileSystem::CloseFile(fileHandler);
+        }
+
+        {
+            FileHandler fileHandler = FileSystem::OpenFile(path, AccessMode::ReadOnly);
+            CHECK(fileHandler);
+            FileHandler mapFile = FileSystem::CreateFileMapping(fileHandler, AccessMode::ReadOnly, 0);
+            CHECK(mapFile);
+            if (mapFile)
+            {
+                CharPtr memory = (CharPtr) FileSystem::MapViewOfFile(mapFile);
+                CHECK(mapFile);
+                if (memory)
+                {
+                    for (int i = 0; i < fileSize; ++i)
+                    {
+                        CHECK(memory[i] == i * 2);
+                    }
+
+                    FileSystem::UnmapViewOfFile(memory);
+                }
+                FileSystem::CloseFileMapping(mapFile);
+            }
+            FileSystem::CloseFile(fileHandler);
+        }
+
+        CHECK(FileSystem::Remove(path));
+#endif
+    }
 }

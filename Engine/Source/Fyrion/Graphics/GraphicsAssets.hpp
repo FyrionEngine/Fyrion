@@ -2,6 +2,7 @@
 #include "GraphicsTypes.hpp"
 #include "Fyrion/Asset/Asset.hpp"
 #include "Fyrion/Asset/AssetTypes.hpp"
+#include "Fyrion/Core/Image.hpp"
 
 namespace Fyrion
 {
@@ -57,7 +58,7 @@ namespace Fyrion
         }
 
         Span<ShaderStageInfo> GetStages() const;
-        Span<u8> GetBytes() const;
+        Span<u8>              GetBytes() const;
 
         void Compile();
 
@@ -69,5 +70,29 @@ namespace Fyrion
         Array<u8>              bytes{};
         Array<ShaderStageInfo> stages{};
         ShaderInfo             shaderInfo{};
+    };
+
+
+    struct FY_API TextureIO : AssetIO
+    {
+        FY_BASE_TYPES(AssetIO);
+
+        StringView extension[5] = {".png", ".jpg", ".jpeg", ".tga", "bmp"};
+
+        Span<StringView> GetImportExtensions() override;
+        Asset*           CreateAsset() override;
+        void             ImportAsset(StringView path, Asset* asset) override;
+    };
+
+
+    class FY_API TextureAsset : public Asset
+    {
+    public:
+        FY_BASE_TYPES(Asset);
+
+        StringView  GetDisplayName() const override;
+        static void RegisterType(NativeTypeHandler<TextureAsset>& type);
+
+    private:
     };
 }

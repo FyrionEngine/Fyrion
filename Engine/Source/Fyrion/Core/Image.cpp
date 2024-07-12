@@ -5,7 +5,7 @@
 
 namespace Fyrion
 {
-    TImage<u8>::TImage(const StringView& file)
+    template<> TImage<u8>::TImage(const StringView& file)
     {
         i32 imageWidth{};
         i32 imageHeight{};

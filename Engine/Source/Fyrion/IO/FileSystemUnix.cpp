@@ -170,7 +170,7 @@ namespace Fyrion
 
     VoidPtr FileSystem::MapViewOfFile(FileHandler fileHandler)
     {
-        return null;
+        return nullptr;
     }
 
     bool FileSystem::UnmapViewOfFile(VoidPtr map)

@@ -1,0 +1,9 @@
+{
+    "uuid": "294c63f8-8d64-75ed-cc88-99a67127e51b",
+    "hasBlobs": true,
+    "width": 512,
+    "height": 512,
+    "channels": 4,
+    "data": "ef1b4a148cf3a513",
+    "_type": "Fyrion::TextureAsset"
+}

@@ -2,7 +2,6 @@
 #include "GraphicsTypes.hpp"
 #include "Fyrion/Asset/Asset.hpp"
 #include "Fyrion/Asset/AssetTypes.hpp"
-#include "Fyrion/Asset/StreamObject.hpp"
 #include "Fyrion/Core/Image.hpp"
 
 namespace Fyrion
@@ -91,12 +90,23 @@ namespace Fyrion
     public:
         FY_BASE_TYPES(Asset);
 
-        StringView  GetDisplayName() const override;
+        StringView GetDisplayName() const override;
+        void       SetImage(StringView path);
+
+        Texture GetTexture();
+
         static void RegisterType(NativeTypeHandler<TextureAsset>& type);
 
-        void SetImage(StringView path);
-
     private:
-        StreamObject data;
+        u32  width = 0;
+        u32  height = 0;
+        u32  channels = 0;
+        Blob data{};
+
+        bool loaded = false;
+
+        Texture texture{};
+
+        static void UpdateTextureData(VoidPtr userData, RenderCommands& cmd);
     };
 }

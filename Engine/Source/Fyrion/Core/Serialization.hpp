@@ -117,6 +117,21 @@ namespace Fyrion
     FY_ARCHIVE_TYPE_FLOAT(f64);
 
 
+    template <>
+    struct ArchiveType<bool>
+    {
+        static void WriteField(ArchiveWriter& writer, ArchiveObject object, const StringView& name, const bool& value)
+        {
+            writer.WriteBool(object, name, value);
+        }
+
+        static void ReadField(ArchiveReader& reader, ArchiveObject object, const StringView& name, bool& value)
+        {
+            value = reader.ReadObject(object, name);
+        }
+    };
+
+
     namespace Serialization
     {
         //*remove

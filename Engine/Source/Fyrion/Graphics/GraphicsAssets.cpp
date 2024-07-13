@@ -75,7 +75,7 @@ namespace Fyrion
     void ShaderAsset::Compile()
     {
         RenderApiType renderApi = Graphics::GetRenderApi();
-        StringView source = GetShaderSource();
+        StringView    source = GetShaderSource();
 
         if (shaderType == ShaderAssetType::Graphics)
         {
@@ -108,11 +108,11 @@ namespace Fyrion
         else if (shaderType == ShaderAssetType::Compute)
         {
             if (ShaderManager::CompileShader(ShaderCreation{
-                                             .source = source,
-                                             .entryPoint = "MainCS",
-                                             .shaderStage = ShaderStage::Compute,
-                                             .renderApi = renderApi
-                                         }, bytes))
+                                                 .source = source,
+                                                 .entryPoint = "MainCS",
+                                                 .shaderStage = ShaderStage::Compute,
+                                                 .renderApi = renderApi
+                                             }, bytes))
             {
                 stages.EmplaceBack(ShaderStageInfo{
                     .stage = ShaderStage::Compute,
@@ -139,7 +139,7 @@ namespace Fyrion
 
     Asset* TextureIO::CreateAsset()
     {
-        return AssetDatabase::Create<TextureAsset>();
+        return AssetDatabase::Create<TextureAsset>(UUID::RandomUUID());
     }
 
     void TextureIO::ImportAsset(StringView path, Asset* asset)
@@ -155,13 +155,56 @@ namespace Fyrion
 
     void TextureAsset::SetImage(StringView path)
     {
-        Image image(path);
+        Image    image(path);
         Span<u8> imgData = image.GetData();
-        data.Save(imgData.Data(), imgData.Size());
+
+        if (!data)
+        {
+            data = CreateBlob();
+        }
+
+        SaveBlob(data, imgData.Data(), imgData.Size());
+
+        width = image.GetWidth();
+        height = image.GetHeight();
+        channels = image.GetChannels();
+    }
+
+    void TextureAsset::UpdateTextureData(VoidPtr userData, RenderCommands& cmd)
+    {
+        TextureAsset* textureAsset = static_cast<TextureAsset*>(userData);
+
+
+        textureAsset->loaded = true;
+    }
+
+    Texture TextureAsset::GetTexture()
+    {
+        if (!texture)
+        {
+            texture = Graphics::CreateTexture(TextureCreation{
+                .extent = {width, height, 1},
+                .usage = TextureUsage::ShaderResource
+            });
+
+            Graphics::AddTask(GraphicsTaskType::Transfer, this, &TextureAsset::UpdateTextureData);
+        }
+
+        if (loaded)
+        {
+            return texture;
+        }
+
+        return {};
     }
 
     void TextureAsset::RegisterType(NativeTypeHandler<TextureAsset>& type)
     {
+        type.Field<&TextureAsset::width>("width");
+        type.Field<&TextureAsset::height>("height");
+        type.Field<&TextureAsset::channels>("channels");
         type.Field<&TextureAsset::data>("data");
     }
+
+
 }

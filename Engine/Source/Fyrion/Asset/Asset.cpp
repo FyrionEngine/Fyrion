@@ -1,6 +1,8 @@
 #include "Asset.hpp"
 #include "AssetTypes.hpp"
 #include "Fyrion/Core/Registry.hpp"
+#include "Fyrion/IO/FileSystem.hpp"
+#include "Fyrion/IO/Path.hpp"
 
 namespace Fyrion
 {
@@ -116,19 +118,44 @@ namespace Fyrion
         return "Asset";
     }
 
-    StringView Asset::GetInfoExtension() const
-    {
-        if (extension != FY_ASSET_EXTENSION)
-        {
-            return FY_INFO_EXTENSION;
-        }
-
-        return FY_ASSET_EXTENSION;
-    }
-
     void Asset::RegisterType(NativeTypeHandler<Asset>& type)
     {
         type.Field<&Asset::uuid, &Asset::GetUUID, &Asset::SetUUID>("uuid");
+        type.Field<&Asset::hasBlobs>("hasBlobs");
         type.Function<&Asset::GetName>("GetName");
     }
+
+    Blob Asset::CreateBlob()
+    {
+        return {Random::Xorshift64star()};
+    }
+
+    void Asset::SaveBlob(Blob blob, ConstPtr data, usize dataSize)
+    {
+        if (blob && storageType == StorageType::Directory)
+        {
+            StringView dataDirectory = AssetDatabase::GetDataDirectory();
+            if (FileSystem::GetFileStatus(dataDirectory).isDirectory)
+            {
+                String assetDataDirectory = Path::Join(dataDirectory, ToString(GetUUID()));
+                if (!FileSystem::GetFileStatus(assetDataDirectory).exists)
+                {
+                    FileSystem::CreateDirectory(assetDataDirectory);
+                }
+                String blobPath = Path::Join(assetDataDirectory, blob.ToString());
+                FileHandler file = FileSystem::OpenFile(blobPath, AccessMode::WriteOnly);
+                FileSystem::WriteFile(file, data, dataSize);
+                FileSystem::CloseFile(file);
+
+                hasBlobs = true;
+            }
+        }
+    }
+
+    usize Asset::GetBlobSize(Blob blob) const
+    {
+        return 0;
+    }
+
+    void Asset::LoadBlob(Blob blob, VoidPtr, usize dataSize) const {}
 }

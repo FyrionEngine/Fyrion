@@ -155,6 +155,11 @@ namespace Fyrion
         renderDevice->UpdateBufferData(bufferDataInfo);
     }
 
+    void Graphics::AddTask(const GraphicsTaskType& graphicsTask, VoidPtr userData, FnGraphicsTask task)
+    {
+
+    }
+
     RenderApiType Graphics::GetRenderApi()
     {
         return RenderApiType::Vulkan;

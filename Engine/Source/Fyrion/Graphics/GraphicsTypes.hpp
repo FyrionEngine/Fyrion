@@ -259,6 +259,14 @@ namespace Fyrion
         Compute  = 2
     };
 
+    enum class GraphicsTaskType
+    {
+        Graphics = 1,
+        Compute = 2,
+        Transfer = 3,
+        Destroy = 4
+    };
+
     struct SwapchainCreation
     {
         Window window{};
@@ -456,6 +464,25 @@ namespace Fyrion
         usize       offset{};
     };
 
+    struct TextureDataRegion
+    {
+        usize    dataOffset{};
+        u32      layerCount{};
+        u32      mipLevel{};
+        u32      arrayLayer{};
+        u32      levelCount{};
+        Extent3D extent{};
+    };
+
+    struct TextureDataInfo
+    {
+        Texture                 texture{};
+        const u8*               data{nullptr};
+        usize                   size{};
+        Span<TextureDataRegion> regions{};
+    };
+
+
     struct BufferCopyInfo
     {
         usize srcOffset;
@@ -599,6 +626,8 @@ namespace Fyrion
         virtual void SubmitAndWait(GPUQueue queue) = 0;
 
     };
+
+    typedef void(*FnGraphicsTask)(VoidPtr userData, RenderCommands& cmd);
 
     struct DeviceFeatures
     {

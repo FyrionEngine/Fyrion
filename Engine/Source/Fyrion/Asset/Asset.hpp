@@ -7,9 +7,38 @@ namespace Fyrion
     class Asset;
     class AssetDirectory;
 
+    struct Blob
+    {
+        u64 id;
+
+        explicit operator bool() const noexcept
+        {
+            return id != 0;
+        }
+
+        String ToString() const
+        {
+            char strBuffer[17]{};
+            usize bufSize = U64ToHex(id, strBuffer);
+            return {strBuffer, bufSize};
+        }
+
+        static Blob FromString(StringView str)
+        {
+            return Blob{HexTo64(str)};
+        }
+    };
+
     class FY_API Asset
     {
     public:
+        enum class StorageType
+        {
+            None,
+            Directory,
+            Package
+        };
+
         virtual ~Asset() = default;
 
         UUID GetUUID() const
@@ -85,7 +114,6 @@ namespace Fyrion
         }
 
         virtual StringView GetDisplayName() const;
-        StringView GetInfoExtension() const;
 
         friend class AssetDatabase;
 
@@ -101,9 +129,15 @@ namespace Fyrion
             return static_cast<T*>(this);
         }
 
+        static Blob CreateBlob();
+        void  SaveBlob(Blob blob, ConstPtr data, usize dataSize);
+        usize GetBlobSize(Blob blob) const;
+        void  LoadBlob(Blob blob, VoidPtr, usize dataSize) const;
+
     private:
         usize           index{};
         UUID            uuid{};
+        bool            hasBlobs = false;
         String          path{};
         Asset*          prototype{};
         TypeHandler*    assetType{};
@@ -114,7 +148,23 @@ namespace Fyrion
         String          absolutePath{};
         AssetDirectory* directory{};
         bool            active = true;
+        StorageType     storageType = StorageType::None;
 
         void ValidateName();
+    };
+
+
+    template <>
+    struct ArchiveType<Blob>
+    {
+        static void WriteField(ArchiveWriter& writer, ArchiveObject object, const StringView& name, const Blob& value)
+        {
+            writer.WriteString(object, name, value.ToString());
+        }
+
+        static void ReadField(ArchiveReader& reader, ArchiveObject object, const StringView& name, Blob& value)
+        {
+            value = Blob::FromString(reader.ReadString(object, name));
+        }
     };
 }

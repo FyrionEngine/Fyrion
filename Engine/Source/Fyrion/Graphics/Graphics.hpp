@@ -27,4 +27,5 @@ namespace Fyrion::Graphics
     FY_API void          WaitQueue();
     FY_API void          UpdateBufferData(const BufferDataInfo& bufferDataInfo);
     FY_API RenderApiType GetRenderApi();
+    FY_API void          AddTask(const GraphicsTaskType& graphicsTask, VoidPtr userData, FnGraphicsTask task);
 }

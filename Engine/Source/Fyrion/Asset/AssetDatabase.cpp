@@ -2,7 +2,6 @@
 
 #include "AssetSerialization.hpp"
 #include "AssetTypes.hpp"
-#include "StreamObject.hpp"
 #include "Fyrion/Core/HashMap.hpp"
 #include "Fyrion/Core/Logger.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
@@ -160,6 +159,7 @@ namespace Fyrion
         assetDirectory->SetName(name);
         assetDirectory->path = String(name) + ":/";
         assetDirectory->absolutePath = directory;
+        assetDirectory->storageType = Asset::StorageType::Directory;
         assetsByPath.Insert(assetDirectory->path, assetDirectory);
 
         for (const auto& entry : DirectoryEntries{directory})
@@ -175,7 +175,6 @@ namespace Fyrion
     void AssetDatabase::LoadAssetFile(AssetDirectory* parentDirectory, const StringView& filePath)
     {
         String extension = Path::Extension(filePath);
-        if (extension == FY_DATA_EXTENSION) return;
 
         if (FileSystem::GetFileStatus(filePath).isDirectory)
         {
@@ -183,6 +182,7 @@ namespace Fyrion
             assetDirectory->absolutePath = filePath;
             assetDirectory->loadedVersion =  assetDirectory->currentVersion;
             assetDirectory->name = Path::Name(filePath);
+            assetDirectory->storageType = Asset::StorageType::Directory;
             parentDirectory->AddChild(assetDirectory);
 
             for (const auto& entry : DirectoryEntries{filePath})
@@ -192,21 +192,8 @@ namespace Fyrion
         }
         else if (extension == FY_ASSET_EXTENSION)
         {
-            FileHandler handler = FileSystem::OpenFile(filePath, AccessMode::ReadOnly);
-            u64 size = FileSystem::GetFileSize(handler);
-            String buffer(size);
-            FileSystem::ReadFile(handler, buffer.begin(), buffer.Size());
-            FileSystem::CloseFile(handler);
-
-            JsonAssetReader reader(buffer);
-            ArchiveObject root = reader.ReadObject();
-            if (TypeHandler* typeHandler = Registry::FindTypeByName(reader.ReadString(root, "_type")))
+            if (Asset* asset = ReadAssetFile(filePath))
             {
-                Asset* asset = Create(typeHandler->GetTypeInfo().typeId);
-                Serialization::Deserialize(typeHandler, reader, root, asset);
-
-                AssetDatabaseUpdateUUID(asset, asset->GetUUID());
-
                 asset->name = Path::Name(filePath);
                 asset->extension = Path::Extension(filePath);
                 asset->absolutePath = filePath;
@@ -216,18 +203,50 @@ namespace Fyrion
         }
         else if (auto importer = importers.Find(extension))
         {
-            if (Asset* asset = importer->second->CreateAsset())
+            String infoPath = Path::Join(Path::Parent(filePath), Path::Name(filePath), FY_INFO_EXTENSION);
+            if (FileSystem::GetFileStatus(infoPath).exists)
+            {
+                if (Asset* asset = ReadAssetFile(infoPath))
+                {
+                    asset->name = Path::Name(filePath);
+                    asset->extension = Path::Extension(filePath);
+                    asset->absolutePath = filePath;
+                    asset->loadedVersion =  asset->currentVersion;
+                    parentDirectory->AddChild(asset);
+                }
+            }
+            else if (Asset* asset = importer->second->CreateAsset())
             {
                 asset->name = Path::Name(filePath);
                 asset->absolutePath = filePath;
                 asset->extension = Path::Extension(filePath);
+                asset->storageType = Asset::StorageType::Directory;
+
                 parentDirectory->AddChild(asset);
-
                 AssetDatabaseUpdateUUID(asset, asset->GetUUID());
-
                 importer->second->ImportAsset(filePath, asset);
             }
         }
+    }
+
+    Asset* AssetDatabase::ReadAssetFile(const StringView& path)
+    {
+        FileHandler handler = FileSystem::OpenFile(path, AccessMode::ReadOnly);
+        u64 size = FileSystem::GetFileSize(handler);
+        String buffer(size);
+        FileSystem::ReadFile(handler, buffer.begin(), buffer.Size());
+        FileSystem::CloseFile(handler);
+
+        JsonAssetReader reader(buffer);
+        ArchiveObject root = reader.ReadObject();
+        if (TypeHandler* typeHandler = Registry::FindTypeByName(reader.ReadString(root, "_type")))
+        {
+            Asset* asset = Create(typeHandler->GetTypeInfo().typeId);
+            Serialization::Deserialize(typeHandler, reader, root, asset);
+            AssetDatabaseUpdateUUID(asset, asset->GetUUID());
+            return asset;
+        }
+        return nullptr;
     }
 
     void AssetDatabase::SaveOnDirectory(AssetDirectory* directoryAsset, const StringView& directoryPath)
@@ -266,28 +285,31 @@ namespace Fyrion
                     logger.Debug("Directory {} created on {} ", asset->GetPath(), newPath);
                 }
                 dir->absolutePath = newPath;
+                dir->storageType = Asset::StorageType::Directory;
                 SaveOnDirectory(dir, newPath);
             }
             else if (asset->IsModified())
             {
-                String assetPath = Path::Join(directoryPath, asset->GetName(), asset->GetInfoExtension());
+                String assetPath = Path::Join(directoryPath, asset->GetName(), asset->extension);
                 if (assetPath != asset->GetAbsolutePath() && oldPathExists)
                 {
                     FileSystem::Remove(asset->GetAbsolutePath());
                     logger.Debug("Asset {} moved from {} to {} ", asset->GetPath(), asset->GetAbsolutePath(), assetPath);
                 }
 
-                JsonAssetWriter writer;
+                String serializedPath = asset->extension == FY_ASSET_EXTENSION ? assetPath : Path::Join(directoryPath, asset->GetName(), FY_INFO_EXTENSION);
 
+                JsonAssetWriter writer;
                 ArchiveObject object = Serialization::Serialize(asset->GetAssetType(), writer, asset);
                 writer.WriteString(object, "_type", asset->GetAssetType()->GetName());
                 String str = JsonAssetWriter::Stringify(object);
 
-                FileHandler handler = FileSystem::OpenFile(assetPath, AccessMode::WriteOnly);
+                FileHandler handler = FileSystem::OpenFile(serializedPath, AccessMode::WriteOnly);
                 FileSystem::WriteFile(handler, str.begin(), str.Size());
                 FileSystem::CloseFile(handler);
 
                 asset->absolutePath = assetPath;
+                asset->storageType = Asset::StorageType::Directory;
             }
             asset->loadedVersion = asset->currentVersion;
         }
@@ -300,6 +322,11 @@ namespace Fyrion
         {
             FileSystem::CreateDirectory(dataDirectory);
         }
+    }
+
+    StringView AssetDatabase::GetDataDirectory()
+    {
+        return dataDirectory;
     }
 
     void AssetDatabase::GetUpdatedAssets(AssetDirectory* directoryAsset, Array<Asset*>& updatedAssets)
@@ -322,7 +349,7 @@ namespace Fyrion
 
 
 
-    AssetDirectory* AssetDatabase::LoadFromFile(const StringView& name, const StringView& file)
+    AssetDirectory* AssetDatabase::LoadFromPackage(const StringView& name, const StringView& file, const StringView& binFile)
     {
         FY_ASSERT(false, "not implemented");
         return nullptr;
@@ -361,39 +388,5 @@ namespace Fyrion
         assetsById.Clear();
         assetsByPath.Clear();
         importers.Clear();
-    }
-
-    void StreamObject::Init(UUID p_uniqueId)
-    {
-        uniqueId = p_uniqueId;
-
-        //.pak
-        //.data
-    }
-
-    void StreamObject::Save(ConstPtr data, usize size)
-    {
-        if (!uniqueId)
-        {
-            uniqueId = UUID::RandomUUID();
-        }
-
-        if (!dataDirectory.Empty())
-        {
-            // String fullPath = Path::Join(dataDirectory, "Objects", ToString(uniqueId));
-            // FileHandler fileHandler = FileSystem::OpenFile(fullPath, AccessMode::WriteOnly);
-            // FileSystem::WriteFile(fileHandler, data, size);
-            // FileSystem::CloseFile(fileHandler);
-        }
-    }
-
-    usize StreamObject::Size() const
-    {
-        return 0;
-    }
-
-    void StreamObject::Load(VoidPtr data) const
-    {
-
     }
 }

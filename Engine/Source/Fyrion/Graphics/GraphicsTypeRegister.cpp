@@ -40,6 +40,8 @@ namespace Fyrion
         Registry::Type<ShaderAsset>();
         Registry::Type<TextureIO>();
         Registry::Type<TextureAsset>();
+        Registry::Type<GLTFIO>();
+        Registry::Type<DCCAsset>();
 
         auto bufferUsage = Registry::Type<BufferUsage>();
         bufferUsage.Value<BufferUsage::VertexBuffer>("VertexBuffer");

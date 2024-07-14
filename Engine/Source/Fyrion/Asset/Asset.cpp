@@ -109,6 +109,19 @@ namespace Fyrion
         return false;
     }
 
+    bool Asset::IsModified() const
+    {
+        if (!IsActive() && loadedVersion == 0)
+        {
+            return false;
+        }
+        if (!GetUUID())
+        {
+            return false;
+        }
+        return currentVersion != loadedVersion;
+    }
+
     StringView Asset::GetDisplayName() const
     {
         if (assetType != nullptr)
@@ -116,13 +129,6 @@ namespace Fyrion
             return assetType->GetSimpleName();
         }
         return "Asset";
-    }
-
-    void Asset::RegisterType(NativeTypeHandler<Asset>& type)
-    {
-        type.Field<&Asset::uuid, &Asset::GetUUID, &Asset::SetUUID>("uuid");
-        type.Field<&Asset::hasBlobs>("hasBlobs");
-        type.Function<&Asset::GetName>("GetName");
     }
 
     void Asset::SaveBlob(Blob& blob, ConstPtr data, usize dataSize)
@@ -173,5 +179,12 @@ namespace Fyrion
             FileHandler file = FileSystem::OpenFile(blobPath, AccessMode::ReadOnly);
             FileSystem::ReadFile(file, data, dataSize);
         }
+    }
+
+    void Asset::RegisterType(NativeTypeHandler<Asset>& type)
+    {
+        type.Field<&Asset::uuid, &Asset::GetUUID, &Asset::SetUUID>("uuid");
+        type.Field<&Asset::hasBlobs>("hasBlobs");
+        type.Function<&Asset::GetName>("GetName");
     }
 }

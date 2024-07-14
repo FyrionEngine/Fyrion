@@ -6,6 +6,7 @@
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
 #include "Fyrion/IO/Path.hpp"
+#include "cgltf.h"
 
 
 namespace Fyrion
@@ -14,7 +15,7 @@ namespace Fyrion
 
     namespace
     {
-        Logger& logger = Logger::GetLogger("Fyrion::ShaderAsset", LogLevel::Debug);
+        Logger& logger = Logger::GetLogger("Fyrion::GraphicsAssets");
     }
 
     Span<StringView> ShaderIO::GetImportExtensions()
@@ -204,5 +205,31 @@ namespace Fyrion
         type.Field<&TextureAsset::data>("data");
     }
 
+    void DCCAsset::RegisterType(NativeTypeHandler<DCCAsset>& type)
+    {
 
+    }
+
+    Span<StringView> GLTFIO::GetImportExtensions()
+    {
+        return {extension, 2};
+    }
+
+    Asset* GLTFIO::CreateAsset()
+    {
+        return AssetDatabase::Create<DCCAsset>();
+    }
+
+    void GLTFIO::ImportAsset(StringView path, Asset* asset)
+    {
+        cgltf_options options = {};
+        cgltf_data* data = NULL;
+        cgltf_result result = cgltf_parse_file(&options, path.CStr(), &data);
+        if (result != cgltf_result_success)
+        {
+            logger.Error("Error on import gltf {} ", path);
+        }
+
+        int a = 0;
+    }
 }

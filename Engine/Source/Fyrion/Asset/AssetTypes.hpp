@@ -28,8 +28,6 @@ namespace Fyrion
     public:
         FY_BASE_TYPES(Asset);
 
-        static void RegisterType(NativeTypeHandler<AssetDirectory>& type);
-
         void BuildPath() override;
         void OnActiveChanged() override;
 
@@ -39,6 +37,9 @@ namespace Fyrion
         void         AddChild(Asset* child);
         void         RemoveChild(Asset* child);
         Span<Asset*> GetChildren();
+        bool         IsModified() const override;
+
+        static void RegisterType(NativeTypeHandler<AssetDirectory>& type);
 
     private:
         Array<Asset*> children;

@@ -100,19 +100,7 @@ namespace Fyrion
             currentVersion += 1;
         }
 
-        bool IsModified() const
-        {
-            if (!IsActive() && loadedVersion == 0)
-            {
-                return false;
-            }
-            if (!GetUUID())
-            {
-                return false;
-            }
-            return currentVersion != loadedVersion;
-        }
-
+        virtual bool IsModified() const;
         virtual StringView GetDisplayName() const;
 
         friend class AssetDatabase;

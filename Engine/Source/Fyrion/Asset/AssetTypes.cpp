@@ -65,6 +65,15 @@ namespace Fyrion
         return children;
     }
 
+    bool AssetDirectory::IsModified() const
+    {
+        if (!IsActive() && loadedVersion == 0)
+        {
+            return false;
+        }
+        return currentVersion != loadedVersion;
+    }
+
     void UIFontAsset::RegisterType(NativeTypeHandler<UIFontAsset>& type)
     {
     }

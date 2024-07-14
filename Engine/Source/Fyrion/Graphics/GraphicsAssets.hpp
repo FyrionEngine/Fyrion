@@ -107,4 +107,24 @@ namespace Fyrion
 
         Texture texture{};
     };
+
+
+    class FY_API DCCAsset : public Asset
+    {
+    public:
+        FY_BASE_TYPES(Asset);
+
+        static void RegisterType(NativeTypeHandler<DCCAsset>& type);
+    };
+
+    struct FY_API GLTFIO : AssetIO
+    {
+        FY_BASE_TYPES(AssetIO);
+
+        StringView extension[2] = {".gltf", ".glb"};
+        Span<StringView> GetImportExtensions() override;
+
+        Asset*           CreateAsset() override;
+        void ImportAsset(StringView path, Asset* asset) override;
+    };
 }

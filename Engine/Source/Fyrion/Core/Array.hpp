@@ -519,11 +519,24 @@ namespace Fyrion
     {
         static void WriteField(ArchiveWriter& writer, ArchiveObject object, const StringView& name, const Array<T>& value)
         {
+            const TypeHandler* typeHandler = nullptr;
+            if constexpr (!Serialization::HasSetField<T>)
+            {
+                typeHandler = Registry::FindTypeById(GetTypeID<T>());
+            }
+
             ArchiveObject arr = writer.CreateArray();
 
             for(const T& item : value)
             {
-                //writer.AddValue()
+                if constexpr (Serialization::HasSetField<T>)
+                {
+                    ArchiveType<T>::SetField(writer, arr, item);
+                }
+                else
+                {
+                    writer.AddValue(arr, Serialization::Serialize(typeHandler, writer, &item));
+                }
             }
 
             writer.WriteValue(object, name, arr);

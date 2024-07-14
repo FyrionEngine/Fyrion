@@ -108,6 +108,16 @@ namespace Fyrion
         Texture texture{};
     };
 
+    class FY_API MeshAsset : public Asset
+    {
+    public:
+        FY_BASE_TYPES(Asset);
+
+        static void RegisterType(NativeTypeHandler<MeshAsset>& type);
+
+        u64 value = 0;
+    private:
+    };
 
     class FY_API DCCAsset : public Asset
     {
@@ -115,6 +125,10 @@ namespace Fyrion
         FY_BASE_TYPES(Asset);
 
         static void RegisterType(NativeTypeHandler<DCCAsset>& type);
+
+        void AddMesh(MeshAsset* mesh);
+    private:
+        Array<MeshAsset*> meshes{};
     };
 
     struct FY_API GLTFIO : AssetIO

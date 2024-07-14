@@ -1,5 +1,6 @@
 #pragma once
 #include "AssetDatabase.hpp"
+#include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Core/UUID.hpp"
 
 namespace Fyrion
@@ -141,7 +142,7 @@ namespace Fyrion
     };
 
 
-    template <>
+    template<>
     struct ArchiveType<Blob>
     {
         static void WriteField(ArchiveWriter& writer, ArchiveObject object, const StringView& name, const Blob& value)
@@ -152,6 +153,22 @@ namespace Fyrion
         static void ReadField(ArchiveReader& reader, ArchiveObject object, const StringView& name, Blob& value)
         {
             value = Blob::FromString(reader.ReadString(object, name));
+        }
+    };
+
+    template <typename T>
+    struct ArchiveType<T*, Traits::EnableIf<Traits::IsBaseOf<Asset, T>>>
+    {
+        static T* GetField(ArchiveReader& reader, ArchiveObject object)
+        {
+            T* asset = AssetDatabase::Create<T>();
+            Serialization::Deserialize(Registry::FindType<T>(), reader, object, asset);
+            return asset;
+        }
+
+        static void SetField(ArchiveWriter& writer, ArchiveObject object, const T* value)
+        {
+            writer.AddValue(object, Serialization::Serialize(Registry::FindType<T>(), writer, value));
         }
     };
 }

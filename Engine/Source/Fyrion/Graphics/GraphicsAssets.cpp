@@ -205,9 +205,19 @@ namespace Fyrion
         type.Field<&TextureAsset::data>("data");
     }
 
+    void MeshAsset::RegisterType(NativeTypeHandler<MeshAsset>& type)
+    {
+        type.Field<&MeshAsset::value>("value");
+    }
+
     void DCCAsset::RegisterType(NativeTypeHandler<DCCAsset>& type)
     {
+        type.Field<&DCCAsset::meshes>("meshes");
+    }
 
+    void DCCAsset::AddMesh(MeshAsset* mesh)
+    {
+        meshes.EmplaceBack(mesh);
     }
 
     Span<StringView> GLTFIO::GetImportExtensions()
@@ -217,19 +227,78 @@ namespace Fyrion
 
     Asset* GLTFIO::CreateAsset()
     {
-        return AssetDatabase::Create<DCCAsset>();
+        return AssetDatabase::Create<DCCAsset>(UUID::RandomUUID());
+    }
+
+    MeshAsset* LoadGltfMesh(cgltf_data* data, cgltf_mesh& gltfMesh, u32 index)
+    {
+        MeshAsset* meshAsset = AssetDatabase::Create<MeshAsset>();
+        meshAsset->SetUUID(UUID::RandomUUID());
+        meshAsset->value = Random::NextUInt(1000);
+        return meshAsset;
     }
 
     void GLTFIO::ImportAsset(StringView path, Asset* asset)
     {
+        DCCAsset* dccAsset = static_cast<DCCAsset*>(asset);
+
         cgltf_options options = {};
-        cgltf_data* data = NULL;
+        cgltf_data* data = nullptr;
         cgltf_result result = cgltf_parse_file(&options, path.CStr(), &data);
         if (result != cgltf_result_success)
         {
-            logger.Error("Error on import gltf {} ", path);
+            logger.Error("GLTF Error on import file {} ", path);
+            return;
         }
 
-        int a = 0;
+        //copy buffer files
+        for (cgltf_size i = 0; i < data->buffers_count; ++i)
+        {
+            if (data->buffers[i].data)
+            {
+                continue;
+            }
+
+            const char* uri = data->buffers[i].uri;
+
+            if (uri == nullptr)
+            {
+                continue;
+            }
+
+            if (strncmp(uri, "data:", 5) == 0)
+            {
+                continue;
+            }
+
+            String bufferFile = Path::Join(Path::Parent(path), uri);
+            if (!FileSystem::GetFileStatus(bufferFile).exists)
+            {
+                logger.Error("GLTF buffer file not found {}", path.CStr());
+                return;
+            }
+            //TODO add bufferFile as file dependency to Asset*
+        }
+
+        if (cgltf_load_buffers(&options, data, path.CStr()) != cgltf_result_success)
+        {
+            logger.Error("GLTF Failed to load buffers {}", path.CStr());
+            cgltf_free(data);
+            return;
+        }
+
+        if (cgltf_validate(data) != cgltf_result_success)
+        {
+            logger.Error("GLTF Failed validation for {}", path.CStr());
+            cgltf_free(data);
+            return;
+        }
+
+        for (u32 m = 0; m < data->meshes_count; ++m)
+        {
+            dccAsset->AddMesh(LoadGltfMesh(data, data->meshes[m], m));
+        }
+
+        cgltf_free(data);
     }
 }

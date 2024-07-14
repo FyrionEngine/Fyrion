@@ -629,16 +629,6 @@ namespace Fyrion
         typeHandler.fnRelease = fnRelease;
     }
 
-    void TypeBuilder::SetFnSerialize(TypeHandler::FnSerialize fnSerialize)
-    {
-        typeHandler.fnSerialize = fnSerialize;
-    }
-
-    void TypeBuilder::SetFnDeserialize(TypeHandler::FnDeserialize fnDeserialize)
-    {
-        typeHandler.fnDeserialize = fnDeserialize;
-    }
-
     void TypeBuilder::SetFnMove(TypeHandler::FnMove fnMove)
     {
         typeHandler.fnMove = fnMove;

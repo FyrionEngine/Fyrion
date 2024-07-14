@@ -122,7 +122,10 @@ namespace Fyrion
     {
         static void WriteField(ArchiveWriter& writer, ArchiveObject object, const StringView& name, const bool& value)
         {
-            writer.WriteBool(object, name, value);
+            if (value)
+            {
+                writer.WriteBool(object, name, true);
+            }
         }
 
         static void ReadField(ArchiveReader& reader, ArchiveObject object, const StringView& name, bool& value)
@@ -134,18 +137,6 @@ namespace Fyrion
 
     namespace Serialization
     {
-        //*remove
-        template <typename, typename = void>
-        struct HasWriteTypeImpl : Traits::FalseType {};
-
-        template <typename T>
-        struct HasWriteTypeImpl<T, Traits::VoidType<decltype(static_cast<void(*)(ArchiveWriter&, ArchiveObject, const T&)>(&ArchiveType<T>::WriteType))>> : Traits::TrueType {};
-
-        template <typename T>
-        constexpr bool HasWriteType = HasWriteTypeImpl<T>::value;
-
-        //*remove
-
         template <typename, typename = void>
         struct HasWriteFieldImpl : Traits::FalseType {};
 
@@ -173,5 +164,14 @@ namespace Fyrion
 
         template <typename T>
         constexpr bool HasGetField = HasGetFieldImpl<T>::value;
+
+        template <typename, typename = void>
+        struct HasSetFieldImpl : Traits::FalseType {};
+
+        template <typename T>
+        struct HasSetFieldImpl<T, Traits::VoidType<decltype(static_cast<void(*)(ArchiveWriter&, ArchiveObject, const Traits::RemoveAll<T>*)>(&ArchiveType<T>::SetField))>> : Traits::TrueType {};
+
+        template <typename T>
+        constexpr bool HasSetField = HasSetFieldImpl<T>::value;
     }
 }

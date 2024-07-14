@@ -2,6 +2,7 @@
 
 #include "AssetSerialization.hpp"
 #include "AssetTypes.hpp"
+#include "Fyrion/Engine.hpp"
 #include "Fyrion/Core/HashMap.hpp"
 #include "Fyrion/Core/Logger.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
@@ -360,14 +361,34 @@ namespace Fyrion
         return nullptr;
     }
 
-    void AssetDatabaseInit() {}
-
-    void AssetDatabaseShutdown()
+    void AssetDatabase::DestroyAssets()
     {
+        if (Engine::IsRunning())
+        {
+            logger.Critical("DestroyAssets() cannot be called when the engine is running");
+            return;
+        }
+
         for (Asset* asset : assets)
         {
             asset->GetAssetType()->Destroy(asset);
         }
+
+        assets.Clear();
+        assets.ShrinkToFit();
+
+        assetsById.Clear();
+        assetsByPath.Clear();
+    }
+
+    void AssetDatabaseInit()
+    {
+
+    }
+
+    void AssetDatabaseShutdown()
+    {
+        AssetDatabase::DestroyAssets();
 
         for (const auto& assetIo : assetIOs)
         {
@@ -381,12 +402,6 @@ namespace Fyrion
 
         assetIOs.Clear();
         assetIOs.ShrinkToFit();
-
-        assets.Clear();
-        assets.ShrinkToFit();
-
-        assetsById.Clear();
-        assetsByPath.Clear();
         importers.Clear();
     }
 }

@@ -57,6 +57,13 @@ namespace Fyrion
         constexpr Extent3D operator*(const Vec3& b) const;
     };
 
+    struct Offset3D
+    {
+        i32 x;
+        i32 y;
+        i32 z;
+    };
+
 
     struct Rect
     {

@@ -4,6 +4,7 @@
 #include "Fyrion/Core/String.hpp"
 #include "Fyrion/Editor/MenuItem.hpp"
 #include "Fyrion/Core/Registry.hpp"
+#include "Fyrion/Graphics/GraphicsTypes.hpp"
 
 
 namespace Fyrion
@@ -35,6 +36,9 @@ namespace Fyrion
         HashMap<usize, bool>   openTreeFolders{};
         f32                    contentBrowserZoom = 0.8;
         Array<AssetDirectory*> directoryCache;
+
+        Texture folderTexture;
+        Texture fileTexture;
 
         void DrawTreeNode(Asset* asset);
         void DrawPathItems();

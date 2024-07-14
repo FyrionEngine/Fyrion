@@ -26,6 +26,7 @@ namespace Fyrion
         static Asset*          CreateFromPrototype(TypeID typeId, Asset* prototype);
         static Asset*          CreateFromPrototype(TypeID typeId, Asset* prototype, UUID uuid);
         static void            Destroy(Asset* asset);
+        static void            DestroyAssets();
 
         template <typename T>
         static T* Create()

@@ -129,8 +129,7 @@ namespace Fyrion
             return static_cast<T*>(this);
         }
 
-        static Blob CreateBlob();
-        void  SaveBlob(Blob blob, ConstPtr data, usize dataSize);
+        void  SaveBlob(Blob& blob, ConstPtr data, usize dataSize);
         usize GetBlobSize(Blob blob) const;
         void  LoadBlob(Blob blob, VoidPtr, usize dataSize) const;
 

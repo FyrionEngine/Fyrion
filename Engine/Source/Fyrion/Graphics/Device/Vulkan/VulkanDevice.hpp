@@ -43,8 +43,8 @@ namespace Fyrion
         u32                            presentFamily{U32_MAX};
         Array<VkQueueFamilyProperties> queueFamilies;
 
-        VkQueue graphicsQueue{};
-        VkQueue presentQueue{};
+        VkQueue                   graphicsQueue{};
+        VkQueue                   presentQueue{};
         SharedPtr<VulkanCommands> temporaryCmd;
 
         FixedArray<VkFence, FY_FRAMES_IN_FLIGHT>                   inFlightFences{};
@@ -82,16 +82,20 @@ namespace Fyrion
         RenderPass      AcquireNextRenderPass(Swapchain swapchain) override;
         void            EndFrame(Swapchain swapchain) override;
         void            WaitQueue() override;
+        GPUQueue        GetMainQueue() override;
+        RenderCommands& GetTempCmd() override;
         void            UpdateBufferData(const BufferDataInfo& bufferDataInfo) override;
+        VoidPtr         GetBufferMappedMemory(const Buffer& buffer) override;
 
 
         bool CreateSwapchain(VulkanSwapchain* vulkanSwapchain);
         void DestroySwapchain(VulkanSwapchain* vulkanSwapchain);
 
-        void    ImGuiInit(Swapchain renderSwapchain) override;
-        void    ImGuiNewFrame() override;
-        void    ImGuiRender(RenderCommands& renderCommands) override;
-        VoidPtr GetImGuiTexture(const Texture& texture) override;
+        void            ImGuiInit(Swapchain renderSwapchain) override;
+        void            ImGuiNewFrame() override;
+        void            ImGuiRender(RenderCommands& renderCommands) override;
+        VoidPtr         GetImGuiTexture(const Texture& texture) override;
+
     };
 
 

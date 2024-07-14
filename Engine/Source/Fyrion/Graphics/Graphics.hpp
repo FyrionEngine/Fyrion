@@ -26,6 +26,7 @@ namespace Fyrion::Graphics
     FY_API RenderPass    AcquireNextRenderPass(Swapchain swapchain);
     FY_API void          WaitQueue();
     FY_API void          UpdateBufferData(const BufferDataInfo& bufferDataInfo);
+    FY_API void          UpdateTextureData(const TextureDataInfo& textureDataInfo);
+    FY_API VoidPtr       GetBufferMappedMemory(const Buffer& buffer);
     FY_API RenderApiType GetRenderApi();
-    FY_API void          AddTask(const GraphicsTaskType& graphicsTask, VoidPtr userData, FnGraphicsTask task);
 }

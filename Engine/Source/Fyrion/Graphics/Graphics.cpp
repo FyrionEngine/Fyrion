@@ -1,4 +1,6 @@
 #include "Graphics.hpp"
+
+#include "Fyrion/Core/FixedArray.hpp"
 #include "Fyrion/Graphics/Device/RenderDevice.hpp"
 #include "Fyrion/Core/SharedPtr.hpp"
 
@@ -155,9 +157,45 @@ namespace Fyrion
         renderDevice->UpdateBufferData(bufferDataInfo);
     }
 
-    void Graphics::AddTask(const GraphicsTaskType& graphicsTask, VoidPtr userData, FnGraphicsTask task)
+    void Graphics::UpdateTextureData(const TextureDataInfo& textureDataInfo)
     {
+        Buffer buffer = CreateBuffer(BufferCreation{
+            .size = textureDataInfo.size,
+            .allocation = BufferAllocation::TransferToGPU
+        });
 
+        MemCopy(GetBufferMappedMemory(buffer), textureDataInfo.data, textureDataInfo.size);
+
+        RenderCommands& tempCmd = renderDevice->GetTempCmd();
+        tempCmd.Begin();
+
+        tempCmd.ResourceBarrier(ResourceBarrierInfo{
+            .texture = textureDataInfo.texture,
+            .oldLayout = ResourceLayout::Undefined,
+            .newLayout = ResourceLayout::CopyDest
+        });
+
+        BufferImageCopy region{
+            .imageExtent = textureDataInfo.extent
+        };
+
+        tempCmd.CopyBufferToTexture(buffer, textureDataInfo.texture, {&region, 1});
+
+        tempCmd.ResourceBarrier(ResourceBarrierInfo{
+            .texture = textureDataInfo.texture,
+            .oldLayout = ResourceLayout::CopyDest,
+            .newLayout = ResourceLayout::ShaderReadOnly
+        });
+
+
+        tempCmd.SubmitAndWait(renderDevice->GetMainQueue());
+
+        DestroyBuffer(buffer);
+    }
+
+    VoidPtr Graphics::GetBufferMappedMemory(const Buffer& buffer)
+    {
+        return renderDevice->GetBufferMappedMemory(buffer);
     }
 
     RenderApiType Graphics::GetRenderApi()

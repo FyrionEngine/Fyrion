@@ -12,6 +12,7 @@
 #include "Fyrion/Asset/AssetDatabase.hpp"
 #include "Fyrion/Editor/Action/AssetEditorActions.hpp"
 #include "Fyrion/Editor/Action/SceneEditorAction.hpp"
+#include "Fyrion/Graphics/GraphicsAssets.hpp"
 #include "Fyrion/Graphics/RenderGraph.hpp"
 
 #define CONTENT_TABLE_ID 500
@@ -19,6 +20,7 @@
 
 namespace Fyrion
 {
+
     MenuItemContext ProjectBrowserWindow::menuItemContext = {};
 
     void ProjectBrowserWindow::Init(u32 id, VoidPtr userData)
@@ -27,6 +29,16 @@ namespace Fyrion
         if (!Editor::GetOpenDirectories().Empty())
         {
             SetOpenDirectory(Editor::GetOpenDirectories().Back());
+        }
+
+        if (TextureAsset* texture = AssetDatabase::FindByPath<TextureAsset>("Fyrion://Textures/FolderIcon.png"))
+        {
+            folderTexture = texture->GetTexture();
+        }
+
+        if (TextureAsset* texture = AssetDatabase::FindByPath<TextureAsset>("Fyrion://Textures/FileIcon.png"))
+        {
+            fileTexture = texture->GetTexture();
         }
     }
 
@@ -301,7 +313,7 @@ namespace Fyrion
                                 contentItem.SetPayload = ASSET_PAYLOAD;
                                 contentItem.AcceptPayload = ASSET_PAYLOAD;
                                 contentItem.TooltipText = asset->GetPath().CStr();
-                                //contentItem.Texture = folderTexture;
+                                contentItem.Texture = folderTexture;
 
                                 if (asset->IsModified())
                                 {
@@ -352,7 +364,7 @@ namespace Fyrion
                                 contentItem.DetailsDesc = asset->GetDisplayName().CStr();
                                 contentItem.SetPayload = ASSET_PAYLOAD;
                                 contentItem.TooltipText = asset->GetPath().CStr();
-                                //contentItem.Texture = folderTexture;
+                                contentItem.Texture = fileTexture;
 
                                 if (asset->IsModified())
                                 {

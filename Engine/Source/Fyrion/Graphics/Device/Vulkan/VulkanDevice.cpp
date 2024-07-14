@@ -702,6 +702,8 @@ namespace Fyrion
 
     Buffer VulkanDevice::CreateBuffer(const BufferCreation& bufferCreation)
     {
+        FY_ASSERT(bufferCreation.size > 0, "size cannot be 0");
+
         VulkanBuffer* vulkanBuffer = allocator.Alloc<VulkanBuffer>(bufferCreation);
 
         VkBufferCreateInfo bufferInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
@@ -733,6 +735,9 @@ namespace Fyrion
             break;
         }
         vmaCreateBuffer(vmaAllocator, &bufferInfo, &vmaAllocInfo, &vulkanBuffer->buffer, &vulkanBuffer->allocation, &vulkanBuffer->allocInfo);
+
+        FY_ASSERT(vulkanBuffer->buffer, "buffer not created");
+
         return {vulkanBuffer};
     }
 
@@ -1272,6 +1277,16 @@ namespace Fyrion
         vkQueueWaitIdle(graphicsQueue);
     }
 
+    GPUQueue VulkanDevice::GetMainQueue()
+    {
+        return {graphicsQueue};
+    }
+
+    RenderCommands& VulkanDevice::GetTempCmd()
+    {
+        return *temporaryCmd;
+    }
+
     void VulkanDevice::UpdateBufferData(const BufferDataInfo& bufferDataInfo)
     {
         FY_ASSERT(bufferDataInfo.data, "data cannot be null");
@@ -1313,6 +1328,12 @@ namespace Fyrion
 
             vmaDestroyBuffer(vmaAllocator, stagingBuffer.buffer, stagingBuffer.allocation);
         }
+    }
+
+    VoidPtr VulkanDevice::GetBufferMappedMemory(const Buffer& buffer)
+    {
+        VulkanBuffer& vulkanBuffer = *static_cast<VulkanBuffer*>(buffer.handler);
+        return vulkanBuffer.allocInfo.pMappedData;
     }
 
 

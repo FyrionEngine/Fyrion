@@ -125,15 +125,15 @@ namespace Fyrion
         type.Function<&Asset::GetName>("GetName");
     }
 
-    Blob Asset::CreateBlob()
-    {
-        return {Random::Xorshift64star()};
-    }
-
-    void Asset::SaveBlob(Blob blob, ConstPtr data, usize dataSize)
+    void Asset::SaveBlob(Blob& blob, ConstPtr data, usize dataSize)
     {
         if (blob && storageType == StorageType::Directory)
         {
+            if (!blob)
+            {
+                blob.id = Random::Xorshift64star();
+            }
+
             StringView dataDirectory = AssetDatabase::GetDataDirectory();
             if (FileSystem::GetFileStatus(dataDirectory).isDirectory)
             {
@@ -154,8 +154,24 @@ namespace Fyrion
 
     usize Asset::GetBlobSize(Blob blob) const
     {
+        StringView dataDirectory = AssetDatabase::GetDataDirectory();
+        if (FileSystem::GetFileStatus(dataDirectory).isDirectory)
+        {
+            String blobPath = Path::Join(Path::Join(dataDirectory, ToString(GetUUID())), blob.ToString());
+            return FileSystem::GetFileStatus(blobPath).fileSize;
+        }
+
         return 0;
     }
 
-    void Asset::LoadBlob(Blob blob, VoidPtr, usize dataSize) const {}
+    void Asset::LoadBlob(Blob blob, VoidPtr data, usize dataSize) const
+    {
+        StringView dataDirectory = AssetDatabase::GetDataDirectory();
+        if (FileSystem::GetFileStatus(dataDirectory).isDirectory)
+        {
+            String blobPath = Path::Join(Path::Join(dataDirectory, ToString(GetUUID())), blob.ToString());
+            FileHandler file = FileSystem::OpenFile(blobPath, AccessMode::ReadOnly);
+            FileSystem::ReadFile(file, data, dataSize);
+        }
+    }
 }

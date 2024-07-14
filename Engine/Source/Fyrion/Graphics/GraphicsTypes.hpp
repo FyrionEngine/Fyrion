@@ -98,7 +98,8 @@ namespace Fyrion
 
     enum class BufferUsage : u32
     {
-        VertexBuffer                 = 1 << 0,
+        None                         = 1 << 0,
+        VertexBuffer                 = 1 << 1,
         IndexBuffer                  = 1 << 2,
         UniformBuffer                = 1 << 3,
         StorageBuffer                = 1 << 4,
@@ -259,14 +260,6 @@ namespace Fyrion
         Compute  = 2
     };
 
-    enum class GraphicsTaskType
-    {
-        Graphics = 1,
-        Compute = 2,
-        Transfer = 3,
-        Destroy = 4
-    };
-
     struct SwapchainCreation
     {
         Window window{};
@@ -289,7 +282,7 @@ namespace Fyrion
 
     struct BufferCreation
     {
-        BufferUsage      usage{};
+        BufferUsage      usage{BufferUsage::None};
         usize            size{};
         BufferAllocation allocation{BufferAllocation::GPUOnly};
     };
@@ -464,6 +457,19 @@ namespace Fyrion
         usize       offset{};
     };
 
+    struct BufferImageCopy
+    {
+        u64      bufferOffset{};
+        u32      bufferRowLength{};
+        u32      bufferImageHeight{};
+        u32      textureMipLevel{};
+        u32      textureArrayLayer{};
+        u32      layerCount{1};
+        Offset3D imageOffset{};
+        Extent3D imageExtent;
+    };
+
+
     struct TextureDataRegion
     {
         usize    dataOffset{};
@@ -479,6 +485,7 @@ namespace Fyrion
         Texture                 texture{};
         const u8*               data{nullptr};
         usize                   size{};
+        Extent3D                extent{};
         Span<TextureDataRegion> regions{};
     };
 
@@ -622,12 +629,10 @@ namespace Fyrion
         virtual void EndLabel() = 0;
         virtual void ResourceBarrier(const ResourceBarrierInfo& resourceBarrierInfo) = 0;
         virtual void CopyBuffer(Buffer srcBuffer, Buffer dstBuffer, const Span<BufferCopyInfo>& info) = 0;
-
+        virtual void CopyBufferToTexture(Buffer srcBuffer, Texture texture, const Span<BufferImageCopy>& regions) = 0;
         virtual void SubmitAndWait(GPUQueue queue) = 0;
 
     };
-
-    typedef void(*FnGraphicsTask)(VoidPtr userData, RenderCommands& cmd);
 
     struct DeviceFeatures
     {

@@ -36,6 +36,7 @@ namespace Fyrion
         void EndLabel() override;
         void ResourceBarrier(const ResourceBarrierInfo& resourceBarrierInfo) override;
         void CopyBuffer(Buffer srcBuffer, Buffer dstBuffer, const Span<BufferCopyInfo>& info) override;
+        void CopyBufferToTexture(Buffer srcBuffer, Texture texture, const Span<BufferImageCopy>& regions) override;
         void SubmitAndWait(GPUQueue queue) override;
     };
 }

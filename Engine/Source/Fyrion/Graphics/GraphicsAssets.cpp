@@ -148,6 +148,14 @@ namespace Fyrion
         textureAsset->SetImage(path);
     }
 
+    TextureAsset::~TextureAsset()
+    {
+        if (texture)
+        {
+            Graphics::DestroyTexture(texture);
+        }
+    }
+
     StringView TextureAsset::GetDisplayName() const
     {
         return "Texture";
@@ -158,24 +166,11 @@ namespace Fyrion
         Image    image(path);
         Span<u8> imgData = image.GetData();
 
-        if (!data)
-        {
-            data = CreateBlob();
-        }
-
         SaveBlob(data, imgData.Data(), imgData.Size());
 
         width = image.GetWidth();
         height = image.GetHeight();
         channels = image.GetChannels();
-    }
-
-    void TextureAsset::UpdateTextureData(VoidPtr userData, RenderCommands& cmd)
-    {
-        TextureAsset* textureAsset = static_cast<TextureAsset*>(userData);
-
-
-        textureAsset->loaded = true;
     }
 
     Texture TextureAsset::GetTexture()
@@ -184,18 +179,21 @@ namespace Fyrion
         {
             texture = Graphics::CreateTexture(TextureCreation{
                 .extent = {width, height, 1},
-                .usage = TextureUsage::ShaderResource
             });
 
-            Graphics::AddTask(GraphicsTaskType::Transfer, this, &TextureAsset::UpdateTextureData);
+            usize size = GetBlobSize(data);
+            Array<u8> textureData(size);
+            LoadBlob(data, textureData.Data(), textureData.Size());
+
+            Graphics::UpdateTextureData(TextureDataInfo{
+                .texture = texture,
+                .data = textureData.Data(),
+                .size = size,
+                .extent = {width, height, 1}
+            });
         }
 
-        if (loaded)
-        {
-            return texture;
-        }
-
-        return {};
+        return texture;
     }
 
     void TextureAsset::RegisterType(NativeTypeHandler<TextureAsset>& type)

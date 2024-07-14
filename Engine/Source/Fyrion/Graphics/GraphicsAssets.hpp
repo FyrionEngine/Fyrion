@@ -90,6 +90,8 @@ namespace Fyrion
     public:
         FY_BASE_TYPES(Asset);
 
+        ~TextureAsset() override;
+
         StringView GetDisplayName() const override;
         void       SetImage(StringView path);
 
@@ -103,10 +105,6 @@ namespace Fyrion
         u32  channels = 0;
         Blob data{};
 
-        bool loaded = false;
-
         Texture texture{};
-
-        static void UpdateTextureData(VoidPtr userData, RenderCommands& cmd);
     };
 }

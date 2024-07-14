@@ -169,6 +169,8 @@ namespace Fyrion
 
         onShutdownHandler.Invoke();
 
+        AssetDatabase::DestroyAssets();
+
         Graphics::DestroySwapchain(swapchain);
         Platform::DestroyWindow(window);
 
@@ -204,6 +206,11 @@ namespace Fyrion
     bool Engine::HasArgByName(const StringView& name)
     {
         return args.Has(name);
+    }
+
+    bool Engine::IsRunning()
+    {
+        return running;
     }
 
     u64 Engine::GetFrame()

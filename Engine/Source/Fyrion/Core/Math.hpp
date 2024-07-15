@@ -403,6 +403,16 @@ namespace Fyrion
             return VecScale(a, k);
         }
 
+        inline decltype(auto) Min(const Vec3& lhs, const Vec3& rhs)
+        {
+            return Vec3{Min(lhs.x, rhs.x), Min(lhs.y, rhs.y), Min(lhs.z, rhs.z)};
+        }
+
+        inline decltype(auto) Max(const Vec3& lhs, const Vec3& rhs)
+        {
+            return Vec3{Max(lhs.x, rhs.x), Max(lhs.y, rhs.y), Max(lhs.z, rhs.z)};
+        }
+
         constexpr auto MakeVec3(const Float* value)
         {
             return Vec3{value[0], value[1], value[2]};

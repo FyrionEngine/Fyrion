@@ -7,7 +7,7 @@
 #include "VulkanBindingSet.hpp"
 #include "VulkanPlatform.hpp"
 #include "VulkanUtils.hpp"
-#include "Fyrion/Graphics/GraphicsAssets.hpp"
+#include "Fyrion/Graphics/Assets/ShaderAsset.hpp"
 #include "Fyrion/Platform/Platform.hpp"
 #include "Fyrion/ImGui/Lib/imgui_impl_vulkan.h"
 

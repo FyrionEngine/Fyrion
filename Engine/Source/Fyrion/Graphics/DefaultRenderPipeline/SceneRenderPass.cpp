@@ -3,7 +3,8 @@
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Graphics/Graphics.hpp"
 #include "Fyrion/Graphics/RenderGraph.hpp"
-#include "Fyrion/Graphics/GraphicsAssets.hpp"
+#include "Fyrion/Graphics/Assets/ShaderAsset.hpp"
+
 
 namespace Fyrion
 {

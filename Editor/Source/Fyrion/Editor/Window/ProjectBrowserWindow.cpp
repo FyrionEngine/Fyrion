@@ -12,8 +12,8 @@
 #include "Fyrion/Asset/AssetDatabase.hpp"
 #include "Fyrion/Editor/Action/AssetEditorActions.hpp"
 #include "Fyrion/Editor/Action/SceneEditorAction.hpp"
-#include "Fyrion/Graphics/GraphicsAssets.hpp"
 #include "Fyrion/Graphics/RenderGraph.hpp"
+#include "Fyrion/Graphics/Assets/TextureAsset.hpp"
 
 #define CONTENT_TABLE_ID 500
 #define ASSET_PAYLOAD "ASSET-PAYLOAD"

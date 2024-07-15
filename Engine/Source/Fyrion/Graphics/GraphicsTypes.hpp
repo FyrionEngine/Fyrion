@@ -10,6 +10,7 @@
 namespace Fyrion
 {
     class ShaderAsset;
+
     FY_HANDLER(Adapter);
     FY_HANDLER(Swapchain);
     FY_HANDLER(RenderPass);

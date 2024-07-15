@@ -2,7 +2,9 @@
 #include "Fyrion/Core/Registry.hpp"
 #include "GraphicsTypes.hpp"
 #include "RenderGraph.hpp"
-#include "GraphicsAssets.hpp"
+#include "Assets/DCCAsset.hpp"
+#include "Assets/ShaderAsset.hpp"
+#include "Assets/TextureAsset.hpp"
 
 namespace Fyrion
 {
@@ -24,6 +26,10 @@ namespace Fyrion
         }
     };
 
+    void RegisterShaderIO();
+    void RegisterTextureIO();
+    void RegisterGLTFIO();
+
 
     void RegisterGraphicsTypes()
     {
@@ -36,13 +42,15 @@ namespace Fyrion
         Registry::Type<RenderGraphEdge>();
         Registry::Type<RenderGraphAsset>();
         Registry::Type<RenderGraphPass>();
-        Registry::Type<ShaderIO>();
         Registry::Type<ShaderAsset>();
-        Registry::Type<TextureIO>();
         Registry::Type<TextureAsset>();
-        Registry::Type<GLTFIO>();
         Registry::Type<DCCAsset>();
         Registry::Type<MeshAsset>();
+
+        RegisterGLTFIO();
+        RegisterShaderIO();
+        RegisterTextureIO();
+
 
 
         auto bufferUsage = Registry::Type<BufferUsage>();

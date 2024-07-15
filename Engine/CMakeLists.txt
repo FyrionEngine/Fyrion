@@ -11,7 +11,8 @@ target_include_directories(FyrionEngine PRIVATE ThirdParty/concurrentqueue)
 target_include_directories(FyrionEngine PRIVATE ThirdParty/dxc/include)
 
 target_compile_definitions(FyrionEngine PUBLIC FMT_LIB_EXPORT=1)
-target_link_libraries(FyrionEngine PRIVATE mimalloc glfw vma volk vulkan-sdk freetype nfd SPIRV-Reflect cpptrace::cpptrace yyjson stb cgltf)
+
+target_link_libraries(FyrionEngine PRIVATE mimalloc glfw vma volk vulkan-sdk freetype nfd SPIRV-Reflect cpptrace::cpptrace yyjson stb cgltf mikktspace)
 
 add_binary_file(FyrionEngine ThirdParty/dxc dxcompiler)
 

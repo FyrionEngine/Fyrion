@@ -6,6 +6,8 @@
 
 namespace Fyrion
 {
+    class SceneObjectAsset;
+
     enum class ShaderAssetType
     {
         None,
@@ -92,11 +94,9 @@ namespace Fyrion
 
         ~TextureAsset() override;
 
-        StringView GetDisplayName() const override;
-        void       SetImage(StringView path);
-
-        Texture GetTexture();
-
+        StringView  GetDisplayName() const override;
+        void        SetImage(StringView path);
+        Texture     GetTexture();
         static void RegisterType(NativeTypeHandler<TextureAsset>& type);
 
     private:
@@ -108,6 +108,30 @@ namespace Fyrion
         Texture texture{};
     };
 
+    class FY_API MaterialAsset : public Asset
+    {
+    public:
+        FY_BASE_TYPES(Asset);
+
+        static void RegisterType(NativeTypeHandler<MaterialAsset>& type);
+    private:
+        Color     baseColor{Color::WHITE};
+        Texture*  baseColorTexture{};
+        Texture*  normalTexture{};
+        f32       normalMultiplier{};
+        f32       metallic{0.0};
+        Texture*  metallicTexture{};
+        f32       roughness{1.0};
+        Texture*  roughnessTexture{};
+        Texture*  metallicRoughnessTexture{};
+        Texture*  aoTexture{};
+        Texture*  emissiveTexture{};
+        Vec3      emissiveFactor{};
+        f32       alphaCutoff{0.0};
+        AlphaMode alphaMode{};
+        Vec2      uvScale{1.0f, 1.0f};
+    };
+
     class FY_API MeshAsset : public Asset
     {
     public:
@@ -115,8 +139,14 @@ namespace Fyrion
 
         static void RegisterType(NativeTypeHandler<MeshAsset>& type);
 
-        u64 value = 0;
     private:
+        AABB                  boundingBox;
+        u32                   indicesCount = 0;
+        usize                 verticesCount = 0;
+        Array<MaterialAsset*> materials;
+        Blob                  primitives{};
+        Blob                  vertices{};
+        Blob                  indices{};
     };
 
     class FY_API DCCAsset : public Asset
@@ -125,20 +155,26 @@ namespace Fyrion
         FY_BASE_TYPES(Asset);
 
         static void RegisterType(NativeTypeHandler<DCCAsset>& type);
+        void        AddMesh(MeshAsset* mesh);
 
-        void AddMesh(MeshAsset* mesh);
     private:
-        Array<MeshAsset*> meshes{};
+        Vec3                            scaleFactor{1.0, 1.0, 1.0};
+        bool                            mergeMaterials = true;
+        bool                            mergeMeshes = false;
+        Array<Subobject<TextureAsset>>  textures{};
+        Array<Subobject<MeshAsset>>     meshes{};
+        Array<Subobject<MaterialAsset>> materials{};
+        Subobject<SceneObjectAsset>     sceneObject{};
     };
 
     struct FY_API GLTFIO : AssetIO
     {
         FY_BASE_TYPES(AssetIO);
 
-        StringView extension[2] = {".gltf", ".glb"};
+        StringView       extension[2] = {".gltf", ".glb"};
         Span<StringView> GetImportExtensions() override;
 
-        Asset*           CreateAsset() override;
-        void ImportAsset(StringView path, Asset* asset) override;
+        Asset* CreateAsset() override;
+        void   ImportAsset(StringView path, Asset* asset) override;
     };
 }

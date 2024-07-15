@@ -33,13 +33,6 @@ namespace Fyrion
     class FY_API Asset
     {
     public:
-        enum class StorageType
-        {
-            None,
-            Directory,
-            Package
-        };
-
         virtual ~Asset() = default;
 
         UUID GetUUID() const
@@ -105,9 +98,6 @@ namespace Fyrion
         virtual StringView GetDisplayName() const;
 
         friend class AssetDatabase;
-
-        template <typename Type>
-        friend class Subobject;
         friend class AssetDirectory;
 
         static void RegisterType(NativeTypeHandler<Asset>& type);
@@ -136,9 +126,14 @@ namespace Fyrion
         String          absolutePath{};
         AssetDirectory* directory{};
         bool            active = true;
-        StorageType     storageType = StorageType::None;
 
         void ValidateName();
+    };
+
+    template<typename T>
+    struct Subobject
+    {
+        T* object;
     };
 
 
@@ -161,14 +156,32 @@ namespace Fyrion
     {
         static T* GetField(ArchiveReader& reader, ArchiveObject object)
         {
-            T* asset = AssetDatabase::Create<T>();
-            Serialization::Deserialize(Registry::FindType<T>(), reader, object, asset);
-            return asset;
+            // T* asset = AssetDatabase::Create<T>();
+            // Serialization::Deserialize(Registry::FindType<T>(), reader, object, asset);
+            // return asset;
+            return nullptr;
         }
 
         static void SetField(ArchiveWriter& writer, ArchiveObject object, const T* value)
         {
-            writer.AddValue(object, Serialization::Serialize(Registry::FindType<T>(), writer, value));
+            //writer.AddValue(object, Serialization::Serialize(Registry::FindType<T>(), writer, value));
+        }
+    };
+
+    template <typename T>
+    struct ArchiveType<Subobject<T>, Traits::EnableIf<Traits::IsBaseOf<Asset, T>>>
+    {
+        static Subobject<T> GetField(ArchiveReader& reader, ArchiveObject object)
+        {
+            // T* asset = AssetDatabase::Create<T>();
+            // Serialization::Deserialize(Registry::FindType<T>(), reader, object, asset);
+            // return asset;
+            return {};
+        }
+
+        static void SetField(ArchiveWriter& writer, ArchiveObject object, const Subobject<T> value)
+        {
+            //writer.AddValue(object, Serialization::Serialize(Registry::FindType<T>(), writer, value));
         }
     };
 }

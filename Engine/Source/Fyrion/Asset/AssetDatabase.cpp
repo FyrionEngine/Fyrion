@@ -160,7 +160,6 @@ namespace Fyrion
         assetDirectory->SetName(name);
         assetDirectory->path = String(name) + ":/";
         assetDirectory->absolutePath = directory;
-        assetDirectory->storageType = Asset::StorageType::Directory;
         assetsByPath.Insert(assetDirectory->path, assetDirectory);
 
         for (const auto& entry : DirectoryEntries{directory})
@@ -183,7 +182,6 @@ namespace Fyrion
             assetDirectory->absolutePath = filePath;
             assetDirectory->loadedVersion =  assetDirectory->currentVersion;
             assetDirectory->name = Path::Name(filePath);
-            assetDirectory->storageType = Asset::StorageType::Directory;
             parentDirectory->AddChild(assetDirectory);
 
             for (const auto& entry : DirectoryEntries{filePath})
@@ -214,6 +212,12 @@ namespace Fyrion
                     asset->absolutePath = filePath;
                     asset->loadedVersion =  asset->currentVersion;
                     parentDirectory->AddChild(asset);
+
+                    String assetDataDir = Path::Join(dataDirectory, ToString(asset->GetUUID()));
+                    if (asset->hasBlobs && !FileSystem::GetFileStatus(assetDataDir).exists)
+                    {
+                        importer->second->ImportAsset(filePath, asset);
+                    }
                 }
             }
             else if (Asset* asset = importer->second->CreateAsset())
@@ -221,7 +225,6 @@ namespace Fyrion
                 asset->name = Path::Name(filePath);
                 asset->absolutePath = filePath;
                 asset->extension = Path::Extension(filePath);
-                asset->storageType = Asset::StorageType::Directory;
 
                 parentDirectory->AddChild(asset);
                 AssetDatabaseUpdateUUID(asset, asset->GetUUID());
@@ -286,7 +289,6 @@ namespace Fyrion
                     logger.Debug("Directory {} created on {} ", asset->GetPath(), newPath);
                 }
                 dir->absolutePath = newPath;
-                dir->storageType = Asset::StorageType::Directory;
                 SaveOnDirectory(dir, newPath);
             }
             else if (asset->IsModified())
@@ -310,7 +312,6 @@ namespace Fyrion
                 FileSystem::CloseFile(handler);
 
                 asset->absolutePath = assetPath;
-                asset->storageType = Asset::StorageType::Directory;
             }
             asset->loadedVersion = asset->currentVersion;
         }

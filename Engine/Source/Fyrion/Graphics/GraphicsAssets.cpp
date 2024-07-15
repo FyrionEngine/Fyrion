@@ -7,6 +7,7 @@
 #include "Fyrion/IO/FileSystem.hpp"
 #include "Fyrion/IO/Path.hpp"
 #include "cgltf.h"
+#include "Fyrion/Scene/Assets/SceneObjectAsset.hpp"
 
 
 namespace Fyrion
@@ -205,14 +206,45 @@ namespace Fyrion
         type.Field<&TextureAsset::data>("data");
     }
 
+    void MaterialAsset::RegisterType(NativeTypeHandler<MaterialAsset>& type)
+    {
+        type.Field<&MaterialAsset::baseColor>("baseColor");
+        type.Field<&MaterialAsset::baseColorTexture>("baseColorTexture");
+        type.Field<&MaterialAsset::normalTexture>("normalTexture");
+        type.Field<&MaterialAsset::normalMultiplier>("normalMultiplier");
+        type.Field<&MaterialAsset::metallic>("metallic");
+        type.Field<&MaterialAsset::metallicTexture>("metallicTexture");
+        type.Field<&MaterialAsset::roughness>("roughness");
+        type.Field<&MaterialAsset::roughnessTexture>("roughnessTexture");
+        type.Field<&MaterialAsset::metallicRoughnessTexture>("metallicRoughnessTexture");
+        type.Field<&MaterialAsset::aoTexture>("aoTexture");
+        type.Field<&MaterialAsset::emissiveTexture>("emissiveTexture");
+        type.Field<&MaterialAsset::emissiveFactor>("emissiveFactor");
+        type.Field<&MaterialAsset::alphaCutoff>("alphaCutoff");
+        type.Field<&MaterialAsset::alphaMode>("alphaMode");
+        type.Field<&MaterialAsset::uvScale>("uvScale");
+    }
+
     void MeshAsset::RegisterType(NativeTypeHandler<MeshAsset>& type)
     {
-        type.Field<&MeshAsset::value>("value");
+       type.Field<&MeshAsset::boundingBox>("boundingBox");
+       type.Field<&MeshAsset::indicesCount>("indicesCount");
+       type.Field<&MeshAsset::verticesCount>("verticesCount");
+       type.Field<&MeshAsset::materials>("materials");
+       type.Field<&MeshAsset::primitives>("primitives");
+       type.Field<&MeshAsset::vertices>("vertices");
+       type.Field<&MeshAsset::indices>("indices");
     }
 
     void DCCAsset::RegisterType(NativeTypeHandler<DCCAsset>& type)
     {
+        type.Field<&DCCAsset::scaleFactor>("scaleFactor");
+        type.Field<&DCCAsset::mergeMaterials>("mergeMaterials");
+        type.Field<&DCCAsset::mergeMeshes>("mergeMeshes");
+        type.Field<&DCCAsset::textures>("textures");
         type.Field<&DCCAsset::meshes>("meshes");
+        type.Field<&DCCAsset::materials>("materials");
+        type.Field<&DCCAsset::sceneObject>("sceneObject");
     }
 
     void DCCAsset::AddMesh(MeshAsset* mesh)
@@ -234,7 +266,6 @@ namespace Fyrion
     {
         MeshAsset* meshAsset = AssetDatabase::Create<MeshAsset>();
         meshAsset->SetUUID(UUID::RandomUUID());
-        meshAsset->value = Random::NextUInt(1000);
         return meshAsset;
     }
 
@@ -251,7 +282,6 @@ namespace Fyrion
             return;
         }
 
-        //copy buffer files
         for (cgltf_size i = 0; i < data->buffers_count; ++i)
         {
             if (data->buffers[i].data)

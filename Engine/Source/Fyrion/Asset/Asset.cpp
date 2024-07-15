@@ -134,28 +134,25 @@ namespace Fyrion
 
     void Asset::SaveBlob(Blob& blob, ConstPtr data, usize dataSize)
     {
-        if (blob && storageType == StorageType::Directory)
+        if (!blob)
         {
-            if (!blob)
-            {
-                blob.id = Random::Xorshift64star();
-            }
+            blob.id = Random::Xorshift64star();
+        }
 
-            StringView dataDirectory = AssetDatabase::GetDataDirectory();
-            if (FileSystem::GetFileStatus(dataDirectory).isDirectory)
+        StringView dataDirectory = AssetDatabase::GetDataDirectory();
+        if (FileSystem::GetFileStatus(dataDirectory).isDirectory)
+        {
+            String assetDataDirectory = Path::Join(dataDirectory, ToString(GetUUID()));
+            if (!FileSystem::GetFileStatus(assetDataDirectory).exists)
             {
-                String assetDataDirectory = Path::Join(dataDirectory, ToString(GetUUID()));
-                if (!FileSystem::GetFileStatus(assetDataDirectory).exists)
-                {
-                    FileSystem::CreateDirectory(assetDataDirectory);
-                }
-                String blobPath = Path::Join(assetDataDirectory, blob.ToString());
-                FileHandler file = FileSystem::OpenFile(blobPath, AccessMode::WriteOnly);
-                FileSystem::WriteFile(file, data, dataSize);
-                FileSystem::CloseFile(file);
-
-                hasBlobs = true;
+                FileSystem::CreateDirectory(assetDataDirectory);
             }
+            String blobPath = Path::Join(assetDataDirectory, blob.ToString());
+            FileHandler file = FileSystem::OpenFile(blobPath, AccessMode::WriteOnly);
+            FileSystem::WriteFile(file, data, dataSize);
+            FileSystem::CloseFile(file);
+
+            hasBlobs = true;
         }
     }
 

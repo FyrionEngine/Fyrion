@@ -260,6 +260,14 @@ namespace Fyrion
         Compute  = 2
     };
 
+    enum class AlphaMode
+    {
+        None        = 0,
+        Opaque      = 1,
+        Mask        = 2,
+        Blend       = 3
+    };
+
     struct SwapchainCreation
     {
         Window window{};
@@ -487,6 +495,37 @@ namespace Fyrion
         usize                   size{};
         Extent3D                extent{};
         Span<TextureDataRegion> regions{};
+    };
+
+    struct VertexData final
+    {
+        Vec3 position{};
+        Vec3 normal{};
+        Vec3 color{};
+        Vec2 uv{};
+        Vec4 tangent{};
+    };
+
+    inline bool operator==(const VertexData& r, const VertexData& l)
+    {
+        return r.position == l.position && r.normal == l.normal && r.uv == l.uv && r.color == l.color && r.tangent == l.tangent;
+    }
+
+    template<>
+    struct Hash<VertexData>
+    {
+        static constexpr bool hasHash = true;
+        static usize Value(const VertexData& value)
+        {
+            return (Hash<Vec3>::Value(value.position) ^ Hash<Vec3>::Value(value.normal) << 1) >> 1 ^ Hash<Vec2>::Value(value.uv) << 1;
+        }
+    };
+
+    struct MeshPrimitive final
+    {
+        u32 firstIndex{};
+        u32 indexCount{};
+        u32 materialIndex{};
     };
 
 

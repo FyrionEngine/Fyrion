@@ -20,7 +20,6 @@
 
 namespace Fyrion
 {
-
     MenuItemContext ProjectBrowserWindow::menuItemContext = {};
 
     void ProjectBrowserWindow::Init(u32 id, VoidPtr userData)
@@ -210,7 +209,7 @@ namespace Fyrion
             f32             width = ImGui::GetContentRegionAvail().x - a.x;
             ImGui::BeginChild(id + 5, ImVec2(width, 30 * style.ScaleFactor), false, ImGuiWindowFlags_AlwaysUseWindowPadding | ImGuiWindowFlags_NoScrollbar);
 
-            ImGui::BeginHorizontal((i32)id + 10, ImVec2(width - a.x - pad.x, 20 * style.ScaleFactor));
+            ImGui::BeginHorizontal((i32)id + 10, ImVec2(width - a.x - pad.x, 0));
 
             ImGui::BeginDisabled(readOnly);
             if (ImGui::Button(ICON_FA_PLUS " Import"))
@@ -260,7 +259,8 @@ namespace Fyrion
         drawList->AddLine(p1, p2, IM_COL32(0, 0, 0, 255), 1.f * style.ScaleFactor);
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 1.f * style.ScaleFactor);
 
-        bool                   browseFolder = true;
+        bool browseFolder = true;
+
         static ImGuiTableFlags flags = ImGuiTableFlags_Resizable;
 
         if (ImGui::BeginTable("table-project-browser", browseFolder ? 2 : 1, flags))
@@ -394,7 +394,6 @@ namespace Fyrion
                                     {
                                         Editor::CreateTransaction()->CreateAction<RenameAssetAction>(asset, ImGui::ContentRenameString())->Commit();
                                     }
-
                                 }
 
                                 if (ImGui::ContentItemBeginPayload(contentItem.ItemId))
@@ -496,16 +495,14 @@ namespace Fyrion
     void ProjectBrowserWindow::AssetCopyPathToClipboard(const MenuItemEventData& eventData)
     {
         ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
-        Asset* item = projectBrowserWindow->selectedItem ? projectBrowserWindow->selectedItem : projectBrowserWindow->openDirectory;
+        Asset*                item = projectBrowserWindow->selectedItem ? projectBrowserWindow->selectedItem : projectBrowserWindow->openDirectory;
         if (item != nullptr)
         {
             Platform::SetClipboardString(Engine::GetActiveWindow(), item->GetPath());
         }
     }
 
-    void ProjectBrowserWindow::AssetNewResourceGraph(const MenuItemEventData& eventData)
-    {
-    }
+    void ProjectBrowserWindow::AssetNewResourceGraph(const MenuItemEventData& eventData) {}
 
     void ProjectBrowserWindow::AssetNewRenderGraph(const MenuItemEventData& eventData)
     {
@@ -519,7 +516,7 @@ namespace Fyrion
 
     void ProjectBrowserWindow::NewAsset(TypeID typeId)
     {
-        AssetCreateAction*    assetCreationAction = Editor::CreateTransaction()->CreateAction<AssetCreateAction>(openDirectory, typeId);
+        AssetCreateAction* assetCreationAction = Editor::CreateTransaction()->CreateAction<AssetCreateAction>(openDirectory, typeId);
         assetCreationAction->Commit();
         ImGui::SelectContentItem(reinterpret_cast<usize>(assetCreationAction->GetNewAsset()), CONTENT_TABLE_ID + windowId);
         ImGui::RenameContentSelected(CONTENT_TABLE_ID + windowId);

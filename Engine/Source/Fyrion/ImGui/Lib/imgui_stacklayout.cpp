@@ -130,6 +130,8 @@ struct ImGuiLayout
     ImVec2                      StartPos;           // Initial cursor position when BeginLayout is called.
     ImVec2                      StartCursorMaxPos;  // Maximum cursor position when BeginLayout is called.
 
+    ImDrawListSplitter          Splitter;
+
     ImGuiLayout(ImGuiID id, ImGuiLayoutType type)
     {
         Id = id;
@@ -444,6 +446,8 @@ static void ImGui::BeginLayout(ImGuiID id, ImGuiLayoutType type, ImVec2 size, fl
     if (!layout)
         layout = CreateNewLayout(id, type, size);
 
+    IM_ASSERT(!layout->Live && "BeginHorizontal/BeginVertical with same ID is already live in this frame. Please use PushID() to make ID's unique or rename layout.");
+
     layout->Live = true;
 
     PushLayout(layout);
@@ -464,6 +468,22 @@ static void ImGui::BeginLayout(ImGuiID id, ImGuiLayoutType type, ImVec2 size, fl
 
     layout->StartPos = window->DC.CursorPos;
     layout->StartCursorMaxPos = window->DC.CursorMaxPos;
+
+    // Use splitter to collect draw commands in separate channel,
+    // so we can clip them to the layout bounds.
+    layout->Splitter.Split(window->DrawList, 2);
+    layout->Splitter.SetCurrentChannel(window->DrawList, 1);
+
+    // Clip to layout bounds, unrestricted and not measured bounds span
+    // all the way to the edge of the window.
+    ImVec2 clip_rect_min = layout->StartPos;
+    ImVec2 clip_rect_max = layout->StartPos + layout->CurrentSize;
+    if (layout->Size.x <= 0.0f && layout->CurrentSize.x <= 0.0f)
+        clip_rect_max.x = FLT_MAX;
+    if (layout->Size.y <= 0.0f && layout->CurrentSize.y <= 0.0f)
+        clip_rect_max.y = FLT_MAX;
+
+    PushClipRect(clip_rect_min, clip_rect_max, true);
 
     if (type == ImGuiLayoutType_Vertical)
     {
@@ -542,6 +562,24 @@ static void ImGui::EndLayout(ImGuiLayoutType type)
     }
 
     layout->CurrentSize = new_size;
+
+    PopClipRect();
+
+    ImVec4 current_clip_rect;
+    current_clip_rect.x = layout->StartPos.x;
+    current_clip_rect.y = layout->StartPos.y;
+    current_clip_rect.z = layout->StartPos.x + new_size.x;
+    current_clip_rect.w = layout->StartPos.y + new_size.y;
+
+    layout->Splitter.SetCurrentChannel(window_state->Window->DrawList, 0);
+    for (auto& cmd : layout->Splitter._Channels[1]._CmdBuffer)
+    {
+        if (cmd.ClipRect.x < current_clip_rect.x) cmd.ClipRect.x = current_clip_rect.x;
+        if (cmd.ClipRect.y < current_clip_rect.y) cmd.ClipRect.y = current_clip_rect.y;
+        if (cmd.ClipRect.z > current_clip_rect.z) cmd.ClipRect.z = current_clip_rect.z;
+        if (cmd.ClipRect.w > current_clip_rect.w) cmd.ClipRect.w = current_clip_rect.w;
+    }
+    layout->Splitter.Merge(window_state->Window->DrawList);
 
     PopID();
 

@@ -5,6 +5,15 @@
 #include "TypeApiInfo.hpp"
 #include "String.hpp"
 
+template<typename Type>
+constexpr auto Fyrion_StrippedTypeName()
+{
+    Fyrion::StringView prettyFunction = FY_PRETTY_FUNCTION;
+    Fyrion::usize first = prettyFunction.FindFirstNotOf(' ', prettyFunction.FindFirstOf(FY_PRETTY_FUNCTION_PREFIX) + 1);
+    Fyrion::StringView value = prettyFunction.Substr(first, prettyFunction.FindLastOf(FY_PRETTY_FUNCTION_SUFFIX) - first);
+    return value;
+}
+
 namespace Fyrion
 {
     typedef void(*FnExtractApi)(VoidPtr pointer);
@@ -26,20 +35,11 @@ namespace Fyrion
     };
 
     template<typename Type>
-    constexpr auto StrippedTypeName()
-    {
-        StringView prettyFunction = FY_PRETTY_FUNCTION;
-        usize first = prettyFunction.FindFirstNotOf(' ', prettyFunction.FindFirstOf(FY_PRETTY_FUNCTION_PREFIX) + 1);
-        StringView value = prettyFunction.Substr(first, prettyFunction.FindLastOf(FY_PRETTY_FUNCTION_SUFFIX) - first);
-        return value;
-    }
-
-    template<typename Type>
     struct TypeIDGen
     {
         static constexpr auto GetTypeName()
         {
-            StringView typeName = StrippedTypeName<Type>();
+            StringView typeName = Fyrion_StrippedTypeName<Type>();
 
             usize space = typeName.FindFirstOf(' ');
             if (space != StringView::s_npos)
@@ -51,7 +51,7 @@ namespace Fyrion
 
         constexpr static TypeID GetTypeID()
         {
-            constexpr TypeID typeId = Hash<StringView>::Value(StrippedTypeName<Type>());
+            constexpr TypeID typeId = Hash<StringView>::Value(Fyrion_StrippedTypeName<Type>());
             return typeId;
         }
     };

@@ -30,7 +30,6 @@ namespace Fyrion
     void RegisterTextureIO();
     void RegisterGLTFIO();
 
-
     void RegisterGraphicsTypes()
     {
         Registry::Type<ShaderStageInfo>();
@@ -46,12 +45,11 @@ namespace Fyrion
         Registry::Type<TextureAsset>();
         Registry::Type<DCCAsset>();
         Registry::Type<MeshAsset>();
+        Registry::Type<MaterialAsset>();
 
         RegisterGLTFIO();
         RegisterShaderIO();
         RegisterTextureIO();
-
-
 
         auto bufferUsage = Registry::Type<BufferUsage>();
         bufferUsage.Value<BufferUsage::VertexBuffer>("VertexBuffer");

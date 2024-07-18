@@ -3,6 +3,6 @@
 
 namespace Fyrion::MeshUtils
 {
-    AABB CalculateMeshAABB(const Array<VertexData>& vertices);
-    void CalcTangents(Array<VertexData>& vertices, const Array<u32>& indices, bool useMikktspace = true);
+    AABB CalculateMeshAABB(const Array<VertexStride>& vertices);
+    void CalcTangents(Array<VertexStride>& vertices, const Array<u32>& indices, bool useMikktspace = true);
 }

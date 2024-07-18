@@ -8,17 +8,17 @@
 
 namespace Fyrion
 {
-    template<typename T>
+    template <typename T>
     class Span;
 
-    template<typename T, usize BufferSize>
+    template <typename T, usize BufferSize>
     class FixedArray;
 
-    template<typename T>
-    class Array
+    template <typename T>
+    class Array final
     {
     public:
-        typedef T      * Iterator;
+        typedef T*       Iterator;
         typedef const T* ConstIterator;
 
         Array();
@@ -29,28 +29,28 @@ namespace Fyrion
         Array(const T* first, const T* last);
         Array(std::initializer_list<T> initializerList);
         Array(const Span<T>& span);
-        template<usize size>
+        template <usize size>
         Array(const FixedArray<T, size>& arr);
 
-        Iterator begin();
-        Iterator end();
+        Iterator      begin();
+        Iterator      end();
         ConstIterator begin() const;
         ConstIterator end() const;
 
-        Array& operator=(const Array& other);
-        Array& operator=(Array&& other) noexcept;
-        bool operator==(const Array& other) const;
-        bool operator!=(const Array& other) const;
-        T& operator[](usize idx);
+        Array&   operator=(const Array& other);
+        Array&   operator=(Array&& other) noexcept;
+        bool     operator==(const Array& other) const;
+        bool     operator!=(const Array& other) const;
+        T&       operator[](usize idx);
         const T& operator[](usize idx) const;
 
         const T* Data() const;
-        T* Data();
+        T*       Data();
         const T& Back() const;
-        T& Back();
-        usize Size() const;
-        usize Capacity() const;
-        bool Empty() const;
+        T&       Back();
+        usize    Size() const;
+        usize    Capacity() const;
+        bool     Empty() const;
 
         void Reserve(usize newCapacity);
         void Resize(usize size);
@@ -64,8 +64,8 @@ namespace Fyrion
         void Erase(Iterator first);
         void Remove(usize index);
 
-        template<typename ...Args>
-        T& EmplaceBack(Args&& ... args);
+        template <typename... Args>
+        T& EmplaceBack(Args&&... args);
 
         void ShrinkToFit();
         void Swap(Array& other);
@@ -76,6 +76,7 @@ namespace Fyrion
         }
 
         ~Array();
+
     private:
         T* m_first{};
         T* m_last{};
@@ -84,133 +85,131 @@ namespace Fyrion
         Allocator& m_allocator = MemoryGlobals::GetDefaultAllocator();
     };
 
-    template<typename T>
-    template<usize size>
+    template <typename T>
+    template <usize size>
     Array<T>::Array(const FixedArray<T, size>& arr)
     {
         Reserve(size);
         Insert(begin(), arr.begin(), arr.end());
     }
 
-    template<typename T>
+    template <typename T>
     Array<T>::Array(const Span<T>& span)
     {
         Reserve(span.Size());
         Insert(begin(), span.begin(), span.end());
     }
 
-    template<typename T>
-    FY_FINLINE Array<T>::Array() : m_first(0), m_last(0), m_capacity(0)
-    {
-    }
+    template <typename T>
+    FY_FINLINE Array<T>::Array() : m_first(0), m_last(0), m_capacity(0) {}
 
-    template<typename T>
+    template <typename T>
     FY_FINLINE Array<T>::Array(const Array& other) : m_first(0), m_last(0), m_capacity(0), m_allocator(other.m_allocator)
     {
         Reserve(other.Size());
         Insert(begin(), other.begin(), other.m_last);
     }
 
-    template<typename T>
+    template <typename T>
     FY_FINLINE Array<T>::Array(Array&& other) noexcept
     {
         this->~Array();
 
-        m_first     = other.m_first;
-        m_last      = other.m_last;
-        m_capacity  = other.m_capacity;
+        m_first = other.m_first;
+        m_last = other.m_last;
+        m_capacity = other.m_capacity;
         m_allocator = other.m_allocator;
 
-        other.m_first    = nullptr;
-        other.m_last     = nullptr;
+        other.m_first = nullptr;
+        other.m_last = nullptr;
         other.m_capacity = nullptr;
     }
 
-    template<typename T>
+    template <typename T>
     FY_FINLINE Array<T>::Array(usize size) : m_first(0), m_last(0), m_capacity(0)
     {
         Resize(size);
     }
 
-    template<typename T>
+    template <typename T>
     FY_FINLINE Array<T>::Array(usize size, const T& value) : m_first(0), m_last(0), m_capacity(0)
     {
         Resize(size, value);
     }
 
-    template<typename T>
+    template <typename T>
     FY_FINLINE Array<T>::Array(const T* first, const T* last) : m_first(0), m_last(0), m_capacity(0)
     {
         Insert(begin(), first, last);
     }
 
-    template<typename T>
+    template <typename T>
     Array<T>::Array(std::initializer_list<T> initializerList)
     {
         Insert(begin(), initializerList.begin(), initializerList.end());
     }
 
-    template<typename T>
+    template <typename T>
     FY_FINLINE typename Array<T>::Iterator Array<T>::begin()
     {
         return m_first;
     }
 
-    template<typename T>
+    template <typename T>
     FY_FINLINE typename Array<T>::Iterator Array<T>::end()
     {
         return m_last;
     }
 
-    template<typename T>
+    template <typename T>
     FY_FINLINE typename Array<T>::ConstIterator Array<T>::begin() const
     {
         return m_first;
     }
 
-    template<typename T>
+    template <typename T>
     FY_FINLINE typename Array<T>::ConstIterator Array<T>::end() const
     {
         return m_last;
     }
 
-    template<typename T>
+    template <typename T>
     Array<T>& Array<T>::operator=(const Array& other)
     {
         Array(other).Swap(*this);
         return *this;
     }
 
-    template<typename T>
+    template <typename T>
     Array<T>& Array<T>::operator=(Array&& other) noexcept
     {
         this->~Array();
 
-        m_first     = other.m_first;
-        m_last      = other.m_last;
-        m_capacity  = other.m_capacity;
+        m_first = other.m_first;
+        m_last = other.m_last;
+        m_capacity = other.m_capacity;
         m_allocator = other.m_allocator;
 
-        other.m_first    = nullptr;
-        other.m_last     = nullptr;
+        other.m_first = nullptr;
+        other.m_last = nullptr;
         other.m_capacity = nullptr;
 
         return *this;
     }
 
-    template<typename T>
+    template <typename T>
     FY_FINLINE T& Array<T>::operator[](usize idx)
     {
         return m_first[idx];
     }
 
-    template<typename T>
+    template <typename T>
     FY_FINLINE const T& Array<T>::operator[](usize idx) const
     {
         return m_first[idx];
     }
 
-    template<typename T>
+    template <typename T>
     bool Array<T>::operator==(const Array& other) const
     {
         if (this->Size() != other.Size()) return false;
@@ -224,55 +223,55 @@ namespace Fyrion
         return true;
     }
 
-    template<typename T>
+    template <typename T>
     bool Array<T>::operator!=(const Array& other) const
     {
         return !((*this) == other);
     }
 
-    template<typename T>
+    template <typename T>
     FY_FINLINE const T& Array<T>::Back() const
     {
         return m_last[-1];
     }
 
-    template<typename T>
+    template <typename T>
     FY_FINLINE T& Array<T>::Back()
     {
         return m_last[-1];
     }
 
-    template<typename T>
+    template <typename T>
     FY_FINLINE const T* Array<T>::Data() const
     {
         return m_first;
     }
 
-    template<typename T>
+    template <typename T>
     FY_FINLINE T* Array<T>::Data()
     {
         return m_first;
     }
 
-    template<typename T>
+    template <typename T>
     FY_FINLINE usize Array<T>::Size() const
     {
         return m_last - m_first;
     }
 
-    template<typename T>
+    template <typename T>
     FY_FINLINE usize Array<T>::Capacity() const
     {
         return m_capacity - m_first;
     }
 
-    template<typename T>
+    template <typename T>
     FY_FINLINE bool Array<T>::Empty() const
     {
         return m_last == m_first;
     }
 
-    template<typename T>
+    template <typename T>
     FY_FINLINE void Array<T>::Reserve(usize newCapacity)
     {
         if (m_first + newCapacity <= m_capacity)
@@ -281,8 +280,8 @@ namespace Fyrion
         }
 
         const usize size = m_last - m_first;
-        T* newFirst = (T*) m_allocator.MemAlloc(sizeof(T) * newCapacity, alignof(T));
-        T* dest     = newFirst;
+        T*          newFirst = (T*)m_allocator.MemAlloc(sizeof(T) * newCapacity, alignof(T));
+        T*          dest = newFirst;
 
         for (T* it = m_first; it != m_last; ++it, ++dest)
         {
@@ -292,12 +291,12 @@ namespace Fyrion
 
         m_allocator.MemFree(m_first);
 
-        m_first    = newFirst;
-        m_last     = newFirst + size;
+        m_first = newFirst;
+        m_last = newFirst + size;
         m_capacity = newFirst + newCapacity;
     }
 
-    template<typename T>
+    template <typename T>
     FY_FINLINE void Array<T>::Resize(usize size)
     {
         Reserve(size);
@@ -315,7 +314,7 @@ namespace Fyrion
         m_last = m_first + size;
     }
 
-    template<typename T>
+    template <typename T>
     FY_FINLINE void Array<T>::Resize(usize size, const T& value)
     {
         Reserve(size);
@@ -333,9 +332,9 @@ namespace Fyrion
         m_last = m_first + size;
     }
 
-    template<typename T>
-    template<typename... Args>
-    FY_FINLINE T& Array<T>::EmplaceBack(Args&& ... args)
+    template <typename T>
+    template <typename... Args>
+    FY_FINLINE T& Array<T>::EmplaceBack(Args&&... args)
     {
         T* where = m_last;
 
@@ -358,7 +357,7 @@ namespace Fyrion
         return *where;
     }
 
-    template<typename T>
+    template <typename T>
     FY_FINLINE void Array<T>::Clear()
     {
         for (T* it = m_first; it < m_last; ++it)
@@ -368,7 +367,7 @@ namespace Fyrion
         m_last = m_first;
     }
 
-    template<typename T>
+    template <typename T>
     FY_FINLINE void Array<T>::PopBack()
     {
         T* where = m_last - 1;
@@ -376,13 +375,13 @@ namespace Fyrion
         --m_last;
     }
 
-    template<typename T>
+    template <typename T>
     FY_FINLINE void Array<T>::Insert(Array::Iterator where, const T* first, const T* last)
     {
         if (first == last) return;
 
-        const usize offset  = where - m_first;
-        const usize count   = last - first;
+        const usize offset = where - m_first;
+        const usize count = last - first;
         const usize newSize = ((m_last - m_first) + count);
         if (m_first + newSize >= m_capacity)
         {
@@ -406,14 +405,14 @@ namespace Fyrion
         m_last = m_first + newSize;
     }
 
-    template<typename T>
+    template <typename T>
     void Array<T>::Assign(const T* first, const T* last)
     {
         Clear();
         Insert(m_last, first, last);
     }
 
-    template<typename T>
+    template <typename T>
     FY_FINLINE void Array<T>::Erase(Array::Iterator first, Array::Iterator last)
     {
         const usize count = (last - first);
@@ -423,7 +422,7 @@ namespace Fyrion
             it->~T();
         }
 
-        T* it  = last;
+        T* it = last;
         T* end = m_last;
 
         for (T* dest = first; it != end; ++it, ++dest)
@@ -446,7 +445,7 @@ namespace Fyrion
         Erase(begin() + index, begin() + index + 1);
     }
 
-    template<typename T>
+    template <typename T>
     FY_FINLINE void Array<T>::ShrinkToFit()
     {
         if (m_capacity != m_last)
@@ -459,8 +458,8 @@ namespace Fyrion
             else
             {
                 const usize size = m_last - m_first;
-                T* newFirst = (T*) m_allocator.MemAlloc(sizeof(T) * size, alignof(T));
-                T* dest     = newFirst;
+                T*          newFirst = (T*)m_allocator.MemAlloc(sizeof(T) * size, alignof(T));
+                T*          dest = newFirst;
 
                 for (T* it = m_first; it != m_last; ++it, ++dest)
                 {
@@ -469,34 +468,34 @@ namespace Fyrion
                 }
 
                 m_allocator.MemFree(m_first);
-                m_first    = newFirst;
-                m_last     = newFirst + size;
+                m_first = newFirst;
+                m_last = newFirst + size;
                 m_capacity = m_last;
             }
         }
     }
 
-    template<typename T>
+    template <typename T>
     FY_FINLINE void Array<T>::Swap(Array& other)
     {
-        T* first    = m_first;
-        T* last     = m_last;
+        T* first = m_first;
+        T* last = m_last;
         T* capacity = m_capacity;
 
         Allocator& allocator = m_allocator;
 
-        m_first     = other.m_first;
-        m_last      = other.m_last;
-        m_capacity           = other.m_capacity;
-        m_allocator          = other.m_allocator;
+        m_first = other.m_first;
+        m_last = other.m_last;
+        m_capacity = other.m_capacity;
+        m_allocator = other.m_allocator;
 
-        other.m_first     = first;
-        other.m_last      = last;
-        other.m_capacity     = capacity;
-        other.m_allocator    = allocator;
+        other.m_first = first;
+        other.m_last = last;
+        other.m_capacity = capacity;
+        other.m_allocator = allocator;
     }
 
-    template<typename T>
+    template <typename T>
     Array<T>::~Array()
     {
         if (m_first)
@@ -514,7 +513,7 @@ namespace Fyrion
         FY_API TypeHandler* FindTypeById(TypeID typeId);
     }
 
-    template<typename T>
+    template <typename T>
     struct ArchiveType<Array<T>>
     {
         static void WriteField(ArchiveWriter& writer, ArchiveObject object, const StringView& name, const Array<T>& value)
@@ -523,11 +522,12 @@ namespace Fyrion
             if constexpr (!Serialization::HasSetField<T>)
             {
                 typeHandler = Registry::FindTypeById(GetTypeID<T>());
+                FY_ASSERT(typeHandler, "type not registered");
             }
 
             ArchiveObject arr = writer.CreateArray();
 
-            for(const T& item : value)
+            for (const T& item : value)
             {
                 if constexpr (Serialization::HasSetField<T>)
                 {
@@ -535,7 +535,14 @@ namespace Fyrion
                 }
                 else
                 {
-                    writer.AddValue(arr, Serialization::Serialize(typeHandler, writer, &item));
+                    if constexpr (std::is_pointer_v<T>)
+                    {
+                        writer.AddValue(arr, Serialization::Serialize(typeHandler, writer, item));
+                    }
+                    else
+                    {
+                        writer.AddValue(arr, Serialization::Serialize(typeHandler, writer, &item));
+                    }
                 }
             }
 
@@ -553,7 +560,7 @@ namespace Fyrion
 
             value.Clear();
             ArchiveObject arr = reader.ReadObject(object, name);
-            usize  size = reader.ArrSize(arr);
+            usize         size = reader.ArrSize(arr);
             value.Reserve(size);
 
             ArchiveObject item{};
@@ -567,8 +574,14 @@ namespace Fyrion
                 }
                 else
                 {
-                    T& itemValue = value.EmplaceBack();
-                    Serialization::Deserialize(typeHandler, reader, item, &itemValue);
+                    if constexpr (std::is_pointer_v<T>)
+                    {
+                        Serialization::Deserialize(typeHandler, reader, item, value.EmplaceBack());
+                    }
+                    else
+                    {
+                        Serialization::Deserialize(typeHandler, reader, item, &value.EmplaceBack());
+                    }
                 }
             }
         }
@@ -577,14 +590,14 @@ namespace Fyrion
 
     struct ArrayApi
     {
-        typedef usize(*FnArraySize)(ConstPtr array);
-        typedef void(*FnArrayClear)(VoidPtr array);
-        typedef VoidPtr(*FnArrayData)(VoidPtr array);
-        typedef VoidPtr(*FnArrayGet)(VoidPtr array, usize index);
+        typedef usize (*   FnArraySize)(ConstPtr array);
+        typedef void (*    FnArrayClear)(VoidPtr array);
+        typedef VoidPtr (* FnArrayData)(VoidPtr array);
+        typedef VoidPtr (* FnArrayGet)(VoidPtr array, usize index);
         typedef ConstPtr (*FnArrayGetConst)(ConstPtr array, usize index);
-        typedef void(*FnArraySet)(VoidPtr array, usize index, ConstPtr value);
-        typedef VoidPtr(*FnArrayPushNew)(VoidPtr array);
-        typedef TypeInfo(*FnArrayGetTypeInfo)();
+        typedef void (*    FnArraySet)(VoidPtr array, usize index, ConstPtr value);
+        typedef VoidPtr (* FnArrayPushNew)(VoidPtr array);
+        typedef TypeInfo (*FnArrayGetTypeInfo)();
 
         FnArraySize        size{};
         FnArrayClear       clear{};
@@ -596,7 +609,7 @@ namespace Fyrion
         FnArrayGetTypeInfo getTypeInfo{};
     };
 
-    template<typename Type>
+    template <typename Type>
     struct TypeApiInfo<Array<Type>>
     {
         static void ExtractApi(VoidPtr pointer)

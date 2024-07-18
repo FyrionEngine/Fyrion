@@ -498,7 +498,7 @@ namespace Fyrion
         Span<TextureDataRegion> regions{};
     };
 
-    struct VertexData final
+    struct VertexStride final
     {
         Vec3 position{};
         Vec3 normal{};
@@ -507,16 +507,16 @@ namespace Fyrion
         Vec4 tangent{};
     };
 
-    inline bool operator==(const VertexData& r, const VertexData& l)
+    inline bool operator==(const VertexStride& r, const VertexStride& l)
     {
         return r.position == l.position && r.normal == l.normal && r.uv == l.uv && r.color == l.color && r.tangent == l.tangent;
     }
 
     template<>
-    struct Hash<VertexData>
+    struct Hash<VertexStride>
     {
         static constexpr bool hasHash = true;
-        static usize Value(const VertexData& value)
+        static usize Value(const VertexStride& value)
         {
             return (Hash<Vec3>::Value(value.position) ^ Hash<Vec3>::Value(value.normal) << 1) >> 1 ^ Hash<Vec2>::Value(value.uv) << 1;
         }

@@ -43,10 +43,10 @@ namespace Fyrion
         return fs::remove_all(path.CStr());
     }
 
-    bool FileSystem::Rename(const StringView& newName, const StringView& oldName)
+    bool FileSystem::Rename(const StringView &oldName, const StringView &newName)
     {
         std::error_code ec {};
-        fs::rename(newName.CStr(), oldName.CStr(), ec);
+        fs::rename(oldName.CStr(), newName.CStr(), ec);
         return ec.value() == 0;
     }
 

@@ -19,7 +19,7 @@ namespace Fyrion
 
         String ToString() const
         {
-            char strBuffer[17]{};
+            char  strBuffer[17]{};
             usize bufSize = U64ToHex(id, strBuffer);
             return {strBuffer, bufSize};
         }
@@ -94,7 +94,7 @@ namespace Fyrion
             currentVersion += 1;
         }
 
-        virtual bool IsModified() const;
+        virtual bool       IsModified() const;
         virtual StringView GetDisplayName() const;
 
         friend class AssetDatabase;
@@ -105,12 +105,19 @@ namespace Fyrion
         template <typename T, Traits::EnableIf<Traits::IsBaseOf<Asset, T>>* = nullptr>
         T* Cast()
         {
-            return static_cast<T*>(this);
+            return dynamic_cast<T*>(this);
         }
 
         void  SaveBlob(Blob& blob, ConstPtr data, usize dataSize);
         usize GetBlobSize(Blob blob) const;
         void  LoadBlob(Blob blob, VoidPtr, usize dataSize) const;
+
+
+        Asset*       GetPhysicalAsset();
+        const Asset* GetPhysicalAsset() const;
+
+        Asset* GetOwner() const;
+        void   SetOwner(Asset*);
 
     private:
         usize           index{};
@@ -118,6 +125,8 @@ namespace Fyrion
         bool            hasBlobs = false;
         String          path{};
         Asset*          prototype{};
+        Asset*          owner{};
+        Array<Asset*>   ownItems{};
         TypeHandler*    assetType{};
         u64             currentVersion{};
         u64             loadedVersion{};
@@ -130,14 +139,24 @@ namespace Fyrion
         void ValidateName();
     };
 
-    template<typename T>
-    struct Subobject
+    template <typename T>
+    class Subobjects
     {
-        T* object;
+    public:
+        explicit Subobjects(Asset* owner) : owner(owner) {}
+
+        void Add(T* asset)
+        {
+            objects.EmplaceBack(asset);
+            asset->SetOwner(owner);
+        }
+
+        Array<T*> objects;
+        Asset*    owner = nullptr;
     };
 
 
-    template<>
+    template <>
     struct ArchiveType<Blob>
     {
         static void WriteField(ArchiveWriter& writer, ArchiveObject object, const StringView& name, const Blob& value)
@@ -154,34 +173,49 @@ namespace Fyrion
     template <typename T>
     struct ArchiveType<T*, Traits::EnableIf<Traits::IsBaseOf<Asset, T>>>
     {
-        static T* GetField(ArchiveReader& reader, ArchiveObject object)
+        static void WriteField(ArchiveWriter& writer, ArchiveObject object, const StringView& name, const T*& value)
         {
-            // T* asset = AssetDatabase::Create<T>();
-            // Serialization::Deserialize(Registry::FindType<T>(), reader, object, asset);
-            // return asset;
-            return nullptr;
+
         }
 
-        static void SetField(ArchiveWriter& writer, ArchiveObject object, const T* value)
+        static void ReadField(ArchiveReader& reader, ArchiveObject object, const StringView& name, T*& value)
         {
-            //writer.AddValue(object, Serialization::Serialize(Registry::FindType<T>(), writer, value));
+            //value = AssetDatabase::FindById(UUID::RandomUUID());
         }
     };
 
     template <typename T>
-    struct ArchiveType<Subobject<T>, Traits::EnableIf<Traits::IsBaseOf<Asset, T>>>
+    struct ArchiveType<Subobjects<T>>
     {
-        static Subobject<T> GetField(ArchiveReader& reader, ArchiveObject object)
+        static void WriteField(ArchiveWriter& writer, ArchiveObject object, const StringView& name, const Subobjects<T>& value)
         {
-            // T* asset = AssetDatabase::Create<T>();
-            // Serialization::Deserialize(Registry::FindType<T>(), reader, object, asset);
-            // return asset;
-            return {};
+            const TypeHandler* typeHandler = Registry::FindType<T>();
+            ArchiveObject arr = writer.CreateArray();
+            for (T* asset : value.objects)
+            {
+                writer.AddValue(arr, Serialization::Serialize(typeHandler, writer, asset));
+            }
+            writer.WriteValue(object, name, arr);
         }
 
-        static void SetField(ArchiveWriter& writer, ArchiveObject object, const Subobject<T> value)
+        static void ReadField(ArchiveReader& reader, ArchiveObject object, const StringView& name, Subobjects<T>& value)
         {
-            //writer.AddValue(object, Serialization::Serialize(Registry::FindType<T>(), writer, value));
+            const TypeHandler* typeHandler = Registry::FindType<T>();
+
+            ArchiveObject arr = reader.ReadObject(object, name);
+
+            usize size = reader.ArrSize(arr);
+            value.objects.Reserve(size);
+
+            ArchiveObject item{};
+            for (usize i = 0; i < size; ++i)
+            {
+                item = reader.Next(arr, item);
+
+                T* asset = AssetDatabase::Create<T>();
+                Serialization::Deserialize(typeHandler, reader, item, asset);
+                value.Add(asset);
+            }
         }
     };
 }

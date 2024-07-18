@@ -134,6 +134,9 @@ namespace Fyrion
 
     void Asset::SaveBlob(Blob& blob, ConstPtr data, usize dataSize)
     {
+        Asset* physicalAsset = GetPhysicalAsset();
+        FY_ASSERT(physicalAsset->GetPhysicalAsset(), "blob cannot be saved, no physical asset found");
+
         if (!blob)
         {
             blob.id = Random::Xorshift64star();
@@ -142,7 +145,7 @@ namespace Fyrion
         StringView dataDirectory = AssetDatabase::GetDataDirectory();
         if (FileSystem::GetFileStatus(dataDirectory).isDirectory)
         {
-            String assetDataDirectory = Path::Join(dataDirectory, ToString(GetUUID()));
+            String assetDataDirectory = Path::Join(dataDirectory, ToString(physicalAsset->GetUUID()));
             if (!FileSystem::GetFileStatus(assetDataDirectory).exists)
             {
                 FileSystem::CreateDirectory(assetDataDirectory);
@@ -152,7 +155,7 @@ namespace Fyrion
             FileSystem::WriteFile(file, data, dataSize);
             FileSystem::CloseFile(file);
 
-            hasBlobs = true;
+            physicalAsset->hasBlobs = true;
         }
     }
 
@@ -161,7 +164,7 @@ namespace Fyrion
         StringView dataDirectory = AssetDatabase::GetDataDirectory();
         if (FileSystem::GetFileStatus(dataDirectory).isDirectory)
         {
-            String blobPath = Path::Join(Path::Join(dataDirectory, ToString(GetUUID())), blob.ToString());
+            String blobPath = Path::Join(Path::Join(dataDirectory, ToString(GetPhysicalAsset()->GetUUID())), blob.ToString());
             return FileSystem::GetFileStatus(blobPath).fileSize;
         }
 
@@ -179,9 +182,52 @@ namespace Fyrion
         }
     }
 
+    Asset* Asset::GetPhysicalAsset()
+    {
+        if (directory != nullptr)
+        {
+            return this;
+        }
+
+        if (owner != nullptr)
+        {
+            return owner->GetPhysicalAsset();
+        }
+
+        return {};
+    }
+
+    const Asset* Asset::GetPhysicalAsset() const
+    {
+        if (directory != nullptr)
+        {
+            return this;
+        }
+
+        if (owner != nullptr)
+        {
+            return owner->GetPhysicalAsset();
+        }
+
+        return {};
+    }
+
+    Asset* Asset::GetOwner() const
+    {
+        return owner;
+    }
+
+    void Asset::SetOwner(Asset* p_owner)
+    {
+        FY_ASSERT(!owner, "asset already have a owner");
+        owner = p_owner;
+        owner->ownItems.EmplaceBack(p_owner);
+    }
+
     void Asset::RegisterType(NativeTypeHandler<Asset>& type)
     {
         type.Field<&Asset::uuid, &Asset::GetUUID, &Asset::SetUUID>("uuid");
+        type.Field<&Asset::name>("name");
         type.Field<&Asset::hasBlobs>("hasBlobs");
         type.Function<&Asset::GetName>("GetName");
     }

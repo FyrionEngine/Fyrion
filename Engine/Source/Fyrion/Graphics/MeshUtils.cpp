@@ -8,7 +8,7 @@ namespace Fyrion
     {
         struct UserData
         {
-            Array<VertexData>& vertices;
+            Array<VertexStride>& vertices;
             const Array<u32>&  indices;
         };
 
@@ -36,7 +36,7 @@ namespace Fyrion
         {
             UserData& mesh = *static_cast<UserData*>(pContext->m_pUserData);
 
-            VertexData& v = mesh.vertices[GetVertexIndex(pContext, iFace, iVert)];
+            VertexStride& v = mesh.vertices[GetVertexIndex(pContext, iFace, iVert)];
             fvPosOut[0] = v.position.x;
             fvPosOut[1] = v.position.y;
             fvPosOut[2] = v.position.z;
@@ -45,7 +45,7 @@ namespace Fyrion
         void GetNormal(const SMikkTSpaceContext* pContext, float fvNormOut[], const int iFace, const int iVert)
         {
             UserData&   mesh = *static_cast<UserData*>(pContext->m_pUserData);
-            VertexData& v = mesh.vertices[GetVertexIndex(pContext, iFace, iVert)];
+            VertexStride& v = mesh.vertices[GetVertexIndex(pContext, iFace, iVert)];
             fvNormOut[0] = v.normal.x;
             fvNormOut[1] = v.normal.y;
             fvNormOut[2] = v.normal.z;
@@ -54,7 +54,7 @@ namespace Fyrion
         void GetTexCoord(const SMikkTSpaceContext* pContext, float fvTexcOut[], const int iFace, const int iVert)
         {
             UserData&   mesh = *static_cast<UserData*>(pContext->m_pUserData);
-            VertexData& v = mesh.vertices[GetVertexIndex(pContext, iFace, iVert)];
+            VertexStride& v = mesh.vertices[GetVertexIndex(pContext, iFace, iVert)];
             fvTexcOut[0] = v.uv.x;
             fvTexcOut[1] = v.uv.y;
         }
@@ -62,14 +62,14 @@ namespace Fyrion
         void SetTangentSpaceBasic(const SMikkTSpaceContext* pContext, const float fvTangent[], const float fSign, const int iFace, const int iVert)
         {
             UserData&   mesh = *static_cast<UserData*>(pContext->m_pUserData);
-            VertexData& v = mesh.vertices[GetVertexIndex(pContext, iFace, iVert)];
+            VertexStride& v = mesh.vertices[GetVertexIndex(pContext, iFace, iVert)];
             v.tangent.x = fvTangent[0];
             v.tangent.y = fvTangent[1];
             v.tangent.z = fvTangent[2];
             v.tangent.w = -fSign;
         }
 
-        Vec3 CalculateTangent(const VertexData& v1, const VertexData& v2, const VertexData& v3)
+        Vec3 CalculateTangent(const VertexStride& v1, const VertexStride& v2, const VertexStride& v3)
         {
             Vec3 edge1 = v2.position - v1.position;
             Vec3 edge2 = v3.position - v1.position;
@@ -86,7 +86,7 @@ namespace Fyrion
             return tangent;
         }
 
-        void CalculateTangents(Array<VertexData>& vertices, const Array<u32>& indices)
+        void CalculateTangents(Array<VertexStride>& vertices, const Array<u32>& indices)
         {
             //Calculate tangents
             for (usize i = 0; i < indices.Size(); i += 3)
@@ -102,7 +102,7 @@ namespace Fyrion
         }
 
 
-        void CalculateTangents(Array<VertexData>& vertices)
+        void CalculateTangents(Array<VertexStride>& vertices)
         {
             //Calculate tangents
             for (usize i = 0; i < vertices.Size(); i += 3)
@@ -118,7 +118,7 @@ namespace Fyrion
     }
 
 
-    AABB MeshUtils::CalculateMeshAABB(const Array<VertexData>& vertices)
+    AABB MeshUtils::CalculateMeshAABB(const Array<VertexStride>& vertices)
     {
         AABB boundingBox{};
 
@@ -136,7 +136,7 @@ namespace Fyrion
         return boundingBox;
     }
 
-    void MeshUtils::CalcTangents(Array<VertexData>& vertices, const Array<u32>& indices, bool useMikktspace)
+    void MeshUtils::CalcTangents(Array<VertexStride>& vertices, const Array<u32>& indices, bool useMikktspace)
     {
         if (useMikktspace)
         {

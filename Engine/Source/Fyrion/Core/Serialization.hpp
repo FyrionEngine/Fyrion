@@ -169,7 +169,7 @@ namespace Fyrion
         struct HasSetFieldImpl : Traits::FalseType {};
 
         template <typename T>
-        struct HasSetFieldImpl<T, Traits::VoidType<decltype(static_cast<void(*)(ArchiveWriter&, ArchiveObject, const Traits::RemoveAll<T>*)>(&ArchiveType<T>::SetField))>> : Traits::TrueType {};
+        struct HasSetFieldImpl<T, Traits::VoidType<decltype(static_cast<void(*)(ArchiveWriter&, ArchiveObject, T)>(&ArchiveType<T>::SetField))>> : Traits::TrueType {};
 
         template <typename T>
         constexpr bool HasSetField = HasSetFieldImpl<T>::value;

@@ -176,31 +176,6 @@ namespace Fyrion
         return owner;
     }
 
-    void FieldHandler::Serialize(ArchiveWriter& writer, ConstPtr instance, ArchiveObject object) const
-    {
-        if (fnSerialize)
-        {
-            fnSerialize(this, instance, writer, object);
-        }
-        else if (TypeHandler* typeHandler = Registry::FindTypeById(GetFieldInfo().typeInfo.typeId))
-        {
-            writer.WriteValue(object, GetName(), Serialization::Serialize(typeHandler, writer, GetFieldPointer(const_cast<VoidPtr>(instance))));
-        }
-    }
-
-    void FieldHandler::Deserialize(ArchiveReader& reader, VoidPtr instance, ArchiveObject object) const
-    {
-        if (fnDeserialize)
-        {
-            fnDeserialize(this, instance, reader, object);
-        }
-        else if (TypeHandler* typeHandler = Registry::FindTypeById(GetFieldInfo().typeInfo.typeId))
-        {
-            Serialization::Deserialize(typeHandler, reader, reader.ReadObject(object, GetName()), GetFieldPointer(instance));
-        }
-    }
-
-
     StringView FunctionHandler::GetName() const
     {
         return m_name;
@@ -538,16 +513,6 @@ namespace Fyrion
     void FieldBuilder::SetFnSetValue(FieldHandler::FnSetValue fnSetValue)
     {
         fieldHandler.fnSetValue = fnSetValue;
-    }
-
-    void FieldBuilder::SetFnSerialize(FieldHandler::FnSerialize fnSerialize)
-    {
-        fieldHandler.fnSerialize = fnSerialize;
-    }
-
-    void FieldBuilder::SetFnDeserialize(FieldHandler::FnDeserialize fnDeserialize)
-    {
-        fieldHandler.fnDeserialize = fnDeserialize;
     }
 
     void FieldBuilder::Copy(const FieldHandler& p_fieldHandler, TypeHandler& owner)

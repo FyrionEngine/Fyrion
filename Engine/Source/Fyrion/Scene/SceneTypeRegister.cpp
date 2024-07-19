@@ -1,4 +1,5 @@
 #include "Assets/SceneObjectAsset.hpp"
+#include "Components/MeshRender.hpp"
 #include "Components/TransformComponent.hpp"
 #include "Fyrion/Core/Registry.hpp"
 
@@ -10,5 +11,6 @@ namespace Fyrion
         Registry::Type<Component>();
         Registry::Type<TransformComponent>();
         Registry::Type<SceneObject>();
+        Registry::Type<MeshRender>();
     }
 }

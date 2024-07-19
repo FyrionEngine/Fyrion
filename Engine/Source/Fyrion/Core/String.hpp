@@ -958,25 +958,6 @@ namespace Fyrion
 	};
 
     template<usize BufferSize>
-    struct ArchiveType<BasicString<char, BufferSize>>
-    {
-        static void WriteField(ArchiveWriter& writer, ArchiveObject object, const StringView& name, const BasicString<char, BufferSize>& value)
-        {
-            writer.WriteString(object, name, value);
-        }
-
-        static void ReadField(ArchiveReader& reader, ArchiveObject object, const StringView& name, BasicString<char, BufferSize>& string)
-        {
-            string = reader.ReadString(object, name);
-        }
-
-        static BasicString<char, BufferSize> GetField(ArchiveReader& reader, ArchiveObject val)
-        {
-            return reader.GetString(val);
-        }
-    };
-
-    template<usize BufferSize>
     using BufferString = BasicString<char, BufferSize>;
     using String = BasicString<char, FY_STRING_BUFFER_SIZE>;
 

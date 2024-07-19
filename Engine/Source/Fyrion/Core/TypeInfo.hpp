@@ -4,6 +4,7 @@
 #include "StringView.hpp"
 #include "TypeApiInfo.hpp"
 #include "String.hpp"
+#include "Serialization.hpp"
 
 template<typename Type>
 constexpr auto Fyrion_StrippedTypeName()
@@ -32,6 +33,7 @@ namespace Fyrion
         FnStringSize stringSize;
         FnToString toString;
         FnFromString fromString;
+        bool hasArchiveImpl;
     };
 
     template<typename Type>
@@ -127,6 +129,11 @@ namespace Fyrion
             {
                 StringConverter<Type>::FromString(stringView.Data(), stringView.Size(), *static_cast<Traits::RemoveAll<Type>*>(pointer));
             };
+        }
+
+        if constexpr (ArchiveType<Type>::hasArchiveImpl)
+        {
+            typeInfo.hasArchiveImpl = true;
         }
 
         return typeInfo;

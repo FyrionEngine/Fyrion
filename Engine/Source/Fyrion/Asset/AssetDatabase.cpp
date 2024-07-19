@@ -98,6 +98,11 @@ namespace Fyrion
 
     Asset* AssetDatabase::Create(TypeID typeId, UUID uuid)
     {
+        if (auto it = assetsById.Find(uuid))
+        {
+            return it->second;
+        }
+
         TypeHandler* typeHandler = Registry::FindTypeById(typeId);
         FY_ASSERT(typeHandler, "type not found");
 

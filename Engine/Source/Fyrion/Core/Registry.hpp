@@ -189,8 +189,6 @@ namespace Fyrion
         typedef VoidPtr     (*FnGetFieldPointer)(const FieldHandler* fieldHandler, VoidPtr instance);
         typedef void        (*FnCopyValueTo)(const FieldHandler* fieldHandler, ConstPtr instance, VoidPtr value);
         typedef void        (*FnSetValue)(const FieldHandler* fieldHandler, VoidPtr instance, ConstPtr value);
-        typedef void        (*FnSerialize)(const FieldHandler* fieldHandler, ConstPtr instance, ArchiveWriter& writer, ArchiveObject object);
-        typedef void        (*FnDeserialize)(const FieldHandler* fieldHandler, VoidPtr instance, ArchiveReader& reader, ArchiveObject object);
 
         FieldHandler(const String& name, TypeHandler& owner);
 
@@ -201,8 +199,6 @@ namespace Fyrion
         void         SetValue(VoidPtr instance, ConstPtr value) const;
         FnCast       GetOwnerCaster() const;
         TypeHandler& GetOwner() const;
-        void         Serialize(ArchiveWriter& writer, ConstPtr instance, ArchiveObject object) const;
-        void         Deserialize(ArchiveReader& reader, VoidPtr instance, ArchiveObject object) const;
 
         template<typename T>
         T& GetValueAs(VoidPtr instance)
@@ -231,8 +227,6 @@ namespace Fyrion
         FnGetFieldPointer fnGetFieldPointer{};
         FnCopyValueTo     fnCopyValueTo{};
         FnSetValue        fnSetValue{};
-        FnSerialize       fnSerialize{};
-        FnDeserialize     fnDeserialize{};
         FnCast            ownerCast{};
     };
 
@@ -456,8 +450,6 @@ namespace Fyrion
         void SetFnGetFieldPointer(FieldHandler::FnGetFieldPointer fnGetFieldPointer);
         void SetFnCopyValueTo(FieldHandler::FnCopyValueTo fnCopyValueTo);
         void SetFnSetValue(FieldHandler::FnSetValue fnSetValue);
-        void SetFnSerialize(FieldHandler::FnSerialize fnSerialize);
-        void SetFnDeserialize(FieldHandler::FnDeserialize fnDeserialize);
 
         void Copy(const FieldHandler& fieldHandler, TypeHandler& owner);
     };
@@ -700,16 +692,6 @@ namespace Fyrion
         {
             fieldBuilder.SetFnGetFieldInfo(&GetFieldImpl);
             fieldBuilder.SetFnGetFieldPointer(&FnGetFieldPointerImpl);
-
-            if constexpr (Serialization::HasWriteField<Field>)
-            {
-                fieldBuilder.SetFnSerialize(&SerializeImpl);
-            }
-
-            if constexpr (Serialization::HasReadField<Field>)
-            {
-                fieldBuilder.SetFnDeserialize(&DeserializeImpl);
-            }
         }
 
         static FieldInfo GetFieldImpl(const FieldHandler* fieldHandler)
@@ -721,24 +703,6 @@ namespace Fyrion
         {
             instance = fieldHandler->GetOwnerCaster()(&fieldHandler->GetOwner(), instance);
             return &(*static_cast<Owner*>(instance).*mfp);
-        }
-
-        static void SerializeImpl(const FieldHandler* fieldHandler, ConstPtr instance, ArchiveWriter& writer, ArchiveObject object)
-        {
-            if constexpr (Serialization::HasWriteField<Field>)
-            {
-                instance = fieldHandler->GetOwnerCaster()(&fieldHandler->GetOwner(), const_cast<VoidPtr>(instance));
-                ArchiveType<Field>::WriteField(writer, object, fieldHandler->GetName(), static_cast<const Owner*>(instance)->*mfp);
-            }
-        }
-
-        static void DeserializeImpl(const FieldHandler* fieldHandler, VoidPtr instance, ArchiveReader& reader, ArchiveObject object)
-        {
-            if constexpr (Serialization::HasReadField<Field>)
-            {
-                instance = fieldHandler->GetOwnerCaster()(&fieldHandler->GetOwner(), instance);
-                ArchiveType<Field>::ReadField(reader, object, fieldHandler->GetName(), static_cast<Owner*>(instance)->*mfp);
-            }
         }
     };
 

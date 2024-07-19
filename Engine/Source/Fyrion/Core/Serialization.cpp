@@ -9,7 +9,7 @@ namespace Fyrion
         const ArchiveObject object = writer.CreateObject();
         for (FieldHandler* field : typeHandler->GetFields())
         {
-            field->Serialize(writer, instance, object);
+           // field->Serialize(writer, instance, object);
         }
         return object;
     }
@@ -18,7 +18,7 @@ namespace Fyrion
     {
         for (FieldHandler* field : typeHandler->GetFields())
         {
-            field->Deserialize(reader, instance, object);
+          //  field->Deserialize(reader, instance, object);
         }
     }
 }

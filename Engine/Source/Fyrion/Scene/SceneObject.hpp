@@ -54,19 +54,4 @@ namespace Fyrion
         SceneObject*        parent = nullptr;
         bool                alive = true;
     };
-
-
-    template <>
-    struct ArchiveType<SceneObject>
-    {
-        static void WriteField(ArchiveWriter& writer, ArchiveObject object, const StringView& name, const SceneObject& value)
-        {
-            writer.WriteValue(object, name, value.Serialize(writer));
-        }
-
-        static void ReadField(ArchiveReader& reader, ArchiveObject object, const StringView& name, SceneObject& value)
-        {
-            value.Deserialize(reader, reader.ReadObject(object, name));
-        }
-    };
 }

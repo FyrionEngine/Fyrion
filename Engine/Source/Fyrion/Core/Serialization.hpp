@@ -5,7 +5,6 @@
 
 namespace Fyrion
 {
-    struct UUID;
     FY_HANDLER(ArchiveObject);
 
     struct ArchiveWriter
@@ -49,129 +48,41 @@ namespace Fyrion
         virtual f64           GetFloat(ArchiveObject object) = 0;
     };
 
-    namespace Serialization
-    {
-        FY_API ArchiveObject Serialize(const TypeHandler* typeHandler, ArchiveWriter& writer, ConstPtr instance);
-        FY_API void          Deserialize(const TypeHandler* typeHandler, ArchiveReader& reader, ArchiveObject object, VoidPtr instance);
-    }
-
 
     template <typename T, typename Enable = void>
-    struct ArchiveType {};
-
-#define FY_ARCHIVE_TYPE_INT(T)      \
-    template<>                      \
-    struct ArchiveType<T>           \
-    {                               \
-        static void WriteField(ArchiveWriter& writer, ArchiveObject object, const StringView& name, const T& value)   \
-        {                           \
-            writer.WriteInt(object, name, value);   \
-        }                                           \
-                                                    \
-        static void ReadField(ArchiveReader& reader, ArchiveObject object, const StringView& name, T& value)   \
-        {                                                   \
-            value = reader.ReadInt(object, name);            \
-        }                                                   \
-    }
-
-#define FY_ARCHIVE_TYPE_UINT(T)      \
-    template<>                      \
-    struct ArchiveType<T>           \
-    {                               \
-        static void WriteField(ArchiveWriter& writer, ArchiveObject object, const StringView& name, const T& value)   \
-        {                           \
-            writer.WriteUInt(object, name, value);      \
-        }                                               \
-                                                        \
-        static void ReadField(ArchiveReader& reader, ArchiveObject object, const StringView& name, T& value)   \
-        {                                                       \
-            value = reader.ReadUInt(object, name);               \
-        }       \
-    }
-
-#define FY_ARCHIVE_TYPE_FLOAT(T)      \
-    template<>                      \
-    struct ArchiveType<T>           \
-    {                               \
-        static void WriteField(ArchiveWriter& writer, ArchiveObject object, const StringView& name, const T& value)   \
-        {                           \
-            writer.WriteFloat(object, name, value);      \
-        }                                               \
-        \
-        static void ReadField(ArchiveReader& reader, ArchiveObject object, const StringView& name, T& value)   \
-        {                                                           \
-            value = reader.ReadFloat(object, name);                  \
-        }   \
-    }
-
-
-    FY_ARCHIVE_TYPE_INT(i8);
-    FY_ARCHIVE_TYPE_INT(i16);
-    FY_ARCHIVE_TYPE_INT(i32);
-    FY_ARCHIVE_TYPE_INT(i64);
-    FY_ARCHIVE_TYPE_UINT(u8);
-    FY_ARCHIVE_TYPE_UINT(u16);
-    FY_ARCHIVE_TYPE_UINT(u32);
-    FY_ARCHIVE_TYPE_UINT(u64);
-    FY_ARCHIVE_TYPE_FLOAT(f32);
-    FY_ARCHIVE_TYPE_FLOAT(f64);
-
+    struct ArchiveType
+    {
+        constexpr static bool hasArchiveImpl = false;
+    };
 
     template <>
     struct ArchiveType<bool>
     {
-        static void WriteField(ArchiveWriter& writer, ArchiveObject object, const StringView& name, const bool& value)
+        constexpr static bool hasArchiveImpl = true;
+
+        static void Write(ArchiveWriter& writer, ArchiveObject object, StringView name, const bool* value)
         {
-            if (value)
+            if (value && *value)
             {
-                writer.WriteBool(object, name, true);
+                writer.WriteBool(object, name, *value);
             }
         }
 
-        static void ReadField(ArchiveReader& reader, ArchiveObject object, const StringView& name, bool& value)
+        static void Read(ArchiveReader& reader, ArchiveObject object, StringView name, bool* value)
         {
-            value = reader.ReadObject(object, name);
+            if (value != nullptr)
+            {
+                *value = reader.ReadObject(object, name);
+            }
         }
+
+        static void Add();
     };
 
 
     namespace Serialization
     {
-        template <typename, typename = void>
-        struct HasWriteFieldImpl : Traits::FalseType {};
-
-        template <typename T>
-        struct HasWriteFieldImpl<T, Traits::VoidType<decltype(static_cast<void(*)(ArchiveWriter&, ArchiveObject, const StringView& name, const T&)>(&ArchiveType<T>::WriteField))>> : Traits::TrueType {
-        };
-
-        template <typename T>
-        constexpr bool HasWriteField = HasWriteFieldImpl<T>::value;
-
-        template <typename, typename = void>
-        struct HasReadFieldImpl : Traits::FalseType {};
-
-        template <typename T>
-        struct HasReadFieldImpl<T, Traits::VoidType<decltype(static_cast<void(*)(ArchiveReader&, ArchiveObject, const StringView& name, T&)>(&ArchiveType<T>::ReadField))>> : Traits::TrueType {};
-
-        template <typename T>
-        constexpr bool HasReadField = HasReadFieldImpl<T>::value;
-
-        template <typename, typename = void>
-        struct HasGetFieldImpl : Traits::FalseType {};
-
-        template <typename T>
-        struct HasGetFieldImpl<T, Traits::VoidType<decltype(static_cast<T(*)(ArchiveReader&, ArchiveObject)>(&ArchiveType<T>::GetField))>> : Traits::TrueType {};
-
-        template <typename T>
-        constexpr bool HasGetField = HasGetFieldImpl<T>::value;
-
-        template <typename, typename = void>
-        struct HasSetFieldImpl : Traits::FalseType {};
-
-        template <typename T>
-        struct HasSetFieldImpl<T, Traits::VoidType<decltype(static_cast<void(*)(ArchiveWriter&, ArchiveObject, T)>(&ArchiveType<T>::SetField))>> : Traits::TrueType {};
-
-        template <typename T>
-        constexpr bool HasSetField = HasSetFieldImpl<T>::value;
+        FY_API ArchiveObject Serialize(const TypeHandler* typeHandler, ArchiveWriter& writer, ConstPtr instance);
+        FY_API void          Deserialize(const TypeHandler* typeHandler, ArchiveReader& reader, ArchiveObject object, VoidPtr instance);
     }
 }

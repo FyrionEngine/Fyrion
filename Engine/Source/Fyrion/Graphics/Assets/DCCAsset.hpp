@@ -13,18 +13,10 @@ namespace Fyrion
         FY_BASE_TYPES(Asset);
 
         static void RegisterType(NativeTypeHandler<DCCAsset>& type);
-        void        AddMesh(MeshAsset* meshAsset);
-        void        AddTexture(TextureAsset* textureAsset);
-        void        AddMaterial(MaterialAsset* materialAsset);
-        void        AddSceneObject(SceneObjectAsset* sceneObjectAsset);
 
     private:
-        Vec3                         scaleFactor{1.0, 1.0, 1.0};
-        bool                         mergeMaterials = true;
-        bool                         mergeMeshes = false;
-        Subobjects<TextureAsset>     textures{this};
-        Subobjects<MeshAsset>        meshes{this};
-        Subobjects<MaterialAsset>    materials{this};
-        Subobjects<SceneObjectAsset> sceneObjects{this};
+        Vec3                  scaleFactor{1.0, 1.0, 1.0};
+        bool                  mergeMaterials = true;
+        bool                  mergeMeshes = false;
     };
 }

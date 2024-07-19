@@ -150,7 +150,7 @@ namespace Fyrion
             {
                 FileSystem::CreateDirectory(assetDataDirectory);
             }
-            String blobPath = Path::Join(assetDataDirectory, blob.ToString());
+            String      blobPath = Path::Join(assetDataDirectory, blob.ToString());
             FileHandler file = FileSystem::OpenFile(blobPath, AccessMode::WriteOnly);
             FileSystem::WriteFile(file, data, dataSize);
             FileSystem::CloseFile(file);
@@ -176,7 +176,7 @@ namespace Fyrion
         StringView dataDirectory = AssetDatabase::GetDataDirectory();
         if (FileSystem::GetFileStatus(dataDirectory).isDirectory)
         {
-            String blobPath = Path::Join(Path::Join(dataDirectory, ToString(GetUUID())), blob.ToString());
+            String      blobPath = Path::Join(Path::Join(dataDirectory, ToString(GetUUID())), blob.ToString());
             FileHandler file = FileSystem::OpenFile(blobPath, AccessMode::ReadOnly);
             FileSystem::ReadFile(file, data, dataSize);
         }
@@ -220,8 +220,11 @@ namespace Fyrion
     void Asset::SetOwner(Asset* p_owner)
     {
         FY_ASSERT(!owner, "asset already have a owner");
-        owner = p_owner;
-        owner->ownItems.EmplaceBack(p_owner);
+        if (p_owner != this)
+        {
+            owner = p_owner;
+            owner->assets.EmplaceBack(this);
+        }
     }
 
     void Asset::RegisterType(NativeTypeHandler<Asset>& type)

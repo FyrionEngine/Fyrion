@@ -172,7 +172,7 @@ namespace Fyrion
             LoadAssetFile(assetDirectory, entry);
         }
 
-        assetDirectory->loadedVersion =  assetDirectory->currentVersion;
+        assetDirectory->loadedVersion = assetDirectory->currentVersion;
 
         return assetDirectory;
     }
@@ -185,7 +185,7 @@ namespace Fyrion
         {
             AssetDirectory* assetDirectory = Create<AssetDirectory>();
             assetDirectory->absolutePath = filePath;
-            assetDirectory->loadedVersion =  assetDirectory->currentVersion;
+            assetDirectory->loadedVersion = assetDirectory->currentVersion;
             assetDirectory->name = Path::Name(filePath);
             parentDirectory->AddChild(assetDirectory);
 
@@ -201,7 +201,7 @@ namespace Fyrion
                 asset->name = Path::Name(filePath);
                 asset->extension = Path::Extension(filePath);
                 asset->absolutePath = filePath;
-                asset->loadedVersion =  asset->currentVersion;
+                asset->loadedVersion = asset->currentVersion;
                 parentDirectory->AddChild(asset);
             }
         }
@@ -215,7 +215,7 @@ namespace Fyrion
                     asset->name = Path::Name(filePath);
                     asset->extension = Path::Extension(filePath);
                     asset->absolutePath = filePath;
-                    asset->loadedVersion =  asset->currentVersion;
+                    asset->loadedVersion = asset->currentVersion;
                     parentDirectory->AddChild(asset);
 
                     String assetDataDir = Path::Join(dataDirectory, ToString(asset->GetUUID()));
@@ -238,24 +238,60 @@ namespace Fyrion
         }
     }
 
+    Asset* AssetDatabase::DeserializeAsset(ArchiveReader& reader, ArchiveObject object)
+    {
+        if (TypeHandler* typeHandler = Registry::FindTypeByName(reader.ReadString(object, "_type")))
+        {
+            Asset* asset = Create(typeHandler->GetTypeInfo().typeId);
+            Serialization::Deserialize(typeHandler, reader, object, asset);
+            AssetDatabaseUpdateUUID(asset, asset->GetUUID());
+
+            ArchiveObject arr = reader.ReadObject(object, "_assets");
+            auto          size = reader.ArrSize(arr);
+            ArchiveObject item{};
+            for (usize i = 0; i < size; ++i)
+            {
+                item = reader.Next(arr, item);
+                if (item)
+                {
+                    Asset* child = DeserializeAsset(reader, item);
+                    child->SetOwner(asset);
+                }
+            }
+
+            return asset;
+        }
+
+        return nullptr;
+    }
+
     Asset* AssetDatabase::ReadAssetFile(const StringView& path)
     {
         FileHandler handler = FileSystem::OpenFile(path, AccessMode::ReadOnly);
-        u64 size = FileSystem::GetFileSize(handler);
-        String buffer(size);
+        u64         size = FileSystem::GetFileSize(handler);
+        String      buffer(size);
         FileSystem::ReadFile(handler, buffer.begin(), buffer.Size());
         FileSystem::CloseFile(handler);
 
         JsonAssetReader reader(buffer);
-        ArchiveObject root = reader.ReadObject();
-        if (TypeHandler* typeHandler = Registry::FindTypeByName(reader.ReadString(root, "_type")))
+        return DeserializeAsset(reader, reader.ReadObject());
+    }
+
+    ArchiveObject AssetDatabase::SerializeAsset(ArchiveWriter& writer, Asset* asset)
+    {
+        ArchiveObject object = Serialization::Serialize(asset->GetAssetType(), writer, asset);
+        writer.WriteString(object, "_type", asset->GetAssetType()->GetName());
+
+        if (!asset->assets.Empty())
         {
-            Asset* asset = Create(typeHandler->GetTypeInfo().typeId);
-            Serialization::Deserialize(typeHandler, reader, root, asset);
-            AssetDatabaseUpdateUUID(asset, asset->GetUUID());
-            return asset;
+            ArchiveObject arr = writer.CreateArray();
+            for (Asset* child : asset->assets)
+            {
+                writer.AddValue(arr, SerializeAsset(writer, child));
+            }
+            writer.WriteValue(object, "_assets", arr);
         }
-        return nullptr;
+        return object;
     }
 
     void AssetDatabase::SaveOnDirectory(AssetDirectory* directoryAsset, const StringView& directoryPath)
@@ -325,11 +361,8 @@ namespace Fyrion
                 String serializedPath = asset->extension == FY_ASSET_EXTENSION ? assetPath : Path::Join(directoryPath, asset->GetName(), FY_INFO_EXTENSION);
 
                 JsonAssetWriter writer;
-                ArchiveObject object = Serialization::Serialize(asset->GetAssetType(), writer, asset);
-                writer.WriteString(object, "_type", asset->GetAssetType()->GetName());
-                String str = JsonAssetWriter::Stringify(object);
-
-                FileHandler handler = FileSystem::OpenFile(serializedPath, AccessMode::WriteOnly);
+                String          str = JsonAssetWriter::Stringify(SerializeAsset(writer, asset));
+                FileHandler     handler = FileSystem::OpenFile(serializedPath, AccessMode::WriteOnly);
                 FileSystem::WriteFile(handler, str.begin(), str.Size());
                 FileSystem::CloseFile(handler);
 
@@ -372,7 +405,6 @@ namespace Fyrion
     }
 
 
-
     AssetDirectory* AssetDatabase::LoadFromPackage(const StringView& name, const StringView& file, const StringView& binFile)
     {
         FY_ASSERT(false, "not implemented");
@@ -404,10 +436,7 @@ namespace Fyrion
         assetsByPath.Clear();
     }
 
-    void AssetDatabaseInit()
-    {
-
-    }
+    void AssetDatabaseInit() {}
 
     void AssetDatabaseShutdown()
     {

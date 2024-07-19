@@ -126,7 +126,7 @@ namespace Fyrion
         String          path{};
         Asset*          prototype{};
         Asset*          owner{};
-        Array<Asset*>   ownItems{};
+        Array<Asset*>   assets{};
         TypeHandler*    assetType{};
         u64             currentVersion{};
         u64             loadedVersion{};
@@ -140,30 +140,17 @@ namespace Fyrion
     };
 
     template <typename T>
-    class Subobjects
-    {
-    public:
-        explicit Subobjects(Asset* owner) : owner(owner) {}
-
-        void Add(T* asset)
-        {
-            objects.EmplaceBack(asset);
-            asset->SetOwner(owner);
-        }
-
-        Array<T*> objects;
-        Asset*    owner = nullptr;
-    };
-
-
-    template <typename T>
     struct ArchiveType<T*, Traits::EnableIf<Traits::IsBaseOf<Asset, T>>>
     {
         constexpr static bool hasArchiveImpl = true;
 
         static void Write(ArchiveWriter& writer, ArchiveObject object, StringView name, T* const* value)
         {
-            int a=  0;
+            if (*value)
+            {
+                writer.WriteString(object, name, ToString((*value)->GetUUID()));
+            }
+
         }
         static void Read(ArchiveReader& reader, ArchiveObject object, StringView name, T** value)
         {
@@ -172,7 +159,10 @@ namespace Fyrion
 
         static void Add(ArchiveWriter& writer, ArchiveObject array, T*const * value)
         {
-            FY_ASSERT(false, "not implemented");
+            if (*value)
+            {
+                writer.AddString(array, ToString((*value)->GetUUID()));
+            }
         }
 
         static void Get(ArchiveReader& reader, ArchiveObject item, T** value)

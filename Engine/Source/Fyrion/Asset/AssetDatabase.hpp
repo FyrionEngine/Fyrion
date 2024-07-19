@@ -68,5 +68,7 @@ namespace Fyrion
     private:
         static void LoadAssetFile(AssetDirectory* directory, const StringView& filePath);
         static Asset* ReadAssetFile(const StringView& path);
+        static ArchiveObject SerializeAsset(ArchiveWriter& writer, Asset* asset);
+        static Asset* DeserializeAsset(ArchiveReader& reader, ArchiveObject object);
     };
 }

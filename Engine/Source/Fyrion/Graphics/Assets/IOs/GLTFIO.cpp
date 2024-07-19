@@ -40,8 +40,7 @@ namespace Fyrion
             MeshAsset* meshAsset =  AssetDatabase::Create<MeshAsset>();
             meshAsset->SetName(name);
             meshAsset->SetUUID(UUID::RandomUUID());
-
-            dccAsset->AddMesh(meshAsset);
+            meshAsset->SetOwner(dccAsset);
 
             for (u32 p = 0; p < gltfMesh.primitives_count; ++p)
             {

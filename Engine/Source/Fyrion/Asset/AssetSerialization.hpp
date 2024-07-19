@@ -56,6 +56,7 @@ namespace Fyrion
 
         ArchiveObject ReadObject() override;
 
+        bool          ReadBool(ArchiveObject object, const StringView& name) override;
         i64           ReadInt(ArchiveObject object, const StringView& name) override;
         u64           ReadUInt(ArchiveObject object, const StringView& name) override;
         StringView    ReadString(ArchiveObject object, const StringView& name) override;
@@ -68,6 +69,7 @@ namespace Fyrion
         u64           GetUInt(ArchiveObject object) override;
         StringView    GetString(ArchiveObject object) override;
         f64           GetFloat(ArchiveObject object) override;
+        bool          GetBool(ArchiveObject object) override;
 
     private:
         yyjson_doc* doc = nullptr;

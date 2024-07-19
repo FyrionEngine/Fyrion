@@ -150,6 +150,15 @@ namespace Fyrion
         return nullptr;
     }
 
+    ConstPtr FieldHandler::GetFieldPointer(ConstPtr instance) const
+    {
+        if (fnGetFieldPointer)
+        {
+            return fnGetFieldPointer(this, const_cast<VoidPtr>(instance));
+        }
+        return nullptr;
+    }
+
     void FieldHandler::CopyValueTo(ConstPtr instance, VoidPtr value) const
     {
         if (fnCopyValueTo)

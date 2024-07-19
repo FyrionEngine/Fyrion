@@ -147,6 +147,15 @@ namespace Fyrion
         return {yyjson_doc_get_root(doc)};
     }
 
+    bool JsonAssetReader::ReadBool(ArchiveObject object, const StringView& name)
+    {
+        if (yyjson_val* val = yyjson_obj_getn(static_cast<yyjson_val*>(object.handler), name.CStr(), name.Size()))
+        {
+            return yyjson_get_bool(val);
+        }
+        return false;
+    }
+
     i64 JsonAssetReader::ReadInt(ArchiveObject object, const StringView& name)
     {
         if (yyjson_val* val = yyjson_obj_getn(static_cast<yyjson_val*>(object.handler), name.CStr(), name.Size()))
@@ -223,6 +232,11 @@ namespace Fyrion
     f64 JsonAssetReader::GetFloat(ArchiveObject object)
     {
         return yyjson_get_real(static_cast<yyjson_val*>(object.handler));
+    }
+
+    bool JsonAssetReader::GetBool(ArchiveObject object)
+    {
+        return yyjson_get_bool(static_cast<yyjson_val*>(object.handler));
     }
 
     JsonAssetReader::~JsonAssetReader()

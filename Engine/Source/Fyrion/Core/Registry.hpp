@@ -9,7 +9,6 @@
 #include "SharedPtr.hpp"
 #include "HashMap.hpp"
 #include "Span.hpp"
-#include "Serialization.hpp"
 
 namespace Fyrion
 {
@@ -195,6 +194,7 @@ namespace Fyrion
         StringView   GetName() const;
         FieldInfo    GetFieldInfo() const;
         VoidPtr      GetFieldPointer(VoidPtr instance) const;
+        ConstPtr     GetFieldPointer(ConstPtr instance) const;
         void         CopyValueTo(ConstPtr instance, VoidPtr value) const;
         void         SetValue(VoidPtr instance, ConstPtr value) const;
         FnCast       GetOwnerCaster() const;

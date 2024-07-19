@@ -6,37 +6,40 @@
 #include "String.hpp"
 #include "Serialization.hpp"
 
-template<typename Type>
+template <typename Type>
 constexpr auto Fyrion_StrippedTypeName()
 {
     Fyrion::StringView prettyFunction = FY_PRETTY_FUNCTION;
-    Fyrion::usize first = prettyFunction.FindFirstNotOf(' ', prettyFunction.FindFirstOf(FY_PRETTY_FUNCTION_PREFIX) + 1);
+    Fyrion::usize      first = prettyFunction.FindFirstNotOf(' ', prettyFunction.FindFirstOf(FY_PRETTY_FUNCTION_PREFIX) + 1);
     Fyrion::StringView value = prettyFunction.Substr(first, prettyFunction.FindLastOf(FY_PRETTY_FUNCTION_SUFFIX) - first);
     return value;
 }
 
 namespace Fyrion
 {
-    typedef void(*FnExtractApi)(VoidPtr pointer);
-    typedef usize(*FnStringSize)(ConstPtr pointer);
-    typedef usize(*FnToString)(ConstPtr pointer, char* buffer);
-    typedef void (*FnFromString)(VoidPtr pointer, const StringView& stringView);
+    typedef void (* FnExtractApi)(VoidPtr pointer);
+    typedef usize (*FnStringSize)(ConstPtr pointer);
+    typedef usize (*FnToString)(ConstPtr pointer, char* buffer);
+    typedef void (* FnFromString)(VoidPtr pointer, const StringView& stringView);
 
     struct TypeInfo
     {
-        TypeID typeId;
-        usize size;
-        usize alignment;
-        bool isTriviallyCopyable;
-        TypeID apiId;
-        FnExtractApi extractApi;
-        FnStringSize stringSize;
-        FnToString toString;
-        FnFromString fromString;
-        bool hasArchiveImpl;
+        TypeID         typeId;
+        usize          size;
+        usize          alignment;
+        bool           isTriviallyCopyable;
+        TypeID         apiId;
+        FnExtractApi   extractApi;
+        FnStringSize   stringSize;
+        FnToString     toString;
+        FnFromString   fromString;
+        FnArchiveWrite archiveWrite;
+        FnArchiveRead  archiveRead;
+        FnArchiveAdd   archiveAdd;
+        FnArchiveGet   archiveGet;
     };
 
-    template<typename Type>
+    template <typename Type>
     struct TypeIDGen
     {
         static constexpr auto GetTypeName()
@@ -58,19 +61,19 @@ namespace Fyrion
         }
     };
 
-    template<typename Type>
+    template <typename Type>
     constexpr static TypeID GetTypeID()
     {
         return TypeIDGen<Traits::RemoveAll<Type>>::GetTypeID();
     }
 
-    template<typename Type>
+    template <typename Type>
     constexpr static StringView GetTypeName()
     {
         return TypeIDGen<Traits::RemoveAll<Type>>::GetTypeName();
     }
 
-    template<typename Type>
+    template <typename Type>
     constexpr static usize GetTypeSize()
     {
         if constexpr (Traits::IsComplete<Traits::RemoveAll<Type>>)
@@ -80,7 +83,7 @@ namespace Fyrion
         return 0;
     }
 
-    template<typename Type>
+    template <typename Type>
     constexpr static usize GetTypeAlign()
     {
         if constexpr (Traits::IsComplete<Traits::RemoveAll<Type>>)
@@ -101,7 +104,7 @@ namespace Fyrion
         return ret;
     }
 
-    template<typename Type>
+    template <typename Type>
     constexpr TypeInfo GetTypeInfo()
     {
         TypeInfo typeInfo = TypeInfo{
@@ -115,7 +118,7 @@ namespace Fyrion
 
         if constexpr (StringConverter<Type>::hasConverter)
         {
-            typeInfo.stringSize = [](ConstPtr  pointer)
+            typeInfo.stringSize = [](ConstPtr pointer)
             {
                 return StringConverter<Type>::Size(*static_cast<const Traits::RemoveAll<Type>*>(pointer));
             };
@@ -133,7 +136,25 @@ namespace Fyrion
 
         if constexpr (ArchiveType<Type>::hasArchiveImpl)
         {
-            typeInfo.hasArchiveImpl = true;
+            typeInfo.archiveWrite = [](ArchiveWriter& writer, ArchiveObject object, StringView name, ConstPtr value)
+            {
+                ArchiveType<Type>::Write(writer, object, name, static_cast<const Type*>(value));
+            };
+
+            typeInfo.archiveRead = [](ArchiveReader& reader, ArchiveObject object, StringView name, VoidPtr value)
+            {
+                ArchiveType<Type>::Read(reader, object, name, static_cast<Type*>(value));
+            };
+
+            typeInfo.archiveAdd = [](ArchiveWriter& writer, ArchiveObject array, ConstPtr value)
+            {
+                ArchiveType<Type>::Add(writer, array, static_cast<const Type*>(value));
+            };
+
+            typeInfo.archiveGet = [](ArchiveReader& reader, ArchiveObject array, VoidPtr value)
+            {
+                ArchiveType<Type>::Get(reader, array, static_cast<Type*>(value));
+            };
         }
 
         return typeInfo;

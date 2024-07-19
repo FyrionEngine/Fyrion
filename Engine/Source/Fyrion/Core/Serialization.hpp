@@ -3,6 +3,7 @@
 #include "Fyrion/Common.hpp"
 #include "Fyrion/Core/StringView.hpp"
 
+
 namespace Fyrion
 {
     FY_HANDLER(ArchiveObject);
@@ -34,6 +35,7 @@ namespace Fyrion
         virtual ~ArchiveReader() = default;
 
         virtual ArchiveObject ReadObject() = 0;
+        virtual bool          ReadBool(ArchiveObject object, const StringView& name) = 0;
         virtual i64           ReadInt(ArchiveObject object, const StringView& name) = 0;
         virtual u64           ReadUInt(ArchiveObject object, const StringView& name) = 0;
         virtual StringView    ReadString(ArchiveObject object, const StringView& name) = 0;
@@ -46,7 +48,13 @@ namespace Fyrion
         virtual u64           GetUInt(ArchiveObject object) = 0;
         virtual StringView    GetString(ArchiveObject object) = 0;
         virtual f64           GetFloat(ArchiveObject object) = 0;
+        virtual bool          GetBool(ArchiveObject object) = 0;
     };
+
+    typedef void (*FnArchiveWrite)(ArchiveWriter& writer, ArchiveObject object, StringView name, ConstPtr value);
+    typedef void (*FnArchiveRead)(ArchiveReader& reader, ArchiveObject object, StringView name, VoidPtr value);
+    typedef void (*FnArchiveAdd)(ArchiveWriter& writer, ArchiveObject array, ConstPtr value);
+    typedef void (*FnArchiveGet)(ArchiveReader& reader, ArchiveObject item, VoidPtr value);
 
 
     template <typename T, typename Enable = void>
@@ -55,30 +63,47 @@ namespace Fyrion
         constexpr static bool hasArchiveImpl = false;
     };
 
-    template <>
-    struct ArchiveType<bool>
-    {
-        constexpr static bool hasArchiveImpl = true;
 
-        static void Write(ArchiveWriter& writer, ArchiveObject object, StringView name, const bool* value)
-        {
-            if (value && *value)
-            {
-                writer.WriteBool(object, name, *value);
-            }
-        }
-
-        static void Read(ArchiveReader& reader, ArchiveObject object, StringView name, bool* value)
-        {
-            if (value != nullptr)
-            {
-                *value = reader.ReadObject(object, name);
-            }
-        }
-
-        static void Add();
+#define FY_ARCHIVE_TYPE_IMPL(Name, T)      \
+    template <>                     \
+    struct ArchiveType<T>           \
+    {                               \
+        constexpr static bool hasArchiveImpl = true;    \
+                                                        \
+        static void Write(ArchiveWriter& writer, ArchiveObject object, StringView name, const T* value) \
+        { \
+            if (*value) \
+            { \
+                writer.Write##Name(object, name, *value); \
+            } \
+        } \
+        static void Read(ArchiveReader& reader, ArchiveObject object, StringView name, T* value) \
+        { \
+            *value = reader.Read##Name(object, name); \
+        } \
+            \
+        static void Add(ArchiveWriter& writer, ArchiveObject array, const T* value) \
+        { \
+            writer.Add##Name(array, *value); \
+        } \
+ \
+        static void Get(ArchiveReader& reader, ArchiveObject item, T* value) \
+        { \
+            *value =  reader.Get##Name(item); \
+        } \
     };
 
+    FY_ARCHIVE_TYPE_IMPL(Int, i8);
+    FY_ARCHIVE_TYPE_IMPL(Int, i16);
+    FY_ARCHIVE_TYPE_IMPL(Int, i32);
+    FY_ARCHIVE_TYPE_IMPL(Int, i64);
+    FY_ARCHIVE_TYPE_IMPL(UInt, u8);
+    FY_ARCHIVE_TYPE_IMPL(UInt, u16);
+    FY_ARCHIVE_TYPE_IMPL(UInt, u32);
+    FY_ARCHIVE_TYPE_IMPL(UInt, u64);
+    FY_ARCHIVE_TYPE_IMPL(Float, f32);
+    FY_ARCHIVE_TYPE_IMPL(Float, f64);
+    FY_ARCHIVE_TYPE_IMPL(Bool, bool);
 
     namespace Serialization
     {

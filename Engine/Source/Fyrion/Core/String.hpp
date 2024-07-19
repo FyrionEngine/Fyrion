@@ -54,6 +54,7 @@ namespace Fyrion
         BasicString& operator+=(ConstPointer sz);
         Type operator[](usize pos) const;
         Type& operator[](usize pos);
+        explicit operator bool() const noexcept;
 
         ConstPointer CStr() const;
         bool Empty() const;
@@ -396,6 +397,12 @@ namespace Fyrion
     FY_FINLINE typename BasicString<T, BufferSize>::Type& BasicString<T, BufferSize>::operator[](usize pos)
     {
         return begin()[pos];
+    }
+
+    template <typename T, usize BufferSize>
+    BasicString<T, BufferSize>::operator bool() const noexcept
+    {
+        return !Empty();
     }
 
     template<typename T, usize BufferSize>
@@ -970,6 +977,8 @@ namespace Fyrion
         StringConverter<T>::ToString(string.begin(), 0, value);
         return string;
     }
+
+    FY_ARCHIVE_TYPE_IMPL(String, String);
 }
 
 template<>

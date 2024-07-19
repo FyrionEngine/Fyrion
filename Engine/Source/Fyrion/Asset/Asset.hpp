@@ -154,4 +154,58 @@ namespace Fyrion
         Array<T*> objects;
         Asset*    owner = nullptr;
     };
+
+
+    template <typename T>
+    struct ArchiveType<T*, Traits::EnableIf<Traits::IsBaseOf<Asset, T>>>
+    {
+        constexpr static bool hasArchiveImpl = true;
+
+        static void Write(ArchiveWriter& writer, ArchiveObject object, StringView name, T* const* value)
+        {
+            int a=  0;
+        }
+        static void Read(ArchiveReader& reader, ArchiveObject object, StringView name, T** value)
+        {
+            int a=  0;
+        }
+
+        static void Add(ArchiveWriter& writer, ArchiveObject array, T*const * value)
+        {
+            FY_ASSERT(false, "not implemented");
+        }
+
+        static void Get(ArchiveReader& reader, ArchiveObject item, T** value)
+        {
+            FY_ASSERT(false, "not implemented");
+        }
+    };
+
+    template <>
+    struct ArchiveType<Blob>
+    {
+        constexpr static bool hasArchiveImpl = true;
+
+        static void Write(ArchiveWriter& writer, ArchiveObject object, StringView name, const Blob* value)
+        {
+            if (*value)
+            {
+                writer.WriteString(object, name, value->ToString());
+            }
+        }
+        static void Read(ArchiveReader& reader, ArchiveObject object, StringView name, Blob* value)
+        {
+            *value = Blob::FromString(reader.ReadString(object, name));
+        }
+
+        static void Add(ArchiveWriter& writer, ArchiveObject array, const Blob* value)
+        {
+            FY_ASSERT(false, "not implemented");
+        }
+
+        static void Get(ArchiveReader& reader, ArchiveObject item, Blob* value)
+        {
+            FY_ASSERT(false, "not implemented");
+        }
+    };
 }

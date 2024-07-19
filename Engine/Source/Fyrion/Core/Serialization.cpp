@@ -37,7 +37,6 @@ namespace Fyrion
                         {
                             archiveAdd(writer, array, value);
                             empty = false;
-
                         }
                     }
                 }
@@ -72,13 +71,47 @@ namespace Fyrion
 
         for (FieldHandler* field : typeHandler->GetFields())
         {
-            if (FnArchiveRead archiveRead = field->GetFieldInfo().typeInfo.archiveRead)
+            const TypeInfo& typeInfo = field->GetFieldInfo().typeInfo;
+
+            if (FnArchiveRead archiveRead = typeInfo.archiveRead)
             {
                 archiveRead(reader, object, field->GetName(), field->GetFieldPointer(instance));
             }
-            else if (const TypeHandler* fieldType = Registry::FindTypeById(field->GetFieldInfo().typeInfo.typeId))
+            else if (typeInfo.apiId == GetTypeID<ArrayApi>())
             {
-                Deserialize(fieldType, reader, reader.ReadObject(object, field->GetName()), field->GetFieldPointer(instance));
+                VoidPtr arrPtr = field->GetFieldPointer(instance);
+
+                ArrayApi arrayApi{};
+                typeInfo.extractApi(&arrayApi);
+
+                ArchiveObject arr = reader.ReadObject(object, field->GetName());
+                usize         size = reader.ArrSize(arr);
+                TypeInfo      itemInfo = arrayApi.getTypeInfo();
+                ArchiveObject item{};
+
+                if (FnArchiveGet archiveGet = itemInfo.archiveGet)
+                {
+                    for (usize i = 0; i < size; ++i)
+                    {
+                        item = reader.Next(arr, item);
+                        archiveGet(reader, item, arrayApi.pushNew(arrPtr));
+                    }
+                }
+                else if (TypeHandler* itemHandler = Registry::FindTypeById(itemInfo.typeId))
+                {
+                    for (usize i = 0; i < size; ++i)
+                    {
+                        item = reader.Next(arr, item);
+                        Deserialize(itemHandler, reader, item, arrayApi.pushNew(arrPtr));
+                    }
+                }
+            }
+            else if (const TypeHandler* fieldType = Registry::FindTypeById(typeInfo.typeId))
+            {
+                if (!field->GetFieldInfo().isPointer)
+                {
+                    Deserialize(fieldType, reader, reader.ReadObject(object, field->GetName()), field->GetFieldPointer(instance));
+                }
             }
         }
     }

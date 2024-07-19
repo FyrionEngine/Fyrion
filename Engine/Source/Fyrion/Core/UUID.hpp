@@ -174,4 +174,33 @@ namespace Fyrion
 			return bufferCount;
 		}
 	};
+
+	template <>
+	struct ArchiveType<UUID>
+	{
+		constexpr static bool hasArchiveImpl = true;
+
+		static void Write(ArchiveWriter& writer, ArchiveObject object, StringView name, const UUID* value)
+		{
+			if (*value)
+			{
+				writer.WriteString(object, name, ToString(*value));
+			}
+		}
+		static void Read(ArchiveReader& reader, ArchiveObject object, StringView name, UUID* value)
+		{
+			*value = UUID::FromString(reader.ReadString(object, name));
+		}
+
+		static void Add(ArchiveWriter& writer, ArchiveObject array, const UUID* value)
+		{
+			writer.AddString(array, ToString(*value));
+		}
+
+		static void Get(ArchiveReader& reader, ArchiveObject item, UUID* value)
+		{
+			*value = UUID::FromString(reader.GetString(item));
+		}
+	};
+
 }

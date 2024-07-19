@@ -54,4 +54,29 @@ namespace Fyrion
         SceneObject*        parent = nullptr;
         bool                alive = true;
     };
+
+    template <>
+    struct ArchiveType<SceneObject>
+    {
+        constexpr static bool hasArchiveImpl = true;
+
+        static void Write(ArchiveWriter& writer, ArchiveObject object, StringView name, const SceneObject* value)
+        {
+            writer.WriteValue(object, name, value->Serialize(writer));
+        }
+        static void Read(ArchiveReader& reader, ArchiveObject object, StringView name, SceneObject* value)
+        {
+            value->Deserialize(reader, reader.ReadObject(object, name));
+        }
+
+        static void Add(ArchiveWriter& writer, ArchiveObject array, const SceneObject* value)
+        {
+            FY_ASSERT(false, "not implemented");
+        }
+
+        static void Get(ArchiveReader& reader, ArchiveObject item, SceneObject* value)
+        {
+            FY_ASSERT(false, "not implemented");
+        }
+    };
 }

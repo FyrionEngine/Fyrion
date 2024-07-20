@@ -7,6 +7,7 @@
 
 namespace Fyrion
 {
+    class RenderGraph;
     class RenderGraphPass;
 
     class FY_API RenderGraphAsset : public Asset

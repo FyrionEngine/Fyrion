@@ -139,6 +139,30 @@ namespace Fyrion
         void ValidateName();
     };
 
+    struct AssetApi
+    {
+        Asset* (*castAsset)(VoidPtr ptr);
+        const TypeHandler* (*getTypeHandler)();
+    };
+
+    template<typename T>
+    struct TypeApiInfo<T, Traits::EnableIf<Traits::IsBaseOf<Asset, T>>>
+    {
+        static void ExtractApi(VoidPtr pointer)
+        {
+            AssetApi* api = static_cast<AssetApi*>(pointer);
+            api->castAsset = [](VoidPtr ptr)
+            {
+                return static_cast<Asset*>(*static_cast<T**>(ptr));
+            };
+        }
+
+        static constexpr TypeID GetApiId()
+        {
+            return GetTypeID<AssetApi>();
+        }
+    };
+
     template <typename T>
     struct ArchiveType<T*, Traits::EnableIf<Traits::IsBaseOf<Asset, T>>>
     {
@@ -150,11 +174,10 @@ namespace Fyrion
             {
                 writer.WriteString(object, name, ToString((*value)->GetUUID()));
             }
-
         }
         static void Read(ArchiveReader& reader, ArchiveObject object, StringView name, T** value)
         {
-            int a=  0;
+            *value = AssetDatabase::Create<T>(UUID::FromString(reader.ReadString(object, name)));
         }
 
         static void Add(ArchiveWriter& writer, ArchiveObject array, T*const * value)
@@ -167,7 +190,7 @@ namespace Fyrion
 
         static void Get(ArchiveReader& reader, ArchiveObject item, T** value)
         {
-            FY_ASSERT(false, "not implemented");
+            *value = AssetDatabase::Create<T>(UUID::FromString(reader.GetString(item)));
         }
     };
 

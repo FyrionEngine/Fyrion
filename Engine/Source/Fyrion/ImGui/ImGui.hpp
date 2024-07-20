@@ -38,7 +38,7 @@ namespace ImGui
 
     struct ContentItemDesc
     {
-        u32             ItemId{};
+        ImGuiID         ItemId{};
         const char*     PreLabel{};
         const char*     Label{};
         Texture         Texture{};
@@ -77,7 +77,7 @@ namespace ImGui
         Array<TypeID> graphOutputs{};
     };
 
-    typedef void (*FieldRendererFn)(DrawTypeContent* context, FieldHandler* fieldHandler, VoidPtr value, bool* hasChanged);
+    typedef bool (*FieldRendererFn)(DrawTypeContent* context, FieldHandler* fieldHandler, VoidPtr value, bool* hasChanged);
 
     struct StyleColor
     {
@@ -149,7 +149,7 @@ namespace ImGui
     FY_API void       EndContentTable();
 
 
-    FY_API void AddFieldRenderer(TypeID typeId, FieldRendererFn fieldRendererFn);
+    FY_API void AddFieldRenderer(FieldRendererFn fieldRendererFn);
     FY_API void ClearDrawType(usize itemId);
     FY_API void DrawType(const DrawTypeDesc& drawTypeDesc);
     FY_API void ClearTextData();

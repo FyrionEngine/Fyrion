@@ -48,7 +48,7 @@ namespace ImGui
         HashMap<ImGuiID, ContentTable>             contentTables{};
         ImGuiID                                    currentContentTable{U32_MAX};
         HashMap<usize, UniquePtr<DrawTypeContent>> drawTypes{};
-        HashMap<TypeID, FieldRendererFn>           fieldRenders{};
+        Array<FieldRendererFn>                     fieldRenders{};
     }
 
     struct InputTextCallback_UserData
@@ -496,9 +496,9 @@ namespace ImGui
         //separator size
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + separatorLineSize);
 
-        ImGui::BeginVertical(contentItemDesc.ItemId + 1, ImVec2(width, contentInfoSize - ThumbnailSize), 0.2);
+        ImGui::BeginVertical(contentItemDesc.ItemId + 10, ImVec2(width, contentInfoSize - ThumbnailSize), 0.2);
         {
-            ImGui::BeginHorizontal(contentItemDesc.ItemId + 2, ImVec2(width, 0.0f));
+            ImGui::BeginHorizontal(contentItemDesc.ItemId + 20, ImVec2(width, 0.0f));
 
             ImGui::Spring();
             {
@@ -979,7 +979,7 @@ namespace ImGui
         auto& io = ImGui::GetIO();
 
         static String searchResoruceString = "";
-        static bool popupOpen = false;
+        static bool   popupOpen = false;
 
         auto originalPadding = ImGui::GetStyle().WindowPadding;
 
@@ -1020,6 +1020,8 @@ namespace ImGui
 
                 ImGui::SetWindowFontScale(zoom);
 
+                u32 id = 100000;
+
                 if (ImGui::BeginChild(10000, ImVec2(0, 0), false, ImGuiWindowFlags_AlwaysUseWindowPadding))
                 {
                     if (ImGui::BeginContentTable(10010, zoom * 112 * style.ScaleFactor))
@@ -1035,52 +1037,34 @@ namespace ImGui
                             {
                                 if (drawTypeContent->desc.callback)
                                 {
-                                    //drawTypeContent->fieldShowSelection->SetValueAs(drawTypeContent->instance, RID{});
+                                    drawTypeContent->fieldShowSelection->SetValueAs(drawTypeContent->instance, nullptr);
                                     drawTypeContent->desc.callback(drawTypeContent->desc, drawTypeContent->instance);
                                 }
                                 drawTypeContent->showResourceSelection = false;
                             }
                         }
 
-#if 0
-
-                        Array<RID> resources = Repository::GetResourcesByType(drawTypeContent->resourceTypeSelection);
-                        for(RID rid: resources)
+                        for (Asset* asset : AssetDatabase::FindAssetsByType(drawTypeContent->resourceTypeSelection))
                         {
-                            RID parent = Repository::GetParent(rid);
-                            if (parent && Repository::GetResourceTypeId(Repository::GetResourceType(parent)) == GetTypeID<Asset>())
+                            ImGui::ContentItemDesc contentItem{};
+                            contentItem.ItemId = id;
+                            contentItem.ShowDetails = false;
+                            contentItem.Label = asset->GetName().CStr();
+                            contentItem.CanRename = false;
+                            //contentItem.DetailsDesc = asset->GetDisplayName().CStr();
+
+                            if (ImGui::DrawContentItem(contentItem))
                             {
-                                String resourceName = "";
-
-                                if (ResourceType* resourceType = Repository::GetResourceType(rid))
-                                {
-                                    resourceName = Repository::GetResourceTypeName(resourceType);
-                                }
-                                else if (TypeHandler* typeHandler = Repository::GetResourceTypeHandler(rid))
-                                {
-                                    resourceName = typeHandler->GetSimpleName();
-                                }
-
-                                ResourceObject assetObject = Repository::Read(parent);
-                                String name = assetObject[Asset::Name].Value<String>();
-
-                                ImGui::ContentItemDesc contentItem{};
-                                contentItem.ItemId = rid.id;
-                                contentItem.ShowDetails = false;
-                                contentItem.Label = name.CStr();
-                                contentItem.CanRename = false;
-                                contentItem.DetailsDesc = resourceName.CStr();
-
-                                if (ImGui::DrawContentItem(contentItem))
-                                {
-                                    drawTypeContent->fieldShowSelection->SetValueAs(drawTypeContent->instance, rid);
-                                    drawTypeContent->desc.callback(drawTypeContent->desc, drawTypeContent->instance);
-                                    drawTypeContent->showResourceSelection = false;
-                                }
+                                drawTypeContent->fieldShowSelection->SetValueAs(drawTypeContent->instance, asset);
+                                drawTypeContent->desc.callback(drawTypeContent->desc, drawTypeContent->instance);
+                                drawTypeContent->showResourceSelection = false;
                             }
+
+                            id += 1000;
                         }
+
+
                         ImGui::EndContentTable();
-#endif
                     }
                     ImGui::EndChild();
                     ImGui::SetWindowFontScale(1);
@@ -1157,9 +1141,9 @@ namespace ImGui
         return keys[static_cast<usize>(key)];
     }
 
-    void AddFieldRenderer(TypeID typeId, FieldRendererFn fieldRendererFn)
+    void AddFieldRenderer(FieldRendererFn fieldRendererFn)
     {
-        fieldRenders.Emplace(typeId, Traits::Move(fieldRendererFn));
+        fieldRenders.EmplaceBack(fieldRendererFn);
     }
 
     void ClearDrawType(usize itemId)
@@ -1239,18 +1223,23 @@ namespace ImGui
                     Text("%s", formattedName.CStr());
                     TableNextColumn();
 
-                    if (const auto& it = fieldRenders.Find(field->GetFieldInfo().typeInfo.typeId))
+                    VoidPtr fieldPointer = field->GetFieldPointer(content->instance);
+                    for (FieldRendererFn render : fieldRenders)
                     {
-                        it->second(content, field, field->GetFieldPointer(content->instance), &content->hasChanged);
+                        render(content, field, fieldPointer, &content->hasChanged);
                     }
 
                     EndDisabled();
                 }
                 EndTable();
             }
-        } else if (const auto& it = fieldRenders.Find(content->desc.typeHandler->GetTypeInfo().typeId))
+        }
+        else
         {
-            it->second(content, nullptr, content->instance, &content->hasChanged);
+            for (FieldRendererFn render : fieldRenders)
+            {
+                render(content, nullptr, content->instance, &content->hasChanged);
+            }
         }
     }
 

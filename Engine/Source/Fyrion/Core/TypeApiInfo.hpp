@@ -4,7 +4,7 @@
 
 namespace Fyrion
 {
-	template<typename Type>
+	template<typename Type, typename Enable = void>
 	struct TypeApiInfo
 	{
 		static void ExtractApi(VoidPtr pointer)

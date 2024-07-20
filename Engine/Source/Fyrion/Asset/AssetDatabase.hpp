@@ -21,6 +21,7 @@ namespace Fyrion
         static Asset*          ImportAsset(AssetDirectory* directory, const StringView& path);
         static Asset*          FindById(const UUID& assetId);
         static Asset*          FindByPath(const StringView& path);
+        static Span<Asset*>    FindAssetsByType(TypeID typeId);
         static Asset*          Create(TypeID typeId);
         static Asset*          Create(TypeID typeId, UUID uuid);
         static Asset*          CreateFromPrototype(TypeID typeId, Asset* prototype);

@@ -15,14 +15,16 @@ namespace Fyrion
     {
         bool RegisterEvents();
 
-        String                        dataDirectory;
-        Array<Asset*>                 assets;
-        HashMap<UUID, Asset*>         assetsById;
-        HashMap<String, Asset*>       assetsByPath;
-        Array<Pair<TypeID, AssetIO*>> assetIOs;
-        HashMap<String, AssetIO*>     importers;
-        Logger&                       logger = Logger::GetLogger("Fyrion::AssetDatabase", LogLevel::Debug);
-        bool                          registerEvents = RegisterEvents();
+        String                         dataDirectory;
+        Array<Asset*>                  assets;
+        HashMap<UUID, Asset*>          assetsById;
+        HashMap<String, Asset*>        assetsByPath;
+        Array<Pair<TypeID, AssetIO*>>  assetIOs;
+        HashMap<String, AssetIO*>      importers;
+        HashMap<TypeID, Array<Asset*>> assetsByType{};
+
+        Logger& logger = Logger::GetLogger("Fyrion::AssetDatabase", LogLevel::Debug);
+        bool    registerEvents = RegisterEvents();
 
         void OnTypeAddedImpl(const TypeHandler& typeHandler)
         {
@@ -91,6 +93,15 @@ namespace Fyrion
         return nullptr;
     }
 
+    Span<Asset*> AssetDatabase::FindAssetsByType(TypeID typeId)
+    {
+        if (auto it = assetsByType.Find(typeId))
+        {
+            return it->second;
+        }
+        return {};
+    }
+
     Asset* AssetDatabase::Create(TypeID typeId)
     {
         return Create(typeId, {});
@@ -120,6 +131,15 @@ namespace Fyrion
         if (asset->uuid)
         {
             assetsById.Insert(asset->uuid, asset);
+        }
+
+        {
+            auto itByType = assetsByType.Find(typeId);
+            if(itByType == assetsByType.end())
+            {
+                itByType = assetsByType.Emplace(typeId, {}).first;
+            }
+            itByType->second.EmplaceBack(asset);
         }
 
         return asset;
@@ -242,7 +262,7 @@ namespace Fyrion
     {
         if (TypeHandler* typeHandler = Registry::FindTypeByName(reader.ReadString(object, "_type")))
         {
-            Asset* asset = Create(typeHandler->GetTypeInfo().typeId);
+            Asset* asset = Create(typeHandler->GetTypeInfo().typeId, UUID::FromString(reader.ReadString(object, "uuid")));
             Serialization::Deserialize(typeHandler, reader, object, asset);
             AssetDatabaseUpdateUUID(asset, asset->GetUUID());
 
@@ -281,6 +301,7 @@ namespace Fyrion
     {
         ArchiveObject object = Serialization::Serialize(asset->GetAssetType(), writer, asset);
         writer.WriteString(object, "_type", asset->GetAssetType()->GetName());
+        writer.WriteString(object, "uuid", ToString(asset->GetUUID()));
 
         if (!asset->assets.Empty())
         {

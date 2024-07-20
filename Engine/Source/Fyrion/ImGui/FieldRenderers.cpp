@@ -1,5 +1,6 @@
 #include "IconsFontAwesome6.h"
 #include "ImGui.hpp"
+#include "Fyrion/Asset/Asset.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "Lib/imgui_internal.h"
 
@@ -124,6 +125,38 @@ namespace Fyrion
 #endif
     }
 
+    bool DrawAssetField(ImGui::DrawTypeContent* context, FieldHandler* fieldHandler, VoidPtr value, bool* hasChanged)
+    {
+        const TypeInfo& typeInfo = fieldHandler->GetFieldInfo().typeInfo;
+
+        if (typeInfo.apiId != GetTypeID<AssetApi>()) return false;
+
+        ImGuiID id = ImHashData(value, sizeof(VoidPtr));
+
+        AssetApi assetApi{};
+        typeInfo.extractApi(&assetApi);
+
+        //TODO check if that's a pointer
+        Asset* asset = assetApi.castAsset(value);
+        String name = asset ? asset->GetName() : "";
+
+        ImGui::SetNextItemWidth(-22 * ImGui::GetStyle().ScaleFactor);
+
+        ImGui::InputText(id, name, ImGuiInputTextFlags_ReadOnly);
+        ImGui::SameLine(0, 0);
+        ImGui::PushID(id);
+        auto size = ImGui::GetItemRectSize();
+        if (ImGui::Button(ICON_FA_CIRCLE_DOT, ImVec2{size.y, size.y}))
+        {
+            context->showResourceSelection = true;
+            context->fieldShowSelection = fieldHandler;
+            context->resourceTypeSelection = typeInfo.typeId;
+        }
+        ImGui::PopID();
+
+        return true;
+    }
+
 
     void DrawVecField(const String compName, const char* fieldName, float& value, bool* hasChanged, u32 color = 0, f32 speed = 0.005f)
     {
@@ -153,8 +186,10 @@ namespace Fyrion
         ImGui::EndHorizontal();
     }
 
-    void Vec3Renderer(ImGui::DrawTypeContent* context, FieldHandler* fieldHandler, VoidPtr value, bool* hasChanged)
+    bool Vec3Renderer(ImGui::DrawTypeContent* context, FieldHandler* fieldHandler, VoidPtr value, bool* hasChanged)
     {
+        if (fieldHandler->GetFieldInfo().typeInfo.typeId != GetTypeID<Vec3>()) return false;
+
         f32    speed = 0.005f;
         String compName = ToString(reinterpret_cast<usize>(value));
         Vec3&  vec3 = *static_cast<Vec3*>(value);
@@ -165,11 +200,15 @@ namespace Fyrion
             DrawVecField(compName, "Z", vec3.z, hasChanged, IM_COL32(43, 86, 138, 255), speed);
             ImGui::EndTable();
         }
+
+        return true;
     }
 
 
-    void QuatRenderer(ImGui::DrawTypeContent* context, FieldHandler* fieldHandler, VoidPtr value, bool* hasChanged)
+    bool QuatRenderer(ImGui::DrawTypeContent* context, FieldHandler* fieldHandler, VoidPtr value, bool* hasChanged)
     {
+        if (fieldHandler->GetFieldInfo().typeInfo.typeId != GetTypeID<Quat>()) return false;
+
         static int rotationMode = 0;
 
         f32    speed = 0.005f;
@@ -232,11 +271,14 @@ namespace Fyrion
             }
         }
         ImGui::EndPopupMenu(popupOpenSettings);
+
+        return true;
     }
 
     void RegisterFieldRenderers()
     {
-        ImGui::AddFieldRenderer(GetTypeID<Vec3>(), Vec3Renderer);
-        ImGui::AddFieldRenderer(GetTypeID<Quat>(), QuatRenderer);
+        AddFieldRenderer(Vec3Renderer);
+        AddFieldRenderer(QuatRenderer);
+        AddFieldRenderer(DrawAssetField);
     }
 }

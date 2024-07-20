@@ -11,6 +11,7 @@ namespace Fyrion
     {
     public:
         SceneObject* GetRootObject() const;
+        RenderGraph* GetRenderGraph() const;
         void         Modify() const;
         void         ClearSelection();
         void         SelectObject(SceneObject& object);
@@ -20,7 +21,6 @@ namespace Fyrion
         void         RenameObject(SceneObject& asset, StringView newName);
         void         DestroySelectedObjects();
         void         CreateObject();
-        bool         IsSimulating();
         bool         IsRootSelected() const;
         void         AddComponent(SceneObject& object, TypeHandler* typeHandler);
         void         ResetComponent(SceneObject& object, Component* component);
@@ -29,6 +29,10 @@ namespace Fyrion
 
         void              LoadScene(SceneObjectAsset* asset);
         SceneObjectAsset* GetScene() const;
+
+        bool IsSimulating();
+        void StartSimulation();
+        void StopSimulation();
 
     private:
         SceneObjectAsset* scene = nullptr;

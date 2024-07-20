@@ -742,14 +742,20 @@ namespace Fyrion
     private:
         static void CopyValueToImpl(const FieldHandler* fieldHandler, ConstPtr instance, VoidPtr value)
         {
-            instance = fieldHandler->GetOwnerCaster()(&fieldHandler->GetOwner(), const_cast<VoidPtr>(instance));
-            *static_cast<Field*>(value) = *static_cast<const Owner*>(instance).*mfp;
+            if constexpr(Traits::IsCopyConstructible<Field>)
+            {
+                instance = fieldHandler->GetOwnerCaster()(&fieldHandler->GetOwner(), const_cast<VoidPtr>(instance));
+                *static_cast<Field*>(value) = *static_cast<const Owner*>(instance).*mfp;
+            }
         }
 
         static void SetValue(const FieldHandler* fieldHandler, VoidPtr instance, ConstPtr value)
         {
-            instance = fieldHandler->GetOwnerCaster()(&fieldHandler->GetOwner(), instance);
-            *static_cast<Owner*>(instance).*mfp = *static_cast<const Field*>(value);
+            if constexpr(Traits::IsCopyConstructible<Field>)
+            {
+                instance = fieldHandler->GetOwnerCaster()(&fieldHandler->GetOwner(), instance);
+                *static_cast<Owner*>(instance).*mfp = *static_cast<const Field*>(value);
+            }
         }
     };
 

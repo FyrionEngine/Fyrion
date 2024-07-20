@@ -7,7 +7,28 @@
 
 namespace Fyrion
 {
-    SceneObject::SceneObject(SceneObjectAsset* asset) : asset(asset) {}
+    SceneObject::SceneObject(SceneGlobals* globals) : globals(globals) {
+
+    }
+
+    SceneObject::SceneObject(SceneObjectAsset* asset) : asset(asset), root(true)
+    {
+        globals = MemoryGlobals::GetDefaultAllocator().Alloc<SceneGlobals>();
+        //globals->renderGraph =
+    }
+
+    SceneObject::~SceneObject()
+    {
+        for(SceneObject* child : children)
+        {
+            MemoryGlobals::GetDefaultAllocator().DestroyAndFree(child);
+        }
+
+        if (root && globals)
+        {
+            MemoryGlobals::GetDefaultAllocator().DestroyAndFree(globals);
+        }
+    }
 
     Component& SceneObject::AddComponent(TypeID typeId)
     {
@@ -109,11 +130,19 @@ namespace Fyrion
 
     void SceneObject::Destroy()
     {
+        for(SceneObject* child : children)
+        {
+            child->Destroy();
+        }
         SceneManager::Destroy(this);
+        children.Clear();
     }
 
     void SceneObject::RegisterType(NativeTypeHandler<SceneObject>& type)
     {
+        type.Constructor<SceneGlobals*>();
+        type.Constructor<SceneObjectAsset*>();
+
         type.Field<&SceneObject::name>("name");
     }
 
@@ -173,7 +202,7 @@ namespace Fyrion
             {
                 childObject = reader.Next(childrenArr, childObject);
 
-                SceneObject* child = SceneManager::CreateObject();
+                SceneObject* child = SceneManager::CreateObject(globals);
                 child->Deserialize(reader, childObject);
                 AddChild(child);
             }

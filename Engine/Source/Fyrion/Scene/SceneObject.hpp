@@ -4,16 +4,28 @@
 #include "Fyrion/Common.hpp"
 #include "Fyrion/Core/UUID.hpp"
 
+namespace Fyrion {
+    class RenderGraph;
+}
+
 namespace Fyrion
 {
     class SceneObjectAsset;
     class TypeHandler;
 
-    class FY_API SceneObject
+    struct SceneGlobals
+    {
+        RenderGraph* renderGraph;
+    };
+
+    class FY_API SceneObject final
     {
     public:
-        SceneObject() = default;
+        FY_NO_COPY_CONSTRUCTOR(SceneObject);
+
+        SceneObject(SceneGlobals* globals);
         SceneObject(SceneObjectAsset* asset);
+        ~SceneObject();
 
         StringView         GetName() const;
         void               SetName(const StringView& p_name);
@@ -36,7 +48,6 @@ namespace Fyrion
         bool               IsAlive() const;
         void               SetAlive(bool p_alive);
 
-
         template <typename T, Traits::EnableIf<Traits::IsBaseOf<Component, T>>* = nullptr>
         T& AddComponent()
         {
@@ -45,7 +56,9 @@ namespace Fyrion
 
         static void RegisterType(NativeTypeHandler<SceneObject>& type);
 
+        SceneGlobals*       globals{};
     private:
+        bool                root = false;
         SceneObjectAsset*   asset{};
         String              name;
         UUID                uuid;

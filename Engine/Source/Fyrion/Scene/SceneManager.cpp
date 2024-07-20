@@ -43,16 +43,15 @@ namespace Fyrion
         objectsToDestroy.emplace(sceneObject);
     }
 
-    SceneObject* SceneManager::CreateObject()
+    SceneObject* SceneManager::CreateObject(SceneGlobals* globals)
     {
-        return MemoryGlobals::GetDefaultAllocator().Alloc<SceneObject>();
+        return MemoryGlobals::GetDefaultAllocator().Alloc<SceneObject>(globals);
     }
 
     void SceneManager::SetActiveObject(SceneObject* sceneObject)
     {
         activeSceneObject = sceneObject;
     }
-
 
     void SceneManagerInit()
     {

@@ -10,6 +10,8 @@ namespace Fyrion
     public:
         FY_BASE_TYPES(Component);
 
+        void OnChange() override;
+
         static void RegisterType(NativeTypeHandler<MeshRender>& type);
     private:
         MeshAsset* mesh = nullptr;

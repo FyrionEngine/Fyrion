@@ -1,5 +1,6 @@
 #include "SceneObjectAsset.hpp"
 #include "Fyrion/Core/Registry.hpp"
+#include "Fyrion/Graphics/RenderGraph.hpp"
 
 
 namespace Fyrion
@@ -13,5 +14,6 @@ namespace Fyrion
     void SceneObjectAsset::RegisterType(NativeTypeHandler<SceneObjectAsset>& type)
     {
         type.Field<&SceneObjectAsset::object>("object");
+        type.Field<&SceneObjectAsset::renderGraph>("renderGraph");
     }
 }

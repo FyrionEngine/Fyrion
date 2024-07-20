@@ -34,7 +34,7 @@ namespace Fyrion
 
     CreateSceneObjectAction::CreateSceneObjectAction(SceneEditor& sceneEditor, SceneObject* parent) : sceneEditor(sceneEditor), parent(parent)
     {
-        current = SceneManager::CreateObject();
+        current = SceneManager::CreateObject(parent->globals);
         current->SetName("New Object");
         current->SetUUID(UUID::RandomUUID());
         pos = parent->GetChildren().Size();

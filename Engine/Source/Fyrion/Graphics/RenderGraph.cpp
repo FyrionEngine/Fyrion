@@ -213,6 +213,7 @@ namespace Fyrion
                     {
                         RenderGraphPass* renderGraphPass = typeHandler->Cast<RenderGraphPass>(typeHandler->NewInstance());
                         renderGraphPass->node = node.Get();
+                        renderGraphPass->graph = this;
                         node->renderGraphPass = renderGraphPass;
                         node->renderGraphPassTypeHandler = typeHandler;
                     }

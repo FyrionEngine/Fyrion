@@ -6,6 +6,8 @@
 
 namespace Fyrion
 {
+    class RenderGraphAsset;
+
     class FY_API SceneObjectAsset : public Asset
     {
     public:
@@ -26,6 +28,7 @@ namespace Fyrion
         static void RegisterType(NativeTypeHandler<SceneObjectAsset>& type);
 
     private:
-        SceneObject object{this};
+        SceneObject       object{this};
+        RenderGraphAsset* renderGraph = nullptr;
     };
 }

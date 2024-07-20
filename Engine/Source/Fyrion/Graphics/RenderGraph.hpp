@@ -76,6 +76,7 @@ namespace Fyrion
     {
     public:
         RenderGraphNode* node = nullptr;
+        RenderGraph* graph = nullptr;
 
         virtual void Init() {}
         virtual void Update(f64 deltaTime) {}
@@ -83,6 +84,14 @@ namespace Fyrion
         virtual void Destroy() {}
         virtual void Resize(Extent3D newExtent) {}
         virtual      ~RenderGraphPass() = default;
+    };
+
+
+    class FY_API RenderGraphItems
+    {
+    public:
+        virtual      ~RenderGraphItems() = default;
+        virtual void AddMesh() = 0;
     };
 
 
@@ -105,6 +114,7 @@ namespace Fyrion
         static void RegisterPass(const RenderGraphPassCreation& renderGraphPassCreation);
         static void SetRegisterSwapchainRenderEvent(bool p_registerSwapchainRenderEvent);
 
+        RenderGraphItems*                 items;
     private:
         RenderGraphAsset*                 asset = nullptr;
         Extent                            viewportExtent;

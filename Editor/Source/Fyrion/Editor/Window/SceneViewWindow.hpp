@@ -1,10 +1,8 @@
 #pragma once
-#include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Editor/EditorTypes.hpp"
 
 namespace Fyrion
 {
-    class RenderGraph;
     struct MenuItemEventData;
     class SceneEditor;
 
@@ -24,7 +22,6 @@ namespace Fyrion
         u32                    guizmoOperation{};
         bool                   windowStartedSimulation{};
         bool                   movingScene{};
-        SharedPtr<RenderGraph> renderGraph{};
 
         static void OpenSceneView(const MenuItemEventData& eventData);
     };

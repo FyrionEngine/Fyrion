@@ -193,6 +193,11 @@ namespace Fyrion
         return window;
     }
 
+    Extent Engine::GetViewportExtent()
+    {
+        return Platform::GetWindowExtent(window);
+    }
+
     StringView Engine::GetArgByName(const StringView& name)
     {
         return args.Get(name);

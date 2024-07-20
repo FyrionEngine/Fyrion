@@ -10,7 +10,7 @@ namespace Fyrion
 {
     void MeshRender::OnChange()
     {
-        //object->globals->renderGraph->items
+        //object->globals->renderGraph->items->AddMesh();
     }
 
     void MeshRender::RegisterType(NativeTypeHandler<MeshRender>& type)

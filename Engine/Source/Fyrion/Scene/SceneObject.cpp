@@ -4,28 +4,25 @@
 #include "Assets/SceneObjectAsset.hpp"
 #include "Fyrion/Core/Registry.hpp"
 
-
 namespace Fyrion
 {
-    SceneObject::SceneObject(SceneGlobals* globals) : globals(globals) {
+    SceneObject::SceneObject(SceneGlobals* globals) : globals(globals) {}
 
-    }
-
-    SceneObject::SceneObject(SceneObjectAsset* asset) : asset(asset), root(true)
+    SceneObject::SceneObject(SceneObjectAsset* asset) : root(true), asset(asset)
     {
         globals = MemoryGlobals::GetDefaultAllocator().Alloc<SceneGlobals>();
-        //globals->renderGraph =
     }
 
     SceneObject::~SceneObject()
     {
-        for(SceneObject* child : children)
+        for (SceneObject* child : children)
         {
             MemoryGlobals::GetDefaultAllocator().DestroyAndFree(child);
         }
 
         if (root && globals)
         {
+            SceneManager::Deactivate(this);
             MemoryGlobals::GetDefaultAllocator().DestroyAndFree(globals);
         }
     }
@@ -130,7 +127,7 @@ namespace Fyrion
 
     void SceneObject::Destroy()
     {
-        for(SceneObject* child : children)
+        for (SceneObject* child : children)
         {
             child->Destroy();
         }

@@ -96,7 +96,7 @@ namespace Fyrion
 
 				if (ImGui::Button(ICON_FA_PLAY, buttonSize))
 				{
-					//WorldController::StartSimulation(world);
+					sceneEditor.StartSimulation();
 					windowStartedSimulation = true;
 				}
 
@@ -116,7 +116,7 @@ namespace Fyrion
 
 				if (ImGui::Button(ICON_FA_STOP, buttonSize))
 				{
-					//WorldController::StopSimulation(world);
+					sceneEditor.StopSimulation();
 					windowStartedSimulation = false;
 				}
 
@@ -155,19 +155,18 @@ namespace Fyrion
 
         	Extent extent = {static_cast<u32>(size.x), static_cast<u32>(size.y)};
 
-        	if (!renderGraph)
+        	RenderGraph* renderGraph = sceneEditor.GetRenderGraph();
+        	if (renderGraph != nullptr)
         	{
-        		renderGraph = MakeShared<RenderGraph>(extent, AssetDatabase::FindByPath<RenderGraphAsset>("Fyrion://DefaultRenderGraph.fy_asset"));
-        	}
+        		if (extent != renderGraph->GetViewportExtent())
+        		{
+        			renderGraph->Resize(extent);
+        		}
 
-        	if (extent != renderGraph->GetViewportExtent())
-        	{
-        		renderGraph->Resize(extent);
-        	}
-
-        	if (open)
-        	{
-        		ImGui::DrawImage(renderGraph->GetColorOutput(), bb);
+        		if (open)
+        		{
+        			ImGui::DrawImage(renderGraph->GetColorOutput(), bb);
+        		}
         	}
         }
         ImGui::End();

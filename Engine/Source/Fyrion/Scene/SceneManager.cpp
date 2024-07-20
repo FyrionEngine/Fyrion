@@ -4,11 +4,15 @@
 
 #include "SceneObject.hpp"
 #include "Fyrion/Engine.hpp"
+#include "Fyrion/Asset/AssetDatabase.hpp"
 #include "Fyrion/Core/Allocator.hpp"
+#include "Fyrion/Graphics/RenderGraph.hpp"
 
 
 namespace Fyrion
 {
+    class RenderGraphAsset;
+
     namespace
     {
         std::queue<SceneObject*> objectsToDestroy; //TODO(60457169) custom queue
@@ -51,6 +55,25 @@ namespace Fyrion
     void SceneManager::SetActiveObject(SceneObject* sceneObject)
     {
         activeSceneObject = sceneObject;
+    }
+
+    void SceneManager::Activate(SceneObject* sceneObject)
+    {
+        if (!sceneObject) return;
+
+        //TODO get from config
+        RenderGraphAsset* renderGraphAsset = AssetDatabase::FindByPath<RenderGraphAsset>("Fyrion://DefaultRenderGraph.fy_asset");
+        sceneObject->globals->renderGraph = MemoryGlobals::GetDefaultAllocator().Alloc<RenderGraph>(renderGraphAsset);
+    }
+
+    void SceneManager::Deactivate(SceneObject* sceneObject)
+    {
+        if (!sceneObject) return;
+
+        if (sceneObject->globals->renderGraph)
+        {
+            MemoryGlobals::GetDefaultAllocator().DestroyAndFree(sceneObject->globals->renderGraph);
+        }
     }
 
     void SceneManagerInit()

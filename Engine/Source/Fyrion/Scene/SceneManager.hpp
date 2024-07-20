@@ -13,4 +13,6 @@ namespace Fyrion::SceneManager
     FY_API void         Destroy(SceneObject* sceneObject);
     FY_API void         SetActiveObject(SceneObject* sceneObject);
     FY_API SceneObject* CreateObject(SceneGlobals* globals);
+    FY_API void         Activate(SceneObject* sceneObject);
+    FY_API void         Deactivate(SceneObject* sceneObject);
 }

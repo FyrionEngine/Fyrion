@@ -138,6 +138,12 @@ namespace Fyrion
         }
     }
 
+    RenderGraph::RenderGraph(RenderGraphAsset* asset) : asset(asset)
+    {
+        viewportExtent = Engine::GetViewportExtent();
+        Create();
+    }
+
     RenderGraph::RenderGraph(Extent extent, RenderGraphAsset* asset): asset(asset), viewportExtent(extent)
     {
         Create();
@@ -145,6 +151,8 @@ namespace Fyrion
 
     RenderGraph::~RenderGraph()
     {
+        Graphics::WaitQueue();
+
         Event::Unbind<OnRecordRenderCommands, &RenderGraph::RecordCommands>(this);
 
         if (registerSwapchainRenderEvent)

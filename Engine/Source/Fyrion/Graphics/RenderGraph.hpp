@@ -100,6 +100,7 @@ namespace Fyrion
     class FY_API RenderGraph
     {
     public:
+        RenderGraph(RenderGraphAsset* asset);
         RenderGraph(Extent extent, RenderGraphAsset* asset);
         ~RenderGraph();
 
@@ -114,7 +115,7 @@ namespace Fyrion
         static void RegisterPass(const RenderGraphPassCreation& renderGraphPassCreation);
         static void SetRegisterSwapchainRenderEvent(bool p_registerSwapchainRenderEvent);
 
-        RenderGraphItems*                 items;
+        RenderGraphItems*                 items = nullptr;
     private:
         RenderGraphAsset*                 asset = nullptr;
         Extent                            viewportExtent;

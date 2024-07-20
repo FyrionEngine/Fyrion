@@ -39,6 +39,7 @@ namespace Fyrion
         static bool   IsRunning();
         static u64    GetFrame();
         static Window GetActiveWindow();
+        static Extent GetViewportExtent();
 
         static StringView GetArgByName(const StringView& name);
         static StringView GetArgByIndex(usize i);

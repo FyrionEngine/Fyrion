@@ -15,7 +15,7 @@ namespace Fyrion
 
     struct SceneGlobals
     {
-        RenderGraph* renderGraph;
+
     };
 
     class FY_API SceneObject final
@@ -42,16 +42,25 @@ namespace Fyrion
         Component&         AddComponent(TypeHandler* typeHandler);
         void               RemoveComponent(Component* component);
         Span<Component*>   GetComponents() const;
+        Component*         GetComponent(TypeID typeId) const;
         void               Destroy();
         ArchiveObject      Serialize(ArchiveWriter& writer) const;
         void               Deserialize(ArchiveReader& reader, ArchiveObject object);
         bool               IsAlive() const;
         void               SetAlive(bool p_alive);
+        void               Notify(i64 type, VoidPtr userData);
+
 
         template <typename T, Traits::EnableIf<Traits::IsBaseOf<Component, T>>* = nullptr>
         T& AddComponent()
         {
             return static_cast<T&>(AddComponent(GetTypeID<T>()));
+        }
+
+        template <typename T, Traits::EnableIf<Traits::IsBaseOf<Component, T>>* = nullptr>
+        T* GetComponent()
+        {
+            return static_cast<T*>(GetComponent(GetTypeID<T>()));
         }
 
         static void RegisterType(NativeTypeHandler<SceneObject>& type);
@@ -66,6 +75,7 @@ namespace Fyrion
         Array<SceneObject*> children{};
         SceneObject*        parent = nullptr;
         bool                alive = true;
+        bool notificationDisabled = false;
     };
 
     template <>

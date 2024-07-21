@@ -155,18 +155,19 @@ namespace Fyrion
 
         	Extent extent = {static_cast<u32>(size.x), static_cast<u32>(size.y)};
 
-        	RenderGraph* renderGraph = sceneEditor.GetRenderGraph();
-        	if (renderGraph != nullptr)
+        	if (!renderGraph)
         	{
-        		if (extent != renderGraph->GetViewportExtent())
-        		{
-        			renderGraph->Resize(extent);
-        		}
+        		renderGraph = MakeShared<RenderGraph>(extent, AssetDatabase::FindByPath<RenderGraphAsset>("Fyrion://DefaultRenderGraph.fy_asset"));
+        	}
 
-        		if (open)
-        		{
-        			ImGui::DrawImage(renderGraph->GetColorOutput(), bb);
-        		}
+        	if (extent != renderGraph->GetViewportExtent())
+        	{
+        		renderGraph->Resize(extent);
+        	}
+
+        	if (open)
+        	{
+        		ImGui::DrawImage(renderGraph->GetColorOutput(), bb);
         	}
         }
         ImGui::End();

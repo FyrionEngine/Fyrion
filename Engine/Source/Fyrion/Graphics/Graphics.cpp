@@ -187,7 +187,6 @@ namespace Fyrion
             .newLayout = ResourceLayout::ShaderReadOnly
         });
 
-
         tempCmd.SubmitAndWait(renderDevice->GetMainQueue());
 
         DestroyBuffer(buffer);

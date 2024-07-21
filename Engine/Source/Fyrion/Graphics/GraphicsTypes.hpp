@@ -7,6 +7,10 @@
 #include "Fyrion/Core/Math.hpp"
 #include "Fyrion/Core/Span.hpp"
 
+namespace Fyrion {
+    class MeshAsset;
+}
+
 namespace Fyrion
 {
     class ShaderAsset;
@@ -535,6 +539,13 @@ namespace Fyrion
         usize srcOffset;
         usize dstOffset;
         usize size;
+    };
+
+    struct MeshRenderData
+    {
+        usize      address{};
+        Mat4       model;
+        MeshAsset* mesh = nullptr;
     };
 
     struct BindingVar;

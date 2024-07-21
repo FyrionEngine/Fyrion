@@ -1,9 +1,10 @@
 #include "SceneEditor.hpp"
 
+#include <Fyrion/Scene/SceneTypes.hpp>
+
 #include "Fyrion/Editor/Editor.hpp"
 #include "Fyrion/Editor/Action/AssetEditorActions.hpp"
 #include "Fyrion/Editor/Action/SceneEditorAction.hpp"
-#include "Fyrion/Scene/SceneManager.hpp"
 
 namespace Fyrion
 {
@@ -12,15 +13,6 @@ namespace Fyrion
         if (scene)
         {
             return &scene->GetObject();
-        }
-        return nullptr;
-    }
-
-    RenderGraph* SceneEditor::GetRenderGraph() const
-    {
-        if (SceneObject* root = GetRootObject())
-        {
-            return root->globals->renderGraph;
         }
         return nullptr;
     }
@@ -132,9 +124,19 @@ namespace Fyrion
     void SceneEditor::LoadScene(SceneObjectAsset* asset)
     {
         ClearSelection();
-        SceneManager::Deactivate(GetRootObject());
+
+        if (SceneObject* rootObject = GetRootObject())
+        {
+            rootObject->Notify(SceneNotifications_OnDeactivate, nullptr);
+        }
+
         scene = asset;
-        SceneManager::Activate(GetRootObject());
+
+        if (SceneObject* rootObject = GetRootObject())
+        {
+            rootObject->Notify(SceneNotifications_OnActivate, nullptr);
+        }
+
     }
 
     SceneObjectAsset* SceneEditor::GetScene() const

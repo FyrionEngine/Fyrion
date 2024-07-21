@@ -73,6 +73,37 @@ namespace Fyrion::Traits
     template<typename Type>
     using RemoveAll = typename TRemoveAll<Type>::type;
 
+
+    template<typename Type>
+    struct TRemoveConstRef
+    {
+        using type = Type;
+    };
+
+
+    template<typename Type>
+    struct TRemoveConstRef<const Type>
+    {
+        using type = typename TRemoveConstRef<Type>::type;
+    };
+
+
+    template<typename Type>
+    struct TRemoveConstRef<Type&>
+    {
+        using type = typename TRemoveConstRef<Type>::type;
+    };
+
+    template<typename Type>
+    struct TRemoveConstRef<Type&&>
+    {
+        using type = typename TRemoveConstRef<Type>::type;
+    };
+
+    template<typename Type>
+    using RemoveConstRef = typename TRemoveConstRef<Type>::type;
+
+
     template<typename T>
     constexpr T&& Forward(RemoveReference<T>& arg)
     {

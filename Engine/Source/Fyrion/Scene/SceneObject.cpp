@@ -3,6 +3,7 @@
 #include "SceneManager.hpp"
 #include "Assets/SceneObjectAsset.hpp"
 #include "Fyrion/Core/Registry.hpp"
+#include "SceneTypes.hpp"
 
 namespace Fyrion
 {
@@ -22,7 +23,6 @@ namespace Fyrion
 
         if (root && globals)
         {
-            SceneManager::Deactivate(this);
             MemoryGlobals::GetDefaultAllocator().DestroyAndFree(globals);
         }
     }
@@ -38,6 +38,14 @@ namespace Fyrion
         component->typeHandler = typeHandler;
         component->object = this;
         components.EmplaceBack(component);
+
+        if (!notificationDisabled)
+        {
+            TypeID typeId = typeHandler->GetTypeInfo().typeId;
+            Notify(SceneNotifications_OnComponentAdded, &typeId);
+            component->OnNotify(SceneNotifications_OnComponentCreated, &typeId);
+        }
+
         return *component;
     }
 
@@ -53,6 +61,19 @@ namespace Fyrion
     Span<Component*> SceneObject::GetComponents() const
     {
         return components;
+    }
+
+    Component* SceneObject::GetComponent(TypeID typeId) const
+    {
+        for (Component* component : components)
+        {
+            if (component->typeHandler->GetTypeInfo().typeId == typeId)
+            {
+                return component;
+            }
+        }
+
+        return nullptr;
     }
 
     StringView SceneObject::GetName() const
@@ -184,6 +205,7 @@ namespace Fyrion
     void SceneObject::Deserialize(ArchiveReader& reader, ArchiveObject object)
     {
         name = reader.ReadString(object, "name");
+        notificationDisabled = true;
 
         if (StringView uuidStr = reader.ReadString(object, "uuid"); !uuidStr.Empty())
         {
@@ -221,6 +243,8 @@ namespace Fyrion
                 }
             }
         }
+
+        notificationDisabled = false;
     }
 
     bool SceneObject::IsAlive() const
@@ -231,5 +255,18 @@ namespace Fyrion
     void SceneObject::SetAlive(bool p_alive)
     {
         alive = p_alive;
+    }
+
+    void SceneObject::Notify(i64 type, VoidPtr userData)
+    {
+        for (Component* component : components)
+        {
+            component->OnNotify(type, userData);
+        }
+
+        for (SceneObject* child : children)
+        {
+            child->Notify(type, userData);
+        }
     }
 }

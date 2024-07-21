@@ -87,15 +87,6 @@ namespace Fyrion
         virtual      ~RenderGraphPass() = default;
     };
 
-
-    class FY_API RenderGraphItems
-    {
-    public:
-        virtual      ~RenderGraphItems() = default;
-        virtual void AddMesh() = 0;
-    };
-
-
     using RenderGraphResMap = HashMap<String, SharedPtr<RenderGraphResource>>;
 
     class FY_API RenderGraph
@@ -115,8 +106,7 @@ namespace Fyrion
         static void RegisterType(NativeTypeHandler<RenderGraph>& type);
         static void RegisterPass(const RenderGraphPassCreation& renderGraphPassCreation);
         static void SetRegisterSwapchainRenderEvent(bool p_registerSwapchainRenderEvent);
-
-        RenderGraphItems*                 items = nullptr;
+    
     private:
         RenderGraphAsset*                 asset = nullptr;
         Extent                            viewportExtent;

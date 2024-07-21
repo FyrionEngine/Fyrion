@@ -184,6 +184,7 @@ namespace Fyrion
     class FY_API FieldHandler : public AttributeHandler
     {
     public:
+
         typedef FieldInfo   (*FnGetFieldInfo)(const FieldHandler* fieldHandler);
         typedef VoidPtr     (*FnGetFieldPointer)(const FieldHandler* fieldHandler, VoidPtr instance);
         typedef void        (*FnCopyValueTo)(const FieldHandler* fieldHandler, ConstPtr instance, VoidPtr value);
@@ -688,6 +689,8 @@ namespace Fyrion
     class NativeFieldHandlerBase : public NativeAttributeBuilder<NativeFieldHandlerBase<mfp, Owner, Field>>
     {
     protected:
+        static_assert(Traits::IsComplete<Traits::RemoveAll<Field>>, "fields cannot be incomplete");
+
         explicit NativeFieldHandlerBase(FieldBuilder fieldBuilder) : NativeAttributeBuilder<NativeFieldHandlerBase>(fieldBuilder.GetFieldHandler())
         {
             fieldBuilder.SetFnGetFieldInfo(&GetFieldImpl);
@@ -720,7 +723,7 @@ namespace Fyrion
         {
             using Return = Traits::FunctionReturnType<getFp>;
             instance = fieldHandler->GetOwnerCaster()(&fieldHandler->GetOwner(), const_cast<VoidPtr>(instance));
-            *static_cast<Traits::RemoveAll<Return>*>(value) = (*static_cast<const Owner*>(instance).*getFp)();
+            *static_cast<Traits::RemoveConstRef<Return>*>(value) = (*static_cast<const Owner*>(instance).*getFp)();
         }
 
         static void SetValue(const FieldHandler* fieldHandler, VoidPtr instance, ConstPtr value)

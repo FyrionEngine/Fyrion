@@ -15,10 +15,10 @@ namespace Fyrion
 
         virtual ~Component() = default;
 
-        virtual void OnStart(){}
+        virtual void OnStart() {}
         virtual void OnChange() {}
-        virtual void OnDestroy(){}
-        virtual void OnNotify(i64 type) {}
+        virtual void OnDestroy() {}
+        virtual void OnNotify(i64 type, VoidPtr userData) {}
 
         static void RegisterType(NativeTypeHandler<Component>& type);
 

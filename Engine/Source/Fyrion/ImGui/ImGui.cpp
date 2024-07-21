@@ -1236,10 +1236,10 @@ namespace ImGui
         }
         else
         {
-            for (FieldRendererFn render : fieldRenders)
-            {
-                render(content, nullptr, content->instance, &content->hasChanged);
-            }
+            // for (FieldRendererFn render : fieldRenders)
+            // {
+            //     render(content, nullptr, content->instance, &content->hasChanged);
+            // }
         }
     }
 

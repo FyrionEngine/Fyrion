@@ -11,7 +11,6 @@ namespace Fyrion
     {
     public:
         SceneObject* GetRootObject() const;
-        RenderGraph* GetRenderGraph() const;
         void         Modify() const;
         void         ClearSelection();
         void         SelectObject(SceneObject& object);

@@ -541,6 +541,14 @@ namespace Fyrion
         usize size;
     };
 
+    struct CameraData
+    {
+        Mat4 view{1.0};
+        Mat4 projection{1.0};
+        Mat4 lastViewProj{1.0};
+        Vec3 viewPos{};
+    };
+
     struct MeshRenderData
     {
         usize      address{};

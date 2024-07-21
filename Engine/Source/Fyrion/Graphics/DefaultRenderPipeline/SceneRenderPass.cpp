@@ -19,7 +19,7 @@ namespace Fyrion
         void Init() override
         {
             GraphicsPipelineCreation graphicsPipelineCreation{
-                .shader = AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Test.raster"),
+                .shader = AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Shaders/BasicRenderer.raster"),
                 .renderPass = node->GetRenderPass()
             };
 

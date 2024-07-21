@@ -11,6 +11,7 @@ namespace Fyrion
     class RenderCommands;
 
     using OnInit = EventType<"Fyrion::OnInit"_h, void()>;
+    using OnBeginFrame = EventType<"Fyrion::OnBeginFrame"_h, void()>;
     using OnUpdate = EventType<"Fyrion::OnUpdate"_h, void(f64 deltaTime)>;
     using OnEndFrame = EventType<"Fyrion::OnEndFrame"_h, void()>;
     using OnShutdown = EventType<"Fyrion::OnShutdown"_h, void()>;

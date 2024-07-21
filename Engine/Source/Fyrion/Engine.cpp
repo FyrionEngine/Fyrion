@@ -30,6 +30,7 @@ namespace Fyrion
     void            DefaultRenderPipelineShutdown();
     void            AssetDatabaseInit();
     void            AssetDatabaseShutdown();
+    void            InputInit();
 
 
     namespace
@@ -46,6 +47,7 @@ namespace Fyrion
 
         EventHandler<OnInit> onInitHandler{};
         EventHandler<OnUpdate> onUpdateHandler{};
+        EventHandler<OnBeginFrame> onBeginFrameHandler{};
         EventHandler<OnEndFrame> onEndFrameHandler{};
         EventHandler<OnShutdown> onShutdownHandler{};
         EventHandler<OnShutdownRequest> onShutdownRequest{};
@@ -64,6 +66,7 @@ namespace Fyrion
 
         TypeRegister();
         AssetDatabaseInit();
+        InputInit();
         ShaderManagerInit();
         SceneManagerInit();
         DefaultRenderPipelineInit();
@@ -75,7 +78,7 @@ namespace Fyrion
 
         PlatformInit();
 
-        WindowFlags windowFlags = WindowFlags::None;
+        WindowFlags windowFlags = WindowFlags::SubscriveInput;
         if (contextCreation.maximize)
         {
             windowFlags |= WindowFlags::Maximized;
@@ -113,6 +116,7 @@ namespace Fyrion
             lastTime  = currentTime;
 
             Platform::ProcessEvents();
+            onBeginFrameHandler.Invoke();
 
             ImGui::BeginFrame(window, deltaTime);
 

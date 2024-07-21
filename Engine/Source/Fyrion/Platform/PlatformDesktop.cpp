@@ -1,4 +1,5 @@
 #include "Platform.hpp"
+#include "Fyrion/IO/Input.hpp"
 
 #ifdef FY_DESKTOP
 
@@ -19,7 +20,7 @@ namespace Fyrion
 {
     namespace
     {
-        Logger& logger = Logger::GetLogger("Fyrion::Platform");
+        Logger&                   logger = Logger::GetLogger("Fyrion::Platform");
         PFN_vkGetInstanceProcAddr vulkanLoader = nullptr;
     }
 
@@ -27,12 +28,48 @@ namespace Fyrion
     {
         void InitStyle();
         void ApplyDarkStyle(VoidPtr internal);
+
+        void KeyCallback(GLFWwindow* glfwWindow, i32 key, i32 scancode, i32 action, i32 mods)
+        {
+            InputEvent inputEvent{
+                .source = InputSourceType::Keyboard,
+                .trigger = action != GLFW_RELEASE ? InputTriggerType::Pressed : InputTriggerType::Released,
+                .key = static_cast<Key>(key)
+            };
+
+            Input::RegisterInputEvent(inputEvent);
+        }
+
+        void CursorPositionCallback(GLFWwindow* glfwWindow, double xPos, double yPos)
+        {
+            InputEvent inputEvent{
+                .source = InputSourceType::MouseMove,
+                .value = {static_cast<f32>(xPos), static_cast<f32>(yPos)}
+            };
+            Input::RegisterInputEvent(inputEvent);
+        }
+
+        void MouseButtonCallback(GLFWwindow* glfwWindow, i32 button, i32 action, i32 mods)
+        {
+            InputEvent inputEvent{
+                .source = InputSourceType::MouseClick,
+                .trigger = action != GLFW_RELEASE ? InputTriggerType::Pressed : InputTriggerType::Released,
+                .mouseButton = static_cast<MouseButton>(button)
+            };
+
+            Input::RegisterInputEvent(inputEvent);
+        }
+
+        void ScrollCallback(GLFWwindow* glfwWindow, double xOffset, double yOffset)
+        {
+
+        }
     }
 
 
     void PlatformDesktopInit()
     {
-        glfwInitVulkanLoader([](VkInstance instance, const char *procName)
+        glfwInitVulkanLoader([](VkInstance instance, const char* procName)
         {
             return vulkanLoader(instance, procName);
         });
@@ -70,7 +107,9 @@ namespace Fyrion
 
     Window Platform::CreateWindow(const StringView& title, const Extent& extent, WindowFlags flags)
     {
-        bool maximized = (flags && WindowFlags::Maximized);
+        bool maximized = flags && WindowFlags::Maximized;
+        bool subscribeEvents = flags && WindowFlags::SubscriveInput;
+
         glfwWindowHint(GLFW_MAXIMIZED, maximized);
 
         float xScale = 1.f, yScale = 1.f;
@@ -78,6 +117,14 @@ namespace Fyrion
         Extent size = {u32(extent.width * xScale), u32(extent.height * yScale)};
 
         GLFWwindow* window = glfwCreateWindow(size.width, size.height, title.CStr(), nullptr, nullptr);
+
+        if (subscribeEvents)
+        {
+            glfwSetKeyCallback(window, KeyCallback);
+            glfwSetCursorPosCallback(window, CursorPositionCallback);
+            glfwSetMouseButtonCallback(window, MouseButtonCallback);
+            glfwSetScrollCallback(window, ScrollCallback);
+        }
 
         ApplyDarkStyle(window);
 
@@ -115,7 +162,7 @@ namespace Fyrion
         int xSize, ySize;
         glfwGetWindowSize((GLFWwindow*)window.handler, &xSize, &ySize);
 
-        int monitorCount = 0;
+        int  monitorCount = 0;
         auto monitors = glfwGetMonitors(&monitorCount);
         for (int i = 0; i < monitorCount; ++i)
         {
@@ -159,7 +206,7 @@ namespace Fyrion
 
     Span<const char*> Platform::GetRequiredInstanceExtensions()
     {
-        u32 count{};
+        u32          count{};
         const char** extensions = glfwGetRequiredInstanceExtensions(&count);
         return {extensions, extensions + count};
     }
@@ -188,8 +235,8 @@ namespace Fyrion
     DialogResult Platform::SaveDialog(String& path, const Span<FileFilter>& filters, const StringView& defaultPath, const StringView& fileName)
     {
         nfdchar_t* outPath{};
-        auto nfdFilterItem = reinterpret_cast<const nfdfilteritem_t*>(filters.Data());
-        auto result = NFD_SaveDialog(&outPath, nfdFilterItem, filters.Size(), defaultPath.CStr(), fileName.CStr());
+        auto       nfdFilterItem = reinterpret_cast<const nfdfilteritem_t*>(filters.Data());
+        auto       result = NFD_SaveDialog(&outPath, nfdFilterItem, filters.Size(), defaultPath.CStr(), fileName.CStr());
         if (result == NFD_OKAY)
         {
             path = outPath;
@@ -201,8 +248,8 @@ namespace Fyrion
 
     DialogResult Platform::OpenDialog(String& path, const Span<FileFilter>& filters, const StringView& defaultPath)
     {
-        nfdchar_t *outPath;
-        auto nfdFilterItem = reinterpret_cast<const nfdfilteritem_t*>(filters.Data());
+        nfdchar_t*  outPath;
+        auto        nfdFilterItem = reinterpret_cast<const nfdfilteritem_t*>(filters.Data());
         nfdresult_t result = NFD_OpenDialog(&outPath, nfdFilterItem, filters.Size(), defaultPath.CStr());
         if (result == NFD_OKAY)
         {
@@ -217,7 +264,7 @@ namespace Fyrion
     {
         const nfdpathset_t* outPaths;
 
-        auto nfdFilterItem = reinterpret_cast<const nfdfilteritem_t*>(filters.Data());
+        auto        nfdFilterItem = reinterpret_cast<const nfdfilteritem_t*>(filters.Data());
         nfdresult_t result = NFD_OpenDialogMultiple(&outPaths, nfdFilterItem, filters.Size(), defaultPath.CStr());
         if (result == NFD_OKAY)
         {
@@ -240,7 +287,7 @@ namespace Fyrion
 
     DialogResult Platform::PickFolder(String& path, const StringView& defaultPath)
     {
-        nfdchar_t* outPath;
+        nfdchar_t*  outPath;
         nfdresult_t result = NFD_PickFolder(&outPath, defaultPath.CStr());
         if (result == NFD_OKAY)
         {
@@ -250,7 +297,6 @@ namespace Fyrion
         }
         return DialogResult::Cancel;
     }
-
 }
 
 #endif

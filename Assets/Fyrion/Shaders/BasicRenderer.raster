@@ -1,0 +1,31 @@
+struct VSInput
+{
+     float3 position  : POSITION0;
+     float3 normal    : NORMAL1;
+     float3 color     : COLOR2;
+     float2 uv        : UV2;
+     float4 tangent   : TANGENT1;
+};
+
+struct VSOutput
+{
+	float4 pos  : SV_POSITION;
+	float2 uv   : TEXCOORD0;
+};
+
+VSOutput MainVS(VSInput input)
+{
+	VSOutput output = (VSOutput)0;
+	output.pos        = float4(input.position, 1.0); //mul(scene.viewProjection, float4(output.fragPos, 1.0));
+	output.uv         = input.uv;
+	return output;
+}
+
+//Texture2D texture;
+//SamplerState samplerState;
+
+float4 MainPS(VSOutput input) : SV_TARGET
+{
+  return float4(0.0, 1.0, 0.0, 1.0);
+	//return texture.Sample(samplerState, input.uv);
+}

@@ -302,6 +302,16 @@ namespace Fyrion
         }
     }
 
+    void RenderGraph::SetCameraData(const CameraData& p_cameraData)
+    {
+        cameraData = p_cameraData;
+    }
+
+    const CameraData& RenderGraph::GetCameraData() const
+    {
+        return cameraData;
+    }
+
     Texture RenderGraph::GetColorOutput() const
     {
         if (colorOutput)
@@ -348,7 +358,7 @@ namespace Fyrion
                 else if (creation.scale > 0.f)
                 {
                     Extent size = Extent{viewportExtent.width, viewportExtent.height} * creation.scale;
-                    resource->textureCreation.extent = {(size.width), (size.width), 1};
+                    resource->textureCreation.extent = {size.width, size.width, 1};
                 }
                 else
                 {

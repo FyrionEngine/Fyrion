@@ -15,6 +15,7 @@ namespace Fyrion
     namespace
     {
         SharedPtr<RenderDevice> renderDevice = {};
+        Sampler defaultSampler = {};
     }
 
     void GraphicsInit()
@@ -24,12 +25,14 @@ namespace Fyrion
 
     void GraphicsShutdown()
     {
+        renderDevice->DestroySampler(defaultSampler);
         renderDevice = {};
     }
 
     void GraphicsCreateDevice(Adapter adapter)
     {
         renderDevice->CreateDevice(adapter);
+        defaultSampler = renderDevice->CreateSampler({});
     }
 
     RenderCommands& GraphicsBeginFrame()
@@ -200,5 +203,10 @@ namespace Fyrion
     RenderApiType Graphics::GetRenderApi()
     {
         return RenderApiType::Vulkan;
+    }
+
+    Sampler Graphics::GetDefaultSampler()
+    {
+        return defaultSampler;
     }
 }

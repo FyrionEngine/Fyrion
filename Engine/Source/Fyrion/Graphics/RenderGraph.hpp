@@ -28,6 +28,7 @@ namespace Fyrion
 
 
         static void RegisterType(NativeTypeHandler<RenderGraphAsset>& type);
+
     private:
         Array<String>          passes;
         Array<RenderGraphEdge> edges;
@@ -77,7 +78,7 @@ namespace Fyrion
     {
     public:
         RenderGraphNode* node = nullptr;
-        RenderGraph* graph = nullptr;
+        RenderGraph*     graph = nullptr;
 
         virtual void Init() {}
         virtual void Update(f64 deltaTime) {}
@@ -99,6 +100,9 @@ namespace Fyrion
         Extent GetViewportExtent() const;
 
         void Resize(Extent p_extent);
+        void SetCameraData(const CameraData& cameraData);
+
+        const CameraData& GetCameraData() const;
 
         Texture GetColorOutput() const;
         Texture GetDepthOutput() const;
@@ -106,7 +110,7 @@ namespace Fyrion
         static void RegisterType(NativeTypeHandler<RenderGraph>& type);
         static void RegisterPass(const RenderGraphPassCreation& renderGraphPassCreation);
         static void SetRegisterSwapchainRenderEvent(bool p_registerSwapchainRenderEvent);
-    
+
     private:
         RenderGraphAsset*                 asset = nullptr;
         Extent                            viewportExtent;
@@ -114,6 +118,7 @@ namespace Fyrion
         RenderGraphResMap                 resources;
         SharedPtr<RenderGraphResource>    colorOutput;
         SharedPtr<RenderGraphResource>    depthOutput;
+        CameraData                        cameraData;
 
         void                           Create();
         SharedPtr<RenderGraphResource> CreateResource(const StringView& fullName, const RenderGraphResourceCreation& creation);

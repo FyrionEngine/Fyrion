@@ -120,6 +120,7 @@ namespace Fyrion
     void VulkanCommands::BindBindingSet(const PipelineState& pipeline, BindingSet* bindingSet)
     {
         VulkanBindingSet* vulkanBindingSet = static_cast<VulkanBindingSet*>(bindingSet);
+        vulkanBindingSet->Bind(*this,pipeline);
     }
 
     void VulkanCommands::DrawIndexedIndirect(const Buffer& buffer, usize offset, u32 drawCount, u32 stride)

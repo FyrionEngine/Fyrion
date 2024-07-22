@@ -998,17 +998,17 @@ namespace Fyrion
 
     constexpr Extent Extent::operator*(const Extent& b) const
     {
-        return {this->width * b.width && this->height * b.height};
+        return {this->width * b.width , this->height * b.height};
     }
 
     constexpr Extent Extent::operator*(const u32& b) const
     {
-        return {this->width * b && this->height * b};
+        return {this->width * b, this->height * b};
     }
 
     constexpr Extent Extent::operator*(const Vec2& b) const
     {
-        return {this->width * b.width && this->height * b.height};
+        return { static_cast<u32>(static_cast<f32>(width) * b.width), static_cast<u32>(static_cast<f32>(height) * b.height)};
     }
 
     constexpr bool Extent3D::operator<(const u32& b) const

@@ -9,23 +9,38 @@ struct VSInput
 
 struct VSOutput
 {
-	float4 pos  : SV_POSITION;
-	float2 uv   : TEXCOORD0;
+	float4 pos      : SV_POSITION;
+	float3 fragPos  : POSITION0;
+	float2 uv       : TEXCOORD0;
 };
+
+struct PushConsts
+{
+	float4x4 model;
+};
+
+
+struct Scene
+{
+  float4x4 viewProjection;
+};
+
+[[vk::binding(0, 0)]]  ConstantBuffer<Scene> scene;
+[[vk::push_constant]]  ConstantBuffer<PushConsts>  pushConsts;
 
 VSOutput MainVS(VSInput input)
 {
 	VSOutput output = (VSOutput)0;
-	output.pos        = float4(input.position, 1.0); //mul(scene.viewProjection, float4(output.fragPos, 1.0));
+	output.fragPos    = (float3)mul(pushConsts.model, float4(input.position, 1.0));
+	output.pos        = mul(scene.viewProjection, float4(output.fragPos, 1.0));
 	output.uv         = input.uv;
 	return output;
 }
 
-//Texture2D texture;
-//SamplerState samplerState;
+Texture2D texture;
+SamplerState samplerState;
 
 float4 MainPS(VSOutput input) : SV_TARGET
 {
-  return float4(0.0, 1.0, 0.0, 1.0);
-	//return texture.Sample(samplerState, input.uv);
+	return texture.Sample(samplerState, input.uv);
 }

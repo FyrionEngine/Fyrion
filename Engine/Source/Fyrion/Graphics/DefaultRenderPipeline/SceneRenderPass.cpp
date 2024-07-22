@@ -4,40 +4,59 @@
 #include "Fyrion/Graphics/Graphics.hpp"
 #include "Fyrion/Graphics/RenderGraph.hpp"
 #include "Fyrion/Graphics/Assets/ShaderAsset.hpp"
+#include "Fyrion/Graphics/Assets/TextureAsset.hpp"
 
 
 namespace Fyrion
 {
+    class TextureAsset;
+
+    struct SceneData
+    {
+        Mat4 viewProjection;
+        // Mat4 lightSpace;
+        // Vec4 viewPos;
+    };
+
     class SceneRenderPass : public RenderGraphPass
     {
     public:
         FY_BASE_TYPES(RenderGraphPass);
 
         PipelineState pipelineState{};
-        BindingSet* bindingSet{};
+        BindingSet*   bindingSet{};
 
         void Init() override
         {
             GraphicsPipelineCreation graphicsPipelineCreation{
-                .shader = AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Shaders/BasicRenderer.raster"),
+                //.shader = AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Shaders/BasicRenderer.raster"),
+                .shader = AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Shaders/Fullscreen.raster"),
                 .renderPass = node->GetRenderPass()
             };
 
             pipelineState = Graphics::CreateGraphicsPipelineState(graphicsPipelineCreation);
             bindingSet = Graphics::CreateBindingSet(graphicsPipelineCreation.shader);
+
+            // TextureAsset* texture = AssetDatabase::FindByPath<TextureAsset>("NewAssetRefactor://planks-albedo.png");
+            // bindingSet->GetVar("texture")->SetTexture(texture->GetTexture());
+        }
+
+
+        void Render(f64 deltaTime, RenderCommands& cmd) override
+        {
+            //const CameraData& cameraData = graph->GetCameraData();
+            //SceneData data{.viewProjection = cameraData.projection * cameraData.view};
+            //bindingSet->GetVar("scene")->Set(data);
+
+             // cmd.BindPipelineState(pipelineState);
+             // cmd.BindBindingSet(pipelineState, bindingSet);
+             // cmd.Draw(3, 1, 0, 0);
         }
 
         void Destroy() override
         {
             Graphics::DestroyGraphicsPipelineState(pipelineState);
             Graphics::DestroyBindingSet(bindingSet);
-        }
-
-        void Render(f64 deltaTime, RenderCommands& cmd) override
-        {
-            // cmd.BindPipelineState(pipelineState);
-            // cmd.BindBindingSet(pipelineState, bindingSet);
-            // cmd.Draw(3, 1, 0, 0);
         }
 
         static void RegisterType(NativeTypeHandler<SceneRenderPass>& type)

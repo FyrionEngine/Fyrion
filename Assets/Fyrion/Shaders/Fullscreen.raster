@@ -12,11 +12,10 @@ VSOutput MainVS(uint vertexIndex : SV_VertexID)
 	return output;
 }
 
-//Texture2D texture;
-//SamplerState samplerState;
+Texture2D texture;
+SamplerState samplerState;
 
 float4 MainPS(VSOutput input) : SV_TARGET
 {
-  return float4(0.0, 1.0, 0.0, 1.0);
-	//return texture.Sample(samplerState, input.uv);
+	return texture.Sample(samplerState, input.uv);
 }

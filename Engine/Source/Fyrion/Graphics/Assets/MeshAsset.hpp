@@ -9,23 +9,33 @@ namespace Fyrion
     public:
         FY_BASE_TYPES(Asset);
 
+        ~MeshAsset() override;
+
         static void RegisterType(NativeTypeHandler<MeshAsset>& type);
 
-        void SetData(Array<VertexStride>&        p_vertices,
-                    Array<u32>&                  p_indices,
-                    Array<MeshPrimitive>&        p_primitives,
-                    const Array<MaterialAsset*>& p_materials,
-                    bool                         missingNormals,
-                    bool                         missingTangents);
+        void SetData(Array<VertexStride>&         p_vertices,
+                     Array<u32>&                  p_indices,
+                     Array<MeshPrimitive>&        p_primitives,
+                     const Array<MaterialAsset*>& p_materials,
+                     bool                         missingNormals,
+                     bool                         missingTangents);
+
+        Span<MeshPrimitive> GetPrimitives() const;
+
+        Buffer GetVertexBuffer();
+        Buffer GetIndexBuffeer();
 
     private:
         AABB                  boundingBox;
         u32                   indicesCount = 0;
         usize                 verticesCount = 0;
-        u32                   primitiveCount = 0;
         Array<MaterialAsset*> materials;
-        Blob                  primitives{};
+        Array<MeshPrimitive>  primitives{};
         Blob                  vertices{};
         Blob                  indices{};
+
+
+        Buffer vertexBuffer{};
+        Buffer indexBuffer{};
     };
 }

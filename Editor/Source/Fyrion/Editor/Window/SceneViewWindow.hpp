@@ -1,6 +1,7 @@
 #pragma once
 #include "Fyrion/Core/SharedPtr.hpp"
 #include "Fyrion/Editor/EditorTypes.hpp"
+#include "Fyrion/Graphics/FreeViewCamera.hpp"
 
 namespace Fyrion
 {
@@ -25,6 +26,7 @@ namespace Fyrion
         bool                   windowStartedSimulation{};
         bool                   movingScene{};
         SharedPtr<RenderGraph> renderGraph{};
+        FreeViewCamera         freeViewCamera{};
 
         static void OpenSceneView(const MenuItemEventData& eventData);
     };

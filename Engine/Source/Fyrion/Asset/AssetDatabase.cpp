@@ -23,7 +23,7 @@ namespace Fyrion
         HashMap<String, AssetIO*>      importers;
         HashMap<TypeID, Array<Asset*>> assetsByType{};
 
-        Logger& logger = Logger::GetLogger("Fyrion::AssetDatabase", LogLevel::Debug);
+        Logger& logger = Logger::GetLogger("Fyrion::AssetDatabase");
         bool    registerEvents = RegisterEvents();
 
         void OnTypeAddedImpl(const TypeHandler& typeHandler)
@@ -254,6 +254,7 @@ namespace Fyrion
                 parentDirectory->AddChild(asset);
                 AssetDatabaseUpdateUUID(asset, asset->GetUUID());
                 importer->second->ImportAsset(filePath, asset);
+                asset->BuildPath();
             }
         }
     }

@@ -227,6 +227,11 @@ namespace Fyrion
         return frame;
     }
 
+    f64 Engine::DeltaTime()
+    {
+        return deltaTime;
+    }
+
     void Engine::Destroy()
     {
         DefaultRenderPipelineShutdown();

@@ -77,7 +77,7 @@ namespace Fyrion
 
     void InputBeginFrame()
     {
-        mouseMoved = false;
+        //mouseMoved = false;
 
         for (int i = 0; i < static_cast<u64>(Key::MAX); ++i)
         {

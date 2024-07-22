@@ -25,6 +25,8 @@ namespace Fyrion
 
     struct VulkanDescriptorSet
     {
+        VulkanDevice& vulkanDevice;
+
         FixedArray<u8, FY_FRAMES_IN_FLIGHT> frames{0, 0};
         Array<VulkanDescriptorSetData>      data;
 
@@ -32,24 +34,28 @@ namespace Fyrion
         Array<VkWriteDescriptorSet>   descriptorWrites;
         Array<VkDescriptorImageInfo>  descriptorImageInfos;
         Array<VkDescriptorBufferInfo> descriptorBufferInfos;
+
+        void MarkDirty();
     };
 
     struct VulkanBindingVar : BindingVar
     {
         VulkanBindingSet& bindingSet;
 
-        VulkanDescriptorSet* descriptorSet{};
-        u32                  binding{};
-        u32                  arrayElement{};
-        DescriptorType       descriptorType{};
-        u32                  size{};
+        SharedPtr<VulkanDescriptorSet> descriptorSet{};
+        u32                            binding{};
+        u32                            arrayElement{};
+        DescriptorType                 descriptorType{};
+        u32                            size{};
 
         VulkanBindingVar(VulkanBindingSet& bindingSet) : bindingSet(bindingSet) {}
+        ~VulkanBindingVar() override;
 
-        VulkanTexture*     texture{};
-        VulkanTextureView* textureView{};
-        VulkanSampler*     sampler{};
-        VulkanBuffer*      buffer{};
+        VulkanTexture*      texture{};
+        VulkanTextureView*  textureView{};
+        VulkanSampler*      sampler{};
+        VulkanBuffer*       buffer{};      //external buffers, BindingSet don't own it
+        Array<VulkanBuffer> valueBuffer{}; //internal buffers created for "SetValue"
 
         void SetTexture(const Texture& texture) override;
         void SetTextureView(const TextureView& textureView) override;

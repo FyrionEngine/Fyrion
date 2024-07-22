@@ -42,11 +42,28 @@ namespace Fyrion
         }
     }
 
+    void VulkanDescriptorSet::MarkDirty()
+    {
+        data[frames[vulkanDevice.currentFrame]].dirty = true;
+    }
+
+    VulkanBindingVar::~VulkanBindingVar()
+    {
+        for(VulkanBuffer& vulkanBuffer : valueBuffer)
+        {
+            if (vulkanBuffer.buffer && vulkanBuffer.allocation)
+            {
+                vmaDestroyBuffer(descriptorSet->vulkanDevice.vmaAllocator, vulkanBuffer.buffer, vulkanBuffer.allocation);
+            }
+        }
+    }
+
     void VulkanBindingVar::SetTexture(const Texture& p_texture)
     {
         if (texture != p_texture.handler)
         {
             texture = static_cast<VulkanTexture*>(p_texture.handler);
+            descriptorSet->MarkDirty();
         }
     }
 
@@ -55,6 +72,7 @@ namespace Fyrion
         if (textureView != p_textureView.handler)
         {
             textureView = static_cast<VulkanTextureView*>(p_textureView.handler);
+            descriptorSet->MarkDirty();
         }
     }
 
@@ -63,6 +81,7 @@ namespace Fyrion
         if (sampler != p_sampler.handler)
         {
             sampler = static_cast<VulkanSampler*>(p_sampler.handler);
+            descriptorSet->MarkDirty();
         }
     }
 
@@ -71,15 +90,38 @@ namespace Fyrion
         if (buffer != p_buffer.handler)
         {
             buffer = static_cast<VulkanBuffer*>(p_buffer.handler);
+            descriptorSet->MarkDirty();
         }
     }
 
     void VulkanBindingVar::SetValue(ConstPtr ptr, usize size)
     {
-        if (!buffer)
+        //TODO check if that's a different frame? and if there is already
+        if (valueBuffer.Empty())
         {
-            //TODO needs to create the buffer.
+            VkBufferCreateInfo bufferInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+            bufferInfo.size = size;
+            bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+            bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+
+            VmaAllocationCreateInfo vmaAllocInfo = {};
+            vmaAllocInfo.usage = VMA_MEMORY_USAGE_AUTO;
+            vmaAllocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+
+            VulkanBuffer& vulkanBuffer = valueBuffer.EmplaceBack();
+            vulkanBuffer.bufferCreation.size = size;
+
+            vmaCreateBuffer(descriptorSet->vulkanDevice.vmaAllocator,
+                &bufferInfo,
+                &vmaAllocInfo,
+                &vulkanBuffer.buffer,
+                &vulkanBuffer.allocation,
+                &vulkanBuffer.allocInfo);
         }
+
+        VulkanBuffer& vulkanBuffer =  valueBuffer[0];
+        char* memory = static_cast<char*>(vulkanBuffer.allocInfo.pMappedData);
+        MemCopy(memory, ptr, size);
     }
 
     BindingVar* VulkanBindingSet::GetVar(const StringView& name)
@@ -102,12 +144,12 @@ namespace Fyrion
             //if there is no VulkanDescriptorSet for the attribute, create one.
             if (descriptorSetIt == descriptorSets.end())
             {
-                descriptorSetIt = descriptorSets.Emplace(set, MakeShared<VulkanDescriptorSet>()).first;
+                descriptorSetIt = descriptorSets.Emplace(set, MakeShared<VulkanDescriptorSet>(vulkanDevice)).first;
             }
 
             DescriptorLayout& descriptorLayout = descriptorLayoutLookup[set];
 
-            VulkanDescriptorSet* vulkanDescriptorSet = descriptorSetIt->second.Get();
+            SharedPtr<VulkanDescriptorSet> vulkanDescriptorSet = descriptorSetIt->second;
 
 
             //TODO check if that's a different frame? and if there is already
@@ -159,6 +201,7 @@ namespace Fyrion
                     const DescriptorBinding& descriptorBinding = descriptorLayout.bindings[i];
 
                     VulkanBindingVar* bindingVar = bindingValues.Emplace(descriptorBinding.name, MakeShared<VulkanBindingVar>(*this)).first->second.Get();
+                    bindingVar->descriptorSet = vulkanDescriptorSet;
                     bindingVar->binding = descriptorBinding.binding;
                     bindingVar->descriptorType = descriptorBinding.descriptorType;
                     bindingVar->size = descriptorBinding.size;
@@ -230,6 +273,25 @@ namespace Fyrion
                         }
                         case DescriptorType::UniformBuffer:
                         case DescriptorType::StorageBuffer:
+
+                            if (vulkanBindingVar->buffer)
+                            {
+                                descriptorSet->descriptorBufferInfos[b].offset = 0;
+                                descriptorSet->descriptorBufferInfos[b].buffer = vulkanBindingVar->buffer->buffer;
+                                descriptorSet->descriptorBufferInfos[b].range = vulkanBindingVar->buffer->bufferCreation.size;
+                            }
+                            else if (!vulkanBindingVar->valueBuffer.Empty())
+                            {
+                                VulkanBuffer& vulkanBuffer = vulkanBindingVar->valueBuffer[0];
+                                descriptorSet->descriptorBufferInfos[b].offset = 0;
+                                descriptorSet->descriptorBufferInfos[b].buffer = vulkanBuffer.buffer;
+                                descriptorSet->descriptorBufferInfos[b].range = vulkanBuffer.bufferCreation.size;
+                            }
+                            else
+                            {
+                                //TODO make a default buffer?
+                            }
+                            writeDescriptorSet.pBufferInfo = &descriptorSet->descriptorBufferInfos[b];
                             break;
                         case DescriptorType::AccelerationStructure:
                             break;

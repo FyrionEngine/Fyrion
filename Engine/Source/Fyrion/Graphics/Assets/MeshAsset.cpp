@@ -1,5 +1,6 @@
 #include "MeshAsset.hpp"
 
+#include "Fyrion/Graphics/Graphics.hpp"
 #include "Fyrion/Graphics/MeshUtils.hpp"
 
 namespace Fyrion
@@ -11,7 +12,6 @@ namespace Fyrion
                             bool                         missingNormals,
                             bool                         missingTangents)
     {
-
         if (missingNormals)
         {
             //TODO
@@ -24,15 +24,85 @@ namespace Fyrion
 
         indicesCount = p_indices.Size();
         verticesCount = p_vertices.Size();
-        primitiveCount = p_primitives.Size();
 
         boundingBox = MeshUtils::CalculateMeshAABB(p_vertices);
 
         materials = p_materials;
+        primitives = p_primitives;
 
-        SaveBlob(primitives, p_primitives.Data(), p_primitives.Size());
-        SaveBlob(vertices, p_vertices.Data(), p_vertices.Size());
-        SaveBlob(indices, p_indices.Data(), p_indices.Size());
+        SaveBlob(vertices, p_vertices.Data(), p_vertices.Size() * sizeof(VertexStride));
+        SaveBlob(indices, p_indices.Data(), p_indices.Size() * sizeof(u32));
+    }
+
+    Span<MeshPrimitive> MeshAsset::GetPrimitives() const
+    {
+        return primitives;
+    }
+
+    Buffer MeshAsset::GetVertexBuffer()
+    {
+        if (!vertexBuffer)
+        {
+            usize size = GetBlobSize(vertices);
+            Array<u8> data;
+            data.Resize(size);
+            LoadBlob(vertices, data.Data(), size);
+
+            BufferCreation creation{
+                .usage = BufferUsage::VertexBuffer,
+                .size = size,
+                .allocation = BufferAllocation::GPUOnly
+            };
+
+            vertexBuffer = Graphics::CreateBuffer(creation);
+
+            Graphics::UpdateBufferData(BufferDataInfo{
+                .buffer = vertexBuffer,
+                .data = data.Data(),
+                .size = size,
+            });
+        }
+        return vertexBuffer;
+    }
+
+    Buffer MeshAsset::GetIndexBuffeer()
+    {
+        if (!indexBuffer)
+        {
+            usize size = GetBlobSize(indices);
+            Array<u8> data;
+            data.Resize(size);
+            LoadBlob(indices, data.Data(), size);
+
+            BufferCreation creation{
+                .usage = BufferUsage::IndexBuffer,
+                .size = size,
+                .allocation = BufferAllocation::GPUOnly
+            };
+
+            indexBuffer = Graphics::CreateBuffer(creation);
+
+            Graphics::UpdateBufferData(BufferDataInfo{
+                .buffer = indexBuffer,
+                .data = data.Data(),
+                .size = size,
+            });
+        }
+
+        return indexBuffer;
+    }
+
+    MeshAsset::~MeshAsset()
+    {
+        if (vertexBuffer)
+        {
+            Graphics::DestroyBuffer(vertexBuffer);
+        }
+
+        if (indexBuffer)
+        {
+            Graphics::DestroyBuffer(indexBuffer);
+        }
     }
 
     void MeshAsset::RegisterType(NativeTypeHandler<MeshAsset>& type)
@@ -40,7 +110,6 @@ namespace Fyrion
         type.Field<&MeshAsset::boundingBox>("boundingBox");
         type.Field<&MeshAsset::indicesCount>("indicesCount");
         type.Field<&MeshAsset::verticesCount>("verticesCount");
-        type.Field<&MeshAsset::primitiveCount>("primitiveCount");
         type.Field<&MeshAsset::materials>("materials");
         type.Field<&MeshAsset::primitives>("primitives");
         type.Field<&MeshAsset::vertices>("vertices");

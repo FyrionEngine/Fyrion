@@ -531,6 +531,8 @@ namespace Fyrion
         u32 firstIndex{};
         u32 indexCount{};
         u32 materialIndex{};
+
+        static void RegisterType(NativeTypeHandler<MeshPrimitive>& type);
     };
 
 

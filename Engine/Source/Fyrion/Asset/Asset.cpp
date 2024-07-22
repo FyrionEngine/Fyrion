@@ -20,6 +20,12 @@ namespace Fyrion
                 AssetDatabaseUpdatePath(this, path, newPath);
             }
             path = newPath;
+
+            for (Asset* child : assets)
+            {
+                String newPathChild = String().Append(newPath).Append("#").Append(child->name);
+                AssetDatabaseUpdatePath(child, child->path, newPathChild);
+            }
         }
     }
 
@@ -176,7 +182,7 @@ namespace Fyrion
         StringView dataDirectory = AssetDatabase::GetDataDirectory();
         if (FileSystem::GetFileStatus(dataDirectory).isDirectory)
         {
-            String      blobPath = Path::Join(Path::Join(dataDirectory, ToString(GetUUID())), blob.ToString());
+            String      blobPath = Path::Join(Path::Join(dataDirectory, ToString(GetPhysicalAsset()->GetUUID())), blob.ToString());
             FileHandler file = FileSystem::OpenFile(blobPath, AccessMode::ReadOnly);
             FileSystem::ReadFile(file, data, dataSize);
         }

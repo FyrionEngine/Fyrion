@@ -39,6 +39,7 @@ namespace Fyrion
         static void   Destroy();
         static bool   IsRunning();
         static u64    GetFrame();
+        static f64    DeltaTime();
         static Window GetActiveWindow();
         static Extent GetViewportExtent();
 

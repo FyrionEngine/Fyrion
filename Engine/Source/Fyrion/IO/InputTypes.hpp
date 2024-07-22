@@ -133,10 +133,9 @@ namespace Fyrion
 
     enum class MouseButton
     {
-        None   = 0,
-        Left   = 1,
-        Right  = 2,
-        Middle = 3,
+        Left   = 0,
+        Right  = 1,
+        Middle = 2,
         MAX    = 10
     };
 

@@ -556,6 +556,12 @@ namespace Fyrion
                 return static_cast<VoidPtr>(&array[index]);
             };
 
+            arrayApi.getConst = [](ConstPtr pointer, usize index)
+            {
+                const Array<Type>& array = *static_cast<const Array<Type>*>(pointer);
+                return static_cast<ConstPtr>(&array[index]);
+            };
+
             arrayApi.set = [](VoidPtr pointer, usize index, ConstPtr value)
             {
                 Array<Type>& array = *static_cast<Array<Type>*>(pointer);
@@ -571,6 +577,8 @@ namespace Fyrion
             {
                 return GetTypeInfo<Type>();
             };
+
+
         }
 
         static constexpr TypeID GetApiId()

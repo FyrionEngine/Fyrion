@@ -26,6 +26,21 @@ namespace Fyrion
             return view;
         }
 
+        Vec3 GetPosition() const
+        {
+            return position;
+        }
+
+        Quat GetRotation() const
+        {
+            return rotation;
+        }
+
+        Vec3 GetScale() const
+        {
+            return scale;
+        }
+
     private:
         Vec3 position{0, 0, 0};
         Quat rotation{0, 0, 0, 1};

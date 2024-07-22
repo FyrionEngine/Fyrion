@@ -3,6 +3,7 @@
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Graphics/Graphics.hpp"
 #include "Fyrion/Graphics/RenderGraph.hpp"
+#include "Fyrion/Graphics/Assets/DCCAsset.hpp"
 #include "Fyrion/Graphics/Assets/ShaderAsset.hpp"
 #include "Fyrion/Graphics/Assets/TextureAsset.hpp"
 
@@ -25,32 +26,47 @@ namespace Fyrion
 
         PipelineState pipelineState{};
         BindingSet*   bindingSet{};
+        MeshAsset*    mesh;
 
         void Init() override
         {
             GraphicsPipelineCreation graphicsPipelineCreation{
-                //.shader = AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Shaders/BasicRenderer.raster"),
-                .shader = AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Shaders/Fullscreen.raster"),
-                .renderPass = node->GetRenderPass()
+                .shader = AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Shaders/BasicRenderer.raster"),
+                .renderPass = node->GetRenderPass(),
+                .depthWrite = true,
+                .cullMode = CullMode::Back,
+                .compareOperator = CompareOp::Greater,
             };
 
             pipelineState = Graphics::CreateGraphicsPipelineState(graphicsPipelineCreation);
             bindingSet = Graphics::CreateBindingSet(graphicsPipelineCreation.shader);
 
-            // TextureAsset* texture = AssetDatabase::FindByPath<TextureAsset>("NewAssetRefactor://planks-albedo.png");
-            // bindingSet->GetVar("texture")->SetTexture(texture->GetTexture());
+            TextureAsset* texture = AssetDatabase::FindByPath<TextureAsset>("NewAssetRefactor://planks-albedo.png");
+            bindingSet->GetVar("texture")->SetTexture(texture->GetTexture());
+
+            mesh = AssetDatabase::FindByPath<MeshAsset>("NewAssetRefactor://Cube/Cube.gltf#Cube");
         }
 
 
         void Render(f64 deltaTime, RenderCommands& cmd) override
         {
-            //const CameraData& cameraData = graph->GetCameraData();
-            //SceneData data{.viewProjection = cameraData.projection * cameraData.view};
-            //bindingSet->GetVar("scene")->Set(data);
+            const CameraData& cameraData = graph->GetCameraData();
+            SceneData         data{.viewProjection = cameraData.projection * cameraData.view};
+            bindingSet->GetVar("scene")->Set(data);
 
-             // cmd.BindPipelineState(pipelineState);
-             // cmd.BindBindingSet(pipelineState, bindingSet);
-             // cmd.Draw(3, 1, 0, 0);
+            cmd.BindPipelineState(pipelineState);
+            cmd.BindBindingSet(pipelineState, bindingSet);
+
+            cmd.BindVertexBuffer(mesh->GetVertexBuffer());
+            cmd.BindIndexBuffer(mesh->GetIndexBuffeer());
+
+            Mat4 model{1.0};
+            cmd.PushConstants(pipelineState, ShaderStage::Vertex, &model, sizeof(Mat4));
+
+            for (MeshPrimitive& primitive : mesh->GetPrimitives())
+            {
+                cmd.DrawIndexed(primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+            }
         }
 
         void Destroy() override

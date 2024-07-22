@@ -60,6 +60,10 @@ namespace Fyrion
         quat.Field<&Quat::y>("y");
         quat.Field<&Quat::z>("z");
         quat.Field<&Quat::w>("w");
+
+        auto aabb = Registry::Type<AABB>();
+        aabb.Field<&AABB::min>("min");
+        aabb.Field<&AABB::max>("max");
     }
 
 

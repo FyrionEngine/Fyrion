@@ -11,7 +11,10 @@ struct VSOutput
 {
 	float4 pos      : SV_POSITION;
 	float3 fragPos  : POSITION0;
+  float3 color    : COLOR0;
 	float2 uv       : TEXCOORD0;
+	float3 normal   : NORMAL1;
+  float4 tangent  : TANGENT1;
 };
 
 struct PushConsts
@@ -25,15 +28,21 @@ struct Scene
   float4x4 viewProjection;
 };
 
-[[vk::binding(0, 0)]]  ConstantBuffer<Scene> scene;
+ConstantBuffer<Scene> scene;
 [[vk::push_constant]]  ConstantBuffer<PushConsts>  pushConsts;
 
 VSOutput MainVS(VSInput input)
 {
 	VSOutput output = (VSOutput)0;
-	output.fragPos    = (float3)mul(pushConsts.model, float4(input.position, 1.0));
+  output.fragPos    = (float3)mul(pushConsts.model, float4(input.position, 1.0));
+  output.color      = input.color;
 	output.pos        = mul(scene.viewProjection, float4(output.fragPos, 1.0));
 	output.uv         = input.uv;
+
+	float3x3 normalMat = (float3x3)pushConsts.model;
+	output.normal      = normalize(mul(normalMat, input.normal));
+  output.tangent     = float4(normalize(mul(normalMat, input.tangent.xyz)), input.tangent.w);
+
 	return output;
 }
 

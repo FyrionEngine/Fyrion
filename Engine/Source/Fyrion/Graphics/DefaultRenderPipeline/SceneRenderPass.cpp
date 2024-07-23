@@ -3,6 +3,7 @@
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Graphics/Graphics.hpp"
 #include "Fyrion/Graphics/RenderGraph.hpp"
+#include "Fyrion/Graphics/RenderStorage.hpp"
 #include "Fyrion/Graphics/Assets/DCCAsset.hpp"
 #include "Fyrion/Graphics/Assets/ShaderAsset.hpp"
 #include "Fyrion/Graphics/Assets/TextureAsset.hpp"
@@ -26,7 +27,6 @@ namespace Fyrion
 
         PipelineState pipelineState{};
         BindingSet*   bindingSet{};
-        MeshAsset*    mesh = nullptr;
 
         void Init() override
         {
@@ -43,8 +43,6 @@ namespace Fyrion
 
             TextureAsset* texture = AssetDatabase::FindByPath<TextureAsset>("NewAssetRefactor://planks-albedo.png");
             bindingSet->GetVar("texture")->SetTexture(texture->GetTexture());
-
-            mesh = AssetDatabase::FindByPath<MeshAsset>("NewAssetRefactor://Cube/Cube.gltf#Cube");
         }
 
 
@@ -57,15 +55,20 @@ namespace Fyrion
             cmd.BindPipelineState(pipelineState);
             cmd.BindBindingSet(pipelineState, bindingSet);
 
-            cmd.BindVertexBuffer(mesh->GetVertexBuffer());
-            cmd.BindIndexBuffer(mesh->GetIndexBuffeer());
-
-            Mat4 model{1.0};
-            cmd.PushConstants(pipelineState, ShaderStage::Vertex, &model, sizeof(Mat4));
-
-            for (MeshPrimitive& primitive : mesh->GetPrimitives())
+            for (MeshRenderData& meshRenderData : RenderStorage::GetMeshesToRender())
             {
-                cmd.DrawIndexed(primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+                if (MeshAsset* mesh = meshRenderData.mesh)
+                {
+                    cmd.BindVertexBuffer(mesh->GetVertexBuffer());
+                    cmd.BindIndexBuffer(mesh->GetIndexBuffeer());
+
+                    cmd.PushConstants(pipelineState, ShaderStage::Vertex, &meshRenderData.model, sizeof(Mat4));
+
+                    for (MeshPrimitive& primitive : mesh->GetPrimitives())
+                    {
+                        cmd.DrawIndexed(primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+                    }
+                }
             }
         }
 

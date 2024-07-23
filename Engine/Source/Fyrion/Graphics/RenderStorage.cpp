@@ -6,7 +6,7 @@ namespace Fyrion
 {
     namespace
     {
-        HashMap<usize, usize>   meshRenderDataIndices{};
+        HashMap<usize, usize> meshRenderDataIndices{};
         Array<MeshRenderData> meshRenderDataArray{};
     }
 

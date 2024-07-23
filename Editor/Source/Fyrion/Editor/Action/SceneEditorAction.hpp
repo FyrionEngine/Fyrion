@@ -2,6 +2,7 @@
 #include "EditorAction.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Scene/SceneObject.hpp"
+#include "Fyrion/Scene/Assets/SceneObjectAsset.hpp"
 
 
 namespace Fyrion
@@ -29,12 +30,13 @@ namespace Fyrion
     {
         FY_BASE_TYPES(EditorAction);
 
-        SceneEditor& sceneEditor;
-        SceneObject* parent;
-        SceneObject* current;
-        usize        pos;
+        SceneEditor&      sceneEditor;
+        SceneObject*      parent;
+        SceneObject*      current;
+        SceneObjectAsset* prototype;
+        usize             pos;
 
-        CreateSceneObjectAction(SceneEditor& sceneEditor, SceneObject* parent);
+        CreateSceneObjectAction(SceneEditor& sceneEditor, SceneObject* parent, SceneObjectAsset* prototype);
         ~CreateSceneObjectAction() override;
 
         static void RegisterType(NativeTypeHandler<CreateSceneObjectAction>& type);

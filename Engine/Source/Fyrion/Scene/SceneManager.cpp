@@ -3,6 +3,7 @@
 #include <queue>
 
 #include "SceneObject.hpp"
+#include "Assets/SceneObjectAsset.hpp"
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Core/Allocator.hpp"
 #include "Fyrion/Graphics/RenderGraph.hpp"
@@ -46,9 +47,18 @@ namespace Fyrion
         objectsToDestroy.emplace(sceneObject);
     }
 
-    SceneObject* SceneManager::CreateObject(SceneGlobals* globals)
+    SceneObject* SceneManager::CreateObject()
     {
-        return MemoryGlobals::GetDefaultAllocator().Alloc<SceneObject>(globals);
+        return MemoryGlobals::GetDefaultAllocator().Alloc<SceneObject>();
+    }
+
+    SceneObject* SceneManager::CreateObject(SceneObjectAsset* asset)
+    {
+        if (asset)
+        {
+            return asset->GetObject().Clone();
+        }
+        return MemoryGlobals::GetDefaultAllocator().Alloc<SceneObject>();
     }
 
     void SceneManager::SetActiveObject(SceneObject* sceneObject)

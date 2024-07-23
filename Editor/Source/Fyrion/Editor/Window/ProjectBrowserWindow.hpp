@@ -56,6 +56,8 @@ namespace Fyrion
         static void AssetCopyPathToClipboard(const MenuItemEventData& eventData);
         static void AssetNewResourceGraph(const MenuItemEventData& eventData);
         static void AssetNewRenderGraph(const MenuItemEventData& eventData);
+        static bool CheckCanReimport(const MenuItemEventData& eventData);
+        static void AssetReimport(const MenuItemEventData& eventData);
 
         static void AssetNew(const MenuItemEventData& eventData);
 

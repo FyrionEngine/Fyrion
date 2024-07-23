@@ -1,6 +1,5 @@
 #include "SceneEditorAction.hpp"
 
-#include "imgui_internal.h"
 #include "Fyrion/Asset/AssetDatabase.hpp"
 #include "Fyrion/Asset/AssetSerialization.hpp"
 #include "Fyrion/Core/Registry.hpp"
@@ -31,11 +30,13 @@ namespace Fyrion
         type.Constructor<SceneEditor, SceneObjectAsset*>();
     }
 
-
-    CreateSceneObjectAction::CreateSceneObjectAction(SceneEditor& sceneEditor, SceneObject* parent) : sceneEditor(sceneEditor), parent(parent)
+    CreateSceneObjectAction::CreateSceneObjectAction(SceneEditor& sceneEditor, SceneObject* parent, SceneObjectAsset* prototype) : sceneEditor(sceneEditor), parent(parent), prototype(prototype)
     {
-        current = SceneManager::CreateObject(parent->globals);
-        current->SetName("New Object");
+        current = SceneManager::CreateObject(prototype);
+        if (current->GetName().Empty())
+        {
+            current->SetName("New Object");
+        }
         current->SetUUID(UUID::RandomUUID());
         pos = parent->GetChildren().Size();
     }
@@ -64,7 +65,7 @@ namespace Fyrion
 
     void CreateSceneObjectAction::RegisterType(NativeTypeHandler<CreateSceneObjectAction>& type)
     {
-        type.Constructor<SceneEditor, SceneObject*>();
+        type.Constructor<SceneEditor, SceneObject*, SceneObjectAsset*>();
     }
 
     DestroySceneObjectAction::DestroySceneObjectAction(SceneEditor& sceneEditor, SceneObject* object) : sceneEditor(sceneEditor), object(object), parent(object->GetParent()) {}

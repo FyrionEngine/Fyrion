@@ -85,6 +85,11 @@ namespace Fyrion
         extension = p_extension;
     }
 
+    StringView Asset::GetExtension() const
+    {
+        return extension;
+    }
+
     void Asset::SetActive(bool p_active)
     {
         const bool changed = active != p_active;
@@ -186,6 +191,11 @@ namespace Fyrion
             FileHandler file = FileSystem::OpenFile(blobPath, AccessMode::ReadOnly);
             FileSystem::ReadFile(file, data, dataSize);
         }
+    }
+
+    Span<Asset*> Asset::GetChildrenAssets() const
+    {
+        return assets;
     }
 
     Asset* Asset::GetPhysicalAsset()

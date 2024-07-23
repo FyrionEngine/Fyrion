@@ -1,5 +1,6 @@
 #pragma once
 #include "Fyrion/Asset/Asset.hpp"
+#include "Fyrion/Core/Image.hpp"
 #include "Fyrion/Graphics/GraphicsTypes.hpp"
 
 namespace Fyrion
@@ -12,7 +13,8 @@ namespace Fyrion
         ~TextureAsset() override;
 
         StringView  GetDisplayName() const override;
-        void        SetImage(StringView path);
+        void        SetImagePath(StringView path);
+        void        SetImage(const Image& image);
         Texture     GetTexture();
         static void RegisterType(NativeTypeHandler<TextureAsset>& type);
 

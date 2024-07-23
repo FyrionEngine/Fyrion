@@ -7,23 +7,15 @@
 
 namespace Fyrion
 {
-    SceneObject::SceneObject(SceneGlobals* globals) : globals(globals) {}
+    SceneObject::SceneObject() {}
 
-    SceneObject::SceneObject(SceneObjectAsset* asset) : root(true), asset(asset)
-    {
-        globals = MemoryGlobals::GetDefaultAllocator().Alloc<SceneGlobals>();
-    }
+    SceneObject::SceneObject(SceneObjectAsset* asset) : root(true), asset(asset) {}
 
     SceneObject::~SceneObject()
     {
         for (SceneObject* child : children)
         {
             MemoryGlobals::GetDefaultAllocator().DestroyAndFree(child);
-        }
-
-        if (root && globals)
-        {
-            MemoryGlobals::GetDefaultAllocator().DestroyAndFree(globals);
         }
     }
 
@@ -46,6 +38,26 @@ namespace Fyrion
             component->OnNotify(SceneNotifications_OnComponentCreated, &typeId);
         }
 
+        return *component;
+    }
+
+    Component& SceneObject::CloneComponent(const Component* originComponent)
+    {
+        TypeHandler* typeHandler = originComponent->typeHandler;
+        Component* component = typeHandler->Cast<Component>(typeHandler->NewInstance());
+        typeHandler->Copy(originComponent, component);
+
+        component->typeHandler = typeHandler;
+        component->object = this;
+        components.EmplaceBack(component);
+
+
+        if (!notificationDisabled)
+        {
+            TypeID typeId = typeHandler->GetTypeInfo().typeId;
+            Notify(SceneNotifications_OnComponentAdded, &typeId);
+            component->OnNotify(SceneNotifications_OnComponentCreated, &typeId);
+        }
         return *component;
     }
 
@@ -118,7 +130,17 @@ namespace Fyrion
 
     SceneObjectAsset* SceneObject::GetPrototype() const
     {
-        return asset;
+        if(prototype)
+        {
+            return prototype;
+        }
+
+        if (parent)
+        {
+            return parent->GetPrototype();
+        }
+
+        return nullptr;
     }
 
     void SceneObject::AddChild(SceneObject* sceneObject)
@@ -158,7 +180,6 @@ namespace Fyrion
 
     void SceneObject::RegisterType(NativeTypeHandler<SceneObject>& type)
     {
-        type.Constructor<SceneGlobals*>();
         type.Constructor<SceneObjectAsset*>();
 
         type.Field<&SceneObject::name>("name");
@@ -174,29 +195,36 @@ namespace Fyrion
             writer.WriteString(object, "uuid", ToString(uuid));
         }
 
-        ArchiveObject objChildren = writer.CreateArray();
-        for (const SceneObject* child : children)
+        if (!prototype)
         {
-            writer.AddValue(objChildren, child->Serialize(writer));
+            ArchiveObject objChildren = writer.CreateArray();
+            for (const SceneObject* child : children)
+            {
+                writer.AddValue(objChildren, child->Serialize(writer));
+            }
+
+            if (!children.Empty())
+            {
+                writer.WriteValue(object, "children", objChildren);
+            }
+
+            ArchiveObject objComponents = writer.CreateArray();
+
+            for (const Component* component : components)
+            {
+                ArchiveObject componentObject = Serialization::Serialize(component->typeHandler, writer, component);
+                writer.WriteString(componentObject, "_type", component->typeHandler->GetName());
+                writer.AddValue(objComponents, componentObject);
+            }
+
+            if (!components.Empty())
+            {
+                writer.WriteValue(object, "components", objComponents);
+            }
         }
-
-        if (!children.Empty())
+        else
         {
-            writer.WriteValue(object, "children", objChildren);
-        }
-
-        ArchiveObject objComponents = writer.CreateArray();
-
-        for (const Component* component : components)
-        {
-            ArchiveObject componentObject = Serialization::Serialize(component->typeHandler, writer, component);
-            writer.WriteString(componentObject, "_type", component->typeHandler->GetName());
-            writer.AddValue(objComponents, componentObject);
-        }
-
-        if (!components.Empty())
-        {
-            writer.WriteValue(object, "components", objComponents);
+            writer.WriteString(object, "prototype", ToString(prototype->GetUUID()));
         }
 
         return object;
@@ -212,38 +240,44 @@ namespace Fyrion
             uuid = UUID::FromString(uuidStr);
         }
 
-        if (ArchiveObject childrenArr = reader.ReadObject(object, "children"))
+        if (StringView prototypeStr = reader.ReadString(object, "prototype"); !prototypeStr.Empty())
         {
-            usize childrenArrSize = reader.ArrSize(childrenArr);
-
-            ArchiveObject childObject{};
-            for (usize i = 0; i < childrenArrSize; ++i)
-            {
-                childObject = reader.Next(childrenArr, childObject);
-
-                SceneObject* child = SceneManager::CreateObject(globals);
-                child->Deserialize(reader, childObject);
-                AddChild(child);
-            }
+            prototype = AssetDatabase::Create<SceneObjectAsset>(UUID::FromString(prototypeStr));
         }
-
-        if (ArchiveObject compArr = reader.ReadObject(object, "components"))
+        else
         {
-            usize compArrSize = reader.ArrSize(compArr);
-
-            ArchiveObject compObj{};
-            for (usize i = 0; i < compArrSize; ++i)
+            if (ArchiveObject childrenArr = reader.ReadObject(object, "children"))
             {
-                compObj = reader.Next(compArr, compObj);
+                usize childrenArrSize = reader.ArrSize(childrenArr);
 
-                if (TypeHandler* typeHandler = Registry::FindTypeByName(reader.ReadString(compObj, "_type")))
+                ArchiveObject childObject{};
+                for (usize i = 0; i < childrenArrSize; ++i)
                 {
-                    Component& component = AddComponent(typeHandler);
-                    Serialization::Deserialize(typeHandler, reader, compObj, &component);
+                    childObject = reader.Next(childrenArr, childObject);
+
+                    SceneObject* child = SceneManager::CreateObject();
+                    child->Deserialize(reader, childObject);
+                    AddChild(child);
+                }
+            }
+
+            if (ArchiveObject compArr = reader.ReadObject(object, "components"))
+            {
+                usize compArrSize = reader.ArrSize(compArr);
+
+                ArchiveObject compObj{};
+                for (usize i = 0; i < compArrSize; ++i)
+                {
+                    compObj = reader.Next(compArr, compObj);
+
+                    if (TypeHandler* typeHandler = Registry::FindTypeByName(reader.ReadString(compObj, "_type")))
+                    {
+                        Component& component = AddComponent(typeHandler);
+                        Serialization::Deserialize(typeHandler, reader, compObj, &component);
+                    }
                 }
             }
         }
-
         notificationDisabled = false;
     }
 
@@ -268,5 +302,26 @@ namespace Fyrion
         {
             child->Notify(type, userData);
         }
+    }
+
+    SceneObject* SceneObject::Clone() const
+    {
+        SceneObject* object = MemoryGlobals::GetDefaultAllocator().Alloc<SceneObject>();
+        object->SetUUID(UUID::RandomUUID());
+        object->SetName(GetName());
+        object->prototype = object->prototype ? prototype : asset;
+        object->parent = parent;
+
+        for (const SceneObject* child : children)
+        {
+            object->AddChild(child->Clone());
+        }
+
+        for (const Component* component : components)
+        {
+            object->CloneComponent(component);
+        }
+
+        return object;
     }
 }

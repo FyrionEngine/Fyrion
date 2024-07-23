@@ -40,6 +40,13 @@ namespace ImGui
         u32    beginPayloadItem{U32_MAX};
     };
 
+    struct AssetSelector
+    {
+        TypeID                  assetId;
+        VoidPtr                 userData;
+        FnAssetSelectorCallback callback;
+    };
+
     namespace
     {
         f32      scaleFactor = 1.0;
@@ -49,6 +56,7 @@ namespace ImGui
         ImGuiID                                    currentContentTable{U32_MAX};
         HashMap<usize, UniquePtr<DrawTypeContent>> drawTypes{};
         Array<FieldRendererFn>                     fieldRenders{};
+        Array<AssetSelector>                       assetSelectors;
     }
 
     struct InputTextCallback_UserData
@@ -973,7 +981,7 @@ namespace ImGui
         RegisterFieldRenderers();
     }
 
-    void DrawResourceSelection(DrawTypeContent* drawTypeContent)
+    void DrawAssetSelection(bool& showAssetSelection, TypeID assetType, VoidPtr userData, FnAssetSelectorCallback callback)
     {
         auto& style = ImGui::GetStyle();
         auto& io = ImGui::GetIO();
@@ -988,13 +996,13 @@ namespace ImGui
         if (!popupOpen)
         {
             popupOpen = true;
-            ImGui::OpenPopup("Resources");
+            ImGui::OpenPopup("Assets");
 
             ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
             ImGui::SetNextWindowSize(ImVec2(960 * ImGui::GetStyle().ScaleFactor, 540 * ImGui::GetStyle().ScaleFactor), ImGuiCond_Appearing);
         }
 
-        if (ImGui::BeginPopupModal("Resources", &drawTypeContent->showResourceSelection))
+        if (ImGui::BeginPopupModal("Assets", &showAssetSelection))
         {
             {
                 ImGui::StyleVar windowPadding2(ImGuiStyleVar_WindowPadding, originalPadding);
@@ -1035,16 +1043,12 @@ namespace ImGui
 
                             if (ImGui::DrawContentItem(contentItem))
                             {
-                                if (drawTypeContent->desc.callback)
-                                {
-                                    drawTypeContent->fieldShowSelection->SetValueAs(drawTypeContent->instance, nullptr);
-                                    drawTypeContent->desc.callback(drawTypeContent->desc, drawTypeContent->instance);
-                                }
-                                drawTypeContent->showResourceSelection = false;
+                                showAssetSelection = false;
+                                callback(userData, nullptr);
                             }
                         }
 
-                        for (Asset* asset : AssetDatabase::FindAssetsByType(drawTypeContent->resourceTypeSelection))
+                        for (Asset* asset : AssetDatabase::FindAssetsByType(assetType))
                         {
                             ImGui::ContentItemDesc contentItem{};
                             contentItem.ItemId = id;
@@ -1055,15 +1059,12 @@ namespace ImGui
 
                             if (ImGui::DrawContentItem(contentItem))
                             {
-                                drawTypeContent->fieldShowSelection->SetValueAs(drawTypeContent->instance, asset);
-                                drawTypeContent->desc.callback(drawTypeContent->desc, drawTypeContent->instance);
-                                drawTypeContent->showResourceSelection = false;
+                                showAssetSelection = false;
+                                callback(userData, asset);
                             }
 
                             id += 1000;
                         }
-
-
                         ImGui::EndContentTable();
                     }
                     ImGui::EndChild();
@@ -1074,7 +1075,7 @@ namespace ImGui
             ImGui::EndPopup();
         }
 
-        if (!drawTypeContent->showResourceSelection)
+        if (!showAssetSelection)
         {
             searchResoruceString.Clear();
             popupOpen = false;
@@ -1104,7 +1105,14 @@ namespace ImGui
 
             if (it.second->showResourceSelection)
             {
-                DrawResourceSelection(it.second.Get());
+                DrawAssetSelection(it.second->showResourceSelection,
+                                   it.second->resourceTypeSelection,
+                                   it.second.Get(), [](VoidPtr userData, Asset* asset)
+                                   {
+                                       DrawTypeContent* drawTypeContent = static_cast<DrawTypeContent*>(userData);
+                                       drawTypeContent->fieldShowSelection->SetValueAs(drawTypeContent->instance, asset);
+                                       drawTypeContent->desc.callback(drawTypeContent->desc, drawTypeContent->instance);
+                                   });
             }
 
             if (it.second->lastFrameUsage + 60 < frame)
@@ -1116,10 +1124,28 @@ namespace ImGui
                 toErase.EmplaceBack(it.first);
             }
         }
+
         for (u64 id : toErase)
         {
             drawTypes.Erase(id);
         }
+
+        if (!assetSelectors.Empty())
+        {
+            AssetSelector& selector = assetSelectors.Back();
+
+            bool show = true;
+            DrawAssetSelection(show, selector.assetId, selector.userData, selector.callback);
+            if (!show)
+            {
+                assetSelectors.PopBack();
+            }
+        }
+    }
+
+    void ShowAssetSelector(TypeID assetId, VoidPtr userData, FnAssetSelectorCallback callback)
+    {
+        assetSelectors.EmplaceBack(assetId, userData, callback);
     }
 
     void Render(RenderCommands& renderCommands)

@@ -19,7 +19,7 @@ namespace Fyrion
         bool         IsParentOfSelected(SceneObject& object) const;
         void         RenameObject(SceneObject& asset, StringView newName);
         void         DestroySelectedObjects();
-        void         CreateObject();
+        void         CreateObject(SceneObjectAsset* prototype = nullptr);
         bool         IsRootSelected() const;
         void         AddComponent(SceneObject& object, TypeHandler* typeHandler);
         void         ResetComponent(SceneObject& object, Component* component);

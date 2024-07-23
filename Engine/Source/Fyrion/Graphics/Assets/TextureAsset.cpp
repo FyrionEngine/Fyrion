@@ -18,9 +18,14 @@ namespace Fyrion
         return "Texture";
     }
 
-    void TextureAsset::SetImage(StringView path)
+    void TextureAsset::SetImagePath(StringView path)
     {
-        Image    image(path);
+        Image image(path);
+        SetImage(image);
+    }
+
+    void TextureAsset::SetImage(const Image& image)
+    {
         Span<u8> imgData = image.GetData();
 
         SaveBlob(data, imgData.Data(), imgData.Size());

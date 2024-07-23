@@ -14,9 +14,13 @@ namespace Fyrion
 
         static void RegisterType(NativeTypeHandler<DCCAsset>& type);
 
+        MaterialAsset* FindMaterialByName(const StringView& materialName);
+        MeshAsset*     FindMeshByName(const StringView& meshName);
+        TextureAsset*  FindTextureByName(const StringView& textureName);
+
     private:
-        Vec3                  scaleFactor{1.0, 1.0, 1.0};
-        bool                  mergeMaterials = true;
-        bool                  mergeMeshes = false;
+        Vec3 scaleFactor{1.0, 1.0, 1.0};
+        bool mergeMaterials = false;
+        bool mergeMeshes = false;
     };
 }

@@ -44,6 +44,11 @@ namespace Fyrion
             ImGui::SetNextItemOpen(true, ImGuiCond_Always);
         }
 
+        if (sceneObject.GetPrototype() != nullptr)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(143, 131, 34, 255));
+        }
+
         if (isSelected && renamingSelected)
         {
             ImVec2 cursorPos = ImGui::GetCursorPos();
@@ -92,6 +97,12 @@ namespace Fyrion
         {
             ImGui::TreeLeaf(treeId, nameCache.CStr(), treeFlags);
         }
+
+        if (sceneObject.GetPrototype() != nullptr)
+        {
+            ImGui::PopStyleColor();
+        }
+
 
         if (ImGui::BeginDragDropTarget())
         {
@@ -254,6 +265,10 @@ namespace Fyrion
 
     void SceneTreeWindow::AddSceneObjectFromAsset(const MenuItemEventData& eventData)
     {
+        ImGui::ShowAssetSelector(GetTypeID<SceneObjectAsset>(), eventData.drawData, [](VoidPtr userData, Asset* asset)
+        {
+            static_cast<SceneTreeWindow*>(userData)->sceneEditor.CreateObject(dynamic_cast<SceneObjectAsset*>(asset));
+        });
     }
 
     void SceneTreeWindow::AddComponent(const MenuItemEventData& eventData)

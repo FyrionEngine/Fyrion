@@ -80,7 +80,7 @@ namespace Fyrion
         static_cast<SceneEditor*>(userData)->ClearSelection();
     }
 
-    void SceneEditor::CreateObject()
+    void SceneEditor::CreateObject(SceneObjectAsset* prototype)
     {
         if (scene == nullptr) return;
 
@@ -90,7 +90,7 @@ namespace Fyrion
         {
             EditorTransaction* transaction = Editor::CreateTransaction();
             transaction->AddPreExecute(this, ClearSelectionStatic);
-            transaction->CreateAction<CreateSceneObjectAction>(*this, GetRootObject())->Commit();
+            transaction->CreateAction<CreateSceneObjectAction>(*this, GetRootObject(), prototype)->Commit();
         }
         else
         {
@@ -98,7 +98,7 @@ namespace Fyrion
             transaction->AddPreExecute(this, ClearSelectionStatic);
             for (const auto it : selectedObjects)
             {
-                transaction->CreateAction<CreateSceneObjectAction>(*this, reinterpret_cast<SceneObject*>(it.first));
+                transaction->CreateAction<CreateSceneObjectAction>(*this, reinterpret_cast<SceneObject*>(it.first), prototype);
             }
             onSceneObjectAssetSelection.Invoke(nullptr);
             selectedObjects.Clear();

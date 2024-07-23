@@ -29,6 +29,5 @@ namespace Fyrion
 
     private:
         SceneObject       object{this};
-        RenderGraphAsset* renderGraph = nullptr;
     };
 }

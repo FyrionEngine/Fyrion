@@ -13,6 +13,7 @@ namespace Fyrion
         TImage()
         {}
 
+        TImage(Span<const T> buffer);
         TImage(const StringView& file);
 
         bool Empty() const

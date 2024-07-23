@@ -4,7 +4,8 @@
 #include "Fyrion/Common.hpp"
 #include "Fyrion/Core/UUID.hpp"
 
-namespace Fyrion {
+namespace Fyrion
+{
     class RenderGraph;
 }
 
@@ -13,17 +14,12 @@ namespace Fyrion
     class SceneObjectAsset;
     class TypeHandler;
 
-    struct SceneGlobals
-    {
-
-    };
-
     class FY_API SceneObject final
     {
     public:
         FY_NO_COPY_CONSTRUCTOR(SceneObject);
 
-        SceneObject(SceneGlobals* globals);
+        SceneObject();
         SceneObject(SceneObjectAsset* asset);
         ~SceneObject();
 
@@ -40,6 +36,7 @@ namespace Fyrion
         void               RemoveChildAt(usize pos);
         Component&         AddComponent(TypeID typeId);
         Component&         AddComponent(TypeHandler* typeHandler);
+        Component&         CloneComponent(const Component* component);
         void               RemoveComponent(Component* component);
         Span<Component*>   GetComponents() const;
         Component*         GetComponent(TypeID typeId) const;
@@ -49,7 +46,7 @@ namespace Fyrion
         bool               IsAlive() const;
         void               SetAlive(bool p_alive);
         void               Notify(i64 type, VoidPtr userData);
-
+        SceneObject*       Clone() const;
 
         template <typename T, Traits::EnableIf<Traits::IsBaseOf<Component, T>>* = nullptr>
         T& AddComponent()
@@ -65,17 +62,17 @@ namespace Fyrion
 
         static void RegisterType(NativeTypeHandler<SceneObject>& type);
 
-        SceneGlobals*       globals{};
     private:
         bool                root = false;
         SceneObjectAsset*   asset{};
+        SceneObjectAsset*   prototype{};
         String              name;
         UUID                uuid;
         Array<Component*>   components{};
         Array<SceneObject*> children{};
         SceneObject*        parent = nullptr;
         bool                alive = true;
-        bool notificationDisabled = false;
+        bool                notificationDisabled = false;
     };
 
     template <>
@@ -87,6 +84,7 @@ namespace Fyrion
         {
             writer.WriteValue(object, name, value->Serialize(writer));
         }
+
         static void Read(ArchiveReader& reader, ArchiveObject object, StringView name, SceneObject* value)
         {
             value->Deserialize(reader, reader.ReadObject(object, name));

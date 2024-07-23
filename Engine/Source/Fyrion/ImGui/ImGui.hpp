@@ -11,6 +11,7 @@ using namespace Fyrion;
 
 namespace Fyrion
 {
+    class Asset;
     class TypeHandler;
     class FieldHandler;
 }
@@ -35,6 +36,7 @@ namespace ImGui
 
     struct DrawTypeDesc;
     typedef void (*DrawTypeCallbackFn)(DrawTypeDesc& desc, VoidPtr newValue);
+    typedef void (*FnAssetSelectorCallback)(VoidPtr userData, Asset* asset);
 
     struct ContentItemDesc
     {
@@ -148,6 +150,8 @@ namespace ImGui
     FY_API StringView ContentRenameString();
     FY_API void       EndContentTable();
 
+
+    FY_API void ShowAssetSelector(TypeID assetId, VoidPtr userData, FnAssetSelectorCallback callback);
 
     FY_API void AddFieldRenderer(FieldRendererFn fieldRendererFn);
     FY_API void ClearDrawType(usize itemId);

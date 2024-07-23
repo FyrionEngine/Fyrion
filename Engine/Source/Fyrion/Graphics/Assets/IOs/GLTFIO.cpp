@@ -1,6 +1,7 @@
 #include <cgltf.h>
 
 #include "Fyrion/Asset/AssetTypes.hpp"
+#include "Fyrion/Core/Image.hpp"
 #include "Fyrion/Core/Logger.hpp"
 #include "Fyrion/Graphics/Assets/DCCAsset.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
@@ -10,6 +11,9 @@ namespace Fyrion
 {
     struct FY_API GLTFIO : AssetIO
     {
+        using ImportedTextureMap = HashMap<usize, TextureAsset*>;
+        using ImportedMaterialMap = HashMap<usize, MaterialAsset*>;
+
         FY_BASE_TYPES(AssetIO);
 
         Logger& logger = Logger::GetLogger("Fyrion::GLTFIO");
@@ -26,21 +30,26 @@ namespace Fyrion
             return AssetDatabase::Create<DCCAsset>(UUID::RandomUUID());
         }
 
-        void LoadGltfMesh(DCCAsset* dccAsset, cgltf_data* data, cgltf_mesh& gltfMesh, u32 index)
+        void LoadGltfMesh(DCCAsset* dccAsset, ImportedMaterialMap& materialMap, cgltf_data* data, cgltf_mesh& gltfMesh, u32 index)
         {
             String name = gltfMesh.name != nullptr ? gltfMesh.name : String{"Mesh_"}.Append(index);
 
-            Array<VertexStride>   vertices{};
-            Array<u32>            indices{};
-            Array<MeshPrimitive>  primitives{};
-            Array<MaterialAsset*> materials{};
-            bool                  missingNormals{false};
-            bool                  missingTangents{false};
+            Array<VertexStride>    vertices;
+            Array<u32>             indices;
+            Array<MeshPrimitive>   primitives;
+            Array<MaterialAsset*>  materials;
+            Array<cgltf_material*> gltfMaterials;
+            bool                   missingNormals = false;
+            bool                   missingTangents = false;
 
-            MeshAsset* meshAsset =  AssetDatabase::Create<MeshAsset>();
-            meshAsset->SetName(name);
-            meshAsset->SetUUID(UUID::RandomUUID());
-            meshAsset->SetOwner(dccAsset);
+            MeshAsset* meshAsset = dccAsset->FindMeshByName(name);
+            if (meshAsset == nullptr)
+            {
+                meshAsset = AssetDatabase::Create<MeshAsset>();
+                meshAsset->SetName(name);
+                meshAsset->SetUUID(UUID::RandomUUID());
+                meshAsset->SetOwner(dccAsset);
+            }
 
             for (u32 p = 0; p < gltfMesh.primitives_count; ++p)
             {
@@ -180,25 +189,63 @@ namespace Fyrion
                 }
 
                 u32 materialIndex = 0;
-                for (unsigned int m = 0; m < data->materials_count; m++)
+
+                if (gltfPrimitive.material != nullptr)
                 {
-                    if (&data->materials[m] == gltfPrimitive.material)
+                    bool found = false;
+                    for (auto m = 0; m < gltfMaterials.Size(); ++m)
                     {
-                        materialIndex = m;
-                        break;
+                        if (gltfMaterials[m] == gltfPrimitive.material)
+                        {
+                            materialIndex = m;
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (!found)
+                    {
+                        if (auto it =  materialMap.Find(reinterpret_cast<usize>(gltfPrimitive.material)))
+                        {
+                            materialIndex = materials.Size();
+
+                            materials.EmplaceBack(it->second);
+                            gltfMaterials.EmplaceBack(gltfPrimitive.material);
+                        }
                     }
                 }
-
-                u32 materialMeshIndex = U32_MAX;
 
                 primitives.EmplaceBack(MeshPrimitive{
                     .firstIndex = firstIndex,
                     .indexCount = indexCount,
-                    .materialIndex = materialMeshIndex != U32_MAX ? materialMeshIndex : 0
+                    .materialIndex = materialIndex
                 });
             }
 
             meshAsset->SetData(vertices, indices, primitives, materials, missingNormals, missingTangents);
+        }
+
+        TextureAsset* FindTexture(const ImportedTextureMap& textureMap, DCCAsset* dccAsset, cgltf_texture* texture)
+        {
+            if (texture->image->uri != nullptr)
+            {
+                String texturePath = String(dccAsset->GetDirectory()->GetPath()).Append("/").Append(StringView{texture->image->uri});
+
+                TextureAsset* textureAsset = AssetDatabase::FindByPath<TextureAsset>(texturePath);
+                if (textureAsset == nullptr)
+                {
+                    logger.Error("texture {} not found", texture->image->uri);
+                }
+
+                return textureAsset;
+            }
+
+            if (auto it = textureMap.Find(reinterpret_cast<usize>(texture)))
+            {
+                return it->second;
+            }
+
+            return nullptr;
         }
 
         void ImportAsset(StringView path, Asset* asset) override
@@ -256,9 +303,99 @@ namespace Fyrion
                 return;
             }
 
+            ImportedTextureMap textureMap;
+            ImportedMaterialMap materialMap;
+
+            for (i32 t = 0; t < data->textures_count; ++t)
+            {
+                const cgltf_texture& texture = data->textures[t];
+
+                if (texture.image->buffer_view != nullptr)
+                {
+                    String textureName = texture.name != nullptr ? texture.name : String{"Texture_"}.Append(t);
+                    TextureAsset* textureAsset = dccAsset->FindTextureByName(textureName);
+                    if (textureAsset == nullptr)
+                    {
+                        textureAsset = AssetDatabase::Create<TextureAsset>();
+                        textureAsset->SetName(textureName);
+                        textureAsset->SetUUID(UUID::RandomUUID());
+                        textureAsset->SetOwner(dccAsset);
+                    }
+
+                    Span<const u8> imageBuffer{
+                        static_cast<const u8*>(texture.image->buffer_view->buffer->data) + texture.image->buffer_view->offset,
+                        static_cast<const u8*>(texture.image->buffer_view->buffer->data) + texture.image->buffer_view->offset + texture.image->buffer_view->size
+                    };
+
+                    Image image{imageBuffer};
+                    textureAsset->SetImage(image);
+
+                    textureMap.Insert(reinterpret_cast<usize>(&texture), textureAsset);
+                }
+            }
+
+            for (int m = 0; m < data->materials_count; ++m)
+            {
+                const cgltf_material& material = data->materials[m];
+                String                materialName = material.name != nullptr ? material.name : String{"Material_"}.Append(m);
+
+                MaterialAsset* materialAsset = dccAsset->FindMaterialByName(materialName);
+                if (materialAsset == nullptr)
+                {
+                    materialAsset = AssetDatabase::Create<MaterialAsset>();
+                    materialAsset->SetName(materialName);
+                    materialAsset->SetUUID(UUID::RandomUUID());
+                    materialAsset->SetOwner(dccAsset);
+                }
+
+                if (material.has_pbr_metallic_roughness)
+                {
+                    materialAsset->SetBaseColor(Color::FromVec4(material.pbr_metallic_roughness.base_color_factor));
+                    materialAsset->SetUvScale(Vec2{material.pbr_metallic_roughness.base_color_texture.scale, material.pbr_metallic_roughness.base_color_texture.scale});
+
+                    if (material.pbr_metallic_roughness.base_color_texture.texture)
+                    {
+                        materialAsset->SetBaseColorTexture(FindTexture(textureMap, dccAsset, material.pbr_metallic_roughness.base_color_texture.texture));
+                    }
+
+                    if (material.pbr_metallic_roughness.metallic_roughness_texture.texture)
+                    {
+                        materialAsset->SetMetallicRoughnessTexture(FindTexture(textureMap, dccAsset, material.pbr_metallic_roughness.metallic_roughness_texture.texture));
+                    }
+                }
+                else if (material.has_pbr_specular_glossiness)
+                {
+                    materialAsset->SetBaseColor(Color::FromVec4(material.pbr_specular_glossiness.diffuse_factor));
+                }
+
+                materialAsset->SetAlphaCutoff(material.alpha_cutoff);
+
+                if (material.normal_texture.texture)
+                {
+                    materialAsset->SetNormalTexture(FindTexture(textureMap, dccAsset, material.normal_texture.texture));
+                }
+
+                if (material.occlusion_texture.texture)
+                {
+                    materialAsset->SetAoTexture(FindTexture(textureMap, dccAsset, material.occlusion_texture.texture));
+                }
+
+                if (material.emissive_texture.texture)
+                {
+                    materialAsset->SetEmissiveTexture(FindTexture(textureMap, dccAsset, material.emissive_texture.texture));
+                }
+
+                materialMap.Insert(reinterpret_cast<usize>(&material), materialAsset);
+            }
+
             for (u32 m = 0; m < data->meshes_count; ++m)
             {
-                LoadGltfMesh(dccAsset, data, data->meshes[m], m);
+                LoadGltfMesh(dccAsset, materialMap, data, data->meshes[m], m);
+            }
+
+            for (u32 c = 0; c < data->scenes_count; ++c)
+            {
+                cgltf_scene& scene = data->scenes[c];
             }
 
             cgltf_free(data);

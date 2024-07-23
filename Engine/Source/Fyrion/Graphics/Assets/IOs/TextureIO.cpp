@@ -22,7 +22,7 @@ namespace Fyrion
         void ImportAsset(StringView path, Asset* asset) override
         {
             TextureAsset* textureAsset = asset->Cast<TextureAsset>();
-            textureAsset->SetImage(path);
+            textureAsset->SetImagePath(path);
         }
     };
 

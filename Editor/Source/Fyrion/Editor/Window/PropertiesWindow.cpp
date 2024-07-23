@@ -134,15 +134,14 @@ namespace Fyrion
 
         ImGui::EndHorizontal();
 
-        if (object.GetPrototype() != nullptr && !root)
+        if (object.GetPrototype() != nullptr)
         {
             ImGui::BeginHorizontal(9999, ImVec2(width, size));
             ImGui::Spring(1.f);
 
             if (ImGui::BorderedButton("Open Prototype", ImVec2((width * 2) / 3, size)))
             {
-                int a = 0;
-                //openAsset = entityData.rid;
+                //TODO defer open scene.
             }
 
             ImGui::Spring(1.f);

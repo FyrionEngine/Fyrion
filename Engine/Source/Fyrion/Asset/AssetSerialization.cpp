@@ -96,7 +96,7 @@ namespace Fyrion
 
     void JsonAssetWriter::AddString(ArchiveObject array, const StringView& value)
     {
-        yyjson_mut_arr_add_strn(doc, static_cast<yyjson_mut_val*>(array.handler), value.CStr(), value.Size());
+        yyjson_mut_arr_add_strncpy(doc, static_cast<yyjson_mut_val*>(array.handler), value.CStr(), value.Size());
     }
 
     void JsonAssetWriter::AddValue(ArchiveObject array, ArchiveObject value)

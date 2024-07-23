@@ -135,7 +135,7 @@ namespace Fyrion
 
         {
             auto itByType = assetsByType.Find(typeId);
-            if(itByType == assetsByType.end())
+            if (itByType == assetsByType.end())
             {
                 itByType = assetsByType.Emplace(typeId, {}).first;
             }
@@ -436,6 +436,20 @@ namespace Fyrion
     Asset* AssetDatabase::ImportAsset(AssetDirectory* directory, const StringView& path)
     {
         return nullptr;
+    }
+
+    bool AssetDatabase::CanReimportAsset(Asset* asset)
+    {
+        return importers.Find(asset->GetExtension()) != importers.end();
+    }
+
+    void AssetDatabase::ReimportAsset(Asset* asset)
+    {
+        if (auto importer = importers.Find(asset->GetExtension()))
+        {
+            asset->Modify();
+            importer->second->ImportAsset(asset->GetAbsolutePath(), asset);
+        }
     }
 
     void AssetDatabase::DestroyAssets()

@@ -71,6 +71,8 @@ namespace Fyrion
 
         virtual void SetName(StringView p_name);
         virtual void SetExtension(StringView p_extension);
+        StringView   GetExtension() const;
+
 
         bool IsActive() const
         {
@@ -100,7 +102,6 @@ namespace Fyrion
         friend class AssetDatabase;
         friend class AssetDirectory;
 
-        static void RegisterType(NativeTypeHandler<Asset>& type);
 
         template <typename T, Traits::EnableIf<Traits::IsBaseOf<Asset, T>>* = nullptr>
         T* Cast()
@@ -112,6 +113,7 @@ namespace Fyrion
         usize GetBlobSize(Blob blob) const;
         void  LoadBlob(Blob blob, VoidPtr, usize dataSize) const;
 
+        Span<Asset*> GetChildrenAssets() const;
 
         Asset*       GetPhysicalAsset();
         const Asset* GetPhysicalAsset() const;
@@ -137,6 +139,9 @@ namespace Fyrion
         bool            active = true;
 
         void ValidateName();
+
+    public:
+        static void RegisterType(NativeTypeHandler<Asset>& type);
     };
 
     struct AssetApi

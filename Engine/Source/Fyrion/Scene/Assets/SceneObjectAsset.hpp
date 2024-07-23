@@ -18,16 +18,25 @@ namespace Fyrion
             return "Scene Object";
         }
 
-        SceneObject& GetObject()
+        SceneObject* GetObject();
+
+        StringView GetDataExtesion() override
         {
-            return object;
+            return FY_SCENE_EXTENSION;
         }
 
-        void SetName(StringView p_name) override;
+        void DestroySceneObject();
+
+        void          DeserializeData(ArchiveReader& reader, ArchiveObject object) override;
+        ArchiveObject SerializeData(ArchiveWriter& writer) const override;
+
+        void LoadData() override;
+        void SaveData() override;
 
         static void RegisterType(NativeTypeHandler<SceneObjectAsset>& type);
 
     private:
-        SceneObject       object{this};
+        SharedPtr<SceneObject> object{};
+        bool                   pendingDestroy = false;
     };
 }

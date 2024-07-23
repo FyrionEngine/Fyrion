@@ -343,6 +343,15 @@ namespace Fyrion
                         FileSystem::Remove(assetDataDirectory);
                     }
 
+                    if (!asset->GetDataExtesion().Empty())
+                    {
+                        String dataPath = Path::Join(Path::Parent(asset->GetAbsolutePath()), Path::Name(asset->GetAbsolutePath()), asset->GetDataExtesion());
+                        if (FileSystem::GetFileStatus(dataPath).exists)
+                        {
+                            FileSystem::Remove(dataPath);
+                        }
+                    }
+
                     FileSystem::Remove(asset->GetAbsolutePath());
                     logger.Debug("Asset {} removed on {} ", asset->GetPath(), asset->GetAbsolutePath());
                     asset->absolutePath = "";
@@ -369,7 +378,10 @@ namespace Fyrion
             else if (asset->IsModified())
             {
                 String assetPath = Path::Join(directoryPath, asset->GetName(), asset->extension);
-                if (assetPath != asset->GetAbsolutePath() && oldPathExists)
+
+                const bool moved = assetPath != asset->GetAbsolutePath();
+
+                if (moved && oldPathExists)
                 {
                     String infoFile = Path::Join(Path::Parent(asset->GetAbsolutePath()), asset->GetName(), FY_INFO_EXTENSION);
                     if (FileSystem::GetFileStatus(infoFile).exists)
@@ -378,6 +390,16 @@ namespace Fyrion
                     }
                     logger.Debug("Asset {} moved from {} to {} ", asset->GetPath(), asset->GetAbsolutePath(), assetPath);
                     FY_ASSERT(FileSystem::Rename(asset->GetAbsolutePath(), assetPath), "something went wrong");
+                }
+
+                if (moved && !asset->GetDataExtesion().Empty())
+                {
+                    String dataPath = Path::Join(Path::Parent(asset->GetAbsolutePath()), Path::Name(asset->GetAbsolutePath()), asset->GetDataExtesion());
+                    if (FileSystem::GetFileStatus(dataPath).exists)
+                    {
+                        String newDataPath = Path::Join(Path::Parent(assetPath), Path::Name(assetPath), asset->GetDataExtesion());
+                        FileSystem::Rename(dataPath, newDataPath);
+                    }
                 }
 
                 String serializedPath = asset->extension == FY_ASSET_EXTENSION ? assetPath : Path::Join(directoryPath, asset->GetName(), FY_INFO_EXTENSION);
@@ -389,6 +411,7 @@ namespace Fyrion
                 FileSystem::CloseFile(handler);
 
                 asset->absolutePath = assetPath;
+                asset->SaveData();
             }
             asset->loadedVersion = asset->currentVersion;
         }

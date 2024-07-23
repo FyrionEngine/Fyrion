@@ -12,7 +12,7 @@ namespace Fyrion
     {
         if (scene)
         {
-            return &scene->GetObject();
+            return scene->GetObject();
         }
         return nullptr;
     }
@@ -130,7 +130,17 @@ namespace Fyrion
             rootObject->Notify(SceneNotifications_OnDeactivate, nullptr);
         }
 
+        if (scene)
+        {
+            scene->DestroySceneObject();
+        }
+
         scene = asset;
+
+        if (scene)
+        {
+            scene->LoadData();
+        }
 
         if (SceneObject* rootObject = GetRootObject())
         {
@@ -148,7 +158,7 @@ namespace Fyrion
     {
         for (const auto it : selectedObjects)
         {
-            if (reinterpret_cast<SceneObject*>(it.first) == &scene->GetObject())
+            if (reinterpret_cast<SceneObject*>(it.first) == scene->GetObject())
             {
                 return true;
             }

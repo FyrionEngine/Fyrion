@@ -78,4 +78,12 @@ namespace Fyrion
         CloseFile(fileHandler);
         return ret;
     }
+
+    void FileSystem::SaveFileAsString(const StringView& path, const StringView& string)
+    {
+        FileHandler fileHandler = OpenFile(path, AccessMode::WriteOnly);
+        WriteFile(fileHandler, string.Data(), string.Size());
+        CloseFile(fileHandler);
+    }
+
 }

@@ -44,7 +44,7 @@ namespace Fyrion
     Component& SceneObject::CloneComponent(const Component* originComponent)
     {
         TypeHandler* typeHandler = originComponent->typeHandler;
-        Component* component = typeHandler->Cast<Component>(typeHandler->NewInstance());
+        Component*   component = typeHandler->Cast<Component>(typeHandler->NewInstance());
         typeHandler->Copy(originComponent, component);
 
         component->typeHandler = typeHandler;
@@ -90,12 +90,24 @@ namespace Fyrion
 
     StringView SceneObject::GetName() const
     {
+        if (asset)
+        {
+            return asset->GetName();
+        }
+
         return name;
     }
 
     void SceneObject::SetName(const StringView& p_name)
     {
-        name = p_name;
+        if (asset)
+        {
+            asset->SetName(p_name);
+        }
+        else
+        {
+            name = p_name;
+        }
     }
 
     SceneObject* SceneObject::GetParent() const
@@ -130,7 +142,7 @@ namespace Fyrion
 
     SceneObjectAsset* SceneObject::GetPrototype() const
     {
-        if(prototype)
+        if (prototype)
         {
             return prototype;
         }

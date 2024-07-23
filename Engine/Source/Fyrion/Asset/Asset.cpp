@@ -1,4 +1,6 @@
 #include "Asset.hpp"
+
+#include "AssetSerialization.hpp"
 #include "AssetTypes.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
@@ -241,6 +243,54 @@ namespace Fyrion
             owner = p_owner;
             owner->assets.EmplaceBack(this);
         }
+    }
+
+    void Asset::LoadData()
+    {
+        StringView dataExtension = GetDataExtesion();
+        if (!dataExtension.Empty())
+        {
+            if (!absolutePath.Empty())
+            {
+                String buffer = FileSystem::ReadFileAsString(Path::Join(Path::Parent(absolutePath), Path::Name(absolutePath), dataExtension));
+                if (!buffer.Empty())
+                {
+                    JsonAssetReader reader(buffer);
+                    DeserializeData(reader, reader.ReadObject());
+                }
+            }
+        }
+    }
+
+    void Asset::SaveData()
+    {
+        StringView dataExtension = GetDataExtesion();
+        if (!dataExtension.Empty())
+        {
+            if (!absolutePath.Empty())
+            {
+                String dataPath = Path::Join(Path::Parent(absolutePath), Path::Name(absolutePath), dataExtension);
+                JsonAssetWriter writer{};
+                if (ArchiveObject object = SerializeData(writer))
+                {
+                    FileSystem::SaveFileAsString(dataPath, JsonAssetWriter::Stringify(object));
+                }
+            }
+        }
+    }
+
+    StringView Asset::GetDataExtesion()
+    {
+        return {};
+    }
+
+    void Asset::DeserializeData(ArchiveReader& reader, ArchiveObject object)
+    {
+    }
+
+    ArchiveObject Asset::SerializeData(ArchiveWriter& writer) const
+    {
+        return {};
     }
 
     void Asset::RegisterType(NativeTypeHandler<Asset>& type)

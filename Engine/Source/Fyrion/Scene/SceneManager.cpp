@@ -6,7 +6,6 @@
 #include "Assets/SceneObjectAsset.hpp"
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Core/Allocator.hpp"
-#include "Fyrion/Graphics/RenderGraph.hpp"
 
 
 namespace Fyrion
@@ -56,7 +55,7 @@ namespace Fyrion
     {
         if (asset)
         {
-            return asset->GetObject().Clone();
+            return asset->GetObject()->Clone();
         }
         return MemoryGlobals::GetDefaultAllocator().Alloc<SceneObject>();
     }

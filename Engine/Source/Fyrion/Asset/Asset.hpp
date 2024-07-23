@@ -119,7 +119,13 @@ namespace Fyrion
         const Asset* GetPhysicalAsset() const;
 
         Asset* GetOwner() const;
-        void   SetOwner(Asset*);
+        void   SetOwner(Asset* owner);
+
+        virtual void          LoadData();
+        virtual void          SaveData();
+        virtual StringView    GetDataExtesion();
+        virtual void          DeserializeData(ArchiveReader& reader, ArchiveObject object);
+        virtual ArchiveObject SerializeData(ArchiveWriter& writer) const;
 
     private:
         usize           index{};

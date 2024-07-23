@@ -121,7 +121,7 @@ namespace Fyrion
         Asset* GetOwner() const;
         void   SetOwner(Asset* owner);
 
-        virtual void          LoadData();
+        virtual bool          LoadData();
         virtual void          SaveData();
         virtual StringView    GetDataExtesion();
         virtual void          DeserializeData(ArchiveReader& reader, ArchiveObject object);

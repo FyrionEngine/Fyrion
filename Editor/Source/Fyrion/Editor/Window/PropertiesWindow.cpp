@@ -164,6 +164,7 @@ namespace Fyrion
 
             if (open)
             {
+                ImGui::BeginDisabled(object.GetPrototype() != nullptr && !component->prototypeOverride);
                 ImGui::Indent();
                 ImGui::DrawType(ImGui::DrawTypeDesc{
                     .itemId = reinterpret_cast<usize>(component),
@@ -177,7 +178,9 @@ namespace Fyrion
                     },
                 });
                 ImGui::Unindent();
+                ImGui::EndDisabled();
             }
+
         }
 
         if (addComponent)
@@ -227,6 +230,14 @@ namespace Fyrion
             {
                 m_sceneEditor.ResetComponent(object, selectedComponent);
                 ImGui::CloseCurrentPopup();
+            }
+
+            if (object.GetPrototype() != nullptr && !selectedComponent->prototypeOverride)
+            {
+                if (ImGui::MenuItem("Override"))
+                {
+                    selectedComponent->prototypeOverride = true;
+                }
             }
 
             if (ImGui::MenuItem("Remove"))

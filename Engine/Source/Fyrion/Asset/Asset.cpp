@@ -245,7 +245,7 @@ namespace Fyrion
         }
     }
 
-    void Asset::LoadData()
+    bool Asset::LoadData()
     {
         StringView dataExtension = GetDataExtesion();
         if (!dataExtension.Empty())
@@ -257,9 +257,11 @@ namespace Fyrion
                 {
                     JsonAssetReader reader(buffer);
                     DeserializeData(reader, reader.ReadObject());
+                    return true;
                 }
             }
         }
+        return false;
     }
 
     void Asset::SaveData()

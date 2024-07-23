@@ -10,7 +10,10 @@ namespace Fyrion
     {
         if (!object)
         {
-            object = SharedPtr(MemoryGlobals::GetDefaultAllocator().Alloc<SceneObject>(this));
+            if (!LoadData())
+            {
+                object = SharedPtr(MemoryGlobals::GetDefaultAllocator().Alloc<SceneObject>(this));
+            }
         }
         pendingDestroy = false;
         return object.Get();
@@ -46,10 +49,10 @@ namespace Fyrion
         return {};
     }
 
-    void SceneObjectAsset::LoadData()
+    bool SceneObjectAsset::LoadData()
     {
         pendingDestroy = false;
-        Asset::LoadData();
+        return Asset::LoadData();
     }
 
     void SceneObjectAsset::SaveData()

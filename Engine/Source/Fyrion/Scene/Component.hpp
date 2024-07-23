@@ -12,6 +12,7 @@ namespace Fyrion
     public:
         TypeHandler* typeHandler = nullptr;
         SceneObject* object = nullptr;
+        bool prototypeOverride = false;
 
         virtual ~Component() = default;
 

@@ -30,7 +30,7 @@ namespace Fyrion
         void          DeserializeData(ArchiveReader& reader, ArchiveObject object) override;
         ArchiveObject SerializeData(ArchiveWriter& writer) const override;
 
-        void LoadData() override;
+        bool LoadData() override;
         void SaveData() override;
 
         static void RegisterType(NativeTypeHandler<SceneObjectAsset>& type);

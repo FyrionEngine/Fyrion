@@ -252,41 +252,43 @@ namespace Fyrion
             uuid = UUID::FromString(uuidStr);
         }
 
-        if (StringView prototypeStr = reader.ReadString(object, "prototype"); !prototypeStr.Empty())
+        if (ArchiveObject childrenArr = reader.ReadObject(object, "children"))
         {
-            prototype = AssetDatabase::Create<SceneObjectAsset>(UUID::FromString(prototypeStr));
-        }
-        else
-        {
-            if (ArchiveObject childrenArr = reader.ReadObject(object, "children"))
+            usize childrenArrSize = reader.ArrSize(childrenArr);
+
+            ArchiveObject childObject{};
+            for (usize i = 0; i < childrenArrSize; ++i)
             {
-                usize childrenArrSize = reader.ArrSize(childrenArr);
+                childObject = reader.Next(childrenArr, childObject);
 
-                ArchiveObject childObject{};
-                for (usize i = 0; i < childrenArrSize; ++i)
+                SceneObject* child;
+                if (StringView prototypeStr = reader.ReadString(childObject, "prototype"); !prototypeStr.Empty())
                 {
-                    childObject = reader.Next(childrenArr, childObject);
-
-                    SceneObject* child = SceneManager::CreateObject();
-                    child->Deserialize(reader, childObject);
-                    AddChild(child);
+                    child = SceneManager::CreateObject(AssetDatabase::FindById<SceneObjectAsset>(UUID::FromString(prototypeStr)));
                 }
-            }
-
-            if (ArchiveObject compArr = reader.ReadObject(object, "components"))
-            {
-                usize compArrSize = reader.ArrSize(compArr);
-
-                ArchiveObject compObj{};
-                for (usize i = 0; i < compArrSize; ++i)
+                else
                 {
-                    compObj = reader.Next(compArr, compObj);
+                    child = SceneManager::CreateObject();
+                }
 
-                    if (TypeHandler* typeHandler = Registry::FindTypeByName(reader.ReadString(compObj, "_type")))
-                    {
-                        Component& component = AddComponent(typeHandler);
-                        Serialization::Deserialize(typeHandler, reader, compObj, &component);
-                    }
+                child->Deserialize(reader, childObject);
+                AddChild(child);
+            }
+        }
+
+        if (ArchiveObject compArr = reader.ReadObject(object, "components"))
+        {
+            usize compArrSize = reader.ArrSize(compArr);
+
+            ArchiveObject compObj{};
+            for (usize i = 0; i < compArrSize; ++i)
+            {
+                compObj = reader.Next(compArr, compObj);
+
+                if (TypeHandler* typeHandler = Registry::FindTypeByName(reader.ReadString(compObj, "_type")))
+                {
+                    Component& component = AddComponent(typeHandler);
+                    Serialization::Deserialize(typeHandler, reader, compObj, &component);
                 }
             }
         }

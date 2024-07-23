@@ -15,6 +15,7 @@ namespace Fyrion::Input
     FY_API bool IsMouseReleased(MouseButton mouseButton);
     FY_API Vec2 GetMousePosition();
     FY_API bool IsMouseMoving();
+    FY_API void SetCursorEnabled(bool enabled);
 
     FY_API void RegisterInputEvent(InputEvent inputEvent);
 }

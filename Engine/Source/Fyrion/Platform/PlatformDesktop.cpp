@@ -22,6 +22,7 @@ namespace Fyrion
     {
         Logger&                   logger = Logger::GetLogger("Fyrion::Platform");
         PFN_vkGetInstanceProcAddr vulkanLoader = nullptr;
+        GLFWcursor*               glfwCursors[10] = {nullptr};
     }
 
     namespace Platform
@@ -60,10 +61,7 @@ namespace Fyrion
             Input::RegisterInputEvent(inputEvent);
         }
 
-        void ScrollCallback(GLFWwindow* glfwWindow, double xOffset, double yOffset)
-        {
-
-        }
+        void ScrollCallback(GLFWwindow* glfwWindow, double xOffset, double yOffset) {}
     }
 
 
@@ -82,6 +80,12 @@ namespace Fyrion
 
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+
+        glfwCursors[(i32)MouseCursor::Arrow]        = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
+        glfwCursors[(i32)MouseCursor::TextInput]    = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
+        glfwCursors[(i32)MouseCursor::ResizeWE]     = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
+        glfwCursors[(i32)MouseCursor::ResizeNS]     = glfwCreateStandardCursor(GLFW_VRESIZE_CURSOR);
+        glfwCursors[(i32)MouseCursor::Hand]         = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
 
         Platform::InitStyle();
 
@@ -191,6 +195,21 @@ namespace Fyrion
     void Platform::SetClipboardString(Window window, StringView string)
     {
         glfwSetClipboardString((GLFWwindow*)window.handler, string.CStr());
+    }
+
+    void Platform::SetCursor(Window window, MouseCursor mouseCursor)
+    {
+        GLFWwindow* glfwWindow = (GLFWwindow*)window.handler;
+
+        if (mouseCursor != MouseCursor::None)
+        {
+            glfwSetCursor(glfwWindow, glfwCursors[static_cast<i32>(mouseCursor)]);
+            glfwSetInputMode(glfwWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        }
+        else
+        {
+            glfwSetInputMode(glfwWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        }
     }
 
     f64 Platform::GetElapsedTime()

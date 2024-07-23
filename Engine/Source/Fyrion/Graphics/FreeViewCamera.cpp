@@ -17,7 +17,7 @@ namespace Fyrion
             {
                 Vec2 mousePos = Input::GetMousePosition();
 
-               // Input::SetCursorEnabled(false);
+                Input::SetCursorEnabled(false);
 
                 lastX = mousePos.x;
                 lastY = mousePos.y;
@@ -102,7 +102,7 @@ namespace Fyrion
             lastX = 0;
             lastY = 0;
             firstMouse = true;
-            //Input::SetCursorEnabled(true);
+            Input::SetCursorEnabled(true);
         }
     }
 

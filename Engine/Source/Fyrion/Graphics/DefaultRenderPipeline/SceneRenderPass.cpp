@@ -26,7 +26,7 @@ namespace Fyrion
 
         PipelineState pipelineState{};
         BindingSet*   bindingSet{};
-        MeshAsset*    mesh;
+        MeshAsset*    mesh = nullptr;
 
         void Init() override
         {

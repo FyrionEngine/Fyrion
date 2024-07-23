@@ -1,6 +1,7 @@
 #include "SceneViewWindow.hpp"
 
 #include "Fyrion/Engine.hpp"
+#include "Fyrion/Core/Logger.hpp"
 #include "Fyrion/Editor/Editor.hpp"
 #include "Fyrion/Editor/Editor/SceneEditor.hpp"
 #include "Fyrion/Graphics/RenderGraph.hpp"
@@ -147,21 +148,25 @@ namespace Fyrion
                 ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
             }
 
-            movingScene = !windowStartedSimulation && ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) && ImGui::IsMouseDown(ImGuiMouseButton_Right);
+            if (!movingScene)
+            {
+                movingScene = !windowStartedSimulation && ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) && Input::IsMouseDown(MouseButton::Right);
+            }
 
             if (movingScene)
             {
-                freeViewCamera.SetActive(Input::IsMouseDown(MouseButton::Right));
-                freeViewCamera.Process(Engine::DeltaTime());
-                movingScene = Input::IsMouseDown(MouseButton::Right);
+                bool rightDown = Input::IsMouseDown(MouseButton::Right);
+                freeViewCamera.SetActive(rightDown);
+                movingScene = rightDown;
             }
+
+            freeViewCamera.Process(Engine::DeltaTime());
 
             auto diffCursor = cursor - initCursor;
             size -= diffCursor;
             Rect bb{(i32)cursor.x, (i32)cursor.y, u32(cursor.x + size.x), u32(cursor.y + size.y)};
 
             Extent extent = {static_cast<u32>(size.x), static_cast<u32>(size.y)};
-
 
             if (!renderGraph)
             {

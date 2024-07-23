@@ -3,6 +3,7 @@
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Core/Event.hpp"
 #include "Fyrion/Core/FixedArray.hpp"
+#include "Fyrion/Platform/Platform.hpp"
 
 namespace Fyrion
 {
@@ -77,7 +78,7 @@ namespace Fyrion
 
     void InputBeginFrame()
     {
-        //mouseMoved = false;
+        mouseMoved = false;
 
         for (int i = 0; i < static_cast<u64>(Key::MAX); ++i)
         {
@@ -88,6 +89,11 @@ namespace Fyrion
         {
             prevMouseButtonState[i] = mouseButtonState[i];
         }
+    }
+
+    void Input::SetCursorEnabled(bool enabled)
+    {
+        Platform::SetCursor(Engine::GetActiveWindow(), enabled ? MouseCursor::Arrow : MouseCursor::None);
     }
 
     void InputInit()

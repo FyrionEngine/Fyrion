@@ -111,12 +111,12 @@ namespace Fyrion
 
         while (running)
         {
-            f64 currentTime = Platform::GetTime();
+            f64 currentTime = Platform::GetElapsedTime();
             deltaTime = currentTime - lastTime;
             lastTime  = currentTime;
 
-            Platform::ProcessEvents();
             onBeginFrameHandler.Invoke();
+            Platform::ProcessEvents();
 
             ImGui::BeginFrame(window, deltaTime);
 

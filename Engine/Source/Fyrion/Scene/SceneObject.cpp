@@ -223,7 +223,10 @@ namespace Fyrion
 
         ArchiveObject object = writer.CreateObject();
 
-        writer.WriteString(object, "name", name);
+        if (!name.Empty() && (prototype == nullptr || name != prototype->GetName()))
+        {
+            writer.WriteString(object, "name", name);
+        }
 
         if (uuid)
         {
@@ -232,14 +235,13 @@ namespace Fyrion
 
         if (prototype)
         {
-            writer.WriteString(object, "prototype", ToString(prototype->asset->GetUUID()));
+            writer.WriteString(object, "prototype", ToString(prototype->GetUUID()));
         }
-
 
         ArchiveObject objChildren{};
         for (const SceneObject* child : children)
         {
-            if (!child->prototype || child->HasPrototypeOverride())
+            if (!prototype || child->HasPrototypeOverride())
             {
                 if (ArchiveObject childObject = child->Serialize(writer))
                 {
@@ -261,6 +263,7 @@ namespace Fyrion
 
         for (const Component* component : components)
         {
+
             if (!prototype || IsComponentOverride(component))
             {
                 ArchiveObject componentObject = Serialization::Serialize(component->typeHandler, writer, component);
@@ -397,10 +400,10 @@ namespace Fyrion
 
     void SceneObject::SetPrototype(SceneObject* p_prototype)
     {
+        prototype = p_prototype;
+
         SetName(p_prototype->GetName());
         SetUUID(UUID::RandomUUID());
-
-        prototype = p_prototype;
 
         for (SceneObject* child : p_prototype->children)
         {
@@ -431,13 +434,17 @@ namespace Fyrion
     {
         if(!component || !component->GetUUID()) return;
         componentOverride.Erase(component->GetUUID());
-
         //TODO copy original value.
     }
 
     bool SceneObject::HasPrototypeOverride() const
     {
         if (!componentOverride.Empty())
+        {
+            return true;
+        }
+
+        if (!prototype)
         {
             return true;
         }

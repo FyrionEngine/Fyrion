@@ -19,12 +19,14 @@ namespace Fyrion
             case SceneNotifications_OnActivate:
             {
                 transformComponent = object->GetComponent<TransformComponent>();
+                activated = true;
                 OnChange();
                 break;
             }
 
             case SceneNotifications_OnDeactivate:
             {
+                activated = false;
                 RenderStorage::RemoveMeshFromRender(reinterpret_cast<usize>(this));
                 break;
             }
@@ -60,13 +62,16 @@ namespace Fyrion
 
     void MeshRender::OnChange()
     {
-        if (transformComponent != nullptr && mesh != nullptr)
+        if (activated)
         {
-            RenderStorage::AddOrUpdateMeshToRender(reinterpret_cast<usize>(this), transformComponent->GetWorldTransform(), mesh);
-        }
-        else
-        {
-            RenderStorage::RemoveMeshFromRender(reinterpret_cast<usize>(this));
+            if (transformComponent != nullptr && mesh != nullptr)
+            {
+                RenderStorage::AddOrUpdateMeshToRender(reinterpret_cast<usize>(this), transformComponent->GetWorldTransform(), mesh);
+            }
+            else
+            {
+                RenderStorage::RemoveMeshFromRender(reinterpret_cast<usize>(this));
+            }
         }
     }
 

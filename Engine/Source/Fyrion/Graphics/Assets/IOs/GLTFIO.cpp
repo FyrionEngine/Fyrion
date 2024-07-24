@@ -6,6 +6,9 @@
 #include "Fyrion/Graphics/Assets/DCCAsset.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
 #include "Fyrion/IO/Path.hpp"
+#include "Fyrion/Scene/SceneManager.hpp"
+#include "Fyrion/Scene/Components/MeshRender.hpp"
+#include "Fyrion/Scene/Components/TransformComponent.hpp"
 
 namespace Fyrion
 {
@@ -13,6 +16,7 @@ namespace Fyrion
     {
         using ImportedTextureMap = HashMap<usize, TextureAsset*>;
         using ImportedMaterialMap = HashMap<usize, MaterialAsset*>;
+        using ImportedMeshMap = HashMap<usize, MeshAsset*>;
 
         FY_BASE_TYPES(AssetIO);
 
@@ -30,7 +34,7 @@ namespace Fyrion
             return AssetDatabase::Create<DCCAsset>(UUID::RandomUUID());
         }
 
-        void LoadGltfMesh(DCCAsset* dccAsset, ImportedMaterialMap& materialMap, cgltf_data* data, cgltf_mesh& gltfMesh, u32 index)
+        MeshAsset* LoadGltfMesh(DCCAsset* dccAsset, ImportedMaterialMap& materialMap, cgltf_data* data, cgltf_mesh& gltfMesh, u32 index)
         {
             String name = gltfMesh.name != nullptr ? gltfMesh.name : String{"Mesh_"}.Append(index);
 
@@ -223,7 +227,70 @@ namespace Fyrion
             }
 
             meshAsset->SetData(vertices, indices, primitives, materials, missingNormals, missingTangents);
+
+            return meshAsset;
         }
+
+        void LoadGltfNode(const ImportedMeshMap& meshMap, SceneObject* parentObject, cgltf_node* node, u32 index)
+        {
+            String nodeName = node->name != nullptr ? String{node->name} : String("node_").Append(index);
+            SceneObject* object = parentObject->GetChildByName(nodeName);
+            if (object == nullptr)
+            {
+                object = SceneManager::CreateObject();
+                object->SetName(nodeName);
+                object->AddComponent<TransformComponent>();
+                object->AddComponent<MeshRender>();
+                parentObject->AddChild(object);
+            }
+
+            if (node->mesh)
+            {
+                if (auto it = meshMap.Find(reinterpret_cast<usize>(node->mesh)))
+                {
+                    MeshRender* meshRender = object->GetComponent<MeshRender>();
+                    meshRender->SetMesh(it->second);
+                }
+            }
+
+            //TODO : import camera and lights
+
+            Vec3 position{0, 0, 0};
+            Quat rotation{0, 0, 0, 1};
+            Vec3 scale{1, 1, 1};
+
+            if (node->has_translation)
+            {
+                position = Vec3{node->translation[0], node->translation[1], node->translation[2]};
+            }
+
+            if (node->has_rotation)
+            {
+                rotation = Quat{node->rotation[0], node->rotation[1], node->rotation[2], node->rotation[3]};
+            }
+
+            if (node->has_scale)
+            {
+                scale = Vec3{node->scale[0], node->scale[1], node->scale[2]};
+            }
+
+            if (node->has_matrix)
+            {
+                Mat4 mat = MakeMat4(node->matrix);
+                position = Math::GetTranslation(mat);
+                scale = Math::GetScale(mat);
+                rotation = Math::GetQuaternion(mat);
+            }
+
+            TransformComponent* transformComponent = object->GetComponent<TransformComponent>();
+            transformComponent->SetTransform(position, rotation, scale);
+
+            for (u32 c = 0; c < node->children_count; ++c)
+            {
+                LoadGltfNode(meshMap, object, node->children[c], c);
+            }
+        }
+
 
         TextureAsset* FindTexture(const ImportedTextureMap& textureMap, DCCAsset* dccAsset, cgltf_texture* texture)
         {
@@ -305,6 +372,7 @@ namespace Fyrion
 
             ImportedTextureMap textureMap;
             ImportedMaterialMap materialMap;
+            ImportedMeshMap meshMap;
 
             for (i32 t = 0; t < data->textures_count; ++t)
             {
@@ -390,12 +458,46 @@ namespace Fyrion
 
             for (u32 m = 0; m < data->meshes_count; ++m)
             {
-                LoadGltfMesh(dccAsset, materialMap, data, data->meshes[m], m);
+
+                MeshAsset* meshAsset = LoadGltfMesh(dccAsset, materialMap, data, data->meshes[m], m);
+                meshMap.Insert(reinterpret_cast<usize>(&data->meshes[m]),meshAsset);
             }
 
-            for (u32 c = 0; c < data->scenes_count; ++c)
+            if (data->scenes_count > 0)
             {
-                cgltf_scene& scene = data->scenes[c];
+                SceneObjectAsset* sceneObjectAsset = dccAsset->GetSceneObjectAsset();
+                if (sceneObjectAsset == nullptr)
+                {
+                    sceneObjectAsset = AssetDatabase::Create<SceneObjectAsset>();
+                    sceneObjectAsset->SetName(dccAsset->GetName());
+                    sceneObjectAsset->SetUUID(UUID::RandomUUID());
+                    sceneObjectAsset->SetOwner(dccAsset);
+
+                    sceneObjectAsset->GetObject()->AddComponent<TransformComponent>();
+                }
+
+                SceneObject* rootObject = sceneObjectAsset->GetObject();
+
+                for (u32 c = 0; c < data->scenes_count; ++c)
+                {
+                    cgltf_scene& scene = data->scenes[c];
+                    String sceneName = scene.name != nullptr ? scene.name : String{"scene_"}.Append(c);
+
+                    SceneObject* sceneObject = rootObject->GetChildByName(sceneName);
+
+                    if (sceneObject == nullptr)
+                    {
+                        sceneObject = SceneManager::CreateObject();
+                        sceneObject->SetName(sceneName);
+                        sceneObject->AddComponent<TransformComponent>();
+                        rootObject->AddChild(sceneObject);
+                    }
+
+                    for (u32 n = 0; n < scene.nodes_count; ++n)
+                    {
+                        LoadGltfNode(meshMap, sceneObject, scene.nodes[n], n);
+                    }
+                }
             }
 
             cgltf_free(data);

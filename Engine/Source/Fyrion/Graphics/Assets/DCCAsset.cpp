@@ -47,6 +47,18 @@ namespace Fyrion
         return nullptr;
     }
 
+    SceneObjectAsset* DCCAsset::GetSceneObjectAsset()
+    {
+        for (Asset* asset : GetChildrenAssets())
+        {
+            if (SceneObjectAsset* sceneObjectAsset = dynamic_cast<SceneObjectAsset*>(asset))
+            {
+                return sceneObjectAsset;
+            }
+        }
+        return nullptr;
+    }
+
 
     void DCCAsset::RegisterType(NativeTypeHandler<DCCAsset>& type)
     {

@@ -27,6 +27,7 @@ namespace Fyrion
         void               SetName(const StringView& p_name);
         SceneObject*       GetParent() const;
         Span<SceneObject*> GetChildren() const;
+        SceneObject*       GetChildByName(const StringView& p_name) const;
         void               SetUUID(UUID p_uuid);
         UUID               GetUUID() const;
         SceneObjectAsset*  GetPrototype() const;

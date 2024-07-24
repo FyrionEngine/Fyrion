@@ -120,6 +120,18 @@ namespace Fyrion
         return children;
     }
 
+    SceneObject* SceneObject::GetChildByName(const StringView& p_name) const
+    {
+        for(SceneObject* child : children)
+        {
+            if (child->GetName() == p_name)
+            {
+                return child;
+            }
+        }
+        return nullptr;
+    }
+
     void SceneObject::SetUUID(UUID p_uuid)
     {
         uuid = p_uuid;

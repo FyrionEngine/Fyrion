@@ -22,5 +22,6 @@ namespace Fyrion
     private:
         MeshAsset*          mesh = nullptr;
         TransformComponent* transformComponent = nullptr;
+        bool                activated = false;
     };
 }

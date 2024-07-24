@@ -14,9 +14,10 @@ namespace Fyrion
 
         static void RegisterType(NativeTypeHandler<DCCAsset>& type);
 
-        MaterialAsset* FindMaterialByName(const StringView& materialName);
-        MeshAsset*     FindMeshByName(const StringView& meshName);
-        TextureAsset*  FindTextureByName(const StringView& textureName);
+        MaterialAsset*    FindMaterialByName(const StringView& materialName);
+        MeshAsset*        FindMeshByName(const StringView& meshName);
+        TextureAsset*     FindTextureByName(const StringView& textureName);
+        SceneObjectAsset* GetSceneObjectAsset();
 
     private:
         Vec3 scaleFactor{1.0, 1.0, 1.0};

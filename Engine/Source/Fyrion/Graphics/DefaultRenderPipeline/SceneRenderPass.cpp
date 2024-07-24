@@ -36,20 +36,19 @@ namespace Fyrion
                 .depthWrite = true,
                 .cullMode = CullMode::Back,
                 .compareOperator = CompareOp::Greater,
+
             };
 
             pipelineState = Graphics::CreateGraphicsPipelineState(graphicsPipelineCreation);
             bindingSet = Graphics::CreateBindingSet(graphicsPipelineCreation.shader);
-
-            TextureAsset* texture = AssetDatabase::FindByPath<TextureAsset>("NewAssetRefactor://planks-albedo.png");
-            bindingSet->GetVar("texture")->SetTexture(texture->GetTexture());
         }
 
 
         void Render(f64 deltaTime, RenderCommands& cmd) override
         {
             const CameraData& cameraData = graph->GetCameraData();
-            SceneData         data{.viewProjection = cameraData.projection * cameraData.view};
+
+            SceneData data{.viewProjection = cameraData.projection * cameraData.view};
             bindingSet->GetVar("scene")->Set(data);
 
             cmd.BindPipelineState(pipelineState);
@@ -59,6 +58,7 @@ namespace Fyrion
             {
                 if (MeshAsset* mesh = meshRenderData.mesh)
                 {
+                    Span<MaterialAsset*> materials = mesh->GetMaterials();
                     cmd.BindVertexBuffer(mesh->GetVertexBuffer());
                     cmd.BindIndexBuffer(mesh->GetIndexBuffeer());
 
@@ -66,6 +66,9 @@ namespace Fyrion
 
                     for (MeshPrimitive& primitive : mesh->GetPrimitives())
                     {
+                        MaterialAsset* material = materials[primitive.materialIndex];
+                        cmd.BindBindingSet(pipelineState, material->GetBindingSet());
+
                         cmd.DrawIndexed(primitive.indexCount, 1, primitive.firstIndex, 0, 0);
                     }
                 }

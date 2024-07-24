@@ -157,7 +157,9 @@ namespace Fyrion
 
             onSwapchainRender.Invoke(cmd);
 
+            cmd.BeginLabel("ImGui", {0, 0, 0, 0});
             ImGui::Render(cmd);
+            cmd.EndLabel();
 
             cmd.EndRenderPass();
             cmd.End();

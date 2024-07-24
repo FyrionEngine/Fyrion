@@ -13,6 +13,10 @@ namespace Fyrion
     public:
         FY_BASE_TYPES(Asset);
 
+        BindingSet* GetBindingSet();
+        ~MaterialAsset() override;
+
+
         Color         GetBaseColor() const;
         void          SetBaseColor(const Color& baseColor);
         TextureAsset* GetBaseColorTexture() const;
@@ -62,5 +66,6 @@ namespace Fyrion
         f32           alphaCutoff{0.0};
         AlphaMode     alphaMode{};
         Vec2          uvScale{1.0f, 1.0f};
+        BindingSet*   bindingSet = nullptr;
     };
 }

@@ -57,6 +57,12 @@ namespace Fyrion
             return worldTransform;
         }
 
+        FY_FINLINE Mat4 GetLocalTransform() const
+        {
+            return Math::Translate(Mat4{1.0}, position) * Math::ToMatrix4(rotation) * Math::Scale(Mat4{1.0}, scale);
+        }
+
+        void OnNotify(i64 type, VoidPtr userData) override;
         void OnChange() override;
 
         static void RegisterType(NativeTypeHandler<TransformComponent>& type);

@@ -20,7 +20,8 @@ namespace Fyrion
                      bool                         missingNormals,
                      bool                         missingTangents);
 
-        Span<MeshPrimitive> GetPrimitives() const;
+        Span<MeshPrimitive>  GetPrimitives() const;
+        Span<MaterialAsset*> GetMaterials() const;
 
         Buffer GetVertexBuffer();
         Buffer GetIndexBuffeer();

@@ -41,6 +41,30 @@ namespace Fyrion
             return data;
         }
 
+        void AddChannel(T defaultValue)
+        {
+            Array<T> newData{};
+            auto newChannels = this->channels + 1;
+            usize newSize = width * height * newChannels;
+            newData.Resize(newSize);
+            for (int w = 0; w < width; ++w)
+            {
+                for (int h = 0; h < height; ++h)
+                {
+                    auto posPixel    = (this->channels  * (h * this->width + w));
+                    auto newPosPixel = (newChannels       * (h * this->width + w));
+                    for (int i = 0; i < this->channels; ++i)
+                    {
+                        newData[newPosPixel++] = this->data[posPixel++];
+                    }
+                    newData[newPosPixel++] = defaultValue;
+                }
+            }
+            this->channels = newChannels;
+            data = newData;
+        }
+
+
         void SetPixelColor(u32 x, u32 y, const TColor<T>& color)
         {
             auto posPixel = (this->channels * (y * this->width + x));

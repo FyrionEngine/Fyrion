@@ -28,7 +28,7 @@ struct Scene
   float4x4 viewProjection;
 };
 
-ConstantBuffer<Scene> scene;
+[[vk::binding(0, 0)]]  ConstantBuffer<Scene> scene;z
 [[vk::push_constant]]  ConstantBuffer<PushConsts>  pushConsts;
 
 VSOutput MainVS(VSInput input)
@@ -46,8 +46,8 @@ VSOutput MainVS(VSInput input)
 	return output;
 }
 
-Texture2D texture;
-SamplerState samplerState;
+[[vk::binding(0, 1)]] Texture2D texture;
+[[vk::binding(1, 1)]] SamplerState samplerState;
 
 float4 MainPS(VSOutput input) : SV_TARGET
 {

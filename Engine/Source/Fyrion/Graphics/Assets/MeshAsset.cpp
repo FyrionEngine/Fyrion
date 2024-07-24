@@ -92,6 +92,11 @@ namespace Fyrion
         return indexBuffer;
     }
 
+    Span<MaterialAsset*> MeshAsset::GetMaterials() const
+    {
+        return materials;
+    }
+
     MeshAsset::~MeshAsset()
     {
         if (vertexBuffer)

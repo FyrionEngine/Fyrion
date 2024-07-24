@@ -1,7 +1,28 @@
 #include "MaterialAsset.hpp"
 
+#include "Fyrion/Graphics/Graphics.hpp"
+#include "ShaderAsset.hpp"
+
 namespace Fyrion
 {
+    BindingSet* MaterialAsset::GetBindingSet()
+    {
+        if (!bindingSet)
+        {
+            bindingSet = Graphics::CreateBindingSet(AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Shaders/BasicRenderer.raster"));
+            bindingSet->GetVar("texture")->SetTexture(baseColorTexture->GetTexture());
+        }
+        return bindingSet;
+    }
+
+    MaterialAsset::~MaterialAsset()
+    {
+        if (bindingSet)
+        {
+            Graphics::DestroyBindingSet(bindingSet);
+        }
+    }
+
     Color MaterialAsset::GetBaseColor() const
     {
         return baseColor;
@@ -152,7 +173,7 @@ namespace Fyrion
         this->uvScale = uvScale;
     }
 
-     void MaterialAsset::RegisterType(NativeTypeHandler<MaterialAsset>& type)
+    void MaterialAsset::RegisterType(NativeTypeHandler<MaterialAsset>& type)
     {
         type.Field<&MaterialAsset::baseColor>("baseColor");
         type.Field<&MaterialAsset::baseColorTexture>("baseColorTexture");

@@ -22,6 +22,11 @@ namespace Fyrion
         MemCopy(data.begin(), bytes, data.Size());
 
         stbi_image_free(bytes);
+
+        if (channels == 3)
+        {
+            AddChannel(255);
+        }
     }
 
     template<> TImage<u8>::TImage(const StringView& file)
@@ -40,5 +45,10 @@ namespace Fyrion
         MemCopy(data.begin(), bytes, data.Size());
 
         stbi_image_free(bytes);
+
+        if (channels == 3)
+        {
+            AddChannel(255);
+        }
     }
 }

@@ -25,6 +25,8 @@ namespace Fyrion
         void         ResetComponent(SceneObject& object, Component* component);
         void         RemoveComponent(SceneObject& object, Component* component);
         void         UpdateComponent(Component* component, Component* newValue);
+        void         OverridePrototypeComponent(SceneObject* object, Component* component);
+        void         RemoveOverridePrototypeComponent(SceneObject* object, Component* component);
 
         void              LoadScene(SceneObjectAsset* asset);
         SceneObjectAsset* GetScene() const;

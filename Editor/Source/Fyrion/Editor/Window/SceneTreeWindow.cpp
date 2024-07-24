@@ -263,7 +263,7 @@ namespace Fyrion
 
             if (provider != nullptr && ImGui::AcceptDragDropPayload(AssetDragDropType))
             {
-
+                sceneEditor.CreateObject(provider->GetSceneObjectAsset());
             }
             ImGui::EndDragDropTarget();
         }

@@ -188,6 +188,15 @@ namespace Fyrion
         Editor::CreateTransaction()->CreateAction<UpdateComponentSceneObjectAction>(*this, component, newValue);
     }
 
+    void SceneEditor::OverridePrototypeComponent(SceneObject* object, Component* component)
+    {
+        Editor::CreateTransaction()->CreateAction<OverridePrototypeComponentAction>(*this, object, component)->Commit();
+    }
+    void SceneEditor::RemoveOverridePrototypeComponent(SceneObject* object, Component* component)
+    {
+        Editor::CreateTransaction()->CreateAction<RemoveOverridePrototypeComponentAction>(*this, object, component)->Commit();
+    }
+
     void SceneEditor::RenameObject(SceneObject& asset, StringView newName)
     {
         Editor::CreateTransaction()->CreateAction<RenameSceneObjectAction>(*this, &asset, newName)->Commit();

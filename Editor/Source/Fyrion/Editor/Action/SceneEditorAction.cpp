@@ -230,6 +230,53 @@ namespace Fyrion
         type.Constructor<SceneEditor, SceneObject*, Component*>();
     }
 
+    void OverridePrototypeComponentAction::Commit()
+    {
+        object->OverridePrototypeComponent(component);
+        sceneEditor.Modify();
+    }
+    void OverridePrototypeComponentAction::Rollback()
+    {
+        object->RemoveOverridePrototypeComponent(component);
+        sceneEditor.Modify();
+    }
+
+    void OverridePrototypeComponentAction::RegisterType(NativeTypeHandler<OverridePrototypeComponentAction>& type)
+    {
+        type.Constructor<SceneEditor, SceneObject*, Component*>();
+    }
+
+    void RemoveOverridePrototypeComponentAction::Commit()
+    {
+        JsonAssetWriter writer;
+        value = JsonAssetWriter::Stringify(Serialization::Serialize(component->typeHandler, writer, component));
+
+        object->RemoveOverridePrototypeComponent(component);
+        sceneEditor.Modify();
+
+        ImGui::ClearDrawType(reinterpret_cast<usize>(component));
+        ImGui::ClearTextData();
+    }
+
+    void RemoveOverridePrototypeComponentAction::Rollback()
+    {
+        object->OverridePrototypeComponent(component);
+
+        JsonAssetReader reader(value);
+        Serialization::Deserialize(component->typeHandler, reader, reader.ReadObject(), component);
+        component->OnChange();
+
+        sceneEditor.Modify();
+
+        ImGui::ClearDrawType(reinterpret_cast<usize>(component));
+        ImGui::ClearTextData();
+    }
+
+    void RemoveOverridePrototypeComponentAction::RegisterType(NativeTypeHandler<RemoveOverridePrototypeComponentAction>& type)
+    {
+        type.Constructor<SceneEditor, SceneObject*, Component*>();
+    }
+
     void InitSceneEditorAction()
     {
         Registry::Type<OpenSceneAction>();
@@ -239,5 +286,7 @@ namespace Fyrion
         Registry::Type<AddComponentSceneObjectAction>();
         Registry::Type<UpdateComponentSceneObjectAction>();
         Registry::Type<RemoveComponentObjectAction>();
+        Registry::Type<OverridePrototypeComponentAction>();
+        Registry::Type<RemoveOverridePrototypeComponentAction>();
     }
 }

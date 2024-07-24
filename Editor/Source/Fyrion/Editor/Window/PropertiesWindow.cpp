@@ -236,17 +236,15 @@ namespace Fyrion
             {
                 if (ImGui::MenuItem("Override"))
                 {
-                    object.OverridePrototypeComponent(selectedComponent);
-                    m_sceneEditor.Modify();
+                    m_sceneEditor.OverridePrototypeComponent(&object, selectedComponent);
                 }
             }
 
             if (object.GetPrototype() != nullptr && object.IsComponentOverride(selectedComponent))
             {
-                if (ImGui::MenuItem("Cancel prototype override"))
+                if (ImGui::MenuItem("Remove prototype override"))
                 {
-                    object.RemoveOverridePrototypeComponent(selectedComponent);
-                    m_sceneEditor.Modify();
+                    m_sceneEditor.RemoveOverridePrototypeComponent(&object, selectedComponent);
                 }
             }
 

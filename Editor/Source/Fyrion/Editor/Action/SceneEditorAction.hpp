@@ -133,4 +133,37 @@ namespace Fyrion
 
         static void RegisterType(NativeTypeHandler<RemoveComponentObjectAction>& type);
     };
+
+    struct OverridePrototypeComponentAction : EditorAction
+    {
+        FY_BASE_TYPES(EditorAction);
+
+        SceneEditor& sceneEditor;
+        SceneObject* object;
+        Component*   component;
+
+        OverridePrototypeComponentAction(SceneEditor& sceneEditor, SceneObject* object, Component* component) : sceneEditor(sceneEditor), object(object), component(component) {}
+
+        void Commit() override;
+        void Rollback() override;
+
+        static void RegisterType(NativeTypeHandler<OverridePrototypeComponentAction>& type);
+    };
+
+    struct RemoveOverridePrototypeComponentAction : EditorAction
+    {
+        FY_BASE_TYPES(EditorAction);
+
+        SceneEditor& sceneEditor;
+        SceneObject* object;
+        Component*   component;
+        String       value;
+
+        RemoveOverridePrototypeComponentAction(SceneEditor& sceneEditor, SceneObject* object, Component* component) : sceneEditor(sceneEditor), object(object), component(component) {}
+
+        void Commit() override;
+        void Rollback() override;
+
+        static void RegisterType(NativeTypeHandler<RemoveOverridePrototypeComponentAction>& type);
+    };
 }

@@ -44,8 +44,8 @@ namespace Fyrion
     Component& SceneObject::CloneComponent(const Component* originComponent)
     {
         TypeHandler* typeHandler = originComponent->typeHandler;
-        Component*   component = typeHandler->Cast<Component>(typeHandler->NewInstance());
-        typeHandler->Copy(originComponent, component); //TODO maybe it should use reflection for that.
+        Component* component = typeHandler->Cast<Component>(typeHandler->NewInstance());
+        typeHandler->DeepCopy(originComponent, component);
 
         component->typeHandler = typeHandler;
         component->object = this;
@@ -77,7 +77,6 @@ namespace Fyrion
 
     Component* SceneObject::GetComponent(TypeID typeId) const
     {
-        //TODO improve O(n)
         for (Component* component : components)
         {
             if (component->typeHandler->GetTypeInfo().typeId == typeId)
@@ -86,6 +85,18 @@ namespace Fyrion
             }
         }
 
+        return nullptr;
+    }
+
+    Component* SceneObject::FindComponentByPrototype(const UUID& p_prototype) const
+    {
+        for (Component* component : components)
+        {
+            if (component->GetPrototype() == p_prototype)
+            {
+                return component;
+            }
+        }
         return nullptr;
     }
 
@@ -140,6 +151,19 @@ namespace Fyrion
         for (SceneObject* child : children)
         {
             if (child->GetUUID() == p_uuid)
+            {
+                return child;
+            }
+        }
+        return nullptr;
+    }
+
+    SceneObject* SceneObject::FindChildByPrototype(const UUID& p_prototype) const
+    {
+        //TODO improve O(n)
+        for (SceneObject* child : children)
+        {
+            if (child->prototypeUUID == p_prototype)
             {
                 return child;
             }
@@ -273,6 +297,11 @@ namespace Fyrion
                     writer.WriteString(componentObject, "_uuid", ToString(component->GetUUID()));
                 }
 
+                if (component->GetPrototype())
+                {
+                    writer.WriteString(componentObject, "_prototype", ToString(component->GetPrototype()));
+                }
+
                 if (!objComponents)
                 {
                     objComponents = writer.CreateArray();
@@ -291,13 +320,10 @@ namespace Fyrion
 
     void SceneObject::Deserialize(ArchiveReader& reader, ArchiveObject object)
     {
-        name = reader.ReadString(object, "name");
         notificationDisabled = true;
 
-        if (StringView uuidStr = reader.ReadString(object, "uuid"); !uuidStr.Empty())
-        {
-            uuid = UUID::FromString(uuidStr);
-        }
+        name = reader.ReadString(object, "name");
+        uuid = UUID::FromString(reader.ReadString(object, "uuid"));
 
         if (ArchiveObject childrenArr = reader.ReadObject(object, "children"))
         {
@@ -308,26 +334,7 @@ namespace Fyrion
             {
                 childObject = reader.Next(childrenArr, childObject);
 
-                UUID childUUID = UUID::FromString(reader.ReadString(childObject, "uuid"));
-                UUID prototypeUUID = UUID::FromString(reader.ReadString(childObject, "prototype"));
-
-                SceneObject* child = nullptr;
-
-                if (childUUID)
-                {
-                    child = this->FindChildByUUID(childUUID);
-                }
-
-                if (prototypeUUID && child == nullptr)
-                {
-                    child = SceneManager::CreateObjectFromAsset(AssetDatabase::FindById<SceneObjectAsset>(prototypeUUID));
-                }
-
-                if (child == nullptr)
-                {
-                    child = SceneManager::CreateObject();
-                }
-
+                SceneObject* child = SceneManager::CreateObject();
                 child->Deserialize(reader, childObject);
                 AddChild(child);
             }
@@ -346,10 +353,18 @@ namespace Fyrion
                 {
                     Component& component = AddComponent(typeHandler);
                     component.SetUUID(UUID::FromString(reader.ReadString(compObj, "_uuid")));
+                    component.SetPrototype(UUID::FromString(reader.ReadString(compObj, "_prototype")));
                     Serialization::Deserialize(typeHandler, reader, compObj, &component);
                 }
             }
         }
+
+        prototypeUUID = UUID::FromString(reader.ReadString(object, "prototype"));
+        if (SceneObjectAsset* asset = AssetDatabase::FindById<SceneObjectAsset>(prototypeUUID))
+        {
+            SetPrototype(asset->GetObject());
+        }
+
         notificationDisabled = false;
     }
 
@@ -401,12 +416,19 @@ namespace Fyrion
     void SceneObject::SetPrototype(SceneObject* p_prototype)
     {
         prototype = p_prototype;
+        prototypeUUID = p_prototype->GetUUID();
 
         SetName(p_prototype->GetName());
         SetUUID(UUID::RandomUUID());
 
         for (SceneObject* child : p_prototype->children)
         {
+            if (SceneObject* childPrototype = FindChildByPrototype(child->GetUUID()))
+            {
+                childPrototype->SetPrototype(child);
+                continue;
+            }
+
             SceneObject* newChild = MemoryGlobals::GetDefaultAllocator().Alloc<SceneObject>();
             newChild->SetPrototype(child);
             this->AddChild(newChild);
@@ -414,26 +436,33 @@ namespace Fyrion
 
         for (const Component* component : p_prototype->components)
         {
-            this->CloneComponent(component);
+            if (!FindComponentByPrototype(component->GetUUID()))
+            {
+                Component& newComponent = this->CloneComponent(component);
+                newComponent.SetPrototype(component->GetUUID());
+            }
         }
     }
 
     void SceneObject::OverridePrototypeComponent(const Component* component)
     {
-        if(!component || !component->GetUUID()) return;
-        componentOverride.Insert(component->GetUUID());
+        if(!component || !component->GetPrototype()) return;
+        componentOverride.Insert(component->GetPrototype());
     }
 
     bool SceneObject::IsComponentOverride(const Component* component) const
     {
-        if(!component || !component->GetUUID()) return false;
-        return componentOverride.Has(component->GetUUID());
+        if(!component || !component->GetPrototype()) return false;
+        return componentOverride.Has(component->GetPrototype());
     }
 
     void SceneObject::RemoveOverridePrototypeComponent(Component* component)
     {
-        if(!component || !component->GetUUID()) return;
-        componentOverride.Erase(component->GetUUID());
+        if(!component || !component->GetPrototype()) return;
+        componentOverride.Erase(component->GetPrototype());
+
+
+        //component->typeHandler->DeepCopy()
         //TODO copy original value.
     }
 
@@ -445,6 +474,11 @@ namespace Fyrion
         }
 
         if (!prototype)
+        {
+            return true;
+        }
+
+        if (name != prototype->GetName())
         {
             return true;
         }

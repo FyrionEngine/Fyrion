@@ -75,6 +75,8 @@ namespace Fyrion
 
     Asset* AssetDatabase::FindById(const UUID& assetId)
     {
+        if (!assetId) return nullptr;
+
         if (auto it = assetsById.Find(assetId))
         {
             return it->second;

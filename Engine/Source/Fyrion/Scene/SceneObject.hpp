@@ -30,6 +30,7 @@ namespace Fyrion
         Span<SceneObject*> GetChildren() const;
         SceneObject*       FindChildByName(const StringView& p_name) const;
         SceneObject*       FindChildByUUID(const UUID& p_uuid) const;
+        SceneObject*       FindChildByPrototype(const UUID& p_prototype) const;
         void               SetUUID(UUID p_uuid);
         UUID               GetUUID() const;
         SceneObject*       GetPrototype() const;
@@ -43,6 +44,7 @@ namespace Fyrion
         void               RemoveComponent(Component* component);
         Span<Component*>   GetComponents() const;
         Component*         GetComponent(TypeID typeId) const;
+        Component*         FindComponentByPrototype(const UUID& p_prototype) const;
         void               Destroy();
         ArchiveObject      Serialize(ArchiveWriter& writer) const;
         void               Deserialize(ArchiveReader& reader, ArchiveObject object);
@@ -74,6 +76,7 @@ namespace Fyrion
         bool                root = false;
         SceneObjectAsset*   asset{};
         SceneObject*        prototype{};
+        UUID                prototypeUUID{};
         String              name;
         UUID                uuid;
         Array<Component*>   components{};

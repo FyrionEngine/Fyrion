@@ -60,7 +60,7 @@ namespace Fyrion
         return FieldInfo{
             .ownerId = GetTypeID<Owner>(),
             .isConst = false,
-            .isPointer  = false,
+            .isPointer  = Traits::IsPointer<Field>,
             .isReference  = false,
             .typeInfo = GetTypeInfo<Field>()
         };
@@ -72,7 +72,7 @@ namespace Fyrion
         return FieldInfo{
             .ownerId = GetTypeID<Owner>(),
             .isConst = false,
-            .isPointer  = false,
+            .isPointer  = Traits::IsPointer<Field>,
             .isReference  = false,
             .typeInfo = GetTypeInfo<Field>(),
             .offsetOf = Traits::OffsetOf(mfp)
@@ -340,6 +340,7 @@ namespace Fyrion
         void    Release(VoidPtr instance) const;
         void    Destructor(VoidPtr instance) const;
         void    Copy(ConstPtr source, VoidPtr dest) const;
+        void    DeepCopy(ConstPtr source, VoidPtr dest) const;
         void    Move(VoidPtr source, VoidPtr dest) const;
         VoidPtr Cast(TypeID typeId, VoidPtr instance) const;
 

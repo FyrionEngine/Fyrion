@@ -289,4 +289,14 @@ namespace Fyrion::Traits
         return (char*)&((T*)nullptr->*member) - (char*)nullptr;
     }
 
+    template<typename T>
+    struct TIsPointer : std::false_type {};
+
+    template<typename T>
+    struct TIsPointer<T*> : std::true_type {};
+
+    template<typename Type>
+    constexpr bool IsPointer = TIsPointer<Type>::value;
+
+
 }

@@ -13,7 +13,7 @@ namespace Fyrion
     public:
         TypeHandler* typeHandler = nullptr;
         SceneObject* object = nullptr;
-        virtual ~Component() = default;
+        virtual      ~Component() = default;
 
         virtual void OnStart() {}
         virtual void OnChange() {}
@@ -23,8 +23,13 @@ namespace Fyrion
         void        SetUUID(const UUID& uuid);
         const UUID& GetUUID() const;
 
+        void SetPrototype(const UUID& prototype);
+        UUID GetPrototype() const;
+
         static void RegisterType(NativeTypeHandler<Component>& type);
+
     private:
         UUID uuid{};
+        UUID prototype{};
     };
 }

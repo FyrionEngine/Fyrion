@@ -410,6 +410,31 @@ namespace Fyrion
         }
     }
 
+    void TypeHandler::DeepCopy(ConstPtr source, VoidPtr dest) const
+    {
+        Span<FieldHandler*> fields = GetFields();
+        if (!fields.Empty())
+        {
+            for (FieldHandler* field : fields)
+            {
+                if (!field->GetFieldInfo().isPointer)
+                {
+                    if (TypeHandler* fieldType = Registry::FindTypeById(field->GetFieldInfo().typeInfo.typeId))
+                    {
+                        fieldType->DeepCopy(field->GetFieldPointer(source), field->GetFieldPointer(dest));
+                        continue;
+                    }
+                }
+
+                field->SetValue(dest, field->GetFieldPointer(source));
+            }
+        }
+        else
+        {
+            Copy(source, dest);
+        }
+    }
+
     void TypeHandler::Move(VoidPtr source, VoidPtr dest) const
     {
         if (fnMove)

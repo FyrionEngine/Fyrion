@@ -37,6 +37,11 @@ namespace Fyrion
             OnChange();
         }
 
+        FY_FINLINE void SetTransform(const Transform& transform)
+        {
+            SetTransform(transform.position, transform.rotation, transform.scale);
+        }
+
         FY_FINLINE const Vec3& GetPosition() const
         {
             return position;
@@ -60,6 +65,11 @@ namespace Fyrion
         FY_FINLINE Mat4 GetLocalTransform() const
         {
             return Math::Translate(Mat4{1.0}, position) * Math::ToMatrix4(rotation) * Math::Scale(Mat4{1.0}, scale);
+        }
+
+        FY_FINLINE Transform GetTransform() const
+        {
+            return {position, rotation, scale};
         }
 
         void OnNotify(i64 type, VoidPtr userData) override;

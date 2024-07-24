@@ -80,6 +80,11 @@ namespace Fyrion
         static_cast<SceneEditor*>(userData)->ClearSelection();
     }
 
+    const HashSet<usize>& SceneEditor::GetSelectedObjects() const
+    {
+        return selectedObjects;
+    }
+
     void SceneEditor::CreateObject(SceneObjectAsset* prototype)
     {
         if (scene == nullptr) return;

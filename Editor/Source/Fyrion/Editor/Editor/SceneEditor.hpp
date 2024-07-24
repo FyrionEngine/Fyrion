@@ -28,6 +28,8 @@ namespace Fyrion
         void         OverridePrototypeComponent(SceneObject* object, Component* component);
         void         RemoveOverridePrototypeComponent(SceneObject* object, Component* component);
 
+        const HashSet<usize>& GetSelectedObjects() const;
+
         void              LoadScene(SceneObjectAsset* asset);
         SceneObjectAsset* GetScene() const;
 

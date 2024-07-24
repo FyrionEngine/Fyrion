@@ -256,6 +256,13 @@ namespace Fyrion
         constexpr Vec4&       operator[](usize axis);
     };
 
+    struct Transform
+    {
+        Vec3 position;
+        Quat rotation;
+        Vec3 scale;
+    };
+
     struct AABB
     {
         Vec3 min;

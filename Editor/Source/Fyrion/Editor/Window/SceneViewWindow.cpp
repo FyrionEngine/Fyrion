@@ -3,12 +3,14 @@
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Core/Logger.hpp"
 #include "Fyrion/Editor/Editor.hpp"
+#include "Fyrion/Editor/Action/SceneEditorAction.hpp"
 #include "Fyrion/Editor/Editor/SceneEditor.hpp"
 #include "Fyrion/Graphics/RenderGraph.hpp"
 #include "Fyrion/ImGui/IconsFontAwesome6.h"
 #include "Fyrion/ImGui/ImGui.hpp"
 #include "Fyrion/ImGui/Lib/ImGuizmo.h"
 #include "Fyrion/IO/Input.hpp"
+#include "Fyrion/Scene/Components/TransformComponent.hpp"
 
 namespace Fyrion
 {
@@ -19,6 +21,7 @@ namespace Fyrion
         ImGuiWindowFlags flags = ImGuiWindowFlags_NoScrollbar;
         auto&            style = ImGui::GetStyle();
         ImGui::StyleVar  windowPadding(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+
         if (ImGuizmo::IsUsing() || ImGuizmo::IsOver())
         {
             flags |= ImGuiWindowFlags_NoMove;
@@ -178,7 +181,7 @@ namespace Fyrion
                 renderGraph->Resize(extent);
             }
 
-            renderGraph->SetCameraData(CameraData{
+            CameraData cameraData = CameraData{
                 .view = freeViewCamera.GetView(),
                 .projection = Math::Perspective(Math::Radians(60.f),
                                                 (f32)extent.width / (f32)extent.height,
@@ -186,11 +189,70 @@ namespace Fyrion
                                                 1000),
                 .lastViewProj = Mat4{1.0},
                 .viewPos = freeViewCamera.GetPosition()
-            });
+            };
+
+            renderGraph->SetCameraData(cameraData);
 
             if (open)
             {
                 ImGui::DrawImage(renderGraph->GetColorOutput(), bb);
+            }
+
+            ImGuizmo::SetDrawlist();
+            ImGuizmo::SetRect(cursor.x, cursor.y, size.x, size.y);
+
+            for (auto it : sceneEditor.GetSelectedObjects())
+            {
+                SceneObject* object = reinterpret_cast<SceneObject*>(it.first);
+                if (TransformComponent* transformComponent = object->GetComponent<TransformComponent>())
+                {
+                    Mat4 worldMatrix = transformComponent->GetWorldTransform();
+
+                    static float snap[3] = {0.0f, 0.0f, 0.0f};
+
+                    ImGuizmo::Manipulate(&cameraData.view[0][0],
+                                         &cameraData.projection[0][0],
+                                         static_cast<ImGuizmo::OPERATION>(guizmoOperation),
+                                         ImGuizmo::LOCAL,
+                                         &worldMatrix[0][0],
+                                         nullptr,
+                                         snap);
+
+                    if (ImGuizmo::IsUsing())
+                    {
+                        if (!usingGuizmo)
+                        {
+                            usingGuizmo = true;
+
+                            gizmoInitialTransform = transformComponent->GetTransform();
+
+                            gizmoTransaction = Editor::CreateTransaction();
+
+                            if (object->GetPrototype() != nullptr && !object->IsComponentOverride(transformComponent))
+                            {
+                                gizmoTransaction->CreateAction<OverridePrototypeComponentAction>(sceneEditor, object, static_cast<Component*>(transformComponent))->Commit();
+                            }
+                        }
+
+                        if (TransformComponent* parentTransform = object->GetParent()->GetComponent<TransformComponent>())
+                        {
+                            worldMatrix = Math::Inverse(parentTransform->GetWorldTransform()) * worldMatrix;
+                        }
+
+                        Vec3 position, rotation, scale;
+                        Math::Decompose(worldMatrix, position, rotation, scale);
+                        auto deltaRotation = rotation - Math::EulerAngles(transformComponent->GetRotation());
+
+                        transformComponent->SetTransform(position, Math::EulerAngles(transformComponent->GetRotation()) + deltaRotation, scale);
+
+                        ImGui::ClearDrawType(reinterpret_cast<usize>(transformComponent));
+                    }
+                    else if (usingGuizmo)
+                    {
+                        gizmoTransaction->CreateAction<MoveTransformObjectAction>(sceneEditor, object, transformComponent, gizmoInitialTransform)->Commit();
+                        usingGuizmo = false;
+                    }
+                }
             }
         }
         ImGui::End();

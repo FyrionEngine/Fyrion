@@ -908,7 +908,7 @@ namespace ImGui
         }
         style.ScaleAllSizes(scaleFactor);
 
-        //       guizmo
+        //guizmo
         f32   guizmoScaleFactor = scaleFactor * 1.1;
         auto& guizmoSize = ImGuizmo::GetStyle();
         new(&guizmoSize) ImGuizmo::Style{};

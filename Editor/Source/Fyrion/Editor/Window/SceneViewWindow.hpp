@@ -5,6 +5,7 @@
 
 namespace Fyrion
 {
+    class EditorTransaction;
     class RenderGraph;
     struct MenuItemEventData;
     class SceneEditor;
@@ -22,11 +23,16 @@ namespace Fyrion
 
     private:
         SceneEditor&           sceneEditor;
-        u32                    guizmoOperation{};
+        u32                    guizmoOperation{1};
         bool                   windowStartedSimulation{};
         bool                   movingScene{};
         SharedPtr<RenderGraph> renderGraph{};
         FreeViewCamera         freeViewCamera{};
+
+        bool               usingGuizmo{};
+        Transform          gizmoInitialTransform = {};
+        EditorTransaction* gizmoTransaction = nullptr;
+
 
         static void OpenSceneView(const MenuItemEventData& eventData);
     };

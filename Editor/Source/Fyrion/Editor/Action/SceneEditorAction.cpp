@@ -1,11 +1,11 @@
 #include "SceneEditorAction.hpp"
 
-#include "Fyrion/Asset/AssetDatabase.hpp"
 #include "Fyrion/Asset/AssetSerialization.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Editor/Editor/SceneEditor.hpp"
 #include "Fyrion/ImGui/ImGui.hpp"
 #include "Fyrion/Scene/SceneManager.hpp"
+#include "Fyrion/Scene/Components/TransformComponent.hpp"
 
 namespace Fyrion
 {
@@ -235,6 +235,7 @@ namespace Fyrion
         object->OverridePrototypeComponent(component);
         sceneEditor.Modify();
     }
+
     void OverridePrototypeComponentAction::Rollback()
     {
         object->RemoveOverridePrototypeComponent(component);
@@ -277,6 +278,38 @@ namespace Fyrion
         type.Constructor<SceneEditor, SceneObject*, Component*>();
     }
 
+    MoveTransformObjectAction::MoveTransformObjectAction(SceneEditor& sceneEditor, SceneObject* object, TransformComponent* transformComponent, Transform& oldTransform)
+        : sceneEditor(sceneEditor),
+          object(object),
+          transformComponent(transformComponent),
+          oldTransform(oldTransform)
+    {
+        newTransform = transformComponent->GetTransform();
+    }
+
+    void MoveTransformObjectAction::Commit()
+    {
+        transformComponent->SetTransform(newTransform);
+        sceneEditor.Modify();
+
+        ImGui::ClearDrawType(reinterpret_cast<usize>(transformComponent));
+        ImGui::ClearTextData();
+    }
+
+    void MoveTransformObjectAction::Rollback()
+    {
+        transformComponent->SetTransform(oldTransform);
+        sceneEditor.Modify();
+
+        ImGui::ClearDrawType(reinterpret_cast<usize>(transformComponent));
+        ImGui::ClearTextData();
+    }
+
+    void MoveTransformObjectAction::RegisterType(NativeTypeHandler<MoveTransformObjectAction>& type)
+    {
+        type.Constructor<SceneEditor, SceneObject*, TransformComponent*, Transform>();
+    }
+
     void InitSceneEditorAction()
     {
         Registry::Type<OpenSceneAction>();
@@ -288,5 +321,6 @@ namespace Fyrion
         Registry::Type<RemoveComponentObjectAction>();
         Registry::Type<OverridePrototypeComponentAction>();
         Registry::Type<RemoveOverridePrototypeComponentAction>();
+        Registry::Type<MoveTransformObjectAction>();
     }
 }

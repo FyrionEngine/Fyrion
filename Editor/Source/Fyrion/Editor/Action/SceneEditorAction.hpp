@@ -7,6 +7,11 @@
 
 namespace Fyrion
 {
+    class TransformComponent;
+}
+
+namespace Fyrion
+{
     class SceneEditor;
     class SceneObjectAsset;
 
@@ -165,5 +170,24 @@ namespace Fyrion
         void Rollback() override;
 
         static void RegisterType(NativeTypeHandler<RemoveOverridePrototypeComponentAction>& type);
+    };
+
+
+    struct MoveTransformObjectAction : EditorAction
+    {
+        FY_BASE_TYPES(EditorAction);
+
+        SceneEditor&        sceneEditor;
+        SceneObject*        object;
+        TransformComponent* transformComponent;
+        Transform           oldTransform;
+        Transform           newTransform;
+
+        MoveTransformObjectAction(SceneEditor& sceneEditor, SceneObject* object, TransformComponent* transformComponent, Transform& oldTransform);
+
+        void Commit() override;
+        void Rollback() override;
+
+        static void RegisterType(NativeTypeHandler<MoveTransformObjectAction>& type);
     };
 }

@@ -12,6 +12,14 @@
 
 namespace Fyrion
 {
+    MeshRender::~MeshRender()
+    {
+        if (activated)
+        {
+            RenderStorage::RemoveMeshFromRender(reinterpret_cast<usize>(this));
+        }
+    }
+
     void MeshRender::OnNotify(i64 type, VoidPtr userData)
     {
         switch (type)

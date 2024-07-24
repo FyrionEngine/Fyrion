@@ -35,8 +35,7 @@ namespace Fyrion
                 .renderPass = node->GetRenderPass(),
                 .depthWrite = true,
                 .cullMode = CullMode::Back,
-                .compareOperator = CompareOp::Greater,
-
+                .compareOperator = CompareOp::Less,
             };
 
             pipelineState = Graphics::CreateGraphicsPipelineState(graphicsPipelineCreation);
@@ -88,14 +87,14 @@ namespace Fyrion
                     .name = "Color",
                     .type = RenderGraphResourceType::Attachment,
                     .scale = {1.0, 1.0},
-                    .cleanValue = Color::CORNFLOWER_BLUE.ToVec4(),
+                    .clearValue = Color::CORNFLOWER_BLUE.ToVec4(),
                     .format = Format::RGBA
                 })
                 .Output(RenderGraphResourceCreation{
                     .name = "Depth",
                     .type = RenderGraphResourceType::Attachment,
                     .scale = {1.0, 1.0},
-                    .cleanDepth = true,
+                    .clearDepth = true,
                     .format = Format::Depth
                 });
         }

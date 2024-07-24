@@ -42,22 +42,36 @@ namespace Fyrion
         renderPassBeginInfo.renderArea.offset = {0, 0};
         renderPassBeginInfo.renderArea.extent = {vulkanRenderPass->extent.width, vulkanRenderPass->extent.height};
 
-        for (int i = 0; i < vulkanRenderPass->clearValues.Size(); ++i)
+        bool shouldClear = false;
+
+        if (beginRenderPassInfo.clearValue)
         {
-            VkClearValue& clearValue = vulkanRenderPass->clearValues[i];
-            if (beginRenderPassInfo.clearValues.Size() > i)
+            i32 colorClearValuesCount = vulkanRenderPass->hasDepth ? vulkanRenderPass->clearValues.Size() - 1 : vulkanRenderPass->clearValues.Size();
+            for (int i = 0; i < colorClearValuesCount ; ++i)
             {
-                Vec4 color = beginRenderPassInfo.clearValues[i];
+                shouldClear = true;
+                VkClearValue& clearValue = vulkanRenderPass->clearValues[i];
+                Vec4 color = *beginRenderPassInfo.clearValue;
                 clearValue.color = {color.x, color.y, color.z, color.w};
-            }
-            else
-            {
-                clearValue.depthStencil = {.depth = beginRenderPassInfo.depthStencil.depth, .stencil = beginRenderPassInfo.depthStencil.stencil};
             }
         }
 
-        renderPassBeginInfo.clearValueCount = vulkanRenderPass->clearValues.Size();
-        renderPassBeginInfo.pClearValues = vulkanRenderPass->clearValues.Data();
+        if (beginRenderPassInfo.depthStencil && vulkanRenderPass->hasDepth)
+        {
+            shouldClear = true;
+            VkClearValue& clearValue = vulkanRenderPass->clearValues[vulkanRenderPass->clearValues.Size() - 1];
+            clearValue.depthStencil = {
+                .depth = beginRenderPassInfo.depthStencil->depth,
+                .stencil = beginRenderPassInfo.depthStencil->stencil
+            };
+        }
+
+        if (shouldClear)
+        {
+            renderPassBeginInfo.clearValueCount = vulkanRenderPass->clearValues.Size();
+            renderPassBeginInfo.pClearValues = vulkanRenderPass->clearValues.Data();
+        }
+
         vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
     }
 

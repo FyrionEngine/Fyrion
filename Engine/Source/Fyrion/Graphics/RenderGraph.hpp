@@ -1,7 +1,9 @@
 #pragma once
+
 #include "GraphicsTypes.hpp"
 #include "Fyrion/Asset/Asset.hpp"
 #include "Fyrion/Core/HashMap.hpp"
+#include "Fyrion/Core/Optional.hpp"
 #include "Fyrion/Core/SharedPtr.hpp"
 
 
@@ -69,7 +71,8 @@ namespace Fyrion
         HashMap<String, SharedPtr<RenderGraphResource>> inputs{};
         HashMap<String, SharedPtr<RenderGraphResource>> outputs{};
         Extent3D                                        extent{};
-        Array<Vec4>                                     clearValues{};
+        Optional<Vec4>                                  clearColor{};
+        Optional<ClearDepthStencilValue>                clearDepthStencil{};
 
         void CreateRenderPass();
     };

@@ -22,13 +22,12 @@ struct PushConsts
 	float4x4 model;
 };
 
-
 struct Scene
 {
   float4x4 viewProjection;
 };
 
-[[vk::binding(0, 0)]]  ConstantBuffer<Scene> scene;z
+[[vk::binding(0, 0)]]  ConstantBuffer<Scene> scene;
 [[vk::push_constant]]  ConstantBuffer<PushConsts>  pushConsts;
 
 VSOutput MainVS(VSInput input)

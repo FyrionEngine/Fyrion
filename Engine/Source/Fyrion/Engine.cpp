@@ -35,24 +35,24 @@ namespace Fyrion
 
     namespace
     {
-        Logger&     logger = Logger::GetLogger("Fyrion::Engine");
-        bool        running = true;
-        Window      window{};
-        Swapchain   swapchain{};
-        Vec4        clearColor = Vec4{0, 0, 0, 1};
-        f64         lastTime{};
-        f64         deltaTime{};
-        u64         frame{0};
-        ArgParser   args{};
+        Logger&   logger = Logger::GetLogger("Fyrion::Engine");
+        bool      running = true;
+        Window    window{};
+        Swapchain swapchain{};
+        Vec4      clearColor = Vec4{0, 0, 0, 1};
+        f64       lastTime{};
+        f64       deltaTime{};
+        u64       frame{0};
+        ArgParser args{};
 
-        EventHandler<OnInit> onInitHandler{};
-        EventHandler<OnUpdate> onUpdateHandler{};
-        EventHandler<OnBeginFrame> onBeginFrameHandler{};
-        EventHandler<OnEndFrame> onEndFrameHandler{};
-        EventHandler<OnShutdown> onShutdownHandler{};
-        EventHandler<OnShutdownRequest> onShutdownRequest{};
+        EventHandler<OnInit>                 onInitHandler{};
+        EventHandler<OnUpdate>               onUpdateHandler{};
+        EventHandler<OnBeginFrame>           onBeginFrameHandler{};
+        EventHandler<OnEndFrame>             onEndFrameHandler{};
+        EventHandler<OnShutdown>             onShutdownHandler{};
+        EventHandler<OnShutdownRequest>      onShutdownRequest{};
         EventHandler<OnRecordRenderCommands> onRecordRenderCommands{};
-        EventHandler<OnSwapchainRender> onSwapchainRender{};
+        EventHandler<OnSwapchainRender>      onSwapchainRender{};
     }
 
     void Engine::Init()
@@ -102,7 +102,6 @@ namespace Fyrion
         ImGui::Init(window, swapchain);
 
         onInitHandler.Invoke();
-
     }
 
     void Engine::Run()
@@ -113,7 +112,7 @@ namespace Fyrion
         {
             f64 currentTime = Platform::GetElapsedTime();
             deltaTime = currentTime - lastTime;
-            lastTime  = currentTime;
+            lastTime = currentTime;
 
             onBeginFrameHandler.Invoke();
             Platform::ProcessEvents();
@@ -140,28 +139,32 @@ namespace Fyrion
 
             RenderPass renderPass = Graphics::AcquireNextRenderPass(swapchain);
 
+            cmd.BeginLabel("Swapchain", {0, 0, 0, 1});
+
             cmd.BeginRenderPass(BeginRenderPassInfo{
                 .renderPass = renderPass,
-                .clearValues = {&clearColor, 1}
+                .clearValue = &clearColor
             });
 
             ViewportInfo viewportInfo{};
             viewportInfo.x = 0.;
             viewportInfo.y = 0.;
-            viewportInfo.width = (f32) extent.width;
-            viewportInfo.height = (f32) extent.height;
+            viewportInfo.width = (f32)extent.width;
+            viewportInfo.height = (f32)extent.height;
             viewportInfo.maxDepth = 0.;
             viewportInfo.minDepth = 1.;
             cmd.SetViewport(viewportInfo);
-            cmd.SetScissor(Rect{.x= 0, .y = 0, .width = extent.width, .height = extent.height});
+            cmd.SetScissor(Rect{.x = 0, .y = 0, .width = extent.width, .height = extent.height});
 
             onSwapchainRender.Invoke(cmd);
 
-            cmd.BeginLabel("ImGui", {0, 0, 0, 0});
+            cmd.BeginLabel("ImGui", {0, 0, 0, 1});
             ImGui::Render(cmd);
             cmd.EndLabel();
 
             cmd.EndRenderPass();
+            cmd.EndLabel();
+
             cmd.End();
 
             GraphicsEndFrame(swapchain);

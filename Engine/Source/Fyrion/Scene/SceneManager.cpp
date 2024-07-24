@@ -51,13 +51,14 @@ namespace Fyrion
         return MemoryGlobals::GetDefaultAllocator().Alloc<SceneObject>();
     }
 
-    SceneObject* SceneManager::CreateObject(SceneObjectAsset* asset)
+    SceneObject* SceneManager::CreateObjectFromAsset(SceneObjectAsset* asset)
     {
+        SceneObject* object = MemoryGlobals::GetDefaultAllocator().Alloc<SceneObject>();
         if (asset)
         {
-            return asset->GetObject()->Clone();
+            object->SetPrototype(asset->GetObject());
         }
-        return MemoryGlobals::GetDefaultAllocator().Alloc<SceneObject>();
+        return object;
     }
 
     void SceneManager::SetActiveObject(SceneObject* sceneObject)

@@ -209,7 +209,7 @@ namespace Fyrion
 
                     if (!found)
                     {
-                        if (auto it =  materialMap.Find(reinterpret_cast<usize>(gltfPrimitive.material)))
+                        if (auto it = materialMap.Find(reinterpret_cast<usize>(gltfPrimitive.material)))
                         {
                             materialIndex = materials.Size();
 
@@ -231,17 +231,22 @@ namespace Fyrion
             return meshAsset;
         }
 
-        void LoadGltfNode(const ImportedMeshMap& meshMap, SceneObject* parentObject, cgltf_node* node, u32 index)
+        void LoadGltfNode(const ImportedMeshMap& meshMap, SceneObject* parentObject, cgltf_node* node, u32& meshCount)
         {
-            String nodeName = node->name != nullptr ? String{node->name} : String("node_").Append(index);
-            SceneObject* object = parentObject->GetChildByName(nodeName);
+            String nodeName = node->name != nullptr ? String{node->name}.Append("_").Append(meshCount++) : String("MeshNode_").Append(meshCount++);
+
+            SceneObject* object = parentObject->FindChildByName(nodeName);
             if (object == nullptr)
             {
                 object = SceneManager::CreateObject();
                 object->SetName(nodeName);
-                object->AddComponent<TransformComponent>();
-                object->AddComponent<MeshRender>();
+                object->SetUUID(UUID::RandomUUID());
                 parentObject->AddChild(object);
+                TransformComponent& transformComponent = object->AddComponent<TransformComponent>();
+                MeshRender& meshRender = object->AddComponent<MeshRender>();
+
+                transformComponent.SetUUID(UUID::RandomUUID());
+                meshRender.SetUUID(UUID::RandomUUID());
             }
 
             if (node->mesh)
@@ -287,7 +292,7 @@ namespace Fyrion
 
             for (u32 c = 0; c < node->children_count; ++c)
             {
-                LoadGltfNode(meshMap, object, node->children[c], c);
+                LoadGltfNode(meshMap, parentObject, node->children[c], meshCount);
             }
         }
 
@@ -370,9 +375,9 @@ namespace Fyrion
                 return;
             }
 
-            ImportedTextureMap textureMap;
+            ImportedTextureMap  textureMap;
             ImportedMaterialMap materialMap;
-            ImportedMeshMap meshMap;
+            ImportedMeshMap     meshMap;
 
             for (i32 t = 0; t < data->textures_count; ++t)
             {
@@ -380,7 +385,7 @@ namespace Fyrion
 
                 if (texture.image->buffer_view != nullptr)
                 {
-                    String textureName = texture.name != nullptr ? texture.name : String{"Texture_"}.Append(t);
+                    String        textureName = texture.name != nullptr ? texture.name : String{"Texture_"}.Append(t);
                     TextureAsset* textureAsset = dccAsset->FindTextureByName(textureName);
                     if (textureAsset == nullptr)
                     {
@@ -458,44 +463,33 @@ namespace Fyrion
 
             for (u32 m = 0; m < data->meshes_count; ++m)
             {
-
                 MeshAsset* meshAsset = LoadGltfMesh(dccAsset, materialMap, data, data->meshes[m], m);
-                meshMap.Insert(reinterpret_cast<usize>(&data->meshes[m]),meshAsset);
+                meshMap.Insert(reinterpret_cast<usize>(&data->meshes[m]), meshAsset);
             }
 
             if (data->scenes_count > 0)
             {
-                SceneObjectAsset* sceneObjectAsset = dccAsset->GetSceneObjectAsset();
-                if (sceneObjectAsset == nullptr)
+                SceneObjectAsset* rootObjectAsset = dccAsset->GetSceneObjectAsset();
+                if (rootObjectAsset == nullptr)
                 {
-                    sceneObjectAsset = AssetDatabase::Create<SceneObjectAsset>();
-                    sceneObjectAsset->SetName(dccAsset->GetName());
-                    sceneObjectAsset->SetUUID(UUID::RandomUUID());
-                    sceneObjectAsset->SetOwner(dccAsset);
+                    rootObjectAsset = AssetDatabase::Create<SceneObjectAsset>();
+                    rootObjectAsset->SetName(dccAsset->GetName());
+                    rootObjectAsset->SetUUID(UUID::RandomUUID());
+                    rootObjectAsset->SetOwner(dccAsset);
 
-                    sceneObjectAsset->GetObject()->AddComponent<TransformComponent>();
+                    TransformComponent& transformComponent = rootObjectAsset->GetObject()->AddComponent<TransformComponent>();
+                    transformComponent.SetUUID(UUID::RandomUUID());
                 }
 
-                SceneObject* rootObject = sceneObjectAsset->GetObject();
+                SceneObject* rootObject = rootObjectAsset->GetObject();
 
+                u32 meshCount = 0;
                 for (u32 c = 0; c < data->scenes_count; ++c)
                 {
                     cgltf_scene& scene = data->scenes[c];
-                    String sceneName = scene.name != nullptr ? scene.name : String{"scene_"}.Append(c);
-
-                    SceneObject* sceneObject = rootObject->GetChildByName(sceneName);
-
-                    if (sceneObject == nullptr)
-                    {
-                        sceneObject = SceneManager::CreateObject();
-                        sceneObject->SetName(sceneName);
-                        sceneObject->AddComponent<TransformComponent>();
-                        rootObject->AddChild(sceneObject);
-                    }
-
                     for (u32 n = 0; n < scene.nodes_count; ++n)
                     {
-                        LoadGltfNode(meshMap, sceneObject, scene.nodes[n], n);
+                        LoadGltfNode(meshMap, rootObject, scene.nodes[n], meshCount);
                     }
                 }
             }

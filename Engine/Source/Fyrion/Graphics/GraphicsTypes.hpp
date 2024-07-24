@@ -373,9 +373,9 @@ namespace Fyrion
 
     struct BeginRenderPassInfo
     {
-        RenderPass          renderPass{};
-        Span<Vec4>             clearValues{};
-        ClearDepthStencilValue depthStencil{};
+        RenderPass              renderPass{};
+        Vec4*                   clearValue{};
+        ClearDepthStencilValue* depthStencil{};
     };
 
     struct ViewportInfo
@@ -651,8 +651,8 @@ namespace Fyrion
         Extent3D                size{};
         Vec2                    scale{};
         LoadOp                  loadOp{LoadOp::Clear};
-        Vec4                    cleanValue{};
-        bool                    cleanDepth{};
+        Vec4                    clearValue{};
+        bool                    clearDepth{};
         Format                  format{};
         BufferUsage             bufferUsage{};
         BufferAllocation        bufferAllocation{BufferAllocation::GPUOnly};

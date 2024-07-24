@@ -11,6 +11,8 @@ namespace Fyrion
     public:
         FY_BASE_TYPES(Component);
 
+        ~MeshRender() override;
+
         void OnNotify(i64 type, VoidPtr userData) override;
         void OnChange() override;
 

@@ -2,6 +2,7 @@
 
 #include "Component.hpp"
 #include "Fyrion/Common.hpp"
+#include "Fyrion/Core/HashSet.hpp"
 #include "Fyrion/Core/UUID.hpp"
 
 namespace Fyrion
@@ -27,10 +28,11 @@ namespace Fyrion
         void               SetName(const StringView& p_name);
         SceneObject*       GetParent() const;
         Span<SceneObject*> GetChildren() const;
-        SceneObject*       GetChildByName(const StringView& p_name) const;
+        SceneObject*       FindChildByName(const StringView& p_name) const;
+        SceneObject*       FindChildByUUID(const UUID& p_uuid) const;
         void               SetUUID(UUID p_uuid);
         UUID               GetUUID() const;
-        SceneObjectAsset*  GetPrototype() const;
+        SceneObject*       GetPrototype() const;
         void               AddChild(SceneObject* sceneObject);
         void               AddChildAt(SceneObject* sceneObject, usize pos);
         void               RemoveChild(SceneObject* sceneObject);
@@ -48,6 +50,11 @@ namespace Fyrion
         void               SetAlive(bool p_alive);
         void               Notify(i64 type, VoidPtr userData);
         SceneObject*       Clone() const;
+        void               SetPrototype(SceneObject* p_prototype);
+        void               OverridePrototypeComponent(const Component* component);
+        bool               IsComponentOverride(const Component* component) const;
+        void               RemoveOverridePrototypeComponent(Component* component);
+        bool               HasPrototypeOverride() const;
 
         template <typename T, Traits::EnableIf<Traits::IsBaseOf<Component, T>>* = nullptr>
         T& AddComponent()
@@ -66,39 +73,14 @@ namespace Fyrion
     private:
         bool                root = false;
         SceneObjectAsset*   asset{};
-        SceneObjectAsset*   prototype{};
+        SceneObject*        prototype{};
         String              name;
         UUID                uuid;
         Array<Component*>   components{};
         Array<SceneObject*> children{};
+        HashSet<UUID>       componentOverride{};
         SceneObject*        parent = nullptr;
         bool                alive = true;
         bool                notificationDisabled = false;
-    };
-
-    template <>
-    struct ArchiveType<SceneObject>
-    {
-        constexpr static bool hasArchiveImpl = true;
-
-        static void Write(ArchiveWriter& writer, ArchiveObject object, StringView name, const SceneObject* value)
-        {
-            writer.WriteValue(object, name, value->Serialize(writer));
-        }
-
-        static void Read(ArchiveReader& reader, ArchiveObject object, StringView name, SceneObject* value)
-        {
-            value->Deserialize(reader, reader.ReadObject(object, name));
-        }
-
-        static void Add(ArchiveWriter& writer, ArchiveObject array, const SceneObject* value)
-        {
-            FY_ASSERT(false, "not implemented");
-        }
-
-        static void Get(ArchiveReader& reader, ArchiveObject item, SceneObject* value)
-        {
-            FY_ASSERT(false, "not implemented");
-        }
     };
 }

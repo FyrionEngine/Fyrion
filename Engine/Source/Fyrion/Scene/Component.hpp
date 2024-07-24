@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Fyrion/Common.hpp"
+#include "Fyrion/Core/UUID.hpp"
 
 
 namespace Fyrion
@@ -12,8 +13,6 @@ namespace Fyrion
     public:
         TypeHandler* typeHandler = nullptr;
         SceneObject* object = nullptr;
-        bool prototypeOverride = false;
-
         virtual ~Component() = default;
 
         virtual void OnStart() {}
@@ -21,8 +20,11 @@ namespace Fyrion
         virtual void OnDestroy() {}
         virtual void OnNotify(i64 type, VoidPtr userData) {}
 
-        static void RegisterType(NativeTypeHandler<Component>& type);
+        void        SetUUID(const UUID& uuid);
+        const UUID& GetUUID() const;
 
+        static void RegisterType(NativeTypeHandler<Component>& type);
     private:
+        UUID uuid{};
     };
 }

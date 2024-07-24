@@ -32,7 +32,7 @@ namespace Fyrion
 
     CreateSceneObjectAction::CreateSceneObjectAction(SceneEditor& sceneEditor, SceneObject* parent, SceneObjectAsset* prototype) : sceneEditor(sceneEditor), parent(parent), prototype(prototype)
     {
-        current = SceneManager::CreateObject(prototype);
+        current = SceneManager::CreateObjectFromAsset(prototype);
         if (current->GetName().Empty())
         {
             current->SetName("New Object");
@@ -43,7 +43,7 @@ namespace Fyrion
 
     CreateSceneObjectAction::~CreateSceneObjectAction()
     {
-        if (current != nullptr)
+        if (current != nullptr && !current->IsAlive())
         {
             SceneManager::Destroy(current);
         }
@@ -54,6 +54,7 @@ namespace Fyrion
         sceneEditor.SelectObject(*current);
         parent->AddChildAt(current, pos);
         sceneEditor.Modify();
+        current->SetAlive(true);
     }
 
     void CreateSceneObjectAction::Rollback()
@@ -61,6 +62,7 @@ namespace Fyrion
         sceneEditor.DeselectObject(*current);
         parent->RemoveChild(current);
         sceneEditor.Modify();
+        current->SetAlive(false);
     }
 
     void CreateSceneObjectAction::RegisterType(NativeTypeHandler<CreateSceneObjectAction>& type)
@@ -92,7 +94,7 @@ namespace Fyrion
         }
 
         sceneEditor.Modify();
-        parent->SetAlive(false);
+        object->SetAlive(false);
     }
 
     void DestroySceneObjectAction::Rollback()
@@ -103,7 +105,7 @@ namespace Fyrion
 
             sceneEditor.Modify();
         }
-        parent->SetAlive(true);
+        object->SetAlive(true);
     }
 
     RenameSceneObjectAction::RenameSceneObjectAction(SceneEditor& sceneEditor, SceneObject* sceneObject, StringView newName)
@@ -139,6 +141,10 @@ namespace Fyrion
     {
         sceneEditor.Modify();
         component = &object->AddComponent(typeHandler);
+        if (!component->GetUUID())
+        {
+            component->SetUUID(UUID::RandomUUID());
+        }
     }
 
     void AddComponentSceneObjectAction::Rollback()

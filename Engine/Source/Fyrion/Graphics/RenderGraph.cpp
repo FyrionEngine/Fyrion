@@ -124,7 +124,18 @@ namespace Fyrion
 
                         if (output.loadOp == LoadOp::Clear)
                         {
-                            clearValues.EmplaceBack(output.cleanValue);
+                            if (!clearColor)
+                            {
+                                clearColor = MakeOptional<Vec4>(output.clearValue);
+                            }
+                        }
+
+                        if (output.clearDepth)
+                        {
+                            if (!clearDepthStencil)
+                            {
+                                clearDepthStencil = MakeOptional<ClearDepthStencilValue>(ClearDepthStencilValue{1.0, 0});
+                            }
                         }
                     }
                 }
@@ -419,7 +430,17 @@ namespace Fyrion
             {
                 BeginRenderPassInfo renderPassInfo{};
                 renderPassInfo.renderPass = node->renderPass;
-                renderPassInfo.clearValues = node->clearValues;
+
+                if (node->clearColor)
+                {
+                    renderPassInfo.clearValue = &*node->clearColor;
+                }
+
+                if (node->clearDepthStencil)
+                {
+                    renderPassInfo.depthStencil = &*node->clearDepthStencil;
+                }
+
                 cmd.BeginRenderPass(renderPassInfo);
 
                 ViewportInfo viewportInfo{};

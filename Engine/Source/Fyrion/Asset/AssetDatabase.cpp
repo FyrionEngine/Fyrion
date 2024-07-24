@@ -265,6 +265,12 @@ namespace Fyrion
         {
             Asset* asset = Create(typeHandler->GetTypeInfo().typeId, UUID::FromString(reader.ReadString(object, "uuid")));
             Serialization::Deserialize(typeHandler, reader, object, asset);
+
+            if (ArchiveObject dataObject = reader.ReadObject(object, "_data"))
+            {
+                asset->DeserializeData(reader, dataObject);
+            }
+
             AssetDatabaseUpdateUUID(asset, asset->GetUUID());
 
             ArchiveObject arr = reader.ReadObject(object, "_assets");
@@ -309,7 +315,9 @@ namespace Fyrion
             ArchiveObject arr = writer.CreateArray();
             for (Asset* child : asset->assets)
             {
-                writer.AddValue(arr, SerializeAsset(writer, child));
+                ArchiveObject assetObj = SerializeAsset(writer, child);
+                writer.WriteValue(assetObj, "_data", child->SerializeData(writer));
+                writer.AddValue(arr, assetObj);
             }
             writer.WriteValue(object, "_assets", arr);
         }

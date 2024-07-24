@@ -31,7 +31,7 @@ namespace Fyrion
         Asset*                 selectedItem{};
         String                 searchString{};
         String                 stringCache{};
-        Asset*                 movingItem{};
+        AssetPayload           assetPayload{};
         AssetDirectory*        popupFolder{};
         HashMap<usize, bool>   openTreeFolders{};
         f32                    contentBrowserZoom = 0.8;

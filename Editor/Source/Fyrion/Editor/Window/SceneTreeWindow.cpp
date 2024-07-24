@@ -4,6 +4,7 @@
 #include "Fyrion/ImGui/IconsFontAwesome6.h"
 #include "Fyrion/ImGui/ImGui.hpp"
 #include "Fyrion/Scene/SceneObject.hpp"
+#include "Fyrion/Scene/SceneTypes.hpp"
 
 namespace Fyrion
 {
@@ -21,7 +22,7 @@ namespace Fyrion
 
         bool root = sceneEditor.GetRootObject() == &sceneObject;
 
-        Array<SceneObject*> children = sceneObject.GetChildren();
+        Array children = sceneObject.GetChildren();
 
         nameCache.Clear();
         nameCache += root ? ICON_FA_CUBES : ICON_FA_CUBE;
@@ -103,6 +104,7 @@ namespace Fyrion
             ImGui::PopStyleColor();
         }
 
+        CheckDragDropAsset();
 
         if (ImGui::BeginDragDropTarget())
         {
@@ -149,8 +151,8 @@ namespace Fyrion
 
     void SceneTreeWindow::Draw(u32 id, bool& open)
     {
-
         entityIsSelected = false;
+        skipDragDrop = false;
 
         auto& style = ImGui::GetStyle();
         auto originalWindowPadding = style.WindowPadding;
@@ -204,8 +206,8 @@ namespace Fyrion
                     ImGui::EndTable();
                 }
             }
-
             ImGui::EndChild();
+            CheckDragDropAsset();
         }
 
 
@@ -246,6 +248,25 @@ namespace Fyrion
         ImGui::EndPopupMenu(popupRes);
 
         ImGui::End();
+    }
+
+    void SceneTreeWindow::CheckDragDropAsset()
+    {
+        if (skipDragDrop) return;
+
+        if (ImGui::BeginDragDropTarget())
+        {
+            skipDragDrop = true;
+
+            AssetPayload* payload = static_cast<AssetPayload*>(ImGui::GetDragDropPayload()->Data);
+            SceneObjectAssetProvider* provider = dynamic_cast<SceneObjectAssetProvider*>(payload->asset);
+
+            if (provider != nullptr && ImGui::AcceptDragDropPayload(AssetDragDropType))
+            {
+
+            }
+            ImGui::EndDragDropTarget();
+        }
     }
 
     void SceneTreeWindow::AddMenuItem(const MenuItemCreation& menuItem)

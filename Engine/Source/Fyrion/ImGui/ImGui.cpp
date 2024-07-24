@@ -308,6 +308,17 @@ namespace ImGui
         return open;
     }
 
+    void DummyRect(ImVec2 min, ImVec2 max)
+    {
+        ImGuiWindow* window = GetCurrentWindow();
+        if (window->SkipItems)
+            return;
+
+        const ImRect bb(min, max);
+        ItemSize(max - min);
+        ItemAdd(bb, 0);
+    }
+
     ImU32 TextToColor(const char* str)
     {
         auto color = ImHashStr(str, strlen(str));
@@ -455,11 +466,11 @@ namespace ImGui
             ImGui::EndDragDropTarget();
         }
 
-        if (contentItemDesc.SetPayload != nullptr && !isDoubleClicked && ImGui::BeginDragDropSource())
+        if (contentItemDesc.DragDropType != nullptr && !isDoubleClicked && ImGui::BeginDragDropSource())
         {
             contentTable.beginPayloadItem = contentItemDesc.ItemId;
 
-            ImGui::SetDragDropPayload(contentItemDesc.SetPayload, nullptr, 0);
+            ImGui::SetDragDropPayload(contentItemDesc.DragDropType, contentItemDesc.DragDropPayload, contentItemDesc.DragDropPayloadSize);
             ImGui::Text("%s", contentItemDesc.Label);
             ImGui::EndDragDropSource();
         }

@@ -27,8 +27,10 @@ namespace Fyrion
         bool         entityIsSelected{};
         bool         renamingFocus{};
         String       renamingStringCache{};
+        bool         skipDragDrop{};
 
         void        DrawSceneObject(SceneObject& sceneObject);
+        void        CheckDragDropAsset();
         static void OpenSceneTree(const MenuItemEventData& eventData);
         static void AddSceneObject(const MenuItemEventData& eventData);
         static void AddSceneObjectFromAsset(const MenuItemEventData& eventData);

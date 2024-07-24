@@ -100,6 +100,18 @@ namespace Fyrion
         return nullptr;
     }
 
+    Component* SceneObject::FindComponentByUUID(const UUID& p_uuid) const
+    {
+        for (Component* component : components)
+        {
+            if (component->GetUUID() == p_uuid)
+            {
+                return component;
+            }
+        }
+        return nullptr;
+    }
+
     StringView SceneObject::GetName() const
     {
         if (asset)
@@ -421,26 +433,45 @@ namespace Fyrion
         SetName(p_prototype->GetName());
         SetUUID(UUID::RandomUUID());
 
+        Array<SceneObject*> childrenToAdd;
+        childrenToAdd.Reserve(p_prototype->children.Size());
+
         for (SceneObject* child : p_prototype->children)
         {
             if (SceneObject* childPrototype = FindChildByPrototype(child->GetUUID()))
             {
+                //to keep the original order, not exactly the most performact way, but does the job
+                //maybe needs to be revisited later
+                this->RemoveChild(childPrototype);
+                childrenToAdd.EmplaceBack(childPrototype);
+
                 childPrototype->SetPrototype(child);
+
                 continue;
             }
 
             SceneObject* newChild = MemoryGlobals::GetDefaultAllocator().Alloc<SceneObject>();
             newChild->SetPrototype(child);
+            childrenToAdd.EmplaceBack(newChild);
+        }
+
+        children.Reserve(children.Size() + childrenToAdd.Size());
+
+        for(SceneObject* newChild : childrenToAdd)
+        {
             this->AddChild(newChild);
         }
 
         for (const Component* component : p_prototype->components)
         {
-            if (!FindComponentByPrototype(component->GetUUID()))
+            if (FindComponentByPrototype(component->GetUUID()))
             {
-                Component& newComponent = this->CloneComponent(component);
-                newComponent.SetPrototype(component->GetUUID());
+                componentOverride.Insert(component->GetUUID());
+                continue;
             }
+
+            Component& newComponent = this->CloneComponent(component);
+            newComponent.SetPrototype(component->GetUUID());
         }
     }
 
@@ -458,12 +489,14 @@ namespace Fyrion
 
     void SceneObject::RemoveOverridePrototypeComponent(Component* component)
     {
-        if(!component || !component->GetPrototype()) return;
+        if (!component || !component->GetPrototype()) return;
         componentOverride.Erase(component->GetPrototype());
 
-
-        //component->typeHandler->DeepCopy()
-        //TODO copy original value.
+        if (Component* originalValue = prototype->FindComponentByUUID(component->GetPrototype()))
+        {
+            component->typeHandler->DeepCopy(originalValue, component);
+            component->OnChange();
+        }
     }
 
     bool SceneObject::HasPrototypeOverride() const

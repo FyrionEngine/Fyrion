@@ -7,8 +7,10 @@
 namespace Fyrion
 {
     class SceneObject;
+    class Asset;
 
     constexpr const char* SceneTreePayload = "scene-tree-payload";
+    constexpr const char* AssetDragDropType = "asset-drag-drop-type";
 
     using OnSceneObjectSelection = EventType<"Fyrion::Editor::OnSceneObjectSelection"_h, void(SceneObject*)>;
 
@@ -33,6 +35,11 @@ namespace Fyrion
     {
         DockPosition dockPosition{};
         bool createOnInit{};
+    };
+
+    struct AssetPayload
+    {
+        Asset* asset;
     };
 
 

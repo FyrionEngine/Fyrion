@@ -40,18 +40,20 @@ namespace ImGui
 
     struct ContentItemDesc
     {
-        ImGuiID         ItemId{};
-        const char*     PreLabel{};
-        const char*     Label{};
-        Texture         Texture{};
-        bool            CanRename{};
-        bool            ShowDetails{};
-        const char*     DetailsDesc{};
-        u32*            Color{};
-        bool            DefaultSelected{};
-        const char*     AcceptPayload{};
-        const char*     SetPayload{};
-        const char*     TooltipText{};
+        ImGuiID     ItemId{};
+        const char* PreLabel{};
+        const char* Label{};
+        Texture     Texture{};
+        bool        CanRename{};
+        bool        ShowDetails{};
+        const char* DetailsDesc{};
+        u32*        Color{};
+        bool        DefaultSelected{};
+        const char* AcceptPayload{};
+        const char* DragDropType{};
+        VoidPtr     DragDropPayload{};
+        usize       DragDropPayloadSize{};
+        const char* TooltipText{};
     };
 
     struct DrawTypeDesc
@@ -124,12 +126,12 @@ namespace ImGui
     FY_API bool TreeNode(u32 id, const char* label, ImGuiTreeNodeFlags flags = 0);
     FY_API bool TreeLeaf(u32 id, const char* label, ImGuiTreeNodeFlags flags = 0);
     FY_API void DrawImage(Texture texture, const Rect& rect, const ImVec4& tintCol = ImVec4(1, 1, 1, 1));
-
     FY_API bool BeginPopupMenu(const char* str, ImGuiWindowFlags popupFlags = 0, bool setSize = true);
     FY_API void EndPopupMenu(bool closePopup = true);
     FY_API bool SelectionButton(const char* label, bool selected, const ImVec2& sizeArg = ImVec2(0, 0));
     FY_API bool BorderedButton(const char* label, const ImVec2& size = ImVec2(0, 0));
     FY_API bool CollapsingHeaderProps(i32 id, const char* label, bool* buttonClicked);
+    FY_API void DummyRect(ImVec2 min, ImVec2 max);
 
     FY_API ImU32 TextToColor(const char* str);
 

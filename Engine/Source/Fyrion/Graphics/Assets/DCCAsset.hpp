@@ -3,21 +3,22 @@
 #include "MeshAsset.hpp"
 #include "TextureAsset.hpp"
 #include "Fyrion/Asset/Asset.hpp"
+#include "Fyrion/Scene/SceneTypes.hpp"
 #include "Fyrion/Scene/Assets/SceneObjectAsset.hpp"
 
 namespace Fyrion
 {
-    class FY_API DCCAsset : public Asset
+    class FY_API DCCAsset : public Asset, public SceneObjectAssetProvider
     {
     public:
-        FY_BASE_TYPES(Asset);
+        FY_BASE_TYPES(Asset, SceneObjectAssetProvider);
 
         static void RegisterType(NativeTypeHandler<DCCAsset>& type);
 
         MaterialAsset*    FindMaterialByName(const StringView& materialName);
         MeshAsset*        FindMeshByName(const StringView& meshName);
         TextureAsset*     FindTextureByName(const StringView& textureName);
-        SceneObjectAsset* GetSceneObjectAsset();
+        SceneObjectAsset* GetSceneObjectAsset() override;
 
     private:
         Vec3 scaleFactor{1.0, 1.0, 1.0};

@@ -237,6 +237,7 @@ namespace Fyrion
                 if (ImGui::MenuItem("Override"))
                 {
                     object.OverridePrototypeComponent(selectedComponent);
+                    m_sceneEditor.Modify();
                 }
             }
 
@@ -245,6 +246,7 @@ namespace Fyrion
                 if (ImGui::MenuItem("Cancel prototype override"))
                 {
                     object.RemoveOverridePrototypeComponent(selectedComponent);
+                    m_sceneEditor.Modify();
                 }
             }
 

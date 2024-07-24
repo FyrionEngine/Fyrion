@@ -45,6 +45,7 @@ namespace Fyrion
         Span<Component*>   GetComponents() const;
         Component*         GetComponent(TypeID typeId) const;
         Component*         FindComponentByPrototype(const UUID& p_prototype) const;
+        Component*         FindComponentByUUID(const UUID& p_uuid) const;
         void               Destroy();
         ArchiveObject      Serialize(ArchiveWriter& writer) const;
         void               Deserialize(ArchiveReader& reader, ArchiveObject object);

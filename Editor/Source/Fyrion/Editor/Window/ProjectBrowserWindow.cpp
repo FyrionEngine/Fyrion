@@ -16,7 +16,6 @@
 #include "Fyrion/Graphics/Assets/TextureAsset.hpp"
 
 #define CONTENT_TABLE_ID 500
-#define ASSET_PAYLOAD "ASSET-PAYLOAD"
 
 namespace Fyrion
 {
@@ -88,17 +87,17 @@ namespace Fyrion
 
         if (ImGui::BeginDragDropTarget())
         {
-            if (movingItem != nullptr && !directory->IsChildOf(movingItem) && ImGui::AcceptDragDropPayload(ASSET_PAYLOAD))
+            if (assetPayload.asset != nullptr && !directory->IsChildOf(assetPayload.asset) && ImGui::AcceptDragDropPayload(AssetDragDropType))
             {
-                Editor::CreateTransaction()->CreateAction<MoveAssetAction>(movingItem, directory)->Commit();
+                Editor::CreateTransaction()->CreateAction<MoveAssetAction>(assetPayload.asset, directory)->Commit();
             }
             ImGui::EndDragDropTarget();
         }
 
         if (asset->GetDirectory() != nullptr && ImGui::BeginDragDropSource())
         {
-            movingItem = asset;
-            ImGui::SetDragDropPayload(ASSET_PAYLOAD, nullptr, 0);
+            assetPayload.asset = asset;
+            ImGui::SetDragDropPayload(AssetDragDropType, &assetPayload, sizeof(AssetPayload));
             ImGui::Text("%s", asset->GetName().CStr());
             ImGui::EndDragDropSource();
         }
@@ -310,8 +309,8 @@ namespace Fyrion
                                 contentItem.ItemId = reinterpret_cast<usize>(asset);
                                 contentItem.ShowDetails = false;
                                 contentItem.Label = asset->GetName().CStr();
-                                contentItem.SetPayload = ASSET_PAYLOAD;
-                                contentItem.AcceptPayload = ASSET_PAYLOAD;
+                                contentItem.DragDropType = AssetDragDropType;
+                                contentItem.AcceptPayload = AssetDragDropType;
                                 contentItem.TooltipText = asset->GetPath().CStr();
                                 contentItem.Texture = folderTexture;
 
@@ -339,14 +338,14 @@ namespace Fyrion
                                     }
                                 }
 
-                                if (!asset->IsChildOf(movingItem) && ImGui::ContentItemAcceptPayload(contentItem.ItemId))
+                                if (!asset->IsChildOf(assetPayload.asset) && ImGui::ContentItemAcceptPayload(contentItem.ItemId))
                                 {
-                                    Editor::CreateTransaction()->CreateAction<MoveAssetAction>(movingItem, dynamic_cast<AssetDirectory*>(asset))->Commit();
+                                    Editor::CreateTransaction()->CreateAction<MoveAssetAction>(assetPayload.asset, dynamic_cast<AssetDirectory*>(asset))->Commit();
                                 }
 
                                 if (ImGui::ContentItemBeginPayload(contentItem.ItemId))
                                 {
-                                    movingItem = selectedItem;
+                                    assetPayload.asset = selectedItem;
                                 }
                             }
                         }
@@ -362,7 +361,9 @@ namespace Fyrion
                                 contentItem.ShowDetails = true;
                                 contentItem.Label = asset->GetName().CStr();
                                 contentItem.DetailsDesc = asset->GetDisplayName().CStr();
-                                contentItem.SetPayload = ASSET_PAYLOAD;
+                                contentItem.DragDropType = AssetDragDropType;
+                                contentItem.DragDropPayload = &assetPayload;
+                                contentItem.DragDropPayloadSize = sizeof(AssetPayload);
                                 contentItem.TooltipText = asset->GetPath().CStr();
                                 contentItem.Texture = fileTexture;
 
@@ -398,7 +399,7 @@ namespace Fyrion
 
                                 if (ImGui::ContentItemBeginPayload(contentItem.ItemId))
                                 {
-                                    movingItem = selectedItem;
+                                    assetPayload.asset = selectedItem;
                                 }
                             }
                         }

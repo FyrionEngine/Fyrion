@@ -13,57 +13,64 @@ namespace Fyrion
 
     void ShaderAsset::Compile()
     {
-        stages.Clear();
-        bytes.Clear();
+
+        Array<u8>              tempBytes{};
+        Array<ShaderStageInfo> tempStages{};
 
         RenderApiType renderApi = Graphics::GetRenderApi();
         StringView    source = GetShaderSource();
 
         if (shaderType == ShaderAssetType::Graphics)
         {
-            if (!ShaderManager::CompileShader(ShaderCreation{.asset = this, .source = source, .entryPoint = "MainVS", .shaderStage = ShaderStage::Vertex, .renderApi = renderApi}, bytes))
+            if (!ShaderManager::CompileShader(ShaderCreation{.asset = this, .source = source, .entryPoint = "MainVS", .shaderStage = ShaderStage::Vertex, .renderApi = renderApi}, tempBytes))
             {
                 return;
             }
 
-            stages.EmplaceBack(ShaderStageInfo{
+            tempStages.EmplaceBack(ShaderStageInfo{
                 .stage = ShaderStage::Vertex,
                 .entryPoint = "MainVS",
                 .offset = 0,
-                .size = (u32)bytes.Size()
+                .size = (u32)tempBytes.Size()
             });
 
-            u32 pixelOffset = (u32)bytes.Size();
+            u32 pixelOffset = (u32)tempBytes.Size();
 
-            if (!ShaderManager::CompileShader(ShaderCreation{.asset = this, .source = source, .entryPoint = "MainPS", .shaderStage = ShaderStage::Pixel, .renderApi = renderApi}, bytes))
+            if (!ShaderManager::CompileShader(ShaderCreation{.asset = this, .source = source, .entryPoint = "MainPS", .shaderStage = ShaderStage::Pixel, .renderApi = renderApi}, tempBytes))
             {
                 return;
             }
 
-            stages.EmplaceBack(ShaderStageInfo{
+            tempStages.EmplaceBack(ShaderStageInfo{
                 .stage = ShaderStage::Pixel,
                 .entryPoint = "MainPS",
                 .offset = pixelOffset,
-                .size = (u32)bytes.Size() - pixelOffset
+                .size = (u32)tempBytes.Size() - pixelOffset
             });
         }
         else if (shaderType == ShaderAssetType::Compute)
         {
-            if (ShaderManager::CompileShader(ShaderCreation{
+            if (!ShaderManager::CompileShader(ShaderCreation{
                                                  .asset = this,
                                                  .source = source,
                                                  .entryPoint = "MainCS",
                                                  .shaderStage = ShaderStage::Compute,
                                                  .renderApi = renderApi
-                                             }, bytes))
+                                             }, tempBytes))
             {
-                stages.EmplaceBack(ShaderStageInfo{
-                    .stage = ShaderStage::Compute,
-                    .entryPoint = "MainCS",
-                    .size = (u32)bytes.Size()
-                });
+                return;
             }
+
+            tempStages.EmplaceBack(ShaderStageInfo{
+                .stage = ShaderStage::Compute,
+                .entryPoint = "MainCS",
+                .size = (u32)tempBytes.Size()
+            });
+
         }
+
+        stages = Traits::Move(tempStages);
+        bytes = Traits::Move(tempBytes);
 
         shaderInfo = ShaderManager::ExtractShaderInfo(bytes, stages, renderApi);
 

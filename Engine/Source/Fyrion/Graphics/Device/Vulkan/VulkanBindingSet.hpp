@@ -62,6 +62,8 @@ namespace Fyrion
         void SetSampler(const Sampler& sampler) override;
         void SetBuffer(const Buffer& buffer) override;
         void SetValue(ConstPtr ptr, usize size) override;
+
+        void MarkDirty();
     };
 
     struct VulkanBindingSet : BindingSet
@@ -74,7 +76,7 @@ namespace Fyrion
         HashMap<u32, DescriptorLayout> descriptorLayoutLookup{};
 
         //binding set values
-        HashMap<String, SharedPtr<VulkanBindingVar>> bindingValues;
+        HashMap<String, SharedPtr<VulkanBindingVar>> bindingVars;
 
         //runtime vulkan data
         HashMap<u32, SharedPtr<VulkanDescriptorSet>> descriptorSets{};
@@ -84,6 +86,7 @@ namespace Fyrion
 
         BindingVar* GetVar(const StringView& name) override;
         void        Reload() override;
+        void        LoadInfo();
 
         void Bind(VulkanCommands& cmd, const PipelineState& pipeline);
     };

@@ -17,6 +17,43 @@ namespace Fyrion
 
         shaderAsset->AddBindingSetDependency(this);
 
+        LoadInfo();
+    }
+
+    void VulkanBindingSet::Reload()
+    {
+        for (auto& descriptorIt : descriptorSets)
+        {
+            for (auto& data : descriptorIt.second->data)
+            {
+                vkDestroyDescriptorSetLayout(vulkanDevice.device, data.descriptorSetLayout, nullptr);
+            }
+        }
+
+        descriptorSets.Clear();
+        valueDescriptorSetLookup.Clear();
+        descriptorLayoutLookup.Clear();
+
+        LoadInfo();
+
+        //it should recreate the bindingVars but keep the original values
+        //note: never remove a bindingVar, even if it's not present anymore in the shader.
+        auto oldBindingVar = Traits::Move(bindingVars);
+        for(const auto& bindingVarIt: oldBindingVar)
+        {
+            VulkanBindingVar* oldVar = bindingVarIt.second.Get();
+
+            VulkanBindingVar* newVar = static_cast<VulkanBindingVar*>(GetVar(bindingVarIt.first));
+            newVar->texture = oldVar->texture;
+            newVar->textureView = oldVar->textureView;
+            newVar->sampler = oldVar->sampler;
+            newVar->buffer = oldVar->buffer;
+            newVar->valueBuffer = Traits::Move(oldVar->valueBuffer);
+        }
+    }
+
+    void VulkanBindingSet::LoadInfo()
+    {
         const ShaderInfo& shaderInfo = shaderAsset->GetShaderInfo();
 
         for (const DescriptorLayout& descriptorLayout : shaderInfo.descriptors)
@@ -38,11 +75,6 @@ namespace Fyrion
         }
     }
 
-    void VulkanBindingSet::Reload()
-    {
-        int a = 0;
-    }
-
     VulkanBindingSet::~VulkanBindingSet()
     {
         shaderAsset->RemoveBindingSetDependency(this);
@@ -52,6 +84,7 @@ namespace Fyrion
             for (auto& data : descriptorIt.second->data)
             {
                 vkDestroyDescriptorSetLayout(vulkanDevice.device, data.descriptorSetLayout, nullptr);
+                vkFreeDescriptorSets(vulkanDevice.device, vulkanDevice.descriptorPool, 1, &data.descriptorSet);
             }
         }
     }
@@ -77,7 +110,7 @@ namespace Fyrion
         if (texture != p_texture.handler)
         {
             texture = static_cast<VulkanTexture*>(p_texture.handler);
-            descriptorSet->MarkDirty();
+            MarkDirty();
         }
     }
 
@@ -86,7 +119,7 @@ namespace Fyrion
         if (textureView != p_textureView.handler)
         {
             textureView = static_cast<VulkanTextureView*>(p_textureView.handler);
-            descriptorSet->MarkDirty();
+            MarkDirty();
         }
     }
 
@@ -95,7 +128,7 @@ namespace Fyrion
         if (sampler != p_sampler.handler)
         {
             sampler = static_cast<VulkanSampler*>(p_sampler.handler);
-            descriptorSet->MarkDirty();
+            MarkDirty();
         }
     }
 
@@ -104,7 +137,7 @@ namespace Fyrion
         if (buffer != p_buffer.handler)
         {
             buffer = static_cast<VulkanBuffer*>(p_buffer.handler);
-            descriptorSet->MarkDirty();
+            MarkDirty();
         }
     }
 
@@ -138,17 +171,24 @@ namespace Fyrion
         MemCopy(memory, ptr, size);
     }
 
+    void VulkanBindingVar::MarkDirty()
+    {
+        if (descriptorSet)
+        {
+            descriptorSet->MarkDirty();
+        }
+    }
+
     BindingVar* VulkanBindingSet::GetVar(const StringView& name)
     {
-        auto it = bindingValues.Find(name);
-        if (it == bindingValues.end())
+        auto it = bindingVars.Find(name);
+        if (it == bindingVars.end())
         {
             //find the attribute descriptor set number
             auto varDescriptorSetIt = valueDescriptorSetLookup.Find(name);
             if (varDescriptorSetIt == valueDescriptorSetLookup.end())
             {
-                FY_ASSERT(false, "binding set not found");
-                return {};
+                return bindingVars.Emplace(name, MakeShared<VulkanBindingVar>(*this)).first->second.Get();
             }
 
             u32 set = varDescriptorSetIt->second;
@@ -214,7 +254,7 @@ namespace Fyrion
                 {
                     const DescriptorBinding& descriptorBinding = descriptorLayout.bindings[i];
 
-                    VulkanBindingVar* bindingVar = bindingValues.Emplace(descriptorBinding.name, MakeShared<VulkanBindingVar>(*this)).first->second.Get();
+                    VulkanBindingVar* bindingVar = bindingVars.Emplace(descriptorBinding.name, MakeShared<VulkanBindingVar>(*this)).first->second.Get();
                     bindingVar->descriptorSet = vulkanDescriptorSet;
                     bindingVar->binding = descriptorBinding.binding;
                     bindingVar->descriptorType = descriptorBinding.descriptorType;
@@ -223,7 +263,7 @@ namespace Fyrion
                 }
             }
 
-            it = bindingValues.Find(name);
+            it = bindingVars.Find(name);
         }
         return it->second.Get();
     }
@@ -270,8 +310,7 @@ namespace Fyrion
                             }
                             else
                             {
-                                descriptorSet->descriptorImageInfos[b].imageView = static_cast<VulkanTextureView*>(
-                                    static_cast<VulkanTexture*>(Graphics::GetDefaultTexture().handler)->textureView.handler)->imageView;
+                                descriptorSet->descriptorImageInfos[b].imageView = static_cast<VulkanTextureView*>(static_cast<VulkanTexture*>(Graphics::GetDefaultTexture().handler)->textureView.handler)->imageView;
                             }
 
                             writeDescriptorSet.pImageInfo = &descriptorSet->descriptorImageInfos[b];

@@ -258,6 +258,16 @@ namespace Fyrion
 		}
 	};
 
+	template<typename T>
+	struct Hash<T*>
+	{
+		constexpr static bool hasHash = true;
+		constexpr static usize Value(T* v)
+		{
+			return Hash<usize>::Value(reinterpret_cast<usize>(v));
+		}
+	};
+
 	template <typename ... Rest>
 	constexpr void HashCombine(usize& seed, usize hash, Rest&&... rest)
 	{

@@ -335,6 +335,7 @@ namespace Fyrion
 
     struct ShaderCreation
     {
+        ShaderAsset*  asset{};
         StringView    source{};
         StringView    entryPoint{};
         ShaderStage   shaderStage{};
@@ -345,8 +346,8 @@ namespace Fyrion
     {
         ShaderAsset*      shader{};
         Span<Format>      attachments{};
-        RenderPass        renderPass{};
         Format            depthFormat = Format::Undefined;
+        RenderPass        renderPass{};
         bool              depthWrite{false};
         bool              stencilTest{false};
         bool              blendEnabled{false};
@@ -595,6 +596,7 @@ namespace Fyrion
         virtual ~BindingSet() = default;
 
         virtual BindingVar* GetVar(const StringView& name) = 0;
+        virtual void        Reload() = 0;
     };
 
     template<>

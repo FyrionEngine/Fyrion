@@ -30,4 +30,5 @@ namespace Fyrion::Graphics
     FY_API VoidPtr       GetBufferMappedMemory(const Buffer& buffer);
     FY_API RenderApiType GetRenderApi();
     FY_API Sampler       GetDefaultSampler();
+    FY_API Texture       GetDefaultTexture();
 }

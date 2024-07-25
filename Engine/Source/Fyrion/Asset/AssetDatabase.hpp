@@ -67,11 +67,12 @@ namespace Fyrion
             return static_cast<T*>(FindByPath(path));
         }
 
+        static void          OnUpdate(f64 deltaTime);
 
     private:
-        static void LoadAssetFile(AssetDirectory* directory, const StringView& filePath);
-        static Asset* ReadAssetFile(const StringView& path);
+        static void          LoadAssetFile(AssetDirectory* directory, const StringView& filePath);
+        static Asset*        ReadAssetFile(const StringView& path);
         static ArchiveObject SerializeAsset(ArchiveWriter& writer, Asset* asset);
-        static Asset* DeserializeAsset(ArchiveReader& reader, ArchiveObject object);
+        static Asset*        DeserializeAsset(ArchiveReader& reader, ArchiveObject object);
     };
 }

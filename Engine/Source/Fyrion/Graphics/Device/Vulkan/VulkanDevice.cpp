@@ -524,6 +524,7 @@ namespace Fyrion
             VulkanRenderPass& vulkanRenderPass = swapchain->renderPasses[i];
             vulkanRenderPass.extent = swapchain->extent;
             vulkanRenderPass.clearValues.Resize(1);
+            vulkanRenderPass.formats.EmplaceBack(format.format);
 
             VkAttachmentDescription attachmentDescription{};
             VkAttachmentReference   colorAttachmentReference{};
@@ -655,6 +656,7 @@ namespace Fyrion
 				reference.attachment = i;
 				reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 				colorAttachmentReference.EmplaceBack(reference);
+			    vulkanRenderPass->formats.EmplaceBack(format);
 			}
 			else
 			{
@@ -842,19 +844,45 @@ namespace Fyrion
         return {vulkanSampler};
     }
 
-    PipelineState VulkanDevice::CreateGraphicsPipelineState(const GraphicsPipelineCreation& graphicsPipelineCreation)
+    PipelineState VulkanDevice::CreateGraphicsPipelineState(const GraphicsPipelineCreation& creation)
     {
-        ShaderAsset* shader = graphicsPipelineCreation.shader;
+        ShaderAsset* shader = creation.shader;
         FY_ASSERT(shader, "shader is null");
-        bool invalidPass = graphicsPipelineCreation.attachments.Empty() && !graphicsPipelineCreation.renderPass;
-        FY_ASSERT(!invalidPass, "creation needs attachments or renderpass");
+        bool invalidPass = creation.attachments.Empty() && !creation.renderPass && !creation.pipelineState;
+        FY_ASSERT(!invalidPass, "creation needs attachments or renderpass or pipelineState");
+
+        if (!shader->IsCompiled())
+        {
+            shader->Compile();
+        }
+
+        //shader not valid.
+        if(!shader->IsCompiled())
+        {
+            return {};
+        }
 
         Span<u8>              bytes = shader->GetBytes();
         Span<ShaderStageInfo> stages = shader->GetStages();
         ShaderInfo            shaderInfo = shader->GetShaderInfo();
 
-        VulkanPipelineState* vulkanPipelineState = allocator.Alloc<VulkanPipelineState>();
-        vulkanPipelineState->graphicsPipelineCreation = graphicsPipelineCreation;
+
+        VulkanPipelineState* vulkanPipelineState;
+        if (!creation.pipelineState)
+        {
+            vulkanPipelineState = allocator.Alloc<VulkanPipelineState>();
+            vulkanPipelineState->graphicsPipelineCreation = creation;
+
+            shader->AddPipelineDependency({vulkanPipelineState});
+        }
+        else
+        {
+            vulkanPipelineState = static_cast<VulkanPipelineState*>(creation.pipelineState.handler);
+
+            vkDeviceWaitIdle(device);
+            vkDestroyPipelineLayout(device, vulkanPipelineState->layout, nullptr);
+            vkDestroyPipeline(device, vulkanPipelineState->pipeline, nullptr);
+        }
 
         Array<VkPushConstantRange>                 pushConstants{};
         Array<VkPipelineColorBlendAttachmentState> attachments{};
@@ -908,7 +936,7 @@ namespace Fyrion
         {
             VkPipelineColorBlendAttachmentState attachmentState{};
             attachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-            if (graphicsPipelineCreation.blendEnabled)
+            if (vulkanPipelineState->graphicsPipelineCreation.blendEnabled)
             {
                 attachmentState.blendEnable = VK_TRUE;
                 attachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
@@ -955,7 +983,7 @@ namespace Fyrion
 
 
         VkPipelineInputAssemblyStateCreateInfo inputAssembly{VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
-        inputAssembly.topology = Vulkan::CastPrimitiveTopology(graphicsPipelineCreation.primitiveTopology);
+        inputAssembly.topology = Vulkan::CastPrimitiveTopology(vulkanPipelineState->graphicsPipelineCreation.primitiveTopology);
         inputAssembly.primitiveRestartEnable = VK_FALSE;
 
         VkPipelineViewportStateCreateInfo viewportState{VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO};
@@ -966,9 +994,9 @@ namespace Fyrion
         rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
         rasterizer.depthClampEnable = VK_FALSE;
         rasterizer.rasterizerDiscardEnable = VK_FALSE;
-        rasterizer.polygonMode = Vulkan::CastPolygonMode(graphicsPipelineCreation.polygonMode);
+        rasterizer.polygonMode = Vulkan::CastPolygonMode(vulkanPipelineState->graphicsPipelineCreation.polygonMode);
         rasterizer.lineWidth = 1.0f;
-        rasterizer.cullMode = Vulkan::CastCull(graphicsPipelineCreation.cullMode);
+        rasterizer.cullMode = Vulkan::CastCull(vulkanPipelineState->graphicsPipelineCreation.cullMode);
         rasterizer.depthBiasEnable = VK_FALSE;
 
         VkPipelineMultisampleStateCreateInfo multisampling{};
@@ -1006,88 +1034,100 @@ namespace Fyrion
         pipelineInfo.subpass = 0;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-        bool passHasDepth = false;
-
-        if (!graphicsPipelineCreation.renderPass && !graphicsPipelineCreation.attachments.Empty())
+        if (creation.renderPass && vulkanPipelineState->attachments.Empty())
         {
-            Array<VkAttachmentDescription> attachmentDescriptions{};
-            Array<VkAttachmentReference>   colorAttachmentReference{};
-            VkAttachmentReference          depthReference{};
+            VulkanRenderPass* renderPass = static_cast<VulkanRenderPass*>(vulkanPipelineState->graphicsPipelineCreation.renderPass.handler);
 
-            for (Format attachmentFormat : graphicsPipelineCreation.attachments)
+            for (VkFormat format : renderPass->formats)
             {
-                VkAttachmentDescription attachmentDescription{};
-                attachmentDescription.format = Vulkan::CastFormat(attachmentFormat);
-                attachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
-                attachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-                attachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-                attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-                attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-                attachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-                attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-                attachmentDescriptions.EmplaceBack(attachmentDescription);
-
-                VkAttachmentReference reference{};
-                reference.attachment = colorAttachmentReference.Size();
-                reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-                colorAttachmentReference.EmplaceBack(reference);
+                if (!Vulkan::IsDepthFormat(format))
+                {
+                    vulkanPipelineState->attachments.EmplaceBack(format);
+                }
             }
 
-            if (graphicsPipelineCreation.depthFormat != Format::Undefined)
+            if (renderPass->hasDepth)
             {
-                VkAttachmentDescription attachmentDescription{};
-                attachmentDescription.format = VK_FORMAT_D32_SFLOAT;
-                attachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
-                attachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-                attachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-                attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-                attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-                attachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-                attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-                attachmentDescriptions.EmplaceBack(attachmentDescription);
-
-                VkAttachmentReference reference{};
-                depthReference.attachment = colorAttachmentReference.Size();
-                depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-                colorAttachmentReference.EmplaceBack(reference);
+                vulkanPipelineState->graphicsPipelineCreation.depthFormat = Format::Depth;
             }
-
-            VkSubpassDescription subPass = {};
-            subPass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-            subPass.colorAttachmentCount = colorAttachmentReference.Size();
-            subPass.pColorAttachments = colorAttachmentReference.Data();
-            if (graphicsPipelineCreation.depthFormat != Format::Undefined)
-            {
-                subPass.pDepthStencilAttachment = &depthReference;
-            }
-
-            VkRenderPassCreateInfo renderPassInfo = {VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO};
-            renderPassInfo.attachmentCount = attachmentDescriptions.Size();
-            renderPassInfo.pAttachments = attachmentDescriptions.Data();
-            renderPassInfo.subpassCount = 1;
-            renderPassInfo.pSubpasses = &subPass;
-            renderPassInfo.dependencyCount = 0;
-            vkCreateRenderPass(device, &renderPassInfo, nullptr, &pipelineInfo.renderPass);
-        }
-        else if (graphicsPipelineCreation.renderPass)
-        {
-            VulkanRenderPass* renderPass = static_cast<VulkanRenderPass*>(graphicsPipelineCreation.renderPass.handler);
-            pipelineInfo.renderPass = renderPass->renderPass;
-            passHasDepth = renderPass->hasDepth;
         }
 
+        if (!creation.attachments.Empty() && vulkanPipelineState->attachments.Empty())
+        {
+            for(Format format: creation.attachments)
+            {
+                vulkanPipelineState->attachments.EmplaceBack(Vulkan::CastFormat(format));
+            }
+        }
+
+        Array<VkAttachmentDescription> attachmentDescriptions{};
+        Array<VkAttachmentReference>   colorAttachmentReference{};
+        VkAttachmentReference          depthReference{};
+
+        for (VkFormat attachmentFormat : vulkanPipelineState->attachments)
+        {
+            VkAttachmentDescription attachmentDescription{};
+            attachmentDescription.format = attachmentFormat;
+            attachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
+            attachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            attachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            attachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            attachmentDescriptions.EmplaceBack(attachmentDescription);
+
+            VkAttachmentReference reference{};
+            reference.attachment = colorAttachmentReference.Size();
+            reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            colorAttachmentReference.EmplaceBack(reference);
+        }
+
+        if (vulkanPipelineState->graphicsPipelineCreation.depthFormat != Format::Undefined)
+        {
+            VkAttachmentDescription attachmentDescription{};
+            attachmentDescription.format = VK_FORMAT_D32_SFLOAT;
+            attachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
+            attachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            attachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            attachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            attachmentDescriptions.EmplaceBack(attachmentDescription);
+
+            depthReference.attachment = colorAttachmentReference.Size();
+            depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        }
+
+        VkSubpassDescription subPass = {};
+        subPass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        subPass.colorAttachmentCount = colorAttachmentReference.Size();
+        subPass.pColorAttachments = colorAttachmentReference.Data();
+        if (vulkanPipelineState->graphicsPipelineCreation.depthFormat != Format::Undefined)
+        {
+            subPass.pDepthStencilAttachment = &depthReference;
+        }
+
+        VkRenderPassCreateInfo renderPassInfo = {VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO};
+        renderPassInfo.attachmentCount = attachmentDescriptions.Size();
+        renderPassInfo.pAttachments = attachmentDescriptions.Data();
+        renderPassInfo.subpassCount = 1;
+        renderPassInfo.pSubpasses = &subPass;
+        renderPassInfo.dependencyCount = 0;
+        vkCreateRenderPass(device, &renderPassInfo, nullptr, &pipelineInfo.renderPass);
 
         VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo = {VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO};
-        if (graphicsPipelineCreation.depthFormat != Format::Undefined || passHasDepth)
+        if (vulkanPipelineState->graphicsPipelineCreation.depthFormat != Format::Undefined)
         {
-            auto depthTest = graphicsPipelineCreation.compareOperator != CompareOp::Always;
+            auto depthTest = vulkanPipelineState->graphicsPipelineCreation.compareOperator != CompareOp::Always;
             depthStencilStateCreateInfo.depthTestEnable = depthTest ? VK_TRUE : VK_FALSE;
-            depthStencilStateCreateInfo.depthWriteEnable = graphicsPipelineCreation.depthWrite ? VK_TRUE : VK_FALSE;
-            depthStencilStateCreateInfo.depthCompareOp = Vulkan::CastCompareOp(graphicsPipelineCreation.compareOperator);
+            depthStencilStateCreateInfo.depthWriteEnable = vulkanPipelineState->graphicsPipelineCreation.depthWrite ? VK_TRUE : VK_FALSE;
+            depthStencilStateCreateInfo.depthCompareOp = Vulkan::CastCompareOp(vulkanPipelineState->graphicsPipelineCreation.compareOperator);
             depthStencilStateCreateInfo.depthBoundsTestEnable = VK_FALSE;
-            depthStencilStateCreateInfo.minDepthBounds = graphicsPipelineCreation.minDepthBounds;
-            depthStencilStateCreateInfo.maxDepthBounds = graphicsPipelineCreation.maxDepthBounds;
-            depthStencilStateCreateInfo.stencilTestEnable = graphicsPipelineCreation.stencilTest ? VK_TRUE : VK_FALSE;
+            depthStencilStateCreateInfo.minDepthBounds = vulkanPipelineState->graphicsPipelineCreation.minDepthBounds;
+            depthStencilStateCreateInfo.maxDepthBounds = vulkanPipelineState->graphicsPipelineCreation.maxDepthBounds;
+            depthStencilStateCreateInfo.stencilTestEnable = vulkanPipelineState->graphicsPipelineCreation.stencilTest ? VK_TRUE : VK_FALSE;
             depthStencilStateCreateInfo.pNext = nullptr;
 
             pipelineInfo.pDepthStencilState = &depthStencilStateCreateInfo;
@@ -1100,10 +1140,7 @@ namespace Fyrion
             vkDestroyShaderModule(device, shaderModule, nullptr);
         }
 
-        if (!graphicsPipelineCreation.attachments.Empty())
-        {
-            vkDestroyRenderPass(device, pipelineInfo.renderPass, nullptr);
-        }
+        vkDestroyRenderPass(device, pipelineInfo.renderPass, nullptr);
 
         return {vulkanPipelineState};
     }

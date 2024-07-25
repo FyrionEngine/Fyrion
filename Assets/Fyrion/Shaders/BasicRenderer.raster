@@ -1,3 +1,5 @@
+#include "Fyrion://Shaders/SomeInclude.inc"
+
 struct VSInput
 {
      float3 position  : POSITION0;
@@ -11,10 +13,10 @@ struct VSOutput
 {
 	float4 pos      : SV_POSITION;
 	float3 fragPos  : POSITION0;
-  float3 color    : COLOR0;
+    float3 color    : COLOR0;
 	float2 uv       : TEXCOORD0;
 	float3 normal   : NORMAL1;
-  float4 tangent  : TANGENT1;
+    float4 tangent  : TANGENT1;
 };
 
 struct PushConsts
@@ -24,31 +26,32 @@ struct PushConsts
 
 struct Scene
 {
-  float4x4 viewProjection;
+    float4x4 viewProjection;
 };
 
-[[vk::binding(0, 0)]]  ConstantBuffer<Scene> scene;
+ConstantBuffer<Scene> scene : register(b0);
 [[vk::push_constant]]  ConstantBuffer<PushConsts>  pushConsts;
 
 VSOutput MainVS(VSInput input)
 {
 	VSOutput output = (VSOutput)0;
-  output.fragPos    = (float3)mul(pushConsts.model, float4(input.position, 1.0));
-  output.color      = input.color;
+    output.fragPos    = (float3)mul(pushConsts.model, float4(input.position, 1.0));
+    output.color      = input.color;
 	output.pos        = mul(scene.viewProjection, float4(output.fragPos, 1.0));
 	output.uv         = input.uv;
 
 	float3x3 normalMat = (float3x3)pushConsts.model;
 	output.normal      = normalize(mul(normalMat, input.normal));
-  output.tangent     = float4(normalize(mul(normalMat, input.tangent.xyz)), input.tangent.w);
+    output.tangent     = float4(normalize(mul(normalMat, input.tangent.xyz)), input.tangent.w);
 
 	return output;
 }
 
-[[vk::binding(0, 1)]] Texture2D texture;
-[[vk::binding(1, 1)]] SamplerState samplerState;
+Texture2D texture : register(t0, space1);
+SamplerState samplerState : register(s1, space1);
+//Texture2D normalTexture : register(t2, space1);
 
 float4 MainPS(VSOutput input) : SV_TARGET
 {
-	return texture.Sample(samplerState, input.uv);
+	return texture.Sample(samplerState, input.uv) * CONSTANT_MULTIPLIER; // * normalTexture.Sample(samplerState, input.uv);
 }

@@ -3,6 +3,7 @@
 #include "AssetSerialization.hpp"
 #include "AssetTypes.hpp"
 #include "Fyrion/Engine.hpp"
+#include "Fyrion/Core/FileWatcher.hpp"
 #include "Fyrion/Core/HashMap.hpp"
 #include "Fyrion/Core/Logger.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
@@ -21,7 +22,8 @@ namespace Fyrion
         HashMap<String, Asset*>        assetsByPath;
         Array<Pair<TypeID, AssetIO*>>  assetIOs;
         HashMap<String, AssetIO*>      importers;
-        HashMap<TypeID, Array<Asset*>> assetsByType{};
+        HashMap<TypeID, Array<Asset*>> assetsByType;
+        FileWatcher                    fileWatcher;
 
         Logger& logger = Logger::GetLogger("Fyrion::AssetDatabase");
         bool    registerEvents = RegisterEvents();
@@ -245,6 +247,8 @@ namespace Fyrion
                     {
                         importer->second->ImportAsset(filePath, asset);
                     }
+
+                    fileWatcher.AddFile(asset, filePath);
                 }
             }
             else if (Asset* asset = importer->second->CreateAsset())
@@ -257,6 +261,7 @@ namespace Fyrion
                 AssetDatabaseUpdateUUID(asset, asset->GetUUID());
                 importer->second->ImportAsset(filePath, asset);
                 asset->BuildPath();
+                fileWatcher.AddFile(asset, filePath);
             }
         }
     }
@@ -482,6 +487,7 @@ namespace Fyrion
         {
             asset->Modify();
             importer->second->ImportAsset(asset->GetAbsolutePath(), asset);
+            logger.Info("asset {} reimported", asset->GetPath());
         }
     }
 
@@ -505,10 +511,34 @@ namespace Fyrion
         assetsByPath.Clear();
     }
 
-    void AssetDatabaseInit() {}
+    void AssetDatabase::OnUpdate(f64 deltaTime)
+    {
+        fileWatcher.CheckForUpdates([](VoidPtr fileRef, const String& path, const FileNotifyChange& notifyChange)
+        {
+            switch (notifyChange)
+            {
+                case FileNotifyChange::Modified:
+                    ReimportAsset(static_cast<Asset*>(fileRef));
+                    break;
+                case FileNotifyChange::Removed:
+                    break;
+            }
+        });
+    }
+
+    void AssetDatabaseInit()
+    {
+        fileWatcher.Start();
+
+        Event::Bind<OnUpdate, AssetDatabase::OnUpdate>();
+    }
 
     void AssetDatabaseShutdown()
     {
+        Event::Unbind<OnUpdate, AssetDatabase::OnUpdate>();
+
+        fileWatcher.Stop();
+
         AssetDatabase::DestroyAssets();
 
         for (const auto& assetIo : assetIOs)

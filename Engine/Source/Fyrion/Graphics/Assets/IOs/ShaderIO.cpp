@@ -7,13 +7,13 @@ namespace Fyrion
 {
     struct FY_API ShaderIO : public AssetIO
     {
-        StringView extension[2] = {".raster", ".comp"};
+        StringView extension[3] = {".raster", ".comp", ".inc"};
 
         FY_BASE_TYPES(AssetIO);
 
         Span<StringView> GetImportExtensions() override
         {
-            return {extension, 2};
+            return {extension, 3};
         }
 
         Asset* CreateAsset() override
@@ -34,7 +34,16 @@ namespace Fyrion
             {
                 shaderAsset->SetShaderType(ShaderAssetType::Compute);
             }
-            shaderAsset->Compile();
+            else if (Path::Extension(path) == ".inc")
+            {
+                shaderAsset->SetShaderType(ShaderAssetType::Include);
+            }
+
+            //recompile shader.
+            if (shaderAsset->IsCompiled())
+            {
+                shaderAsset->Compile();
+            }
         }
     };
 

@@ -11,8 +11,11 @@
 #include <iostream>
 
 #include "spirv_reflect.h"
+#include "Assets/ShaderAsset.hpp"
 #include "Fyrion/Core/Logger.hpp"
 #include "dxc/dxcapi.h"
+#include "Fyrion/Asset/AssetDatabase.hpp"
+#include "Fyrion/Asset/AssetTypes.hpp"
 #include "Fyrion/Core/HashMap.hpp"
 
 #define SHADER_MODEL "6_5"
@@ -31,35 +34,120 @@ namespace Fyrion
 {
     namespace
     {
-        Logger&               logger = Logger::GetLogger("Fyrion::ShaderManager", LogLevel::Debug);
+        Logger& logger = Logger::GetLogger("Fyrion::ShaderManager", LogLevel::Debug);
 
         IDxcUtils*            utils{};
         IDxcCompiler3*        compiler{};
         DxcCreateInstanceProc dxcCreateInstance;
     }
 
+    struct IncludeHandler : public IDxcIncludeHandler
+    {
+        ShaderAsset*  shader{};
+        IDxcBlobEncoding* blobEncoding{};
+
+        IncludeHandler(ShaderAsset*  asset) : shader(asset) {}
+
+        static String FormatFilePath(LPCWSTR pFilename)
+        {
+            std::wstring widePath(pFilename);
+            std::string  fileName{};
+            std::transform(widePath.begin(), widePath.end(), std::back_inserter(fileName), [](wchar_t c)
+            {
+                return (char)c;
+            });
+
+            if (const auto c = fileName.find(".\\"); c != std::string::npos)
+            {
+                fileName.replace(c, sizeof(".\\") - 1, "");
+            }
+
+            auto c = fileName.find('\\');
+            while (c != std::string::npos)
+            {
+                fileName.replace(c, sizeof("\\") - 1, "/");
+                c = fileName.find('\\');
+            }
+
+            if (c = fileName.find(":/"); c != std::string::npos)
+            {
+                fileName.replace(c, sizeof(":/") - 1, "://");
+            }
+
+            return {fileName.c_str(), fileName.size()};
+        }
+
+
+        HRESULT STDMETHODCALLTYPE LoadSource(LPCWSTR pFilename, IDxcBlob** ppIncludeSource) override
+        {
+            String includePath = FormatFilePath(pFilename);
+            //check if that's a path
+            if (StringView(includePath).FindFirstOf("://") == nPos)
+            {
+                if (shader && shader->GetDirectory() != nullptr)
+                {
+                    includePath = String(shader->GetDirectory()->GetPath()).Append("/").Append(includePath);
+                }
+            }
+
+            ShaderAsset* shaderInclude = AssetDatabase::FindByPath<ShaderAsset>(includePath);
+            if (!shaderInclude)
+            {
+                return S_FALSE;
+            }
+
+            String source = shaderInclude->GetShaderSource();
+
+            utils->CreateBlob(source.CStr(), source.Size(), CP_UTF8, &blobEncoding);
+            *ppIncludeSource = blobEncoding;
+
+            shaderInclude->AddShaderDependency(shader);
+
+            return S_OK;
+        }
+
+        ULONG AddRef() override
+        {
+            return 0;
+        }
+
+        ULONG Release() override
+        {
+            if (blobEncoding)
+            {
+                blobEncoding->Release();
+            }
+            return 0;
+        }
+
+        HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, void** ppvObject) override
+        {
+            return 0;
+        }
+    };
+
     constexpr auto GetShaderStage(ShaderStage shader)
     {
         switch (shader)
         {
-        case ShaderStage::Vertex: return VERTEX_SHADER_MODEL;
-        case ShaderStage::Hull: return HULL_SHADER_MODEL;
-        case ShaderStage::Domain: return DOMAIN_SHADER_MODEL;
-        case ShaderStage::Geometry: return GEOMETRY_SHADER_MODEL;
-        case ShaderStage::Pixel: return PIXEL_SHADER_MODELS;
-        case ShaderStage::Compute: return COMPUTE_SHADER_MODEL;
-        case ShaderStage::Amplification: return AMPLIFICATION_SHADER_MODEL;
-        case ShaderStage::Mesh: return MESH_SHADER_MODEL;
-        case ShaderStage::RayGen:
-        case ShaderStage::RayIntersection:
-        case ShaderStage::RayAnyHit:
-        case ShaderStage::RayClosestHit:
-        case ShaderStage::RayMiss:
-        case ShaderStage::Callable:
-        case ShaderStage::All:
-            return LIB_SHADER_MODEL;
-        default:
-            break;
+            case ShaderStage::Vertex: return VERTEX_SHADER_MODEL;
+            case ShaderStage::Hull: return HULL_SHADER_MODEL;
+            case ShaderStage::Domain: return DOMAIN_SHADER_MODEL;
+            case ShaderStage::Geometry: return GEOMETRY_SHADER_MODEL;
+            case ShaderStage::Pixel: return PIXEL_SHADER_MODELS;
+            case ShaderStage::Compute: return COMPUTE_SHADER_MODEL;
+            case ShaderStage::Amplification: return AMPLIFICATION_SHADER_MODEL;
+            case ShaderStage::Mesh: return MESH_SHADER_MODEL;
+            case ShaderStage::RayGen:
+            case ShaderStage::RayIntersection:
+            case ShaderStage::RayAnyHit:
+            case ShaderStage::RayClosestHit:
+            case ShaderStage::RayMiss:
+            case ShaderStage::Callable:
+            case ShaderStage::All:
+                return LIB_SHADER_MODEL;
+            default:
+                break;
         }
         FY_ASSERT(false, "[ShaderCompiler] shader stage not found");
         return L"";
@@ -113,9 +201,11 @@ namespace Fyrion
             args.EmplaceBack(L"-fvk-use-dx-position-w");
         }
 
-        IDxcResult* pResults{};
-        //IncludeHandler includeHandler{rid};
-        compiler->Compile(&source, args.Data(), args.Size(), nullptr, IID_PPV_ARGS(&pResults));
+        IDxcResult*    pResults{};
+
+        IncludeHandler includeHandler{shaderCreation.asset};
+
+        compiler->Compile(&source, args.Data(), args.Size(), &includeHandler, IID_PPV_ARGS(&pResults));
 
         IDxcBlobUtf8* pErrors = {};
         pResults->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&pErrors), nullptr);
@@ -153,13 +243,13 @@ namespace Fyrion
             pShaderName->Release();
         }
         pSource->Release();
+        includeHandler.Release();
 
         return true;
     }
 
     namespace SpirvUtils
     {
-
         Format CastFormat(const SpvReflectFormat& format)
         {
             switch (format)
@@ -186,7 +276,7 @@ namespace Fyrion
                 case SPV_REFLECT_FORMAT_R32G32B32_UINT: break;
                 case SPV_REFLECT_FORMAT_R32G32B32_SINT: break;
                 case SPV_REFLECT_FORMAT_R32G32B32_SFLOAT: return Format::RGB32F;
-                case SPV_REFLECT_FORMAT_R32G32B32A32_UINT:  break;
+                case SPV_REFLECT_FORMAT_R32G32B32A32_UINT: break;
                 case SPV_REFLECT_FORMAT_R32G32B32A32_SINT: break;
                 case SPV_REFLECT_FORMAT_R32G32B32A32_SFLOAT: return Format::RGBA32F;
                 case SPV_REFLECT_FORMAT_R64_UINT: break;
@@ -230,7 +320,7 @@ namespace Fyrion
         {
             switch (reflectFormat)
             {
-                case SPV_REFLECT_FORMAT_UNDEFINED:  return 0;
+                case SPV_REFLECT_FORMAT_UNDEFINED: return 0;
                 case SPV_REFLECT_FORMAT_R32_UINT: return sizeof(u32);
                 case SPV_REFLECT_FORMAT_R32_SINT: return sizeof(i32);
                 case SPV_REFLECT_FORMAT_R32_SFLOAT: return sizeof(f32);
@@ -303,10 +393,10 @@ namespace Fyrion
                     case SpvDim2D: return ViewType::Type2DArray;
                     case SpvDim3D: return ViewType::Type3D;
                     case SpvDimCube: return ViewType::TypeCubeArray;
-                    case SpvDimRect:break;
-                    case SpvDimBuffer:break;
-                    case SpvDimSubpassData:break;
-                    case SpvDimMax:break;
+                    case SpvDimRect: break;
+                    case SpvDimBuffer: break;
+                    case SpvDimSubpassData: break;
+                    case SpvDimMax: break;
                     case SpvDimTileImageDataEXT: break;
                 }
             }
@@ -318,10 +408,10 @@ namespace Fyrion
                     case SpvDim2D: return ViewType::Type2D;
                     case SpvDim3D: return ViewType::Type3D;
                     case SpvDimCube: return ViewType::TypeCube;
-                    case SpvDimRect:break;
-                    case SpvDimBuffer:break;
-                    case SpvDimSubpassData:break;
-                    case SpvDimMax:break;
+                    case SpvDimRect: break;
+                    case SpvDimBuffer: break;
+                    case SpvDimSubpassData: break;
+                    case SpvDimMax: break;
                     case SpvDimTileImageDataEXT: break;
                 }
             }
@@ -340,14 +430,14 @@ namespace Fyrion
                 case SpvOpTypeVector: return reflectTypeDescription->traits.numeric.vector.component_count * sizeof(f32);
                 case SpvOpTypeMatrix: return reflectTypeDescription->traits.numeric.matrix.row_count * reflectTypeDescription->traits.numeric.matrix.stride;
                 case SpvOpTypeArray:
+                {
+                    u32 size{};
+                    for (int d = 0; d < reflectTypeDescription->traits.array.dims_count; ++d)
                     {
-                        u32 size{};
-                        for (int d = 0; d < reflectTypeDescription->traits.array.dims_count; ++d)
-                        {
-                            size += reflectTypeDescription->traits.array.dims[d] * reflectTypeDescription->traits.numeric.scalar.width;
-                        }
-                        return size;
+                        size += reflectTypeDescription->traits.array.dims[d] * reflectTypeDescription->traits.numeric.scalar.width;
                     }
+                    return size;
+                }
                 case SpvOpTypeRuntimeArray: return 0; //runtime arrays has size?
                 case SpvOpTypeStruct: return 0;       //ignore, size will be calculated using the fields
             }
@@ -385,11 +475,12 @@ namespace Fyrion
         //sorting descriptors
         Array<u32> sortDescriptors{};
         sortDescriptors.Reserve(descriptors.Size());
-        for (auto& descriptorIt: descriptors)
+        for (auto& descriptorIt : descriptors)
         {
             sortDescriptors.EmplaceBack(descriptorIt.first);
         }
-        std::ranges::sort(sortDescriptors);
+        std::sort(sortDescriptors.begin(), sortDescriptors.end());
+
         for (auto& set: sortDescriptors)
         {
             const HashMap<u32, DescriptorBinding>& bindings = descriptors.Find(set)->second;
@@ -397,13 +488,13 @@ namespace Fyrion
 
             Array<u32> sortBindings{};
             sortBindings.Reserve(bindings.Size());
-            for (auto& bindingIt: bindings)
+            for (auto& bindingIt : bindings)
             {
                 sortBindings.EmplaceBack(bindingIt.first);
             }
             std::ranges::sort(sortBindings);
 
-            for (auto& binding: sortBindings)
+            for (auto& binding : sortBindings)
             {
                 descriptorLayout.bindings.EmplaceBack(bindings.Find(binding)->second);
             }
@@ -417,7 +508,7 @@ namespace Fyrion
 
         if (renderApi != RenderApiType::D3D12)
         {
-            u32 varCount = 0;
+            u32                                           varCount = 0;
             HashMap<u32, HashMap<u32, DescriptorBinding>> descriptors{};
 
             for (const ShaderStageInfo& stageInfo : stages)
@@ -437,7 +528,7 @@ namespace Fyrion
                     spvReflectEnumerateInputVariables(&module, &varCount, inputVariables.Data());
 
                     u32 offset = 0;
-                    for (SpvReflectInterfaceVariable* variable: inputVariables)
+                    for (SpvReflectInterfaceVariable* variable : inputVariables)
                     {
                         if (variable->location < U32_MAX)
                         {
@@ -462,7 +553,7 @@ namespace Fyrion
                     outputVariables.Resize(varCount);
                     spvReflectEnumerateOutputVariables(&module, &varCount, outputVariables.Data());
 
-                    for (SpvReflectInterfaceVariable* variable: outputVariables)
+                    for (SpvReflectInterfaceVariable* variable : outputVariables)
                     {
                         InterfaceVariable interfaceVariable{
                             .location = variable->location,
@@ -499,7 +590,7 @@ namespace Fyrion
                 descriptorBinds.Resize(varCount);
                 spvReflectEnumerateDescriptorBindings(&module, &varCount, descriptorBinds.Data());
 
-                for (const auto descriptorSet: descriptorSets)
+                for (const auto descriptorSet : descriptorSets)
                 {
                     auto setIt = descriptors.Find(descriptorSet->set);
                     if (setIt == descriptors.end())
@@ -508,7 +599,7 @@ namespace Fyrion
                     }
                     HashMap<u32, DescriptorBinding>& bindings = setIt->second;
 
-                    for (const auto descriptorBind: descriptorBinds)
+                    for (const auto descriptorBind : descriptorBinds)
                     {
                         if (descriptorBind->set == descriptorSet->set)
                         {
@@ -538,7 +629,6 @@ namespace Fyrion
             }
 
             SortAndAddDescriptors(shaderInfo, descriptors);
-
         }
         return shaderInfo;
     }

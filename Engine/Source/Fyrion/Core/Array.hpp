@@ -60,8 +60,8 @@ namespace Fyrion
 
         void Assign(const T* first, const T* last);
         void Insert(Iterator where, const T* first, const T* last);
-        void Erase(Iterator first, Iterator last);
-        void Erase(Iterator first);
+        Iterator Erase(Iterator first, Iterator last);
+        Iterator Erase(Iterator first);
         void Remove(usize index);
 
         template <typename... Args>
@@ -413,7 +413,7 @@ namespace Fyrion
     }
 
     template <typename T>
-    FY_FINLINE void Array<T>::Erase(Array::Iterator first, Array::Iterator last)
+    typename Array<T>::Iterator Array<T>::Erase(Iterator first, Iterator last)
     {
         const usize count = (last - first);
 
@@ -431,12 +431,14 @@ namespace Fyrion
         }
 
         m_last -= count;
+
+        return first;
     }
 
     template <typename T>
-    void Array<T>::Erase(Iterator first)
+    typename Array<T>::Iterator Array<T>::Erase(Iterator first)
     {
-        Erase(first, first + 1);
+        return Erase(first, first + 1);
     }
 
     template <typename T>

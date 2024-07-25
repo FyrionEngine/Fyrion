@@ -83,6 +83,7 @@ namespace Fyrion
         ~VulkanBindingSet() override;
 
         BindingVar* GetVar(const StringView& name) override;
+        void        Reload() override;
 
         void Bind(VulkanCommands& cmd, const PipelineState& pipeline);
     };

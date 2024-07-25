@@ -1,0 +1,3 @@
+
+
+#define CONSTANT_MULTIPLIER 1.4

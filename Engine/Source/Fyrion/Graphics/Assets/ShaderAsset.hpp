@@ -1,5 +1,6 @@
 #pragma once
 #include "Fyrion/Asset/Asset.hpp"
+#include "Fyrion/Core/HashSet.hpp"
 #include "Fyrion/Graphics/GraphicsTypes.hpp"
 
 namespace Fyrion
@@ -7,6 +8,7 @@ namespace Fyrion
     enum class ShaderAssetType
     {
         None,
+        Include,
         Graphics,
         Compute,
         Raytrace
@@ -41,13 +43,20 @@ namespace Fyrion
 
         const ShaderInfo& GetShaderInfo() const
         {
+            FY_ASSERT(IsCompiled(), "shader is not compiled");
             return shaderInfo;
         }
 
         Span<ShaderStageInfo> GetStages() const;
         Span<u8>              GetBytes() const;
 
+        bool IsCompiled() const;
         void Compile();
+
+        void AddPipelineDependency(PipelineState pipelineState);
+        void AddShaderDependency(ShaderAsset* shaderAsset);
+        void AddBindingSetDependency(BindingSet* bindingSet);
+        void RemoveBindingSetDependency(BindingSet* bindingSet);
 
         static void RegisterType(NativeTypeHandler<ShaderAsset>& type);
 
@@ -57,5 +66,8 @@ namespace Fyrion
         Array<u8>              bytes{};
         Array<ShaderStageInfo> stages{};
         ShaderInfo             shaderInfo{};
+        Array<PipelineState>   pipelineDependencies{};
+        HashSet<ShaderAsset*>  shaderDependencies{};
+        HashSet<BindingSet*>   bindingSetDependencies{};
     };
 }

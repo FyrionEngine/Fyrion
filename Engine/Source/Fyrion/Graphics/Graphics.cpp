@@ -1,6 +1,7 @@
 #include "Graphics.hpp"
 
 #include "Fyrion/Core/FixedArray.hpp"
+#include "Fyrion/Core/Image.hpp"
 #include "Fyrion/Graphics/Device/RenderDevice.hpp"
 #include "Fyrion/Core/SharedPtr.hpp"
 
@@ -16,6 +17,7 @@ namespace Fyrion
     {
         SharedPtr<RenderDevice> renderDevice = {};
         Sampler defaultSampler = {};
+        Texture defaultTexture = {};
     }
 
     void GraphicsInit()
@@ -26,13 +28,29 @@ namespace Fyrion
     void GraphicsShutdown()
     {
         renderDevice->DestroySampler(defaultSampler);
+        renderDevice->DestroyTexture(defaultTexture);
         renderDevice = {};
     }
 
     void GraphicsCreateDevice(Adapter adapter)
     {
         renderDevice->CreateDevice(adapter);
+
         defaultSampler = renderDevice->CreateSampler({});
+
+        defaultTexture = renderDevice->CreateTexture({
+            .extent = {1, 1, 1}
+        });
+
+        Image image(1, 1, 4);
+        image.SetPixelColor(0, 0, Color::WHITE);
+
+        Graphics::UpdateTextureData(TextureDataInfo{
+            .texture = defaultTexture,
+            .data = image.GetData().Data(),
+            .size = image.GetData().Size(),
+            .extent = {1, 1, 1},
+        });
     }
 
     RenderCommands& GraphicsBeginFrame()
@@ -208,5 +226,10 @@ namespace Fyrion
     Sampler Graphics::GetDefaultSampler()
     {
         return defaultSampler;
+    }
+
+    Texture Graphics::GetDefaultTexture()
+    {
+        return defaultTexture;
     }
 }

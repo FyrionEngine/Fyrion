@@ -9,7 +9,6 @@
 
 namespace Fyrion
 {
-
     static const u32 MaxBindlessResources = 16536;
 
     struct VulkanSwapChainSupportDetails
@@ -22,7 +21,7 @@ namespace Fyrion
     struct VulkanAdapter
     {
         VkPhysicalDevice physicalDevice{};
-        u32 score{};
+        u32              score{};
     };
 
     struct VulkanRenderPass
@@ -32,6 +31,7 @@ namespace Fyrion
         VkExtent2D          extent{};
         bool                hasDepth;
         Array<VkClearValue> clearValues{};
+        Array<VkFormat>     formats{};
     };
 
     struct VulkanSwapchain
@@ -82,6 +82,7 @@ namespace Fyrion
     {
         GraphicsPipelineCreation graphicsPipelineCreation{};
         ComputePipelineCreation  computePipelineCreation{};
+        Array<VkFormat>          attachments{};
         VkPipelineBindPoint      bindingPoint{};
         VkPipeline               pipeline{};
         VkPipelineLayout         layout{};

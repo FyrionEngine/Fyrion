@@ -16,6 +16,11 @@ namespace Fyrion
         TImage(Span<const T> buffer);
         TImage(const StringView& file);
 
+        TImage(u32 width, u32 height, u32 channels) : width(width), height(height), channels(channels)
+        {
+            data.Resize(width * height * channels);
+        }
+
         bool Empty() const
         {
             return data.Empty();

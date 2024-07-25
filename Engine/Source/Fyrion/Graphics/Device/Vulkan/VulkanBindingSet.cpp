@@ -10,6 +10,13 @@ namespace Fyrion
     VulkanBindingSet::VulkanBindingSet(ShaderAsset* shaderAsset, VulkanDevice& vulkanDevice) : vulkanDevice(vulkanDevice),
                                                                                                shaderAsset(shaderAsset)
     {
+        if (!shaderAsset->IsCompiled())
+        {
+            shaderAsset->Compile();
+        }
+
+        shaderAsset->AddBindingSetDependency(this);
+
         const ShaderInfo& shaderInfo = shaderAsset->GetShaderInfo();
 
         for (const DescriptorLayout& descriptorLayout : shaderInfo.descriptors)
@@ -31,8 +38,15 @@ namespace Fyrion
         }
     }
 
+    void VulkanBindingSet::Reload()
+    {
+        int a = 0;
+    }
+
     VulkanBindingSet::~VulkanBindingSet()
     {
+        shaderAsset->RemoveBindingSetDependency(this);
+
         for (auto& descriptorIt : descriptorSets)
         {
             for (auto& data : descriptorIt.second->data)
@@ -256,8 +270,8 @@ namespace Fyrion
                             }
                             else
                             {
-                                //TODO get default texture.
-                                //descriptorSet->descriptorImageInfos[b].imageView = static_cast<VulkanTextureView*>(static_cast<VulkanTexture*>(context.defaultTexture.handler)->textureView.handler)->imageView;
+                                descriptorSet->descriptorImageInfos[b].imageView = static_cast<VulkanTextureView*>(
+                                    static_cast<VulkanTexture*>(Graphics::GetDefaultTexture().handler)->textureView.handler)->imageView;
                             }
 
                             writeDescriptorSet.pImageInfo = &descriptorSet->descriptorImageInfos[b];

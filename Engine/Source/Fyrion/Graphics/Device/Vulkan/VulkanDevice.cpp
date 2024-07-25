@@ -1184,6 +1184,11 @@ namespace Fyrion
     {
         VulkanTexture* vulkanTexture = static_cast<VulkanTexture*>(texture.handler);
 
+        if (vulkanTexture->imguiDescriptorSet)
+        {
+            vkFreeDescriptorSets(device, descriptorPool, 1, &vulkanTexture->imguiDescriptorSet);
+        }
+
         if (vulkanTexture->textureView.handler)
         {
             DestroyTextureView(vulkanTexture->textureView);

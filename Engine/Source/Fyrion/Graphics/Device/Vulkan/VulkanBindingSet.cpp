@@ -238,6 +238,7 @@ namespace Fyrion
 
                 if (result == VK_ERROR_OUT_OF_POOL_MEMORY || result == VK_ERROR_FRAGMENTED_POOL)
                 {
+                    //TODO -- needs a pool of "descriptor pool"
                     vulkanDevice.logger.Error("VK_ERROR_OUT_OF_POOL_MEMORY");
                 }
                 else if (result != VK_SUCCESS)

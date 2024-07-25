@@ -1,5 +1,3 @@
-#include "Fyrion://Shaders/SomeInclude.inc"
-
 struct VSInput
 {
      float3 position  : POSITION0;
@@ -47,30 +45,13 @@ VSOutput MainVS(VSInput input)
 	return output;
 }
 
-//------------------------------
 
 Texture2D texture : register(t0, space1);
 SamplerState samplerState : register(s1, space1);
-Texture2D normalTexture : register(t2, space1);
 
 float4 MainPS(VSOutput input) : SV_TARGET
 {
-	return texture.Sample(samplerState, input.uv) * CONSTANT_MULTIPLIER * normalTexture.Sample(samplerState, input.uv);
+	return texture.Sample(samplerState, input.uv);
 }
 
-//------------------------------
 
-// Texture2D texture : register(t0, space1);
-// SamplerState samplerState : register(s1, space1);
-
-// float4 MainPS(VSOutput input) : SV_TARGET
-// {
-// 	return texture.Sample(samplerState, input.uv);
-// }
-
-//------------------------------
-
-// float4 MainPS(VSOutput input) : SV_TARGET
-// {
-// 	return 1.0;
-// }

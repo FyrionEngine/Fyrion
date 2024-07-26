@@ -7,6 +7,8 @@
 
 namespace Fyrion
 {
+    struct UIProperty;
+
     void TransformComponent::OnNotify(i64 type, VoidPtr userData)
     {
         if (type == SceneNotifications_TransformChanged || type == SceneNotifications_OnActivate)
@@ -30,9 +32,9 @@ namespace Fyrion
 
     void TransformComponent::RegisterType(NativeTypeHandler<TransformComponent>& type)
     {
-        type.Field<&TransformComponent::position, &TransformComponent::GetPosition, &TransformComponent::SetPosition>("position");
-        type.Field<&TransformComponent::rotation, &TransformComponent::GetRotation, &TransformComponent::SetRotation>("rotation");
-        type.Field<&TransformComponent::scale, &TransformComponent::GetScale, &TransformComponent::SetScale>("scale");
+        type.Field<&TransformComponent::position, &TransformComponent::GetPosition, &TransformComponent::SetPosition>("position").Attribute<UIProperty>();
+        type.Field<&TransformComponent::rotation, &TransformComponent::GetRotation, &TransformComponent::SetRotation>("rotation").Attribute<UIProperty>();
+        type.Field<&TransformComponent::scale, &TransformComponent::GetScale, &TransformComponent::SetScale>("scale").Attribute<UIProperty>();
     }
 
 }

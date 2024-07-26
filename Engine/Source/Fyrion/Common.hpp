@@ -54,6 +54,9 @@ namespace Fyrion
     struct BaseTypes {};
 
     #define FY_BASE_TYPES(...) using Bases = BaseTypes<__VA_ARGS__>
+
+    constexpr const char* SceneTreePayload = "scene-tree-payload";
+    constexpr const char* AssetDragDropType = "asset-drag-drop-type";
 }
 
 inline void* operator new(Fyrion::usize, Fyrion::PlaceHolder, Fyrion::VoidPtr ptr)

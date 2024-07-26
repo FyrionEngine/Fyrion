@@ -7,6 +7,7 @@
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Asset/AssetDatabase.hpp"
 #include "Fyrion/Asset/AssetTypes.hpp"
+#include "Fyrion/Core/Attributes.hpp"
 #include "Fyrion/Core/StringUtils.hpp"
 #include "Fyrion/Core/UniquePtr.hpp"
 #include "Fyrion/ImGui/Lib/imgui_internal.h"
@@ -466,7 +467,7 @@ namespace ImGui
             ImGui::EndDragDropTarget();
         }
 
-        if (contentItemDesc.DragDropType != nullptr && !isDoubleClicked && ImGui::BeginDragDropSource())
+        if (contentItemDesc.DragDropType != nullptr && !isDoubleClicked && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoHoldToOpenOthers))
         {
             contentTable.beginPayloadItem = contentItemDesc.ItemId;
 
@@ -1226,6 +1227,8 @@ namespace ImGui
 
                 for (FieldHandler* field : content->desc.typeHandler->GetFields())
                 {
+                    if (!field->HasAttribute<UIProperty>()) continue;
+
                     BeginDisabled(readOnly);
 
                     TableNextColumn();

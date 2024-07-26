@@ -96,7 +96,7 @@ namespace Fyrion
             ImGui::EndDragDropTarget();
         }
 
-        if (asset->GetDirectory() != nullptr && ImGui::BeginDragDropSource())
+        if (asset->GetDirectory() != nullptr && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoDisableHover | ImGuiDragDropFlags_SourceNoHoldToOpenOthers))
         {
             assetPayload.asset = asset;
             ImGui::SetDragDropPayload(AssetDragDropType, &assetPayload, sizeof(AssetPayload));
@@ -202,6 +202,8 @@ namespace Fyrion
         ImGui::StyleColor tableBorderStyleColor(ImGuiCol_TableBorderLight, IM_COL32(0, 0, 0, 0));
 
         ImGui::Begin(id, ICON_FA_FOLDER " Project Browser", &open, ImGuiWindowFlags_NoScrollbar);
+
+        bool hovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows | ImGuiHoveredFlags_AllowWhenBlockedByActiveItem);
 
         //top child
         {
@@ -436,10 +438,11 @@ namespace Fyrion
                 focusItem = selectedItem;
             }
 
-            // if (!hovering)
-            // {
-            //     //selectedItem = focusItem;
-            // }
+            if (!hovered)
+            {
+                selectedItem = focusItem;
+                ImGui::SelectContentItem(reinterpret_cast<usize>(selectedItem), CONTENT_TABLE_ID + windowId);
+            }
         }
 
         bool closePopup = false;

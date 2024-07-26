@@ -131,7 +131,6 @@ namespace Fyrion
 
         if (typeInfo.apiId != GetTypeID<AssetApi>()) return false;
 
-        ImGuiID id = ImHashData(value, sizeof(VoidPtr));
 
         AssetApi assetApi{};
         typeInfo.extractApi(&assetApi);
@@ -140,11 +139,16 @@ namespace Fyrion
         Asset* asset = assetApi.castAsset(value);
         String name = asset ? asset->GetName() : "";
 
+        usize seed = 0;
+        HashCombine(seed, HashValue(fieldHandler), HashValue(value));
+        const i32 id = static_cast<i32>(ImHashData(&seed, sizeof(usize)));
+
         ImGui::SetNextItemWidth(-22 * ImGui::GetStyle().ScaleFactor);
+        ImGui::PushID(id + 10);
 
         ImGui::InputText(id, name, ImGuiInputTextFlags_ReadOnly);
         ImGui::SameLine(0, 0);
-        ImGui::PushID(id);
+
         auto size = ImGui::GetItemRectSize();
         if (ImGui::Button(ICON_FA_CIRCLE_DOT, ImVec2{size.y, size.y}))
         {

@@ -7,6 +7,7 @@
 #include "Fyrion/Graphics/Assets/MeshAsset.hpp"
 
 #include "TransformComponent.hpp"
+#include "Fyrion/Core/Attributes.hpp"
 #include "Fyrion/Graphics/RenderStorage.hpp"
 
 
@@ -97,7 +98,6 @@ namespace Fyrion
 
     void MeshRender::RegisterType(NativeTypeHandler<MeshRender>& type)
     {
-        //type.Field<&MeshRender::mesh, &MeshRender::GetMesh, &MeshRender::SetMesh>("mesh");
-        type.Field<&MeshRender::mesh>("mesh");
+        type.Field<&MeshRender::mesh>("mesh").Attribute<UIProperty>();
     }
 }

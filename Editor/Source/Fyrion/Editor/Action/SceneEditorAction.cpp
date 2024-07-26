@@ -134,17 +134,17 @@ namespace Fyrion
     AddComponentSceneObjectAction::AddComponentSceneObjectAction(SceneEditor& sceneEditor, SceneObject* object, TypeHandler* typeHandler)
         : sceneEditor(sceneEditor),
           object(object),
-          typeHandler(typeHandler),
-          component(nullptr) {}
+          typeHandler(typeHandler)
+    {
+        component = typeHandler->Cast<Component>(typeHandler->NewInstance());
+        component->typeHandler = typeHandler;
+        component->SetUUID(UUID::RandomUUID());
+    }
 
     void AddComponentSceneObjectAction::Commit()
     {
+        object->AddComponent(component);
         sceneEditor.Modify();
-        component = &object->AddComponent(typeHandler);
-        if (!component->GetUUID())
-        {
-            component->SetUUID(UUID::RandomUUID());
-        }
     }
 
     void AddComponentSceneObjectAction::Rollback()
@@ -169,7 +169,6 @@ namespace Fyrion
 
         sceneEditor.Modify();
         component->OnChange();
-        ImGui::ClearDrawType(reinterpret_cast<usize>(component));
     }
 
     void UpdateComponentSceneObjectAction::Commit()
@@ -177,7 +176,6 @@ namespace Fyrion
         JsonAssetReader reader(newStrValue);
         Serialization::Deserialize(component->typeHandler, reader, reader.ReadObject(), component);
 
-        ImGui::ClearDrawType(reinterpret_cast<usize>(component));
         ImGui::ClearTextData();
 
         sceneEditor.Modify();
@@ -189,7 +187,6 @@ namespace Fyrion
         JsonAssetReader reader(currentStrValue);
         Serialization::Deserialize(component->typeHandler, reader, reader.ReadObject(), component);
 
-        ImGui::ClearDrawType(reinterpret_cast<usize>(component));
         ImGui::ClearTextData();
 
         sceneEditor.Modify();
@@ -217,7 +214,7 @@ namespace Fyrion
 
     void RemoveComponentObjectAction::Rollback()
     {
-        component = &object->AddComponent(typeHandler);
+        component = &object->CreateComponent(typeHandler);
 
         JsonAssetReader reader(value);
         Serialization::Deserialize(typeHandler, reader, reader.ReadObject(), component);
@@ -255,7 +252,6 @@ namespace Fyrion
         object->RemoveOverridePrototypeComponent(component);
         sceneEditor.Modify();
 
-        ImGui::ClearDrawType(reinterpret_cast<usize>(component));
         ImGui::ClearTextData();
     }
 
@@ -269,7 +265,6 @@ namespace Fyrion
 
         sceneEditor.Modify();
 
-        ImGui::ClearDrawType(reinterpret_cast<usize>(component));
         ImGui::ClearTextData();
     }
 
@@ -292,7 +287,6 @@ namespace Fyrion
         transformComponent->SetTransform(newTransform);
         sceneEditor.Modify();
 
-        ImGui::ClearDrawType(reinterpret_cast<usize>(transformComponent));
         ImGui::ClearTextData();
     }
 
@@ -301,7 +295,6 @@ namespace Fyrion
         transformComponent->SetTransform(oldTransform);
         sceneEditor.Modify();
 
-        ImGui::ClearDrawType(reinterpret_cast<usize>(transformComponent));
         ImGui::ClearTextData();
     }
 

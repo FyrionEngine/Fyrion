@@ -188,7 +188,15 @@ namespace Fyrion
         }
         static void Read(ArchiveReader& reader, ArchiveObject object, StringView name, T** value)
         {
-            *value = AssetDatabase::Create<T>(UUID::FromString(reader.ReadString(object, name)));
+            UUID uuid = UUID::FromString(reader.ReadString(object, name));
+            if (uuid)
+            {
+                *value = AssetDatabase::Create<T>(uuid);
+            }
+            else if (*value)
+            {
+                *value = nullptr;
+            }
         }
 
         static void Add(ArchiveWriter& writer, ArchiveObject array, T*const * value)
@@ -201,7 +209,15 @@ namespace Fyrion
 
         static void Get(ArchiveReader& reader, ArchiveObject item, T** value)
         {
-            *value = AssetDatabase::Create<T>(UUID::FromString(reader.GetString(item)));
+            UUID uuid = UUID::FromString(reader.GetString(item));
+            if (uuid)
+            {
+                *value = AssetDatabase::Create<T>(uuid);
+            }
+            else if (*value)
+            {
+                *value = nullptr;
+            }
         }
     };
 

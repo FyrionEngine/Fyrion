@@ -2,16 +2,17 @@
 #include "Fyrion/Asset/Asset.hpp"
 #include "Fyrion/Scene/Component.hpp"
 #include "Fyrion/Scene/SceneObject.hpp"
+#include "Fyrion/Scene/SceneTypes.hpp"
 
 
 namespace Fyrion
 {
     class RenderGraphAsset;
 
-    class FY_API SceneObjectAsset : public Asset
+    class FY_API SceneObjectAsset : public Asset, public SceneObjectAssetProvider
     {
     public:
-        FY_BASE_TYPES(Asset);
+        FY_BASE_TYPES(Asset, SceneObjectAssetProvider);
 
         StringView GetDisplayName() const override
         {
@@ -32,6 +33,8 @@ namespace Fyrion
 
         bool LoadData() override;
         void SaveData() override;
+
+        SceneObjectAsset* GetSceneObjectAsset() override;
 
         static void RegisterType(NativeTypeHandler<SceneObjectAsset>& type);
 

@@ -19,26 +19,30 @@ namespace Fyrion
         }
     }
 
-    Component& SceneObject::AddComponent(TypeID typeId)
+    Component& SceneObject::CreateComponent(TypeID typeId)
     {
-        return AddComponent(Registry::FindTypeById(typeId));
+        return CreateComponent(Registry::FindTypeById(typeId));
     }
 
-    Component& SceneObject::AddComponent(TypeHandler* typeHandler)
+    Component& SceneObject::CreateComponent(TypeHandler* typeHandler)
     {
         Component* component = typeHandler->Cast<Component>(typeHandler->NewInstance());
         component->typeHandler = typeHandler;
+        AddComponent(component);
+        return *component;
+    }
+
+    void SceneObject::AddComponent(Component* component)
+    {
         component->object = this;
         components.EmplaceBack(component);
 
         if (!notificationDisabled)
         {
-            TypeID typeId = typeHandler->GetTypeInfo().typeId;
+            TypeID typeId = component->typeHandler->GetTypeInfo().typeId;
             Notify(SceneNotifications_OnComponentAdded, &typeId);
             component->OnNotify(SceneNotifications_OnComponentCreated, &typeId);
         }
-
-        return *component;
     }
 
     Component& SceneObject::CloneComponent(const Component* originComponent)
@@ -66,7 +70,15 @@ namespace Fyrion
         usize index = components.IndexOf(component);
         if (index != nPos)
         {
+            if (!notificationDisabled)
+            {
+                TypeID typeId = component->typeHandler->GetTypeInfo().typeId;
+                Notify(SceneNotifications_OnComponentRemoved, &typeId);
+                component->OnNotify(SceneNotifications_OnComponentRemoved, &typeId);
+            }
+
             components.Remove(index);
+            component->object = nullptr;
         }
     }
 
@@ -363,7 +375,7 @@ namespace Fyrion
 
                 if (TypeHandler* typeHandler = Registry::FindTypeByName(reader.ReadString(compObj, "_type")))
                 {
-                    Component& component = AddComponent(typeHandler);
+                    Component& component = CreateComponent(typeHandler);
                     component.SetUUID(UUID::FromString(reader.ReadString(compObj, "_uuid")));
                     component.SetPrototype(UUID::FromString(reader.ReadString(compObj, "_prototype")));
                     Serialization::Deserialize(typeHandler, reader, compObj, &component);

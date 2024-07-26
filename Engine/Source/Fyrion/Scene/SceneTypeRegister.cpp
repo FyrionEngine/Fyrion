@@ -8,11 +8,11 @@ namespace Fyrion
 {
     void RegisterSceneType()
     {
+        Registry::Type<SceneObjectAssetProvider>();
         Registry::Type<SceneObjectAsset>();
         Registry::Type<Component>();
         Registry::Type<TransformComponent>();
         Registry::Type<SceneObject>();
         Registry::Type<MeshRender>();
-        Registry::Type<SceneObjectAssetProvider>();
     }
 }

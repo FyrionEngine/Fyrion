@@ -242,8 +242,8 @@ namespace Fyrion
                 object->SetName(nodeName);
                 object->SetUUID(UUID::RandomUUID());
                 parentObject->AddChild(object);
-                TransformComponent& transformComponent = object->AddComponent<TransformComponent>();
-                MeshRender& meshRender = object->AddComponent<MeshRender>();
+                TransformComponent& transformComponent = object->CreateComponent<TransformComponent>();
+                MeshRender& meshRender = object->CreateComponent<MeshRender>();
 
                 transformComponent.SetUUID(UUID::RandomUUID());
                 meshRender.SetUUID(UUID::RandomUUID());
@@ -477,7 +477,7 @@ namespace Fyrion
                     rootObjectAsset->SetUUID(UUID::RandomUUID());
                     rootObjectAsset->SetOwner(dccAsset);
 
-                    TransformComponent& transformComponent = rootObjectAsset->GetObject()->AddComponent<TransformComponent>();
+                    TransformComponent& transformComponent = rootObjectAsset->GetObject()->CreateComponent<TransformComponent>();
                     transformComponent.SetUUID(UUID::RandomUUID());
                 }
 

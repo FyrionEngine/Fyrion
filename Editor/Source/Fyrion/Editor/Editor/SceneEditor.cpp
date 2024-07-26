@@ -188,7 +188,7 @@ namespace Fyrion
         Editor::CreateTransaction()->CreateAction<RemoveComponentObjectAction>(*this, &object, component)->Commit();
     }
 
-    void SceneEditor::UpdateComponent(Component* component, Component* newValue)
+    void SceneEditor::UpdateComponent(SceneObject* sceneObject, Component* component, Component* newValue)
     {
         Editor::CreateTransaction()->CreateAction<UpdateComponentSceneObjectAction>(*this, component, newValue);
     }

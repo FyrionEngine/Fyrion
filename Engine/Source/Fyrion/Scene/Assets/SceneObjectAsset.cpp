@@ -65,6 +65,11 @@ namespace Fyrion
         }
     }
 
+    SceneObjectAsset* SceneObjectAsset::GetSceneObjectAsset()
+    {
+        return this;
+    }
+
     void SceneObjectAsset::RegisterType(NativeTypeHandler<SceneObjectAsset>& type)
     {
     }

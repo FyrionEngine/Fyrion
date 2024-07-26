@@ -24,6 +24,7 @@ namespace Fyrion
     {
         switch (type)
         {
+            case SceneNotifications_OnComponentCreated:
             case SceneNotifications_OnActivate:
             {
                 transformComponent = object->GetComponent<TransformComponent>();
@@ -96,6 +97,7 @@ namespace Fyrion
 
     void MeshRender::RegisterType(NativeTypeHandler<MeshRender>& type)
     {
-        type.Field<&MeshRender::mesh, &MeshRender::GetMesh, &MeshRender::SetMesh>("mesh");
+        //type.Field<&MeshRender::mesh, &MeshRender::GetMesh, &MeshRender::SetMesh>("mesh");
+        type.Field<&MeshRender::mesh>("mesh");
     }
 }

@@ -234,9 +234,12 @@ namespace Fyrion
                             }
                         }
 
-                        if (TransformComponent* parentTransform = object->GetParent()->GetComponent<TransformComponent>())
+                        if (object->GetParent() != nullptr)
                         {
-                            worldMatrix = Math::Inverse(parentTransform->GetWorldTransform()) * worldMatrix;
+                            if (TransformComponent* parentTransform = object->GetParent()->GetComponent<TransformComponent>())
+                            {
+                                worldMatrix = Math::Inverse(parentTransform->GetWorldTransform()) * worldMatrix;
+                            }
                         }
 
                         Vec3 position, rotation, scale;
@@ -244,8 +247,6 @@ namespace Fyrion
                         auto deltaRotation = rotation - Math::EulerAngles(transformComponent->GetRotation());
 
                         transformComponent->SetTransform(position, Math::EulerAngles(transformComponent->GetRotation()) + deltaRotation, scale);
-
-                        ImGui::ClearDrawType(reinterpret_cast<usize>(transformComponent));
                     }
                     else if (usingGuizmo)
                     {

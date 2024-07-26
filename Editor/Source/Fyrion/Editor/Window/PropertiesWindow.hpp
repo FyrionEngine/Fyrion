@@ -28,6 +28,7 @@ namespace Fyrion
         SceneEditor&        m_sceneEditor;
         String              m_stringCache{};
         SceneObject*        selectedObject{};
+        Asset*              selectedAsset{};
         bool                m_renamingFocus{};
         String              m_renamingCache{};
         SceneObject*        m_renamingObject{};
@@ -36,11 +37,15 @@ namespace Fyrion
         Component*          selectedComponent = {};
         GraphEditorNodePin* m_selectedNodePin = {};
 
+        void ClearSelection();
+
         static void OpenProperties(const MenuItemEventData& eventData);
         void        DrawSceneObject(u32 id, SceneObject& object);
+        void        DrawAsset(Asset* asset);
         //      void        DrawGraphNode(GraphEditor* graphEditor, RID node);
 
         void SceneObjectSelection(SceneObject* objectAsset);
+        void AssetSelection(Asset* asset);
 
         u32 PushId()
         {

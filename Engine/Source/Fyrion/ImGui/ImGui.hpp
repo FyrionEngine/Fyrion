@@ -70,7 +70,6 @@ namespace ImGui
     {
         DrawTypeDesc  desc{};
         VoidPtr       instance{};
-        bool          dirty = false;
         u64           lastFrameUsage{};
         bool          readOnly{};
         bool          hasChanged{};
@@ -156,7 +155,6 @@ namespace ImGui
     FY_API void ShowAssetSelector(TypeID assetId, VoidPtr userData, FnAssetSelectorCallback callback);
 
     FY_API void AddFieldRenderer(FieldRendererFn fieldRendererFn);
-    FY_API void ClearDrawType(usize itemId);
     FY_API void DrawType(const DrawTypeDesc& drawTypeDesc);
     FY_API void ClearTextData();
 

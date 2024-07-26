@@ -1,4 +1,7 @@
 #include "Engine.hpp"
+
+#include <thread>
+
 #include "Fyrion/Core/Logger.hpp"
 #include "Fyrion/Platform/PlatformTypes.hpp"
 #include "Fyrion/Platform/Platform.hpp"
@@ -117,8 +120,7 @@ namespace Fyrion
             onBeginFrameHandler.Invoke();
             Platform::ProcessEvents();
 
-            ImGui::BeginFrame(window, deltaTime);
-
+            Extent extent = Platform::GetWindowExtent(window);
             if (Platform::UserRequestedClose(window))
             {
                 Shutdown();
@@ -128,46 +130,54 @@ namespace Fyrion
                 }
             }
 
+            ImGui::BeginFrame(window, deltaTime);
+
             onUpdateHandler.Invoke(deltaTime);
 
-            Extent extent = Platform::GetWindowExtent(window);
+            if (extent)
+            {
+                RenderCommands& cmd = GraphicsBeginFrame();
+                cmd.Begin();
 
-            RenderCommands& cmd = GraphicsBeginFrame();
-            cmd.Begin();
+                onRecordRenderCommands.Invoke(cmd, deltaTime);
 
-            onRecordRenderCommands.Invoke(cmd, deltaTime);
+                RenderPass renderPass = Graphics::AcquireNextRenderPass(swapchain);
 
-            RenderPass renderPass = Graphics::AcquireNextRenderPass(swapchain);
+                cmd.BeginLabel("Swapchain", {0, 0, 0, 1});
 
-            cmd.BeginLabel("Swapchain", {0, 0, 0, 1});
+                cmd.BeginRenderPass(BeginRenderPassInfo{
+                    .renderPass = renderPass,
+                    .clearValue = &clearColor
+                });
 
-            cmd.BeginRenderPass(BeginRenderPassInfo{
-                .renderPass = renderPass,
-                .clearValue = &clearColor
-            });
+                ViewportInfo viewportInfo{};
+                viewportInfo.x = 0.;
+                viewportInfo.y = 0.;
+                viewportInfo.width = (f32)extent.width;
+                viewportInfo.height = (f32)extent.height;
+                viewportInfo.maxDepth = 0.;
+                viewportInfo.minDepth = 1.;
+                cmd.SetViewport(viewportInfo);
+                cmd.SetScissor(Rect{.x = 0, .y = 0, .width = extent.width, .height = extent.height});
 
-            ViewportInfo viewportInfo{};
-            viewportInfo.x = 0.;
-            viewportInfo.y = 0.;
-            viewportInfo.width = (f32)extent.width;
-            viewportInfo.height = (f32)extent.height;
-            viewportInfo.maxDepth = 0.;
-            viewportInfo.minDepth = 1.;
-            cmd.SetViewport(viewportInfo);
-            cmd.SetScissor(Rect{.x = 0, .y = 0, .width = extent.width, .height = extent.height});
+                onSwapchainRender.Invoke(cmd);
 
-            onSwapchainRender.Invoke(cmd);
+                cmd.BeginLabel("ImGui", {0, 0, 0, 1});
+                ImGui::Render(cmd);
+                cmd.EndLabel();
 
-            cmd.BeginLabel("ImGui", {0, 0, 0, 1});
-            ImGui::Render(cmd);
-            cmd.EndLabel();
+                cmd.EndRenderPass();
+                cmd.EndLabel();
 
-            cmd.EndRenderPass();
-            cmd.EndLabel();
+                cmd.End();
 
-            cmd.End();
-
-            GraphicsEndFrame(swapchain);
+                GraphicsEndFrame(swapchain);
+            }
+            else
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(16));
+                ImGui::EndFrame();
+            }
 
             onEndFrameHandler.Invoke();
 

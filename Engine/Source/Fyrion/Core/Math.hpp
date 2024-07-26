@@ -42,6 +42,11 @@ namespace Fyrion
         {
             return !(lhs == rhs);
         }
+
+        explicit operator bool() const noexcept
+        {
+            return width > 0 && height > 0;
+        }
     };
 
     struct Extent3D

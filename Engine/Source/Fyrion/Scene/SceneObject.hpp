@@ -38,8 +38,9 @@ namespace Fyrion
         void               AddChildAt(SceneObject* sceneObject, usize pos);
         void               RemoveChild(SceneObject* sceneObject);
         void               RemoveChildAt(usize pos);
-        Component&         AddComponent(TypeID typeId);
-        Component&         AddComponent(TypeHandler* typeHandler);
+        Component&         CreateComponent(TypeID typeId);
+        Component&         CreateComponent(TypeHandler* typeHandler);
+        void               AddComponent(Component* component);
         Component&         CloneComponent(const Component* component);
         void               RemoveComponent(Component* component);
         Span<Component*>   GetComponents() const;
@@ -60,9 +61,9 @@ namespace Fyrion
         bool               HasPrototypeOverride() const;
 
         template <typename T, Traits::EnableIf<Traits::IsBaseOf<Component, T>>* = nullptr>
-        T& AddComponent()
+        T& CreateComponent()
         {
-            return static_cast<T&>(AddComponent(GetTypeID<T>()));
+            return static_cast<T&>(CreateComponent(GetTypeID<T>()));
         }
 
         template <typename T, Traits::EnableIf<Traits::IsBaseOf<Component, T>>* = nullptr>

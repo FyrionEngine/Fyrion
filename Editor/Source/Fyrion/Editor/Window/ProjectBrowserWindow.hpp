@@ -26,16 +26,18 @@ namespace Fyrion
         static void RegisterType(NativeTypeHandler<ProjectBrowserWindow>& type);
 
     private:
-        u32                    windowId{};
-        AssetDirectory*        openDirectory{};
-        Asset*                 selectedItem{};
-        String                 searchString{};
-        String                 stringCache{};
-        AssetPayload           assetPayload{};
-        AssetDirectory*        popupFolder{};
-        HashMap<usize, bool>   openTreeFolders{};
-        f32                    contentBrowserZoom = 0.8;
-        Array<AssetDirectory*> directoryCache;
+        u32                            windowId{};
+        AssetDirectory*                openDirectory{};
+        Asset*                         selectedItem{};
+        Asset*                         focusItem{};
+        String                         searchString{};
+        String                         stringCache{};
+        AssetPayload                   assetPayload{};
+        AssetDirectory*                popupFolder{};
+        HashMap<usize, bool>           openTreeFolders{};
+        f32                            contentBrowserZoom = 0.8;
+        Array<AssetDirectory*>         directoryCache;
+        EventHandler<OnAssetSelection> onAssetSelectionHandler{};
 
         Texture folderTexture;
         Texture fileTexture;
@@ -49,6 +51,7 @@ namespace Fyrion
 
         static void AssetNewFolder(const MenuItemEventData& eventData);
         static void AssetNewScene(const MenuItemEventData& eventData);
+        static void AssetNewMaterial(const MenuItemEventData& eventData);
         static void AssetDelete(const MenuItemEventData& eventData);
         static bool CheckSelectedAsset(const MenuItemEventData& eventData);
         static void AssetRename(const MenuItemEventData& eventData);

@@ -13,11 +13,13 @@ namespace Fyrion
     PropertiesWindow::PropertiesWindow() : m_sceneEditor(Editor::GetSceneEditor())
     {
         Event::Bind<OnSceneObjectSelection, &PropertiesWindow::SceneObjectSelection>(this);
+        Event::Bind<OnAssetSelection, &PropertiesWindow::AssetSelection>(this);
     }
 
     PropertiesWindow::~PropertiesWindow()
     {
         Event::Unbind<OnSceneObjectSelection, &PropertiesWindow::SceneObjectSelection>(this);
+        Event::Unbind<OnAssetSelection, &PropertiesWindow::AssetSelection>(this);
     }
 
     void PropertiesWindow::Draw(u32 id, bool& open)
@@ -30,21 +32,18 @@ namespace Fyrion
         {
             DrawSceneObject(id, *selectedObject);
         }
-
-        // //TODO temporary
-        // if (RID object = m_sceneEditor.GetLastSelectedObject())
-        // {
-        //     DrawSceneObject(id, object);
-        // }
-        // else if (GraphEditor* graphEditor = GraphEditorWindow::GetLastGraphEditorSelected())
-        // {
-        //     if (graphEditor->lastNodeSelected)
-        //     {
-        //         DrawGraphNode(graphEditor, graphEditor->lastNodeSelected);
-        //     }
-        // }
-
+        else if (selectedAsset)
+        {
+            DrawAsset(selectedAsset);
+        }
         ImGui::End();
+    }
+
+    void PropertiesWindow::ClearSelection()
+    {
+        selectedAsset = nullptr;
+        selectedObject = nullptr;
+        selectedComponent = nullptr;
     }
 
     void PropertiesWindow::OpenProperties(const MenuItemEventData& eventData)
@@ -171,16 +170,19 @@ namespace Fyrion
                     .typeHandler = component->typeHandler,
                     .instance = component,
                     .flags = readOnly ? ImGuiDrawTypeFlags_ReadOnly : 0u,
-                    .userData = &m_sceneEditor,
+                    .userData = this,
                     .callback = [](ImGui::DrawTypeDesc& desc, VoidPtr newValue)
                     {
-                        static_cast<SceneEditor*>(desc.userData)->UpdateComponent(static_cast<Component*>(desc.instance), static_cast<Component*>(newValue));
+                        PropertiesWindow* propertiesWindow = static_cast<PropertiesWindow*>(desc.userData);
+
+                        propertiesWindow->m_sceneEditor.UpdateComponent(propertiesWindow->selectedObject,
+                                                                        static_cast<Component*>(desc.instance),
+                                                                        static_cast<Component*>(newValue));
                     },
                 });
                 ImGui::Unindent();
                 ImGui::EndDisabled();
             }
-
         }
 
         if (addComponent)
@@ -257,9 +259,89 @@ namespace Fyrion
         ImGui::EndPopupMenu(popupOpenSettings);
     }
 
+    void PropertiesWindow::DrawAsset(Asset* asset)
+    {
+        bool readOnly = false;
+
+        auto& style = ImGui::GetStyle();
+        if (ImGui::BeginTable("#asset-table", 2))
+        {
+            String name = asset->GetName();
+            String path = asset->GetPath();
+            UUID   uuid = asset->GetUUID();
+
+            ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthStretch, 0.5f);
+            ImGui::TableSetupColumn("Item", ImGuiTableColumnFlags_WidthStretch);
+
+            ImGui::TableNextColumn();
+            ImGui::AlignTextToFramePadding();
+            ImGui::Text("Name");
+            ImGui::TableNextColumn();
+            ImGui::SetNextItemWidth(-1);
+            ImGui::InputText(HashValue(name), name, ImGuiInputTextFlags_ReadOnly);
+
+
+            if (!path.Empty())
+            {
+                ImGui::TableNextColumn();
+                ImGui::AlignTextToFramePadding();
+                ImGui::Text("Path");
+                ImGui::TableNextColumn();
+                ImGui::SetNextItemWidth(-1);
+                ImGui::InputText(HashValue(path), path, ImGuiInputTextFlags_ReadOnly);
+            }
+
+            if (uuid)
+            {
+                ImGui::TableNextColumn();
+                ImGui::AlignTextToFramePadding();
+                ImGui::Text("UUID");
+                ImGui::TableNextColumn();
+                ImGui::SetNextItemWidth(-1);
+                String uuidStr = ToString(uuid);
+                ImGui::InputText(HashValue(uuid.firstValue), uuidStr, ImGuiInputTextFlags_ReadOnly);
+            }
+            ImGui::EndTable();
+        }
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5 * style.ScaleFactor);
+
+        ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
+        if (ImGui::CollapsingHeader(asset->GetDisplayName().CStr(), 0))
+        {
+            //ImGui::BeginDisabled(object.GetPrototype() != nullptr && !object.IsComponentOverride(component));
+
+            ImGui::Indent();
+            ImGui::DrawType(ImGui::DrawTypeDesc{
+                .itemId = reinterpret_cast<usize>(asset),
+                .typeHandler = asset->GetAssetType(),
+                .instance = asset,
+                .flags = readOnly ? ImGuiDrawTypeFlags_ReadOnly : 0u,
+                .userData = this,
+                .callback = [](ImGui::DrawTypeDesc& desc, VoidPtr newValue)
+                {
+                    // PropertiesWindow* propertiesWindow = static_cast<PropertiesWindow*>(desc.userData);
+                    //
+                    // propertiesWindow->m_sceneEditor.UpdateComponent(propertiesWindow->selectedObject,
+                    //                                                 static_cast<Component*>(desc.instance),
+                    //                                                 static_cast<Component*>(newValue));
+                },
+            });
+            ImGui::Unindent();
+
+            //ImGui::EndDisabled();
+        }
+    }
+
     void PropertiesWindow::SceneObjectSelection(SceneObject* objectAsset)
     {
+        ClearSelection();
         selectedObject = objectAsset;
+    }
+
+    void PropertiesWindow::AssetSelection(Asset* asset)
+    {
+        ClearSelection();
+        selectedAsset = asset;
     }
 
 #if FY_ASSET_REFACTOR

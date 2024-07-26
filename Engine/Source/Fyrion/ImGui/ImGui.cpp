@@ -1183,14 +1183,6 @@ namespace ImGui
         fieldRenders.EmplaceBack(fieldRendererFn);
     }
 
-    void ClearDrawType(usize itemId)
-    {
-        if (auto it = drawTypes.Find(itemId); it != drawTypes.end())
-        {
-            it->second->dirty = true;
-        }
-    }
-
     void DrawType(const ImGui::DrawTypeDesc& desc)
     {
         bool readOnly = desc.flags & ImGuiDrawTypeFlags_ReadOnly;
@@ -1217,26 +1209,11 @@ namespace ImGui
                         .readOnly = readOnly,
                         .tableRender = true
                     })).first;
-
-            if (desc.instance != nullptr)
-            {
-                desc.typeHandler->Copy(desc.instance, it->second->instance);
-            }
         }
 
         DrawTypeContent* content = it->second.Get();
 
-        if (content->dirty)
-        {
-            desc.typeHandler->Copy(desc.instance, content->instance);
-            content->dirty = false;
-        }
-
-        if (desc.instance != nullptr && desc.instance != content->desc.instance)
-        {
-            desc.typeHandler->Copy(desc.instance, it->second->instance);
-            content->desc.instance = desc.instance;
-        }
+        desc.typeHandler->Copy(desc.instance, content->instance);
 
         content->lastFrameUsage = Engine::GetFrame();
 

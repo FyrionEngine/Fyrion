@@ -10,9 +10,11 @@
 #include "Fyrion/Platform/Platform.hpp"
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Asset/AssetDatabase.hpp"
+#include "Fyrion/Core/Logger.hpp"
 #include "Fyrion/Editor/Action/AssetEditorActions.hpp"
 #include "Fyrion/Editor/Action/SceneEditorAction.hpp"
 #include "Fyrion/Graphics/RenderGraph.hpp"
+#include "Fyrion/Graphics/Assets/MaterialAsset.hpp"
 #include "Fyrion/Graphics/Assets/TextureAsset.hpp"
 
 #define CONTENT_TABLE_ID 500
@@ -426,6 +428,20 @@ namespace Fyrion
             ImGui::EndTable();
         }
 
+        if (selectedItem != focusItem)
+        {
+            if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
+            {
+                onAssetSelectionHandler.Invoke(selectedItem);
+                focusItem = selectedItem;
+            }
+
+            // if (!hovering)
+            // {
+            //     //selectedItem = focusItem;
+            // }
+        }
+
         bool closePopup = false;
         if (!ImGui::RenamingSelected(CONTENT_TABLE_ID + id) && ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))
         {
@@ -462,6 +478,11 @@ namespace Fyrion
     void ProjectBrowserWindow::AssetNewScene(const MenuItemEventData& eventData)
     {
         static_cast<ProjectBrowserWindow*>(eventData.drawData)->NewAsset(GetTypeID<SceneObjectAsset>());
+    }
+
+    void ProjectBrowserWindow::AssetNewMaterial(const MenuItemEventData& eventData)
+    {
+        static_cast<ProjectBrowserWindow*>(eventData.drawData)->NewAsset(GetTypeID<MaterialAsset>());
     }
 
     void ProjectBrowserWindow::AssetDelete(const MenuItemEventData& eventData)
@@ -552,6 +573,7 @@ namespace Fyrion
 
         AddMenuItem(MenuItemCreation{.itemName = "New Folder", .icon = ICON_FA_FOLDER, .priority = 0, .action = AssetNewFolder});
         AddMenuItem(MenuItemCreation{.itemName = "New Scene", .icon = ICON_FA_GLOBE, .priority = 10, .action = AssetNewScene});
+        AddMenuItem(MenuItemCreation{.itemName = "New Material", .icon = ICON_FA_PAINTBRUSH, .priority = 15, .action = AssetNewMaterial});
         AddMenuItem(MenuItemCreation{.itemName = "Delete", .icon = ICON_FA_TRASH, .priority = 20, .itemShortcut{.presKey = Key::Delete}, .action = AssetDelete, .enable = CheckSelectedAsset});
         AddMenuItem(MenuItemCreation{.itemName = "Rename", .icon = ICON_FA_PEN_TO_SQUARE, .priority = 30, .itemShortcut{.presKey = Key::F2}, .action = AssetRename, .enable = CheckSelectedAsset});
         AddMenuItem(MenuItemCreation{.itemName = "Show in Explorer", .icon = ICON_FA_FOLDER, .priority = 40, .action = AssetShowInExplorer});

@@ -91,10 +91,8 @@ namespace Fyrion
         virtual void BuildPath();
         virtual void OnActiveChanged() {}
 
-        virtual void Modify()
-        {
-            currentVersion += 1;
-        }
+        virtual void OnModified() {};
+        void SetModified();
 
         virtual bool       IsModified() const;
         virtual StringView GetDisplayName() const;

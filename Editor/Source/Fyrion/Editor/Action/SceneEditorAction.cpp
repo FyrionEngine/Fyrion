@@ -53,16 +53,16 @@ namespace Fyrion
     {
         sceneEditor.SelectObject(*current);
         parent->AddChildAt(current, pos);
-        sceneEditor.Modify();
         current->SetAlive(true);
+        sceneEditor.Modify();
     }
 
     void CreateSceneObjectAction::Rollback()
     {
         sceneEditor.DeselectObject(*current);
         parent->RemoveChild(current);
-        sceneEditor.Modify();
         current->SetAlive(false);
+        sceneEditor.Modify();
     }
 
     void CreateSceneObjectAction::RegisterType(NativeTypeHandler<CreateSceneObjectAction>& type)

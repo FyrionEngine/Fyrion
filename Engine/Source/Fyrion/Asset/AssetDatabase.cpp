@@ -485,9 +485,9 @@ namespace Fyrion
     {
         if (auto importer = importers.Find(asset->GetExtension()))
         {
-            asset->Modify();
             importer->second->ImportAsset(asset->GetAbsolutePath(), asset);
             logger.Info("asset {} reimported", asset->GetPath());
+            asset->SetModified();
         }
     }
 

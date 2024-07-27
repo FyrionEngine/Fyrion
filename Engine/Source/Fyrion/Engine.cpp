@@ -120,7 +120,8 @@ namespace Fyrion
             onBeginFrameHandler.Invoke();
             Platform::ProcessEvents();
 
-            Extent extent = Platform::GetWindowExtent(window);
+            ImGui::BeginFrame(window, deltaTime);
+
             if (Platform::UserRequestedClose(window))
             {
                 Shutdown();
@@ -130,11 +131,9 @@ namespace Fyrion
                 }
             }
 
-            ImGui::BeginFrame(window, deltaTime);
-
             onUpdateHandler.Invoke(deltaTime);
 
-            if (extent)
+            if (Extent extent = Platform::GetWindowExtent(window))
             {
                 RenderCommands& cmd = GraphicsBeginFrame();
                 cmd.Begin();

@@ -79,7 +79,7 @@ namespace Fyrion
     {
         name = p_name;
         BuildPath();
-        Modify();
+        SetModified();
     }
 
     void Asset::SetExtension(StringView p_extension)
@@ -104,7 +104,7 @@ namespace Fyrion
         {
             BuildPath();
         }
-        Modify();
+        SetModified();
     }
 
     bool Asset::IsChildOf(Asset* parent) const
@@ -121,6 +121,12 @@ namespace Fyrion
             return directory->IsChildOf(parent);
         }
         return false;
+    }
+
+    void Asset::SetModified()
+    {
+        currentVersion += 1;
+        OnModified();
     }
 
     bool Asset::IsModified() const

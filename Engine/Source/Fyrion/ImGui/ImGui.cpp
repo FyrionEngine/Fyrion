@@ -1014,6 +1014,8 @@ namespace ImGui
             ImGui::SetNextWindowSize(ImVec2(960 * ImGui::GetStyle().ScaleFactor, 540 * ImGui::GetStyle().ScaleFactor), ImGuiCond_Appearing);
         }
 
+
+
         if (ImGui::BeginPopupModal("Assets", &showAssetSelection))
         {
             {
@@ -1085,6 +1087,11 @@ namespace ImGui
             }
 
             ImGui::EndPopup();
+        }
+
+        if (ImGui::IsKeyDown(ImGuiKey_Escape))
+        {
+            showAssetSelection = false;
         }
 
         if (!showAssetSelection)

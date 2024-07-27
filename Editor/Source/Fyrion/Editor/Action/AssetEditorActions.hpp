@@ -92,4 +92,20 @@ namespace Fyrion
     private:
         Asset* asset;
     };
+
+    struct UpdateAssetAction : EditorAction
+    {
+        FY_BASE_TYPES(EditorAction);
+
+        Asset* asset;
+        String currentStrValue;
+        String newStrValue;
+
+        UpdateAssetAction(Asset* asset, Asset* newValue);
+
+        void Commit() override;
+        void Rollback() override;
+
+        static void RegisterType(NativeTypeHandler<UpdateAssetAction>& type);
+    };
 }

@@ -63,7 +63,17 @@ namespace Fyrion
 
     void SceneManager::SetActiveObject(SceneObject* sceneObject)
     {
+        if (activeSceneObject)
+        {
+            activeSceneObject->SetActive(false);
+        }
+
         activeSceneObject = sceneObject;
+
+        if (activeSceneObject)
+        {
+            activeSceneObject->SetActive(true);
+        }
     }
 
     void SceneManagerInit()

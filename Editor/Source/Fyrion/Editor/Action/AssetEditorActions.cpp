@@ -2,6 +2,8 @@
 #include "Fyrion/Asset/Asset.hpp"
 #include "Fyrion/Asset/AssetTypes.hpp"
 #include "Fyrion/Asset/AssetDatabase.hpp"
+#include "Fyrion/Asset/AssetSerialization.hpp"
+#include "Fyrion/ImGui/ImGui.hpp"
 
 namespace Fyrion
 {
@@ -39,8 +41,8 @@ namespace Fyrion
 
     void MoveAssetAction::MoveToFolder(AssetDirectory* directory) const
     {
-        asset->Modify();
         directory->AddChild(asset);
+        asset->SetModified();
     }
 
     void MoveAssetAction::RegisterType(NativeTypeHandler<MoveAssetAction>& type)
@@ -105,11 +107,42 @@ namespace Fyrion
         type.Constructor<Asset*>();
     }
 
+    UpdateAssetAction::UpdateAssetAction(Asset* asset, Asset* newValue) : asset(asset)
+    {
+        JsonAssetWriter writer;
+        currentStrValue = JsonAssetWriter::Stringify(Serialization::Serialize(asset->GetAssetType(), writer, asset));
+        newStrValue = JsonAssetWriter::Stringify(Serialization::Serialize(asset->GetAssetType(), writer, newValue));
+    }
+
+    void UpdateAssetAction::Commit()
+    {
+        JsonAssetReader reader(newStrValue);
+        Serialization::Deserialize(asset->GetAssetType(), reader, reader.ReadObject(), asset);
+
+        ImGui::ClearTextData();
+        asset->SetModified();
+    }
+    void UpdateAssetAction::Rollback()
+    {
+        JsonAssetReader reader(currentStrValue);
+        Serialization::Deserialize(asset->GetAssetType(), reader, reader.ReadObject(), asset);
+
+        ImGui::ClearTextData();
+
+        asset->SetModified();
+    }
+
+    void UpdateAssetAction::RegisterType(NativeTypeHandler<UpdateAssetAction>& type)
+    {
+        type.Constructor<Asset*, Asset*>();
+    }
+
     void InitAssetEditorActions()
     {
         Registry::Type<RenameAssetAction>();
         Registry::Type<MoveAssetAction>();
         Registry::Type<AssetCreateAction>();
         Registry::Type<AssetDeleteAction>();
+        Registry::Type<UpdateAssetAction>();
     }
 }

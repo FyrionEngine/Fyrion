@@ -52,6 +52,8 @@ namespace Fyrion
         void               Deserialize(ArchiveReader& reader, ArchiveObject object);
         bool               IsAlive() const;
         void               SetAlive(bool p_alive);
+        bool               IsActivated() const;
+        void               SetActive(bool p_active);
         void               Notify(i64 type, VoidPtr userData);
         SceneObject*       Clone() const;
         void               SetPrototype(SceneObject* p_prototype);
@@ -86,6 +88,6 @@ namespace Fyrion
         HashSet<UUID>       componentOverride{};
         SceneObject*        parent = nullptr;
         bool                alive = true;
-        bool                notificationDisabled = false;
+        bool                active = false;
     };
 }

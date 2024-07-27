@@ -2,23 +2,21 @@
 
 #include <Fyrion/Scene/SceneTypes.hpp>
 
+#include "Fyrion/Core/Attributes.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Scene/SceneObject.hpp"
 
 namespace Fyrion
 {
-    struct UIProperty;
-
     void TransformComponent::OnNotify(i64 type, VoidPtr userData)
     {
-        if (type == SceneNotifications_TransformChanged || type == SceneNotifications_OnActivate)
+        if (type == SceneNotifications_TransformChanged || type == SceneNotifications_OnActivated)
         {
             if (object->GetParent() != nullptr)
             {
                 if (TransformComponent* parentTransform = object->GetParent()->GetComponent<TransformComponent>())
                 {
                     worldTransform = parentTransform->GetWorldTransform() * GetLocalTransform();
-                    return;
                 }
             }
             worldTransform = GetLocalTransform();

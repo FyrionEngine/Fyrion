@@ -18,8 +18,6 @@ namespace Fyrion
         actions.ShrinkToFit();
     }
 
-    struct Exception : std::exception{};
-
     EditorAction* EditorTransaction::CreateAction(TypeID typeId, VoidPtr* params, TypeID* paramTypes, usize paramNum)
     {
         if (TypeHandler* typeHandler = Registry::FindTypeById(typeId))

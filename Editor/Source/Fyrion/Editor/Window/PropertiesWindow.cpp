@@ -4,6 +4,7 @@
 #include "imgui_internal.h"
 #include "Fyrion/Core/StringUtils.hpp"
 #include "Fyrion/Editor/Editor.hpp"
+#include "Fyrion/Editor/Action/AssetEditorActions.hpp"
 #include "Fyrion/Editor/Editor/SceneEditor.hpp"
 #include "Fyrion/ImGui/IconsFontAwesome6.h"
 #include "Fyrion/ImGui/ImGui.hpp"
@@ -308,8 +309,6 @@ namespace Fyrion
         ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
         if (ImGui::CollapsingHeader(asset->GetDisplayName().CStr(), 0))
         {
-            //ImGui::BeginDisabled(object.GetPrototype() != nullptr && !object.IsComponentOverride(component));
-
             ImGui::Indent();
             ImGui::DrawType(ImGui::DrawTypeDesc{
                 .itemId = reinterpret_cast<usize>(asset),
@@ -319,16 +318,10 @@ namespace Fyrion
                 .userData = this,
                 .callback = [](ImGui::DrawTypeDesc& desc, VoidPtr newValue)
                 {
-                    // PropertiesWindow* propertiesWindow = static_cast<PropertiesWindow*>(desc.userData);
-                    //
-                    // propertiesWindow->m_sceneEditor.UpdateComponent(propertiesWindow->selectedObject,
-                    //                                                 static_cast<Component*>(desc.instance),
-                    //                                                 static_cast<Component*>(newValue));
+                    Editor::CreateTransaction()->CreateAction<UpdateAssetAction>(static_cast<Asset*>(desc.instance), static_cast<Asset*>(newValue))->Commit();
                 },
             });
             ImGui::Unindent();
-
-            //ImGui::EndDisabled();
         }
     }
 

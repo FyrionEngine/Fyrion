@@ -37,7 +37,7 @@ namespace Fyrion
         component->object = this;
         components.EmplaceBack(component);
 
-        if (!notificationDisabled)
+        if (active)
         {
             TypeID typeId = component->typeHandler->GetTypeInfo().typeId;
             Notify(SceneNotifications_OnComponentAdded, &typeId);
@@ -48,7 +48,7 @@ namespace Fyrion
     Component& SceneObject::CloneComponent(const Component* originComponent)
     {
         TypeHandler* typeHandler = originComponent->typeHandler;
-        Component* component = typeHandler->Cast<Component>(typeHandler->NewInstance());
+        Component*   component = typeHandler->Cast<Component>(typeHandler->NewInstance());
         typeHandler->DeepCopy(originComponent, component);
 
         component->typeHandler = typeHandler;
@@ -56,7 +56,7 @@ namespace Fyrion
         components.EmplaceBack(component);
 
 
-        if (!notificationDisabled)
+        if (active)
         {
             TypeID typeId = typeHandler->GetTypeInfo().typeId;
             Notify(SceneNotifications_OnComponentAdded, &typeId);
@@ -70,7 +70,7 @@ namespace Fyrion
         usize index = components.IndexOf(component);
         if (index != nPos)
         {
-            if (!notificationDisabled)
+            if (active)
             {
                 TypeID typeId = component->typeHandler->GetTypeInfo().typeId;
                 Notify(SceneNotifications_OnComponentRemoved, &typeId);
@@ -223,12 +223,17 @@ namespace Fyrion
     void SceneObject::AddChild(SceneObject* sceneObject)
     {
         sceneObject->parent = this;
+        sceneObject->active = active;
         children.EmplaceBack(sceneObject);
     }
 
     void SceneObject::AddChildAt(SceneObject* sceneObject, usize pos)
     {
         sceneObject->parent = this;
+        if (active)
+        {
+            sceneObject->SetActive(true);
+        }
         children.Insert(children.begin() + pos, &sceneObject, &sceneObject + 1);
     }
 
@@ -238,11 +243,16 @@ namespace Fyrion
         {
             children.Erase(it);
         }
+        sceneObject->parent = nullptr;
+        sceneObject->SetActive(false);
     }
 
     void SceneObject::RemoveChildAt(usize pos)
     {
-        children.Remove(pos);
+        if (children.Size() < pos)
+        {
+            children.Remove(pos);
+        }
     }
 
     void SceneObject::Destroy()
@@ -311,7 +321,6 @@ namespace Fyrion
 
         for (const Component* component : components)
         {
-
             if (!prototype || IsComponentOverride(component))
             {
                 ArchiveObject componentObject = Serialization::Serialize(component->typeHandler, writer, component);
@@ -344,8 +353,6 @@ namespace Fyrion
 
     void SceneObject::Deserialize(ArchiveReader& reader, ArchiveObject object)
     {
-        notificationDisabled = true;
-
         name = reader.ReadString(object, "name");
         uuid = UUID::FromString(reader.ReadString(object, "uuid"));
 
@@ -388,8 +395,6 @@ namespace Fyrion
         {
             SetPrototype(asset->GetObject());
         }
-
-        notificationDisabled = false;
     }
 
     bool SceneObject::IsAlive() const
@@ -400,19 +405,47 @@ namespace Fyrion
     void SceneObject::SetAlive(bool p_alive)
     {
         alive = p_alive;
-        Notify(alive ? SceneNotifications_OnActivate : SceneNotifications_OnDeactivate, nullptr);
+        Notify(alive ? SceneNotifications_OnActivated : SceneNotifications_OnDeactivated, nullptr);
     }
 
-    void SceneObject::Notify(i64 type, VoidPtr userData)
+    bool SceneObject::IsActivated() const
     {
-        for (Component* component : components)
+        return active;
+    }
+
+    void SceneObject::SetActive(bool p_active)
+    {
+        if (!p_active)
         {
-            component->OnNotify(type, userData);
+            Notify(SceneNotifications_OnDeactivated, nullptr);
+        }
+
+        active = p_active;
+
+        if (p_active)
+        {
+            Notify(SceneNotifications_OnActivated, nullptr);
         }
 
         for (SceneObject* child : children)
         {
-            child->Notify(type, userData);
+            child->SetActive(p_active);
+        }
+    }
+
+    void SceneObject::Notify(i64 type, VoidPtr userData)
+    {
+        if (active)
+        {
+            for (Component* component : components)
+            {
+                component->OnNotify(type, userData);
+            }
+
+            for (SceneObject* child : children)
+            {
+                child->Notify(type, userData);
+            }
         }
     }
 
@@ -423,6 +456,7 @@ namespace Fyrion
         object->SetName(GetName());
         object->prototype = prototype;
         object->asset = asset;
+        object->active = active;
 
         for (const SceneObject* child : children)
         {
@@ -469,7 +503,7 @@ namespace Fyrion
 
         children.Reserve(children.Size() + childrenToAdd.Size());
 
-        for(SceneObject* newChild : childrenToAdd)
+        for (SceneObject* newChild : childrenToAdd)
         {
             this->AddChild(newChild);
         }
@@ -489,13 +523,13 @@ namespace Fyrion
 
     void SceneObject::OverridePrototypeComponent(const Component* component)
     {
-        if(!component || !component->GetPrototype()) return;
+        if (!component || !component->GetPrototype()) return;
         componentOverride.Insert(component->GetPrototype());
     }
 
     bool SceneObject::IsComponentOverride(const Component* component) const
     {
-        if(!component || !component->GetPrototype()) return false;
+        if (!component || !component->GetPrototype()) return false;
         return componentOverride.Has(component->GetPrototype());
     }
 

@@ -21,7 +21,7 @@ namespace Fyrion
     {
         if (scene)
         {
-            scene->Modify();
+            scene->SetModified();
         }
     }
 
@@ -63,8 +63,6 @@ namespace Fyrion
     {
         if (scene == nullptr) return;
 
-        scene->Modify();
-
         EditorTransaction* transaction = Editor::CreateTransaction();
         for (const auto it : selectedObjects)
         {
@@ -73,6 +71,8 @@ namespace Fyrion
         transaction->Commit();
         selectedObjects.Clear();
         onSceneObjectAssetSelection.Invoke(nullptr);
+
+        scene->SetModified();
     }
 
     void SceneEditor::ClearSelectionStatic(VoidPtr userData)
@@ -88,8 +88,6 @@ namespace Fyrion
     void SceneEditor::CreateObject(SceneObjectAsset* prototype)
     {
         if (scene == nullptr) return;
-
-        scene->Modify();
 
         if (selectedObjects.Empty())
         {
@@ -109,6 +107,8 @@ namespace Fyrion
             selectedObjects.Clear();
             transaction->Commit();
         }
+
+        scene->SetModified();
     }
 
     bool SceneEditor::IsSimulating()
@@ -130,13 +130,9 @@ namespace Fyrion
     {
         ClearSelection();
 
-        if (SceneObject* rootObject = GetRootObject())
-        {
-            rootObject->Notify(SceneNotifications_OnDeactivate, nullptr);
-        }
-
         if (scene)
         {
+            GetRootObject()->SetActive(false);
             scene->DestroySceneObject();
         }
 
@@ -145,13 +141,8 @@ namespace Fyrion
         if (scene)
         {
             scene->LoadData();
+            GetRootObject()->SetActive(true);
         }
-
-        if (SceneObject* rootObject = GetRootObject())
-        {
-            rootObject->Notify(SceneNotifications_OnActivate, nullptr);
-        }
-
     }
 
     SceneObjectAsset* SceneEditor::GetScene() const

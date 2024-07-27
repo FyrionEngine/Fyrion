@@ -26,7 +26,7 @@ namespace Fyrion
         switch (type)
         {
             case SceneNotifications_OnComponentCreated:
-            case SceneNotifications_OnActivate:
+            case SceneNotifications_OnActivated:
             {
                 transformComponent = object->GetComponent<TransformComponent>();
                 activated = true;
@@ -34,7 +34,7 @@ namespace Fyrion
                 break;
             }
 
-            case SceneNotifications_OnDeactivate:
+            case SceneNotifications_OnDeactivated:
             {
                 activated = false;
                 RenderStorage::RemoveMeshFromRender(reinterpret_cast<usize>(this));

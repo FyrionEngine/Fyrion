@@ -39,9 +39,15 @@ namespace Fyrion
 
         if (active)
         {
-            TypeID typeId = component->typeHandler->GetTypeInfo().typeId;
-            Notify(SceneNotifications_OnComponentAdded, &typeId);
-            component->OnNotify(SceneNotifications_OnComponentCreated, &typeId);
+            component->OnNotify(NotificationEvent{
+                .type = SceneNotifications_OnActivated,
+            });
+
+            this->NotifyComponents(NotificationEvent{
+                .type = SceneNotifications_OnComponentAdded,
+                .typeId = component->typeHandler->GetTypeInfo().typeId,
+                .component = component,
+            });
         }
     }
 
@@ -50,18 +56,8 @@ namespace Fyrion
         TypeHandler* typeHandler = originComponent->typeHandler;
         Component*   component = typeHandler->Cast<Component>(typeHandler->NewInstance());
         typeHandler->DeepCopy(originComponent, component);
-
         component->typeHandler = typeHandler;
-        component->object = this;
-        components.EmplaceBack(component);
-
-
-        if (active)
-        {
-            TypeID typeId = typeHandler->GetTypeInfo().typeId;
-            Notify(SceneNotifications_OnComponentAdded, &typeId);
-            component->OnNotify(SceneNotifications_OnComponentCreated, &typeId);
-        }
+        AddComponent(component);
         return *component;
     }
 
@@ -72,11 +68,16 @@ namespace Fyrion
         {
             if (active)
             {
-                TypeID typeId = component->typeHandler->GetTypeInfo().typeId;
-                Notify(SceneNotifications_OnComponentRemoved, &typeId);
-                component->OnNotify(SceneNotifications_OnComponentRemoved, &typeId);
-            }
+                component->OnNotify(NotificationEvent{
+                    .type = SceneNotifications_OnDeactivated,
+                });
 
+                this->NotifyComponents(NotificationEvent{
+                    .type = SceneNotifications_OnComponentRemoved,
+                    .typeId = component->typeHandler->GetTypeInfo().typeId,
+                    .component = component,
+                });
+            }
             components.Remove(index);
             component->object = nullptr;
         }
@@ -223,17 +224,14 @@ namespace Fyrion
     void SceneObject::AddChild(SceneObject* sceneObject)
     {
         sceneObject->parent = this;
-        sceneObject->active = active;
+        sceneObject->SetActive(active);
         children.EmplaceBack(sceneObject);
     }
 
     void SceneObject::AddChildAt(SceneObject* sceneObject, usize pos)
     {
         sceneObject->parent = this;
-        if (active)
-        {
-            sceneObject->SetActive(true);
-        }
+        sceneObject->SetActive(active);
         children.Insert(children.begin() + pos, &sceneObject, &sceneObject + 1);
     }
 
@@ -243,14 +241,18 @@ namespace Fyrion
         {
             children.Erase(it);
         }
-        sceneObject->parent = nullptr;
         sceneObject->SetActive(false);
+        sceneObject->parent = nullptr;
     }
 
     void SceneObject::RemoveChildAt(usize pos)
     {
-        if (children.Size() < pos)
+        if (children.Size() > pos)
         {
+            SceneObject* child = children[pos];
+            child->SetActive(false);
+            child->parent = nullptr;
+
             children.Remove(pos);
         }
     }
@@ -397,17 +399,6 @@ namespace Fyrion
         }
     }
 
-    bool SceneObject::IsAlive() const
-    {
-        return alive;
-    }
-
-    void SceneObject::SetAlive(bool p_alive)
-    {
-        alive = p_alive;
-        Notify(alive ? SceneNotifications_OnActivated : SceneNotifications_OnDeactivated, nullptr);
-    }
-
     bool SceneObject::IsActivated() const
     {
         return active;
@@ -415,36 +406,47 @@ namespace Fyrion
 
     void SceneObject::SetActive(bool p_active)
     {
-        if (!p_active)
+        if (!p_active && active)
         {
-            Notify(SceneNotifications_OnDeactivated, nullptr);
+            NotifyComponents(NotificationEvent{
+                .type = SceneNotifications_OnDeactivated,
+            });
+
+            active = false;
         }
-
-        active = p_active;
-
-        if (p_active)
+        else if (p_active && !active)
         {
-            Notify(SceneNotifications_OnActivated, nullptr);
+            active = true;
+
+            this->NotifyComponents(NotificationEvent{
+                .type = SceneNotifications_OnActivated,
+            });
         }
 
         for (SceneObject* child : children)
         {
-            child->SetActive(p_active);
+            child->SetActive(active);
         }
     }
 
-    void SceneObject::Notify(i64 type, VoidPtr userData)
+    void SceneObject::NotifyComponents(const NotificationEvent& notificationEvent)
     {
         if (active)
         {
             for (Component* component : components)
             {
-                component->OnNotify(type, userData);
+                component->OnNotify(notificationEvent);
             }
+        }
+    }
 
+    void SceneObject::NotifyChildren(const NotificationEvent& notificationEvent)
+    {
+        if (active)
+        {
             for (SceneObject* child : children)
             {
-                child->Notify(type, userData);
+                child->NotifyComponents(notificationEvent);
             }
         }
     }

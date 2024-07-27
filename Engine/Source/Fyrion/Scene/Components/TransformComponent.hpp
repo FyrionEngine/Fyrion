@@ -72,7 +72,7 @@ namespace Fyrion
             return {position, rotation, scale};
         }
 
-        void OnNotify(i64 type, VoidPtr userData) override;
+        void OnNotify(const NotificationEvent& notificationEvent) override;
         void OnChange() override;
 
         static void RegisterType(NativeTypeHandler<TransformComponent>& type);

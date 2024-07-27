@@ -43,7 +43,7 @@ namespace Fyrion
 
     CreateSceneObjectAction::~CreateSceneObjectAction()
     {
-        if (current != nullptr && !current->IsAlive())
+        if (current != nullptr && current->GetParent() == nullptr)
         {
             SceneManager::Destroy(current);
         }
@@ -53,7 +53,6 @@ namespace Fyrion
     {
         sceneEditor.SelectObject(*current);
         parent->AddChildAt(current, pos);
-        current->SetAlive(true);
         sceneEditor.Modify();
     }
 
@@ -61,7 +60,6 @@ namespace Fyrion
     {
         sceneEditor.DeselectObject(*current);
         parent->RemoveChild(current);
-        current->SetAlive(false);
         sceneEditor.Modify();
     }
 
@@ -74,7 +72,7 @@ namespace Fyrion
 
     DestroySceneObjectAction::~DestroySceneObjectAction()
     {
-        if (object && !object->IsAlive())
+        if (object && object->GetParent() == nullptr)
         {
             SceneManager::Destroy(object);
         }
@@ -94,7 +92,6 @@ namespace Fyrion
         }
 
         sceneEditor.Modify();
-        object->SetAlive(false);
     }
 
     void DestroySceneObjectAction::Rollback()
@@ -105,7 +102,6 @@ namespace Fyrion
 
             sceneEditor.Modify();
         }
-        object->SetAlive(true);
     }
 
     RenameSceneObjectAction::RenameSceneObjectAction(SceneEditor& sceneEditor, SceneObject* sceneObject, StringView newName)

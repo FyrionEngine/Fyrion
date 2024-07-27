@@ -8,24 +8,41 @@
 
 namespace Fyrion
 {
-    void TransformComponent::OnNotify(i64 type, VoidPtr userData)
+    void TransformComponent::OnNotify(const NotificationEvent& notificationEvent)
     {
-        if (type == SceneNotifications_TransformChanged || type == SceneNotifications_OnActivated)
+        switch (notificationEvent.type)
         {
-            if (object->GetParent() != nullptr)
+            case SceneNotifications_OnActivated:
             {
-                if (TransformComponent* parentTransform = object->GetParent()->GetComponent<TransformComponent>())
-                {
-                    worldTransform = parentTransform->GetWorldTransform() * GetLocalTransform();
-                }
+                this->OnChange();
+                break;
             }
-            worldTransform = GetLocalTransform();
+            case SceneNotifications_ParentTransformChanged:
+            {
+                worldTransform = static_cast<TransformComponent*>(notificationEvent.component)->GetWorldTransform() * GetLocalTransform();
+
+                object->NotifyComponents(NotificationEvent{.type = SceneNotifications_TransformChanged, .component = this});
+                object->NotifyChildren(NotificationEvent{.type = SceneNotifications_ParentTransformChanged, .component = this});
+                break;
+            }
+            default:
+                break;
         }
     }
 
     void TransformComponent::OnChange()
     {
-        object->Notify(SceneNotifications_TransformChanged, this);
+        if (TransformComponent* parentTransform = object->GetParent() != nullptr ? object->GetParent()->GetComponent<TransformComponent>() : nullptr)
+        {
+            worldTransform = parentTransform->GetWorldTransform() * GetLocalTransform();
+        }
+        else
+        {
+            worldTransform = GetLocalTransform();
+        }
+
+        object->NotifyComponents(NotificationEvent{.type = SceneNotifications_TransformChanged, .component = this});
+        object->NotifyChildren(NotificationEvent{.type = SceneNotifications_ParentTransformChanged, .component = this});
     }
 
     void TransformComponent::RegisterType(NativeTypeHandler<TransformComponent>& type)
@@ -34,5 +51,4 @@ namespace Fyrion
         type.Field<&TransformComponent::rotation, &TransformComponent::GetRotation, &TransformComponent::SetRotation>("rotation").Attribute<UIProperty>();
         type.Field<&TransformComponent::scale, &TransformComponent::GetScale, &TransformComponent::SetScale>("scale").Attribute<UIProperty>();
     }
-
 }

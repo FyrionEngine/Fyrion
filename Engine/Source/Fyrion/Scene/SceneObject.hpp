@@ -50,11 +50,10 @@ namespace Fyrion
         void               Destroy();
         ArchiveObject      Serialize(ArchiveWriter& writer) const;
         void               Deserialize(ArchiveReader& reader, ArchiveObject object);
-        bool               IsAlive() const;
-        void               SetAlive(bool p_alive);
         bool               IsActivated() const;
         void               SetActive(bool p_active);
-        void               Notify(i64 type, VoidPtr userData);
+        void               NotifyComponents(const NotificationEvent& notificationEvent);
+        void               NotifyChildren(const NotificationEvent& notificationEvent);
         SceneObject*       Clone() const;
         void               SetPrototype(SceneObject* p_prototype);
         void               OverridePrototypeComponent(const Component* component);
@@ -87,7 +86,6 @@ namespace Fyrion
         Array<SceneObject*> children{};
         HashSet<UUID>       componentOverride{};
         SceneObject*        parent = nullptr;
-        bool                alive = true;
         bool                active = false;
     };
 }

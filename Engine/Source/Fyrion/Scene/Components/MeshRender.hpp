@@ -13,7 +13,7 @@ namespace Fyrion
 
         ~MeshRender() override;
 
-        void OnNotify(i64 type, VoidPtr userData) override;
+        void OnNotify(const NotificationEvent& notificationEvent) override;
         void OnChange() override;
 
         void       SetMesh(MeshAsset* p_mesh);
@@ -24,6 +24,5 @@ namespace Fyrion
     private:
         MeshAsset*          mesh = nullptr;
         TransformComponent* transformComponent = nullptr;
-        bool                activated = false;
     };
 }

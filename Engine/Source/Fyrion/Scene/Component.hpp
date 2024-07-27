@@ -1,5 +1,6 @@
 #pragma once
 
+#include "SceneTypes.hpp"
 #include "Fyrion/Common.hpp"
 #include "Fyrion/Core/UUID.hpp"
 
@@ -18,7 +19,7 @@ namespace Fyrion
         virtual void OnStart() {}
         virtual void OnChange() {}
         virtual void OnDestroy() {}
-        virtual void OnNotify(i64 type, VoidPtr userData) {}
+        virtual void OnNotify(const NotificationEvent& notificationEvent) {}
 
         void        SetUUID(const UUID& uuid);
         const UUID& GetUUID() const;

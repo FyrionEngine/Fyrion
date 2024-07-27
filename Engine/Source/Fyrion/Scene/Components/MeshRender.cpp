@@ -15,64 +15,59 @@ namespace Fyrion
 {
     MeshRender::~MeshRender()
     {
-        if (activated)
+        if (object->IsActivated())
         {
             RenderStorage::RemoveMeshFromRender(reinterpret_cast<usize>(this));
         }
     }
 
-    void MeshRender::OnNotify(i64 type, VoidPtr userData)
+    void MeshRender::OnNotify(const NotificationEvent& notificationEvent)
     {
-        switch (type)
+        switch (notificationEvent.type)
         {
-            case SceneNotifications_OnComponentCreated:
             case SceneNotifications_OnActivated:
             {
-                transformComponent = object->GetComponent<TransformComponent>();
-                activated = true;
-                OnChange();
+                if (!transformComponent)
+                {
+                    transformComponent = object->GetComponent<TransformComponent>();
+                }
+                if (transformComponent && mesh)
+                {
+                    OnChange();
+                }
                 break;
             }
 
             case SceneNotifications_OnDeactivated:
             {
-                activated = false;
                 RenderStorage::RemoveMeshFromRender(reinterpret_cast<usize>(this));
-                break;
-            }
-
-            case SceneNotifications_OnComponentAdded:
-            {
-                if (*static_cast<TypeID*>(userData) == GetTypeID<TransformComponent>() && transformComponent == nullptr)
-                {
-                    transformComponent = object->GetComponent<TransformComponent>();
-                    OnChange();
-                }
                 break;
             }
 
             case SceneNotifications_OnComponentRemoved:
             {
-                if (*static_cast<TypeID*>(userData) == GetTypeID<TransformComponent>() && transformComponent != nullptr)
+                if (transformComponent == notificationEvent.component)
                 {
                     transformComponent = nullptr;
                     OnChange();
                 }
-                break;
             }
 
             case SceneNotifications_TransformChanged:
             {
-                OnChange();
+                transformComponent = static_cast<TransformComponent*>(notificationEvent.component);
+                if (transformComponent && mesh)
+                {
+                    OnChange();
+                }
                 break;
             }
-            default: break;
         }
     }
 
     void MeshRender::OnChange()
     {
-        if (activated)
+        if (object->IsActivated())
         {
             if (transformComponent != nullptr && mesh != nullptr)
             {

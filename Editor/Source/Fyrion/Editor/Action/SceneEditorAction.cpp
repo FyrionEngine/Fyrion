@@ -156,7 +156,7 @@ namespace Fyrion
 
     UpdateComponentSceneObjectAction::UpdateComponentSceneObjectAction(SceneEditor& sceneEditor, Component* component, Component* newValue) : sceneEditor(sceneEditor), component(component)
     {
-        JsonAssetWriter writer;
+        JsonAssetWriter writer(SerializationOptions::IncludeNullOrEmptyValues);
         currentStrValue = JsonAssetWriter::Stringify(Serialization::Serialize(component->typeHandler, writer, component));
         newStrValue = JsonAssetWriter::Stringify(Serialization::Serialize(component->typeHandler, writer, newValue));
 

@@ -29,7 +29,7 @@ namespace Fyrion
         };
     }
 
-    JsonAssetWriter::JsonAssetWriter()
+    JsonAssetWriter::JsonAssetWriter(SerializationOptions serializationOptions) : serializationOptions(serializationOptions)
     {
         doc = yyjson_mut_doc_new(&alloc);
     }
@@ -102,6 +102,11 @@ namespace Fyrion
     void JsonAssetWriter::AddValue(ArchiveObject array, ArchiveObject value)
     {
         yyjson_mut_arr_add_val(static_cast<yyjson_mut_val*>(array.handler), static_cast<yyjson_mut_val*>(value.handler));
+    }
+
+    bool JsonAssetWriter::HasOpt(SerializationOptions option)
+    {
+        return serializationOptions && option;
     }
 
     String JsonAssetWriter::Stringify(ArchiveObject object)

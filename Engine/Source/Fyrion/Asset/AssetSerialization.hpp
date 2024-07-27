@@ -17,7 +17,7 @@ namespace Fyrion
         FY_NO_COPY_CONSTRUCTOR(JsonAssetWriter);
         FY_BASE_TYPES(ArchiveWriter);
 
-        JsonAssetWriter();
+        JsonAssetWriter(SerializationOptions serializationOptions = SerializationOptions::None);
         ~JsonAssetWriter() override;
 
         ArchiveObject CreateObject() override;
@@ -38,10 +38,13 @@ namespace Fyrion
         void AddString(ArchiveObject array, const StringView& value) override;
         void AddValue(ArchiveObject array, ArchiveObject value) override;
 
+        bool HasOpt(SerializationOptions option) override;
+
         static String Stringify(ArchiveObject object);
 
     private:
-        yyjson_mut_doc* doc = nullptr;
+        SerializationOptions serializationOptions = SerializationOptions::None;
+        yyjson_mut_doc*      doc = nullptr;
     };
 
 

@@ -151,6 +151,7 @@ namespace Fyrion
     struct AssetApi
     {
         Asset* (*castAsset)(VoidPtr ptr);
+        void   (*setAsset)(VoidPtr ptr,Asset* asset);
         const TypeHandler* (*getTypeHandler)();
     };
 
@@ -163,6 +164,11 @@ namespace Fyrion
             api->castAsset = [](VoidPtr ptr)
             {
                 return static_cast<Asset*>(*static_cast<T**>(ptr));
+            };
+
+            api->setAsset = [](VoidPtr ptr,Asset* asset)
+            {
+                *static_cast<T**>(ptr) = static_cast<T*>(asset);
             };
         }
 
@@ -202,6 +208,10 @@ namespace Fyrion
             if (*value)
             {
                 writer.AddString(array, ToString((*value)->GetUUID()));
+            }
+            else if (writer.HasOpt(SerializationOptions::IncludeNullOrEmptyValues))
+            {
+                writer.AddString(array, ToString(UUID{}));
             }
         }
 

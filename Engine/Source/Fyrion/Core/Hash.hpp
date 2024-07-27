@@ -268,6 +268,15 @@ namespace Fyrion
 		}
 	};
 
+	constexpr u32 HashInt32(usize vl)
+	{
+		u32 x = static_cast<u32>(vl);
+		x = (x >> 16 ^ x) * 0x119de1f3;
+		x = (x >> 16 ^ x) * 0x119de1f3;
+		x = x >> 16 ^ x;
+		return x;
+	}
+
 	template <typename ... Rest>
 	constexpr void HashCombine(usize& seed, usize hash, Rest&&... rest)
 	{

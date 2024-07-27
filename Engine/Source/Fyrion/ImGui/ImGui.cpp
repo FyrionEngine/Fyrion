@@ -1108,6 +1108,18 @@ namespace ImGui
         ImGui::NewFrame();
         ImGuizmo::BeginFrame();
 
+        if (!assetSelectors.Empty())
+        {
+            AssetSelector& selector = assetSelectors.Back();
+
+            bool show = true;
+            DrawAssetSelection(show, selector.assetId, selector.userData, selector.callback);
+            if (!show)
+            {
+                assetSelectors.PopBack();
+            }
+        }
+
         u64 frame = Engine::GetFrame();
 
         Array<u64> toErase{};
@@ -1122,17 +1134,18 @@ namespace ImGui
                 it.second->hasChanged = false;
             }
 
-            if (it.second->showResourceSelection)
-            {
-                DrawAssetSelection(it.second->showResourceSelection,
-                                   it.second->resourceTypeSelection,
-                                   it.second.Get(), [](VoidPtr userData, Asset* asset)
-                                   {
-                                       DrawTypeContent* drawTypeContent = static_cast<DrawTypeContent*>(userData);
-                                       drawTypeContent->fieldShowSelection->SetValueAs(drawTypeContent->instance, asset);
-                                       drawTypeContent->desc.callback(drawTypeContent->desc, drawTypeContent->instance);
-                                   });
-            }
+            // if (it.second->showResourceSelection)
+            // {
+            //     DrawAssetSelection(it.second->showResourceSelection,
+            //                        it.second->resourceTypeSelection,
+            //                        it.second.Get(), [](VoidPtr userData, Asset* asset)
+            //                        {
+            //                            DrawTypeContent* drawTypeContent = static_cast<DrawTypeContent*>(userData);
+            //                            TypeHandler* typeHandler = Registry::FindTypeById(drawTypeContent->resourceTypeSelection);
+            //                            typeHandler->Copy(asset, drawTypeContent->value);
+            //                            drawTypeContent->desc.callback(drawTypeContent->desc, drawTypeContent->instance);
+            //                        });
+            // }
 
             if (it.second->lastFrameUsage + 60 < frame)
             {
@@ -1147,18 +1160,6 @@ namespace ImGui
         for (u64 id : toErase)
         {
             drawTypes.Erase(id);
-        }
-
-        if (!assetSelectors.Empty())
-        {
-            AssetSelector& selector = assetSelectors.Back();
-
-            bool show = true;
-            DrawAssetSelection(show, selector.assetId, selector.userData, selector.callback);
-            if (!show)
-            {
-                assetSelectors.PopBack();
-            }
         }
     }
 
@@ -1191,6 +1192,11 @@ namespace ImGui
         fieldRenders.EmplaceBack(fieldRendererFn);
     }
 
+    Span<FieldRendererFn> GetFieldRenderers()
+    {
+        return fieldRenders;
+    }
+
     void DrawType(const ImGui::DrawTypeDesc& desc)
     {
         bool readOnly = desc.flags & ImGuiDrawTypeFlags_ReadOnly;
@@ -1220,6 +1226,7 @@ namespace ImGui
         }
 
         DrawTypeContent* content = it->second.Get();
+        content->idCount = 15000;
 
         desc.typeHandler->Copy(desc.instance, content->instance);
 
@@ -1242,28 +1249,19 @@ namespace ImGui
                     AlignTextToFramePadding();
 
                     String formattedName = FormatName(field->GetName());
-                    String idStr = "###string_" + formattedName;
-
                     Text("%s", formattedName.CStr());
                     TableNextColumn();
 
                     VoidPtr fieldPointer = field->GetFieldPointer(content->instance);
                     for (FieldRendererFn render : fieldRenders)
                     {
-                        render(content, field, fieldPointer, &content->hasChanged);
+                        render(content, field->GetFieldInfo().typeInfo, fieldPointer, &content->hasChanged);
                     }
 
                     EndDisabled();
                 }
                 EndTable();
             }
-        }
-        else
-        {
-            // for (FieldRendererFn render : fieldRenders)
-            // {
-            //     render(content, nullptr, content->instance, &content->hasChanged);
-            // }
         }
     }
 

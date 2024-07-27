@@ -84,6 +84,8 @@ namespace Fyrion
                 ArrayApi arrayApi{};
                 typeInfo.extractApi(&arrayApi);
 
+                arrayApi.clear(arrPtr);
+
                 ArchiveObject arr = reader.ReadObject(object, field->GetName());
                 usize         size = reader.ArrSize(arr);
                 TypeInfo      itemInfo = arrayApi.getTypeInfo();

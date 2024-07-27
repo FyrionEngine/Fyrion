@@ -69,6 +69,15 @@ namespace Fyrion
     {
         if (object->IsActivated())
         {
+            // if (mesh)
+            // {
+            //     materials = mesh->GetMaterials();
+            // }
+            // else
+            // {
+            //     materials.Clear();
+            // }
+
             if (transformComponent != nullptr && mesh != nullptr)
             {
                 RenderStorage::AddOrUpdateMeshToRender(reinterpret_cast<usize>(this), transformComponent->GetWorldTransform(), mesh);
@@ -91,8 +100,14 @@ namespace Fyrion
         return mesh;
     }
 
+    Span<MaterialAsset*> MeshRender::GetMaterials() const
+    {
+        return materials;
+    }
+
     void MeshRender::RegisterType(NativeTypeHandler<MeshRender>& type)
     {
         type.Field<&MeshRender::mesh>("mesh").Attribute<UIProperty>();
+        type.Field<&MeshRender::materials>("materials").Attribute<UIProperty>();
     }
 }

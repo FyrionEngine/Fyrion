@@ -520,6 +520,8 @@ namespace Fyrion
         typedef void (*    FnArraySet)(VoidPtr array, usize index, ConstPtr value);
         typedef VoidPtr (* FnArrayPushNew)(VoidPtr array);
         typedef TypeInfo (*FnArrayGetTypeInfo)();
+        typedef void (*FnPopBack)(VoidPtr array);
+
 
         FnArraySize        size{};
         FnArrayClear       clear{};
@@ -529,6 +531,7 @@ namespace Fyrion
         FnArraySet         set{};
         FnArrayPushNew     pushNew{};
         FnArrayGetTypeInfo getTypeInfo{};
+        FnPopBack          popBack{};
     };
 
     template <typename Type>
@@ -580,7 +583,14 @@ namespace Fyrion
                 return GetTypeInfo<Type>();
             };
 
-
+            arrayApi.popBack = [](VoidPtr pointer)
+            {
+                Array<Type>& array = *static_cast<Array<Type>*>(pointer);
+                if (!array.Empty())
+                {
+                    array.PopBack();
+                }
+            };
         }
 
         static constexpr TypeID GetApiId()

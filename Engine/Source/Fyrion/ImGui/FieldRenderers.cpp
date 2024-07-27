@@ -125,12 +125,58 @@ namespace Fyrion
 #endif
     }
 
-    bool DrawAssetField(ImGui::DrawTypeContent* context, FieldHandler* fieldHandler, VoidPtr value, bool* hasChanged)
+    bool DrawArrayField(ImGui::DrawTypeContent* context, const TypeInfo& typeInfo, VoidPtr value, bool* hasChanged)
     {
-        const TypeInfo& typeInfo = fieldHandler->GetFieldInfo().typeInfo;
+        if (typeInfo.apiId != GetTypeID<ArrayApi>()) return false;
 
+        ArrayApi arrayApi{};
+        typeInfo.extractApi(&arrayApi);
+
+        if (ImGui::Button(ICON_FA_PLUS))
+        {
+            arrayApi.pushNew(value);
+            if (hasChanged)
+            {
+                *hasChanged = true;
+            }
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button(ICON_FA_MINUS))
+        {
+            arrayApi.popBack(value);
+            if (hasChanged)
+            {
+                *hasChanged = true;
+            }
+        }
+
+        usize size = arrayApi.size(value);
+        for (int i = 0; i < size; ++i)
+        {
+            ImGui::TableNextColumn();
+            ImGui::TableNextColumn();
+
+            for (ImGui::FieldRendererFn render : ImGui::GetFieldRenderers())
+            {
+                render(context, arrayApi.getTypeInfo(), arrayApi.get(value, i), hasChanged);
+            }
+        }
+
+        return true;
+    }
+
+    struct DrawAssetFieldUserData
+    {
+        ImGui::DrawTypeContent* context;
+        TypeInfo typeInfo;
+        VoidPtr fieldValue;
+    };
+
+    bool DrawAssetField(ImGui::DrawTypeContent* context, const TypeInfo& typeInfo, VoidPtr value, bool* hasChanged)
+    {
         if (typeInfo.apiId != GetTypeID<AssetApi>()) return false;
-
 
         AssetApi assetApi{};
         typeInfo.extractApi(&assetApi);
@@ -139,22 +185,29 @@ namespace Fyrion
         Asset* asset = assetApi.castAsset(value);
         String name = asset ? asset->GetName() : "";
 
-        usize seed = 0;
-        HashCombine(seed, HashValue(fieldHandler), HashValue(value));
-        const i32 id = static_cast<i32>(ImHashData(&seed, sizeof(usize)));
-
         ImGui::SetNextItemWidth(-22 * ImGui::GetStyle().ScaleFactor);
-        ImGui::PushID(id + 10);
 
-        ImGui::InputText(id, name, ImGuiInputTextFlags_ReadOnly);
+        ImGui::PushID(context->ReserveID());
+
+        ImGui::InputText(context->ReserveID(), name, ImGuiInputTextFlags_ReadOnly);
         ImGui::SameLine(0, 0);
-
         auto size = ImGui::GetItemRectSize();
         if (ImGui::Button(ICON_FA_CIRCLE_DOT, ImVec2{size.y, size.y}))
         {
-            context->showResourceSelection = true;
-            context->fieldShowSelection = fieldHandler;
-            context->resourceTypeSelection = typeInfo.typeId;
+            static DrawAssetFieldUserData data{};
+            data.context = context;
+            data.typeInfo = typeInfo;
+            data.fieldValue = value;
+
+            ImGui::ShowAssetSelector(typeInfo.typeId, &data, [](VoidPtr userData, Asset* asset)
+            {
+                DrawAssetFieldUserData* data = static_cast<DrawAssetFieldUserData*>(userData);
+
+                AssetApi assetApi{};
+                data->typeInfo.extractApi(&assetApi);
+                assetApi.setAsset(data->fieldValue, asset);
+                data->context->hasChanged = true;
+            });
         }
         ImGui::PopID();
 
@@ -190,9 +243,9 @@ namespace Fyrion
         ImGui::EndHorizontal();
     }
 
-    bool Vec3Renderer(ImGui::DrawTypeContent* context, FieldHandler* fieldHandler, VoidPtr value, bool* hasChanged)
+    bool Vec3Renderer(ImGui::DrawTypeContent* context, const TypeInfo& typeInfo, VoidPtr value, bool* hasChanged)
     {
-        if (fieldHandler->GetFieldInfo().typeInfo.typeId != GetTypeID<Vec3>()) return false;
+        if (typeInfo.typeId != GetTypeID<Vec3>()) return false;
 
         f32    speed = 0.005f;
         String compName = ToString(reinterpret_cast<usize>(value));
@@ -204,14 +257,13 @@ namespace Fyrion
             DrawVecField(compName, "Z", vec3.z, hasChanged, IM_COL32(43, 86, 138, 255), speed);
             ImGui::EndTable();
         }
-
         return true;
     }
 
 
-    bool QuatRenderer(ImGui::DrawTypeContent* context, FieldHandler* fieldHandler, VoidPtr value, bool* hasChanged)
+    bool QuatRenderer(ImGui::DrawTypeContent* context, const TypeInfo& typeInfo, VoidPtr value, bool* hasChanged)
     {
-        if (fieldHandler->GetFieldInfo().typeInfo.typeId != GetTypeID<Quat>()) return false;
+        if (typeInfo.typeId != GetTypeID<Quat>()) return false;
 
         static int rotationMode = 0;
 
@@ -284,5 +336,6 @@ namespace Fyrion
         AddFieldRenderer(Vec3Renderer);
         AddFieldRenderer(QuatRenderer);
         AddFieldRenderer(DrawAssetField);
+        AddFieldRenderer(DrawArrayField);
     }
 }

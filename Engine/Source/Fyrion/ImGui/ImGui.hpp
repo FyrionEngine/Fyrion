@@ -73,14 +73,18 @@ namespace ImGui
         u64           lastFrameUsage{};
         bool          readOnly{};
         bool          hasChanged{};
-        bool          showResourceSelection{};
         bool          tableRender{};
-        TypeID        resourceTypeSelection{};
-        FieldHandler* fieldShowSelection{};
         Array<TypeID> graphOutputs{};
+        u32           idCount{};
+
+        u32 ReserveID()
+        {
+            idCount += 10;
+            return idCount;
+        }
     };
 
-    typedef bool (*FieldRendererFn)(DrawTypeContent* context, FieldHandler* fieldHandler, VoidPtr value, bool* hasChanged);
+    typedef bool (*FieldRendererFn)(DrawTypeContent* context, const TypeInfo& typeInfo, VoidPtr value, bool* hasChanged);
 
     struct StyleColor
     {
@@ -154,9 +158,10 @@ namespace ImGui
 
     FY_API void ShowAssetSelector(TypeID assetId, VoidPtr userData, FnAssetSelectorCallback callback);
 
-    FY_API void AddFieldRenderer(FieldRendererFn fieldRendererFn);
-    FY_API void DrawType(const DrawTypeDesc& drawTypeDesc);
-    FY_API void ClearTextData();
+    FY_API void                  AddFieldRenderer(FieldRendererFn fieldRendererFn);
+    FY_API Span<FieldRendererFn> GetFieldRenderers();
+    FY_API void                  DrawType(const DrawTypeDesc& drawTypeDesc);
+    FY_API void                  ClearTextData();
 
     FY_API ImGuiKey GetImGuiKey(Key key);
 

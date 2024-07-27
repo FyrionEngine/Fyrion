@@ -8,6 +8,14 @@ namespace Fyrion
 {
     FY_HANDLER(ArchiveObject);
 
+    enum class SerializationOptions : u32
+    {
+        None                     = 0 << 1,
+        IncludeNullOrEmptyValues = 1 << 1
+    };
+
+    ENUM_FLAGS(SerializationOptions, u32);
+
     struct ArchiveWriter
     {
         virtual ~ArchiveWriter() = default;
@@ -28,6 +36,8 @@ namespace Fyrion
         virtual void AddFloat(ArchiveObject array, f64 value) = 0;
         virtual void AddString(ArchiveObject array, const StringView& value) = 0;
         virtual void AddValue(ArchiveObject array, ArchiveObject value) = 0;
+
+        virtual bool HasOpt(SerializationOptions serializationOptions) = 0;
     };
 
     struct ArchiveReader

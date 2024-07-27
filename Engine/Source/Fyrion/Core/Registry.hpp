@@ -145,6 +145,7 @@ namespace Fyrion
         typedef ConstPtr (*FnGetValue)(const ValueHandler* valueHandler);
         typedef i64 (*FnGetCode)(const ValueHandler* valueHandler);
         typedef bool (*FnCompare)(const ValueHandler* valueHandler, ConstPtr value);
+        typedef void (*FnUpdate)(const ValueHandler* valueHandler, VoidPtr value);
 
     public:
         ValueHandler(const String& valueDesc);
@@ -153,6 +154,7 @@ namespace Fyrion
         ConstPtr   GetValue() const;
         i64        GetCode() const;
         bool       Compare(ConstPtr value) const;
+        void       Update(VoidPtr value) const;
 
         friend class ValueBuilder;
     private:
@@ -160,6 +162,7 @@ namespace Fyrion
         FnGetValue m_fnGetValue{};
         FnGetCode  m_fnGetCode{};
         FnCompare  m_fnCompare{};
+        FnUpdate  m_fnUpdate{};
     };
 
 
@@ -323,6 +326,7 @@ namespace Fyrion
 
         ValueHandler*                   FindValueByName(const StringView& valueName) const;
         ValueHandler*                   FindValueByCode(i64 code) const;
+        ValueHandler*                   FindValue(ConstPtr value) const;
         Span<ValueHandler*>             GetValues() const;
 
         Span<DerivedType>               GetDerivedTypes() const;
@@ -422,6 +426,7 @@ namespace Fyrion
         void SetFnGetValue(ValueHandler::FnGetValue fnGetValue);
         void SerFnGetCode(ValueHandler::FnGetCode fnGetCode);
         void SetFnCompare(ValueHandler::FnCompare fnCompare);
+        void SetFnUpdate(ValueHandler::FnUpdate fnUpdate);
 
     private:
         ValueHandler& valueHandler;
@@ -616,6 +621,7 @@ namespace Fyrion
             valueBuilder.SetFnGetValue(&FnGetValueImpl);
             valueBuilder.SerFnGetCode(&FnGetCodeImpl);
             valueBuilder.SetFnCompare(&FnCompareImpl);
+            valueBuilder.SetFnUpdate(&FnUpdateImpl);
         }
     private:
         static constexpr Type c_value = Value;
@@ -633,6 +639,11 @@ namespace Fyrion
         static bool FnCompareImpl(const ValueHandler* valueHandler, ConstPtr value)
         {
             return *static_cast<const Type*>(valueHandler->GetValue()) == *static_cast<const Type*>(value);
+        }
+
+        static void FnUpdateImpl(const ValueHandler* valueHandler, VoidPtr value)
+        {
+            *static_cast<Type*>(value) = c_value;
         }
     };
 

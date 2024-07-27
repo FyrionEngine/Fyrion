@@ -115,9 +115,41 @@ namespace Fyrion
     FY_ARCHIVE_TYPE_IMPL(Float, f64);
     FY_ARCHIVE_TYPE_IMPL(Bool, bool);
 
+
     namespace Serialization
     {
         FY_API ArchiveObject Serialize(const TypeHandler* typeHandler, ArchiveWriter& writer, ConstPtr instance);
         FY_API void          Deserialize(const TypeHandler* typeHandler, ArchiveReader& reader, ArchiveObject object, VoidPtr instance);
+        FY_API void          WriteEnum(TypeID typeId, ArchiveWriter& writer, ArchiveObject object, StringView name, i64 value);
+        FY_API bool          ReadEnum(TypeID typeId, ArchiveReader& reader, ArchiveObject object, StringView name, i64& value);
     }
+
+    template <typename T>
+    struct ArchiveType<T,  Traits::EnableIf<Traits::IsEnum<T>>>
+    {
+        constexpr static bool hasArchiveImpl = true;
+
+        static void Write(ArchiveWriter& writer, ArchiveObject object, StringView name, const T* value)
+        {
+            Serialization::WriteEnum(GetTypeID<T>(), writer, object, name, static_cast<i64>(*value));
+        }
+        static void Read(ArchiveReader& reader, ArchiveObject object, StringView name, T* value)
+        {
+            i64 intValue = 0;
+            if (Serialization::ReadEnum(GetTypeID<T>(), reader, object, name, intValue))
+            {
+                *value = static_cast<T>(intValue);
+            }
+        }
+
+        static void Add(ArchiveWriter& writer, ArchiveObject array, const T* value)
+        {
+            FY_ASSERT(false, "not implemented yet");
+        }
+
+        static void Get(ArchiveReader& reader, ArchiveObject item, T* value)
+        {
+            FY_ASSERT(false, "not implemented yet");
+        }
+    };
 }

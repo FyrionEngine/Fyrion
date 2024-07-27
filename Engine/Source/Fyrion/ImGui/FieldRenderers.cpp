@@ -1,6 +1,8 @@
 #include "IconsFontAwesome6.h"
 #include "ImGui.hpp"
 #include "Fyrion/Asset/Asset.hpp"
+#include "Fyrion/Core/Attributes.hpp"
+#include "Fyrion/Core/Color.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "Lib/imgui_internal.h"
 
@@ -260,6 +262,152 @@ namespace Fyrion
         return true;
     }
 
+    bool Vec2Renderer(ImGui::DrawTypeContent* context, const TypeInfo& typeInfo, VoidPtr value, bool* hasChanged)
+    {
+        if (typeInfo.typeId != GetTypeID<Vec2>()) return false;
+
+        f32    speed = 0.005f;
+        String compName = ToString(reinterpret_cast<usize>(value));
+        Vec2&  vec3 = *static_cast<Vec2*>(value);
+        if (ImGui::BeginTable("##vec3-table", 2))
+        {
+            DrawVecField(compName, "X", vec3.x, hasChanged, IM_COL32(138, 46, 61, 255), speed);
+            DrawVecField(compName, "Y", vec3.y, hasChanged, IM_COL32(87, 121, 26, 255), speed);
+            ImGui::EndTable();
+        }
+        return true;
+    }
+
+    bool DrawColorPicker(Color& color)
+    {
+        if (ImGui::BeginPopup("color-picker"))
+        {
+            ImGuiColorEditFlags flags = ImGuiColorEditFlags_DisplayMask_ | ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_AlphaPreviewHalf |
+                ImGuiColorEditFlags_AlphaBar;
+
+
+            static f32 col[4] = {
+                color.FloatRed(),
+                color.FloatGreen(),
+                color.FloatBlue(),
+                color.FloatAlfa()
+            };
+
+            if (ImGui::ColorPicker4("##picker", col, flags))
+            {
+                Color::FromVec4(color, {col[0], col[1], col[2], col[3]});
+            }
+            ImGui::EndPopup();
+            return true;
+        }
+        return false;
+    }
+
+    bool EnumRenderer(ImGui::DrawTypeContent* context, const TypeInfo& typeInfo, VoidPtr value, bool* hasChanged)
+    {
+        if (!typeInfo.isEnum) return false;
+        TypeHandler* typeHandler = Registry::FindTypeById(typeInfo.typeId);
+        if (!typeHandler) return true;
+
+        u32 id = context->ReserveID();
+
+        char str[25];
+        sprintf(str, "###enumid%d", id);
+
+        ImGui::SetNextItemWidth(-1);
+        ValueHandler* valueHandler = typeHandler->FindValue(value);
+
+        if (ImGui::BeginCombo(str, valueHandler != nullptr ? valueHandler->GetDesc().CStr() : ""))
+        {
+            for (const auto& valueHandler: typeHandler->GetValues())
+            {
+                if (ImGui::Selectable(valueHandler->GetDesc().CStr()))
+                {
+                    valueHandler->Update(value);
+                    if (hasChanged)
+                    {
+                        *hasChanged = true;
+                    }
+                }
+            }
+            ImGui::EndCombo();
+        }
+        return true;
+    }
+
+    bool ColorRenderer(ImGui::DrawTypeContent* context, const TypeInfo& typeInfo, VoidPtr value, bool* hasChanged)
+    {
+        if (typeInfo.typeId != GetTypeID<Color>()) return false;
+
+        Color& color = *static_cast<Color*>(value);
+        const ImVec4 colV4(color.FloatRed(), color.FloatGreen(), color.FloatBlue(), color.FloatAlfa());
+
+        u32 id = context->ReserveID();
+
+        char str[25];
+        sprintf(str, "###colorid%d", id);
+
+        ImGui::SetNextItemWidth(-1);
+        if (ImGui::ColorButton(str, colV4, 0, ImVec2(ImGui::CalcItemWidth(), 0)))
+        {
+            ImGui::OpenPopup("color-picker");
+        }
+
+        if (DrawColorPicker(color))
+        {
+            context->editingId = id;
+        }
+        else if (context->editingId == id)
+        {
+            context->editingId = U32_MAX;
+            if (hasChanged)
+            {
+                *hasChanged = true;
+            }
+        }
+
+        return true;
+    }
+
+    bool FloatRenderer(ImGui::DrawTypeContent* context, const TypeInfo& typeInfo, VoidPtr value, bool* hasChanged)
+    {
+        if (typeInfo.typeId != GetTypeID<f32>()) return false;
+
+        u32 id = context->ReserveID();
+
+        char str[25];
+        sprintf(str, "###txtid%d", id);
+
+        f32* floatValue = static_cast<f32*>(value);
+        ImGui::SetNextItemWidth(-1);
+
+        if (const UIFloatProperty* property = context->activeFieldHandler ? context->activeFieldHandler->GetAttribute<UIFloatProperty>() : nullptr)
+        {
+            if (ImGui::SliderFloat(str, floatValue, property->minValue, property->maxValue))
+            {
+                context->editingId = id;
+            }
+            else if (context->editingId == id && ImGui::IsMouseReleased(ImGuiMouseButton_Left))
+            {
+                context->editingId = U32_MAX;
+                if (hasChanged)
+                {
+                    *hasChanged = true;
+                }
+            }
+            return true;
+        }
+
+        if (ImGui::InputFloat(str, floatValue))
+        {
+            if (hasChanged)
+            {
+                *hasChanged = true;
+            }
+        }
+        return true;
+    }
+
 
     bool QuatRenderer(ImGui::DrawTypeContent* context, const TypeInfo& typeInfo, VoidPtr value, bool* hasChanged)
     {
@@ -333,9 +481,13 @@ namespace Fyrion
 
     void RegisterFieldRenderers()
     {
+        AddFieldRenderer(ColorRenderer);
+        AddFieldRenderer(FloatRenderer);
         AddFieldRenderer(Vec3Renderer);
+        AddFieldRenderer(Vec2Renderer);
         AddFieldRenderer(QuatRenderer);
         AddFieldRenderer(DrawAssetField);
         AddFieldRenderer(DrawArrayField);
+        AddFieldRenderer(EnumRenderer);
     }
 }

@@ -117,4 +117,31 @@ namespace Fyrion
             }
         }
     }
+
+    void Serialization::WriteEnum(TypeID typeId, ArchiveWriter& writer, ArchiveObject object, StringView name, i64 value)
+    {
+        if (TypeHandler* typeHandler = Registry::FindTypeById(typeId))
+        {
+            if (ValueHandler* valueHandler = typeHandler->FindValueByCode(value))
+            {
+                writer.WriteString(object, name, valueHandler->GetDesc());
+            }
+        }
+    }
+
+    bool Serialization::ReadEnum(TypeID typeId, ArchiveReader& reader, ArchiveObject object, StringView name, i64& value)
+    {
+        if (TypeHandler* typeHandler = Registry::FindTypeById(typeId))
+        {
+            if (StringView desc = reader.ReadString(object, name); !desc.Empty())
+            {
+                if (ValueHandler* valueHandler = typeHandler->FindValueByName(desc))
+                {
+                    value = valueHandler->GetCode();
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 }

@@ -1223,12 +1223,12 @@ namespace ImGui
                         .readOnly = readOnly,
                         .tableRender = true
                     })).first;
+
+            desc.typeHandler->Copy(desc.instance, it->second->instance);
         }
 
         DrawTypeContent* content = it->second.Get();
         content->idCount = 15000;
-
-        desc.typeHandler->Copy(desc.instance, content->instance);
 
         content->lastFrameUsage = Engine::GetFrame();
 
@@ -1242,6 +1242,7 @@ namespace ImGui
                 for (FieldHandler* field : content->desc.typeHandler->GetFields())
                 {
                     if (!field->HasAttribute<UIProperty>()) continue;
+                    content->activeFieldHandler = field;
 
                     BeginDisabled(readOnly);
 
@@ -1251,6 +1252,7 @@ namespace ImGui
                     String formattedName = FormatName(field->GetName());
                     Text("%s", formattedName.CStr());
                     TableNextColumn();
+
 
                     VoidPtr fieldPointer = field->GetFieldPointer(content->instance);
                     for (FieldRendererFn render : fieldRenders)
@@ -1265,8 +1267,12 @@ namespace ImGui
         }
     }
 
-    void ClearTextData()
+    void ClearDrawData(VoidPtr ptr)
     {
+        if (auto it = drawTypes.Find(reinterpret_cast<usize>(ptr)))
+        {
+            it->second->desc.typeHandler->Copy(it->second->desc.instance, it->second->instance);
+        }
         ImGui::ClearActiveID();
     }
 }

@@ -75,6 +75,14 @@ namespace Fyrion
         return false;
     }
 
+    void ValueHandler::Update(VoidPtr value) const
+    {
+        if (m_fnUpdate)
+        {
+            m_fnUpdate(this, value);
+        }
+    }
+
     ConstPtr AttributeHandler::GetAttribute(TypeID attributeId) const
     {
         if (auto it = m_attributes.Find(attributeId))
@@ -314,6 +322,18 @@ namespace Fyrion
         return nullptr;
     }
 
+    ValueHandler* TypeHandler::FindValue(ConstPtr value) const
+    {
+        for(ValueHandler* valueHandler : valuesArray)
+        {
+            if (valueHandler->Compare(value))
+            {
+                return valueHandler;
+            }
+        }
+        return nullptr;
+    }
+
     Span<ValueHandler*> TypeHandler::GetValues() const
     {
         return valuesArray;
@@ -504,6 +524,11 @@ namespace Fyrion
     {
 
         valueHandler.m_fnCompare = fnCompare;
+    }
+
+    void ValueBuilder::SetFnUpdate(ValueHandler::FnUpdate fnUpdate)
+    {
+        valueHandler.m_fnUpdate = fnUpdate;
     }
 
     ConstructorBuilder::ConstructorBuilder(ConstructorHandler& constructorHandler) : m_constructorHandler(constructorHandler)

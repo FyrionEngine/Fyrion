@@ -33,7 +33,6 @@ typedef u32 ImGuiDrawTypeFlags;
 
 namespace ImGui
 {
-
     struct DrawTypeDesc;
     typedef void (*DrawTypeCallbackFn)(DrawTypeDesc& desc, VoidPtr newValue);
     typedef void (*FnAssetSelectorCallback)(VoidPtr userData, Asset* asset);
@@ -58,12 +57,12 @@ namespace ImGui
 
     struct DrawTypeDesc
     {
-        usize               itemId{};
-        TypeHandler*        typeHandler{};
-        VoidPtr             instance{};
-        ImGuiDrawTypeFlags  flags{};
-        VoidPtr             userData{};
-        DrawTypeCallbackFn  callback{};
+        usize              itemId{};
+        TypeHandler*       typeHandler{};
+        VoidPtr            instance{};
+        ImGuiDrawTypeFlags flags{};
+        VoidPtr            userData{};
+        DrawTypeCallbackFn callback{};
     };
 
     struct DrawTypeContent
@@ -76,6 +75,8 @@ namespace ImGui
         bool          tableRender{};
         Array<TypeID> graphOutputs{};
         u32           idCount{};
+        FieldHandler* activeFieldHandler{};
+        u32           editingId = U32_MAX;
 
         u32 ReserveID()
         {
@@ -91,9 +92,11 @@ namespace ImGui
         StyleColor(const StyleColor&) = delete;
         StyleColor operator=(const StyleColor&) = delete;
 
-        template<typename T>
+        template <typename T>
         StyleColor(ImGuiCol colorId, T colour)
-        { ImGui::PushStyleColor(colorId, colour); }
+        {
+            ImGui::PushStyleColor(colorId, colour);
+        }
 
         virtual ~StyleColor()
         {
@@ -106,7 +109,7 @@ namespace ImGui
         StyleVar(const StyleVar&) = delete;
         StyleVar operator=(const StyleVar&) = delete;
 
-        template<typename T>
+        template <typename T>
         StyleVar(ImGuiStyleVar styleVar, T value)
         {
             ImGui::PushStyleVar(styleVar, value);
@@ -161,7 +164,7 @@ namespace ImGui
     FY_API void                  AddFieldRenderer(FieldRendererFn fieldRendererFn);
     FY_API Span<FieldRendererFn> GetFieldRenderers();
     FY_API void                  DrawType(const DrawTypeDesc& drawTypeDesc);
-    FY_API void                  ClearTextData();
+    FY_API void                  ClearDrawData(VoidPtr ptr);
 
     FY_API ImGuiKey GetImGuiKey(Key key);
 

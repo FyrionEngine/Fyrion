@@ -181,19 +181,22 @@ namespace Fyrion
 
     void MaterialAsset::RegisterType(NativeTypeHandler<MaterialAsset>& type)
     {
+
+
+
         type.Field<&MaterialAsset::baseColor>("baseColor").Attribute<UIProperty>();
         type.Field<&MaterialAsset::baseColorTexture>("baseColorTexture").Attribute<UIProperty>();
         type.Field<&MaterialAsset::normalTexture>("normalTexture").Attribute<UIProperty>();
         type.Field<&MaterialAsset::normalMultiplier>("normalMultiplier").Attribute<UIProperty>();
-        type.Field<&MaterialAsset::metallic>("metallic").Attribute<UIProperty>();
+        type.Field<&MaterialAsset::metallic>("metallic").Attribute<UIProperty>().Attribute<UIFloatProperty>(0.0f, 1.0f);
         type.Field<&MaterialAsset::metallicTexture>("metallicTexture").Attribute<UIProperty>();
-        type.Field<&MaterialAsset::roughness>("roughness").Attribute<UIProperty>();
+        type.Field<&MaterialAsset::roughness>("roughness").Attribute<UIProperty>().Attribute<UIFloatProperty>(0.0f, 1.0f);
         type.Field<&MaterialAsset::roughnessTexture>("roughnessTexture").Attribute<UIProperty>();
         type.Field<&MaterialAsset::metallicRoughnessTexture>("metallicRoughnessTexture").Attribute<UIProperty>();
         type.Field<&MaterialAsset::aoTexture>("aoTexture").Attribute<UIProperty>();
         type.Field<&MaterialAsset::emissiveTexture>("emissiveTexture").Attribute<UIProperty>();
         type.Field<&MaterialAsset::emissiveFactor>("emissiveFactor").Attribute<UIProperty>();
-        type.Field<&MaterialAsset::alphaCutoff>("alphaCutoff").Attribute<UIProperty>();
+        type.Field<&MaterialAsset::alphaCutoff>("alphaCutoff").Attribute<UIProperty>().Attribute<UIFloatProperty>(0.0f, 1.0f);
         type.Field<&MaterialAsset::alphaMode>("alphaMode").Attribute<UIProperty>();
         type.Field<&MaterialAsset::uvScale>("uvScale").Attribute<UIProperty>();
     }

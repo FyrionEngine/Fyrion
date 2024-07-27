@@ -172,7 +172,7 @@ namespace Fyrion
         JsonAssetReader reader(newStrValue);
         Serialization::Deserialize(component->typeHandler, reader, reader.ReadObject(), component);
 
-        ImGui::ClearTextData();
+        ImGui::ClearDrawData(component);
 
         sceneEditor.Modify();
         component->OnChange();
@@ -183,7 +183,7 @@ namespace Fyrion
         JsonAssetReader reader(currentStrValue);
         Serialization::Deserialize(component->typeHandler, reader, reader.ReadObject(), component);
 
-        ImGui::ClearTextData();
+        ImGui::ClearDrawData(component);
 
         sceneEditor.Modify();
         component->OnChange();
@@ -248,7 +248,7 @@ namespace Fyrion
         object->RemoveOverridePrototypeComponent(component);
         sceneEditor.Modify();
 
-        ImGui::ClearTextData();
+        ImGui::ClearDrawData(component);
     }
 
     void RemoveOverridePrototypeComponentAction::Rollback()
@@ -261,7 +261,7 @@ namespace Fyrion
 
         sceneEditor.Modify();
 
-        ImGui::ClearTextData();
+        ImGui::ClearDrawData(component);
     }
 
     void RemoveOverridePrototypeComponentAction::RegisterType(NativeTypeHandler<RemoveOverridePrototypeComponentAction>& type)
@@ -283,7 +283,7 @@ namespace Fyrion
         transformComponent->SetTransform(newTransform);
         sceneEditor.Modify();
 
-        ImGui::ClearTextData();
+        ImGui::ClearDrawData(transformComponent);
     }
 
     void MoveTransformObjectAction::Rollback()
@@ -291,7 +291,7 @@ namespace Fyrion
         transformComponent->SetTransform(oldTransform);
         sceneEditor.Modify();
 
-        ImGui::ClearTextData();
+        ImGui::ClearDrawData(transformComponent);
     }
 
     void MoveTransformObjectAction::RegisterType(NativeTypeHandler<MoveTransformObjectAction>& type)

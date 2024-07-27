@@ -119,7 +119,7 @@ namespace Fyrion
         JsonAssetReader reader(newStrValue);
         Serialization::Deserialize(asset->GetAssetType(), reader, reader.ReadObject(), asset);
 
-        ImGui::ClearTextData();
+        ImGui::ClearDrawData(asset);
         asset->SetModified();
     }
     void UpdateAssetAction::Rollback()
@@ -127,7 +127,7 @@ namespace Fyrion
         JsonAssetReader reader(currentStrValue);
         Serialization::Deserialize(asset->GetAssetType(), reader, reader.ReadObject(), asset);
 
-        ImGui::ClearTextData();
+        ImGui::ClearDrawData(asset);
 
         asset->SetModified();
     }

@@ -1,3 +1,5 @@
+#include "Attributes.hpp"
+#include "Color.hpp"
 #include "Math.hpp"
 #include "Registry.hpp"
 #include "UUID.hpp"
@@ -23,6 +25,7 @@ namespace Fyrion
         Registry::Type<Array<u8>>("Fyrion::ByteArray");
         Registry::Type<String>("Fyrion::String");
         Registry::Type<StringView>("Fyrion::StringView");
+        Registry::Type<Color>();
 
         auto uuid = Registry::Type<UUID>();
         uuid.Field<&UUID::firstValue>("firstValue");
@@ -32,6 +35,9 @@ namespace Fyrion
         auto allocator = Registry::Type<Allocator>();
         allocator.Function<&Allocator::MemAlloc>("MemAlloc");
         allocator.Function<&Allocator::MemFree>("MemFree");
+
+        Registry::Type<UIProperty>();
+        Registry::Type<UIFloatProperty>();
     }
 
     void RegisterMathTypes()

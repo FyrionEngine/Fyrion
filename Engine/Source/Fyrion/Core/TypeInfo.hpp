@@ -28,6 +28,7 @@ namespace Fyrion
         usize          size;
         usize          alignment;
         bool           isTriviallyCopyable;
+        bool           isEnum;
         TypeID         apiId;
         FnExtractApi   extractApi;
         FnStringSize   stringSize;
@@ -112,6 +113,7 @@ namespace Fyrion
             .size = GetTypeSize<Type>(),
             .alignment = GetTypeAlign<Type>(),
             .isTriviallyCopyable = Traits::IsTriviallyCopyable<Type>,
+            .isEnum = Traits::IsEnum<Type>,
             .apiId = TypeApiInfo<Traits::RemoveAll<Type>>::GetApiId(),
             .extractApi = TypeApiInfo<Traits::RemoveAll<Type>>::ExtractApi,
         };

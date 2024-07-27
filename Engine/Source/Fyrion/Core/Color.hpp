@@ -92,6 +92,14 @@ namespace Fyrion
         static TColor TRANSPARENT_BLACK;
         static TColor TRANSPARENT_WHITE;
         static TColor NORMAL;
+
+        static void RegisterType(NativeTypeHandler<TColor>& type)
+        {
+            type.Field<&TColor::red>("red");
+            type.Field<&TColor::green>("green");
+            type.Field<&TColor::blue>("blue");
+            type.Field<&TColor::alpha>("alpha");
+        }
     };
 
     using Color = TColor<u8>;

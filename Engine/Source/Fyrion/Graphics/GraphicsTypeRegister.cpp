@@ -67,5 +67,12 @@ namespace Fyrion
         shaderAssetType.Value<ShaderAssetType::Graphics>("Graphics");
         shaderAssetType.Value<ShaderAssetType::Compute>("Compute");
         shaderAssetType.Value<ShaderAssetType::Raytrace>("Raytrace");
+
+
+        auto alphaMode = Registry::Type<AlphaMode>();
+        alphaMode.Value<AlphaMode::None>("None");
+        alphaMode.Value<AlphaMode::Opaque>("Opaque");
+        alphaMode.Value<AlphaMode::Mask>("Mask");
+        alphaMode.Value<AlphaMode::Blend>("Blend");
     }
 }

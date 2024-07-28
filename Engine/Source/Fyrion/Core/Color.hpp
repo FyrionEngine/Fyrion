@@ -95,10 +95,10 @@ namespace Fyrion
 
         static void RegisterType(NativeTypeHandler<TColor>& type)
         {
-            type.Field<&TColor::red>("red");
-            type.Field<&TColor::green>("green");
-            type.Field<&TColor::blue>("blue");
-            type.Field<&TColor::alpha>("alpha");
+            type.Field<&TColor<T>::red>("red");
+            type.Field<&TColor<T>::green>("green");
+            type.Field<&TColor<T>::blue>("blue");
+            type.Field<&TColor<T>::alpha>("alpha");
         }
     };
 

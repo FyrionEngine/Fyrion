@@ -13,6 +13,7 @@
 #include "Fyrion/IO/FileSystem.hpp"
 #include "Fyrion/IO/Path.hpp"
 #include "Fyrion/Core/ArgParser.hpp"
+#include "Graphics/Assets/TextureAsset.hpp"
 
 namespace Fyrion
 {
@@ -96,6 +97,11 @@ namespace Fyrion
         GraphicsCreateDevice(Adapter{});
 
         window = Platform::CreateWindow(contextCreation.title, contextCreation.resolution, windowFlags);
+
+        if (TextureAsset* textureAsset = AssetDatabase::FindByPath<TextureAsset>("Fyrion://Textures/FyrionLogo.png"))
+        {
+            Platform::SetWindowIcon(window, textureAsset->GetImage());
+        }
 
         swapchain = Graphics::CreateSwapchain(SwapchainCreation{
             .window = window,

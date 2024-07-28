@@ -16,6 +16,7 @@ namespace Fyrion
         void        SetImagePath(StringView path);
         void        SetImage(const Image& image);
         Texture     GetTexture();
+        Image       GetImage() const;
         static void RegisterType(NativeTypeHandler<TextureAsset>& type);
 
     private:

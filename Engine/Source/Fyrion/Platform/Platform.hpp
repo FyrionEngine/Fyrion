@@ -5,6 +5,7 @@
 #include "Fyrion/Core/Math.hpp"
 #include "Fyrion/Core/String.hpp"
 #include "Fyrion/Core/Array.hpp"
+#include "Fyrion/Core/Image.hpp"
 #include "Fyrion/IO/InputTypes.hpp"
 
 namespace Fyrion::Platform
@@ -20,6 +21,7 @@ namespace Fyrion::Platform
     FY_API void         SetWindowShouldClose(Window window, bool shouldClose);
     FY_API void         SetClipboardString(Window window, StringView string);
     FY_API void         SetCursor(Window window, MouseCursor mouseCursor);
+    FY_API void         SetWindowIcon(Window window, const Image& image);
 
     FY_API f64          GetTime();
     FY_API f64          GetElapsedTime();

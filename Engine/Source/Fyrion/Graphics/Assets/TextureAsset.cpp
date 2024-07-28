@@ -58,6 +58,13 @@ namespace Fyrion
         return texture;
     }
 
+    Image TextureAsset::GetImage() const
+    {
+        Image image{width, height, channels};
+        LoadBlob(data, image.GetData().begin(), image.GetData().Size());
+        return image;
+    }
+
     void TextureAsset::RegisterType(NativeTypeHandler<TextureAsset>& type)
     {
         type.Field<&TextureAsset::width>("width");

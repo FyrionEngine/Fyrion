@@ -130,6 +130,8 @@ namespace Fyrion
             glfwSetScrollCallback(window, ScrollCallback);
         }
 
+        Fyrion://Textures/FyrionLogo.png
+
         ApplyDarkStyle(window);
 
         glfwShowWindow(window);
@@ -210,6 +212,16 @@ namespace Fyrion
         {
             glfwSetInputMode(glfwWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         }
+    }
+
+    void Platform::SetWindowIcon(Window window, const Image& image)
+    {
+        GLFWimage icons{
+            .width = (i32) image.GetWidth(),
+            .height = (i32) image.GetHeight(),
+            .pixels = image.GetData().begin(),
+        };
+        glfwSetWindowIcon((GLFWwindow*)window.handler, 1, &icons);
     }
 
     f64 Platform::GetElapsedTime()

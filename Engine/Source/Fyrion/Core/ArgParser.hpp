@@ -8,7 +8,7 @@
 
 namespace Fyrion
 {
-    class ArgParser
+    class FY_API ArgParser
     {
     public:
         void Parse(i32 argc, char** argv)

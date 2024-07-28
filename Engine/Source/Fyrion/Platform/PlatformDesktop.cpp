@@ -94,6 +94,7 @@ namespace Fyrion
 
     void PlatformDesktopShutdown()
     {
+        ImGui_ImplGlfw_Shutdown();
         NFD_Quit();
         glfwTerminate();
     }
@@ -153,6 +154,7 @@ namespace Fyrion
 
     void Platform::DestroyWindow(Window window)
     {
+        ImGui_ImplGlfw_RestoreCallbacks((GLFWwindow*)window.handler);
         glfwDestroyWindow((GLFWwindow*)window.handler);
     }
 

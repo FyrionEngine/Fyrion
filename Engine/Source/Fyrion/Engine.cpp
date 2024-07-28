@@ -40,7 +40,7 @@ namespace Fyrion
     namespace
     {
         Logger&   logger = Logger::GetLogger("Fyrion::Engine");
-        bool      running = true;
+        bool      running = false;
         Window    window{};
         Swapchain swapchain{};
         Vec4      clearColor = Vec4{0, 0, 0, 1};
@@ -98,7 +98,7 @@ namespace Fyrion
 
         window = Platform::CreateWindow(contextCreation.title, contextCreation.resolution, windowFlags);
 
-        if (TextureAsset* textureAsset = AssetDatabase::FindByPath<TextureAsset>("Fyrion://Textures/FyrionLogo.png"))
+        if (TextureAsset* textureAsset = AssetDatabase::FindByPath<TextureAsset>("Fyrion://Textures/Logo.jpeg"))
         {
             Platform::SetWindowIcon(window, textureAsset->GetImage());
         }
@@ -111,6 +111,8 @@ namespace Fyrion
         ImGui::Init(window, swapchain);
 
         onInitHandler.Invoke();
+
+        running = true;
     }
 
     void Engine::Run()
@@ -200,6 +202,8 @@ namespace Fyrion
 
         GraphicsShutdown();
         PlatformShutdown();
+
+        ImGui::ImGuiShutdown();
     }
 
     void Engine::Shutdown()

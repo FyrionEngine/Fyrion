@@ -123,6 +123,7 @@ namespace ImGui
 
     FY_API void CreateDockSpace(ImGuiID dockSpaceId);
     FY_API bool Begin(u32 id, const char* name, bool* pOpen, ImGuiWindowFlags flags = 0);
+    FY_API bool BeginFullscreen(u32 id, bool* pOpen = nullptr, ImGuiWindowFlags flags = 0);
     FY_API void DockBuilderReset(ImGuiID dockSpaceId);
     FY_API void DockBuilderDockWindow(ImGuiID windowId, ImGuiID nodeId);
     FY_API bool InputText(u32 idx, Fyrion::String& string, ImGuiInputTextFlags flags = 0);
@@ -131,7 +132,8 @@ namespace ImGui
     FY_API void EndTreeNode();
     FY_API bool TreeNode(u32 id, const char* label, ImGuiTreeNodeFlags flags = 0);
     FY_API bool TreeLeaf(u32 id, const char* label, ImGuiTreeNodeFlags flags = 0);
-    FY_API void DrawImage(Texture texture, const Rect& rect, const ImVec4& tintCol = ImVec4(1, 1, 1, 1));
+    FY_API void TextureItem(Texture texture, const ImVec2& image_size, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1), const ImVec4& tint_col = ImVec4(1, 1, 1, 1), const ImVec4& border_col = ImVec4(0, 0, 0, 0));
+    FY_API void DrawTexture(Texture texture, const Rect& rect, const ImVec4& tintCol = ImVec4(1, 1, 1, 1));
     FY_API bool BeginPopupMenu(const char* str, ImGuiWindowFlags popupFlags = 0, bool setSize = true);
     FY_API void EndPopupMenu(bool closePopup = true);
     FY_API bool SelectionButton(const char* label, bool selected, const ImVec2& sizeArg = ImVec2(0, 0));

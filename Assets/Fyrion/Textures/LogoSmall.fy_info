@@ -1,0 +1,10 @@
+{
+    "name": "LogoSmall",
+    "hasBlobs": true,
+    "width": 128,
+    "height": 128,
+    "channels": 4,
+    "data": "4ace4ca0ff11706c",
+    "_type": "Fyrion::TextureAsset",
+    "uuid": "989a711b-cb35-2f2d-3778-905ab0e6ddf0"
+}

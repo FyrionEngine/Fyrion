@@ -121,6 +121,28 @@ namespace ImGui
         return open;
     }
 
+    bool BeginFullscreen(u32 id, bool* pOpen, ImGuiWindowFlags flags)
+    {
+        ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDocking | flags;
+        auto viewport = ImGui::GetMainViewport();
+        ImGui::SetNextWindowPos(viewport->WorkPos);
+        ImGui::SetNextWindowSize(viewport->WorkSize);
+        ImGui::SetNextWindowViewport(viewport->ID);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+        windowFlags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+        windowFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+
+        char str[20];
+        sprintf(str, "###%d", id);
+        bool open = ImGui::Begin(str, pOpen, windowFlags);
+
+        ImGui::PopStyleVar(); //ImGuiStyleVar_WindowRounding
+        ImGui::PopStyleVar(); //ImGuiStyleVar_WindowBorderSize
+
+        return open;
+    }
+
     void DockBuilderReset(ImGuiID dockSpaceId)
     {
         auto viewport = ImGui::GetMainViewport();
@@ -218,7 +240,14 @@ namespace ImGui
         return ImGui::TreeNodeEx((void*)(usize)id, flags, "%s", label);
     }
 
-    void DrawImage(Texture texture, const Rect& rect, const ImVec4& tintCol)
+    void TextureItem(Texture texture, const ImVec2& image_size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tint_col, const ImVec4& border_col)
+    {
+        if (!texture) return;
+
+        ImGui::Image(GetRenderDevice().GetImGuiTexture(texture), image_size, uv0, uv1, tint_col, border_col);
+    }
+
+    void DrawTexture(Texture texture, const Rect& rect, const ImVec4& tintCol)
     {
         if (!texture) return;
 
@@ -482,7 +511,7 @@ namespace ImGui
         //drawImage(contentItemDesc.texture, {cursorPos.x, cursorPos.y, cursorPos.x + width, cursorPos.y + ThumbnailSize});
         if (contentItemDesc.Texture)
         {
-            DrawImage(contentItemDesc.Texture, {
+            DrawTexture(contentItemDesc.Texture, {
                           (i32)cursorPos.x,
                           (i32)cursorPos.y,
                           (u32)(cursorPos.x + width),

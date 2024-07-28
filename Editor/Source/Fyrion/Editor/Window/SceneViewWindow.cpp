@@ -195,7 +195,7 @@ namespace Fyrion
 
             if (open)
             {
-                ImGui::DrawImage(renderGraph->GetColorOutput(), bb);
+                ImGui::DrawTexture(renderGraph->GetColorOutput(), bb);
             }
 
             ImGuizmo::SetDrawlist();

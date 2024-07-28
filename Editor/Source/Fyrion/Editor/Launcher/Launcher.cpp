@@ -22,11 +22,13 @@ namespace Fyrion
         String projectSearch{};
 
         String newProjectPath{};
-        String newProjectName{};
+        String newProjectName = "New Project";
 
         u32    projectNameValidation{0};
         u32    projectPathValidation{0};
         String selectedProject{};
+
+        ImGuiID templateProjectId = 30000;
 
         Texture iconTexture = {};
     }
@@ -38,6 +40,8 @@ namespace Fyrion
         {
             iconTexture = textureAsset->GetTexture();
         }
+
+        newProjectPath = Path::Join(FileSystem::DocumentsDir(), "Fyrion Projects");
     }
 
 
@@ -101,17 +105,15 @@ namespace Fyrion
                 ImGui::SetCursorPosX(ImGui::GetCursorPosX() + padding.x);
                 if (ImGui::Button("Open", buttonSize))
                 {
-                    // Path path{};
-                    // auto res = Platform::PickFolder(path, {});
-                    //
-                    // if (res == DialogResult_Okay && FileSystem::FileStatus(path).exists)
-                    // {
-                    // 	projectLauncherSettings->recentProjects.EmplaceBack(path.GetString());
-                    // 	SettingsServer::SaveSettings<ProjectLauncherSettings>();
-                    //
-                    // 	projectPath = path.GetString();
-                    // 	App::Shutdown();
-                    // }
+                    String path{};
+                    if (Platform::PickFolder(path, {}) == DialogResult::OK)
+                    {
+                        if (FileSystem::GetFileStatus(path).exists)
+                        {
+                            selectedProject = path;
+                            Engine::Shutdown();
+                        }
+                    }
                 }
 
                 ImGui::SameLine();
@@ -202,8 +204,6 @@ namespace Fyrion
                 {
                     ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPos().x + padding.x * 1.5f, ImGui::GetCursorPos().y + padding.y * 1.5f));
 
-                    ImGuiID templateProjectId = 30201;
-
                     ImGui::BeginContentTable(templateProjectId, 96 * ImGui::GetStyle().ScaleFactor, ImGuiContentTableFlags_SelectionNoFocus);
 
                     // if (ImGui::GetContentItemSelected(templateProjectId) == U32_MAX)
@@ -211,17 +211,16 @@ namespace Fyrion
                     //     ImGui::SelectContentItem(30204, templateProjectId);
                     // }
 
-                    {
-                        ImGui::ContentItemDesc contentItem{};
-                        contentItem.ItemId = 30204;
-                        contentItem.CanRename = false;
-                        contentItem.ShowDetails = true;
-                        contentItem.DetailsDesc = "Template";
-                        contentItem.Label = "Empty";
-                        //   contentItem.Texture = iconTexture;
 
-                        if (ImGui::DrawContentItem(contentItem)) {}
-                    }
+                    ImGui::ContentItemDesc contentItem{};
+                    contentItem.ItemId = 30204;
+                    contentItem.CanRename = false;
+                    contentItem.ShowDetails = true;
+                    contentItem.DetailsDesc = "Template";
+                    contentItem.Label = "Empty";
+                    contentItem.Texture = iconTexture;
+
+                    ImGui::DrawContentItem(contentItem);
 
                     ImGui::EndContentTable();
                 }
@@ -279,7 +278,7 @@ namespace Fyrion
 
                     ImGui::SetNextItemWidth(-1);
 
-                    ImGui::InputText(99663328, newProjectName);
+                    ImGui::InputText(996633, newProjectName);
 
                     ImGui::Text("Project Path:");
 
@@ -300,15 +299,15 @@ namespace Fyrion
 
                     if (ImGui::Button("Browse"))
                     {
-                        // Path path{};
-                        // if (Platform::PickFolder(path, {}) == DialogResult_Okay)
-                        // {
-                        //     auto stat = FileSystem::FileStatus(path);
-                        //     if (stat.exists)
-                        //     {
-                        //         newProjectPath = path.GetString();
-                        //     }
-                        // }
+                        String path;
+                        if (Platform::PickFolder(path, {}) == DialogResult::OK)
+                        {
+                            auto stat = FileSystem::GetFileStatus(path);
+                            if (stat.exists)
+                            {
+                                newProjectPath = path;
+                            }
+                        }
                     }
 
                     ImGui::EndHorizontal();
@@ -379,9 +378,14 @@ namespace Fyrion
 
     String Launcher::GetSelectedProject()
     {
-        return {};
+        return selectedProject;
     }
 
+    void Launcher::Shutdown()
+    {
+        Event::Unbind<OnInit, &LauncherInit>();
+        Event::Unbind<OnUpdate, &LauncherUpdate>();
+    }
 
     void Launcher::Init()
     {
@@ -397,7 +401,7 @@ namespace Fyrion
 
         EngineContextCreation contextCreation{
             .title = "Fyrion Launcher",
-            .resolution = {1024, 600},
+            .resolution = {1280, 720},
             .maximize = false,
             .headless = false,
         };

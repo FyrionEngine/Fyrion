@@ -39,7 +39,8 @@ namespace Fyrion
     {
         Array<EditorWindowStorage> editorWindowStorages{};
         Array<OpenWindowStorage>   openWindows{};
-        Array<Asset*> updatedItems{};
+        Array<Asset*>              updatedItems{};
+        String                     projectPath{};
 
         MenuItemContext menuContext{};
         bool            dockInitialized = false;
@@ -119,12 +120,7 @@ namespace Fyrion
 
             //TODO: Create a setting for that.
             Editor::OpenDirectory(AssetDatabase::FindByPath<AssetDirectory>("Fyrion:/"));
-
-            if (Engine::HasArgByName("projectPath"))
-            {
-                String projectPath = Engine::GetArgByName("projectPath");
-                Editor::OpenDirectory(AssetDatabase::LoadFromDirectory(Path::Name(projectPath), Path::Join(projectPath, "Assets")));
-            }
+            Editor::OpenDirectory(AssetDatabase::LoadFromDirectory(Path::Name(projectPath), Path::Join(projectPath, "Assets")));
         }
 
         void CloseEngine(const MenuItemEventData& eventData)
@@ -132,9 +128,7 @@ namespace Fyrion
             Engine::Shutdown();
         }
 
-        void NewProject(const MenuItemEventData& eventData)
-        {
-        }
+        void NewProject(const MenuItemEventData& eventData) {}
 
         void SaveAll(const MenuItemEventData& eventData)
         {
@@ -181,7 +175,7 @@ namespace Fyrion
             Editor::AddMenuItem(MenuItemCreation{.itemName = "File/Exit", .priority = I32_MAX, .itemShortcut{.ctrl = true, .presKey = Key::Q}, .action = CloseEngine});
             Editor::AddMenuItem(MenuItemCreation{.itemName = "Edit", .priority = 30});
             Editor::AddMenuItem(MenuItemCreation{.itemName = "Edit/Undo", .priority = 10, .itemShortcut{.ctrl = true, .presKey = Key::Z}, .action = Undo, .enable = UndoEnabled});
-            Editor::AddMenuItem(MenuItemCreation{.itemName = "Edit/Redo", .priority = 20, .itemShortcut{.ctrl = true, .shift = true,  .presKey = Key::Z}, .action = Redo, .enable = RedoEnabled});
+            Editor::AddMenuItem(MenuItemCreation{.itemName = "Edit/Redo", .priority = 20, .itemShortcut{.ctrl = true, .shift = true, .presKey = Key::Z}, .action = Redo, .enable = RedoEnabled});
             Editor::AddMenuItem(MenuItemCreation{.itemName = "Build", .priority = 40});
             Editor::AddMenuItem(MenuItemCreation{.itemName = "Window", .priority = 50});
             Editor::AddMenuItem(MenuItemCreation{.itemName = "Help", .priority = 60});
@@ -285,12 +279,12 @@ namespace Fyrion
         {
             if (!updatedItems.Empty())
             {
-                bool open{true};
+                bool                   open{true};
                 static ImGuiTableFlags flags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Resizable;
-                ImGuiStyle& style = ImGui::GetStyle();
+                ImGuiStyle&            style = ImGui::GetStyle();
                 ImGui::SetNextWindowSize({600 * style.ScaleFactor, 400 * style.ScaleFactor}, ImGuiCond_Once);
                 ImGui::StyleColor childBg(ImGuiCol_PopupBg, IM_COL32(28, 31, 33, 255));
-                if(ImGui::BeginPopupModal("Save Content", &open, ImGuiWindowFlags_NoScrollbar))
+                if (ImGui::BeginPopupModal("Save Content", &open, ImGuiWindowFlags_NoScrollbar))
                 {
                     ImGui::Text("Pending items to save");
                     {
@@ -310,7 +304,7 @@ namespace Fyrion
                                 ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_None, 200.f * style.ScaleFactor);
                                 ImGui::TableHeadersRow();
 
-                                for(const Asset* asset: updatedItems)
+                                for (const Asset* asset : updatedItems)
                                 {
                                     ImGui::TableNextRow();
 
@@ -327,7 +321,6 @@ namespace Fyrion
                                     ImGui::TableSetColumnIndex(2);
 
                                     ImGui::TextColored(color, "%s", asset->GetDisplayName().CStr());
-
                                 }
                                 ImGui::EndTable();
                             }
@@ -358,7 +351,6 @@ namespace Fyrion
                         }
 
                         ImGui::EndHorizontal();
-
                     }
                     ImGui::EndPopup();
                 }
@@ -453,8 +445,9 @@ namespace Fyrion
         menuContext.AddMenuItem(menuItem);
     }
 
-    void Editor::Init()
+    void Editor::Init(StringView p_projectPath)
     {
+        projectPath = p_projectPath;
         sceneEditor = MakeUnique<SceneEditor>();
 
         Registry::Type<EditorWindow>();
@@ -473,9 +466,6 @@ namespace Fyrion
 
         CreateMenuItems();
 
-        if (Engine::HasArgByName("projectPath"))
-        {
-            AssetDatabase::SetDataDirectory(Path::Join(Engine::GetArgByName("projectPath"), "Data"));
-        }
+        AssetDatabase::SetDataDirectory(Path::Join(projectPath, "Data"));
     }
 }

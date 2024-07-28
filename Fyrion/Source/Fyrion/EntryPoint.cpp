@@ -24,13 +24,14 @@ int main(i32 argc, char** argv)
         Launcher::Init();
         Engine::Run();
         projectPath = Launcher::GetSelectedProject();
+        Launcher::Shutdown();
         Engine::Destroy();
     }
 
     if (!projectPath.Empty())
     {
         Engine::Init(argc, argv);
-        Editor::Init();
+        Editor::Init(projectPath);
 
         EngineContextCreation contextCreation{
             .title = "Fyrion Engine",

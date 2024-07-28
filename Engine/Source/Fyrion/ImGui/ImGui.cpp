@@ -1267,12 +1267,15 @@ namespace ImGui
         }
     }
 
-    void ClearDrawData(VoidPtr ptr)
+    void ClearDrawData(VoidPtr ptr, bool clearActiveId)
     {
         if (auto it = drawTypes.Find(reinterpret_cast<usize>(ptr)))
         {
             it->second->desc.typeHandler->Copy(it->second->desc.instance, it->second->instance);
         }
-        ImGui::ClearActiveID();
+        if (clearActiveId)
+        {
+            ImGui::ClearActiveID();
+        }
     }
 }

@@ -57,18 +57,25 @@ namespace Fyrion
             {
                 if (MeshAsset* mesh = meshRenderData.mesh)
                 {
-                    Span<MaterialAsset*> materials = mesh->GetMaterials();
+                    Span<MeshPrimitive> primitives = mesh->GetPrimitives();
+
+                    if (primitives.Size() > meshRenderData.materials.Size())
+                    {
+                        continue;
+                    }
+
                     cmd.BindVertexBuffer(mesh->GetVertexBuffer());
                     cmd.BindIndexBuffer(mesh->GetIndexBuffeer());
 
                     cmd.PushConstants(pipelineState, ShaderStage::Vertex, &meshRenderData.model, sizeof(Mat4));
 
-                    for (MeshPrimitive& primitive : mesh->GetPrimitives())
+                    for (MeshPrimitive& primitive : primitives)
                     {
-                        MaterialAsset* material = materials[primitive.materialIndex];
-                        cmd.BindBindingSet(pipelineState, material->GetBindingSet());
-
-                        cmd.DrawIndexed(primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+                        if (MaterialAsset* material = meshRenderData.materials[primitive.materialIndex])
+                        {
+                            cmd.BindBindingSet(pipelineState, material->GetBindingSet());
+                            cmd.DrawIndexed(primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+                        }
                     }
                 }
             }

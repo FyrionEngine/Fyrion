@@ -27,5 +27,6 @@ namespace Fyrion
         MeshAsset*            mesh = nullptr;
         TransformComponent*   transformComponent = nullptr;
         Array<MaterialAsset*> materials = {};
+        MeshAsset*            activeMesh = nullptr;
     };
 }

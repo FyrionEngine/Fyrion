@@ -10,7 +10,7 @@ namespace Fyrion
         Array<MeshRenderData> meshRenderDataArray{};
     }
 
-    void RenderStorage::AddOrUpdateMeshToRender(usize address, const Mat4& model, MeshAsset* mesh)
+    void RenderStorage::AddOrUpdateMeshToRender(usize address, const Mat4& model, MeshAsset* mesh, Span<MaterialAsset*> materials)
     {
         auto it = meshRenderDataIndices.Find(address);
         if (it == meshRenderDataIndices.end())
@@ -23,6 +23,7 @@ namespace Fyrion
         data.address = address;
         data.model = model,
         data.mesh = mesh;
+        data.materials = materials;
     }
 
     Span<MeshRenderData> RenderStorage::GetMeshesToRender()

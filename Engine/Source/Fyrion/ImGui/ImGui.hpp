@@ -164,7 +164,7 @@ namespace ImGui
     FY_API void                  AddFieldRenderer(FieldRendererFn fieldRendererFn);
     FY_API Span<FieldRendererFn> GetFieldRenderers();
     FY_API void                  DrawType(const DrawTypeDesc& drawTypeDesc);
-    FY_API void                  ClearDrawData(VoidPtr ptr);
+    FY_API void                  ClearDrawData(VoidPtr ptr, bool clearActiveId = true);
 
     FY_API ImGuiKey GetImGuiKey(Key key);
 

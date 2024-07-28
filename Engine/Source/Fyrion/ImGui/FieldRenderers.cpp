@@ -134,6 +134,17 @@ namespace Fyrion
         ArrayApi arrayApi{};
         typeInfo.extractApi(&arrayApi);
 
+        bool canAdd = true;
+        bool canRemove = true;
+
+        if (const UIArrayProperty* uiArrayProperty = context->activeFieldHandler != nullptr ? context->activeFieldHandler->GetAttribute<UIArrayProperty>() : nullptr)
+        {
+            canAdd = uiArrayProperty->canAdd;
+            canRemove = uiArrayProperty->canRemove;
+        }
+
+        ImGui::BeginDisabled(!canAdd);
+
         if (ImGui::Button(ICON_FA_PLUS))
         {
             arrayApi.pushNew(value);
@@ -143,7 +154,11 @@ namespace Fyrion
             }
         }
 
+        ImGui::EndDisabled();
+
         ImGui::SameLine();
+
+        ImGui::BeginDisabled(!canRemove);
 
         if (ImGui::Button(ICON_FA_MINUS))
         {
@@ -153,6 +168,8 @@ namespace Fyrion
                 *hasChanged = true;
             }
         }
+
+        ImGui::EndDisabled();
 
         usize size = arrayApi.size(value);
         for (int i = 0; i < size; ++i)

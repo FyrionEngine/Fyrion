@@ -8,6 +8,10 @@
 #include "Fyrion/Core/Span.hpp"
 
 namespace Fyrion {
+    class MaterialAsset;
+}
+
+namespace Fyrion {
     class MeshAsset;
 }
 
@@ -554,9 +558,10 @@ namespace Fyrion
 
     struct MeshRenderData
     {
-        usize      address{};
-        Mat4       model;
-        MeshAsset* mesh = nullptr;
+        usize                 address{};
+        Mat4                  model;
+        MeshAsset*            mesh = nullptr;
+        Array<MaterialAsset*> materials{};
     };
 
     struct BindingVar;

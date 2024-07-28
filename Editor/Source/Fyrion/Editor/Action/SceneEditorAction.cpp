@@ -165,6 +165,8 @@ namespace Fyrion
 
         sceneEditor.Modify();
         component->OnChange();
+
+        ImGui::ClearDrawData(component, false);
     }
 
     void UpdateComponentSceneObjectAction::Commit()

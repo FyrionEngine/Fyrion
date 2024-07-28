@@ -69,18 +69,24 @@ namespace Fyrion
     {
         if (object->IsActivated())
         {
-            // if (mesh)
-            // {
-            //     materials = mesh->GetMaterials();
-            // }
-            // else
-            // {
-            //     materials.Clear();
-            // }
+            if (materials.Empty() && mesh != nullptr)
+            {
+                materials = mesh->GetMaterials();
+            }
+            else if (activeMesh != nullptr && activeMesh != mesh)
+            {
+                materials.Clear();
+                if (mesh != nullptr)
+                {
+                    materials = mesh->GetMaterials();
+                }
+            }
+
+            activeMesh = mesh;
 
             if (transformComponent != nullptr && mesh != nullptr)
             {
-                RenderStorage::AddOrUpdateMeshToRender(reinterpret_cast<usize>(this), transformComponent->GetWorldTransform(), mesh);
+                RenderStorage::AddOrUpdateMeshToRender(reinterpret_cast<usize>(this), transformComponent->GetWorldTransform(), mesh, materials);
             }
             else
             {
@@ -108,6 +114,6 @@ namespace Fyrion
     void MeshRender::RegisterType(NativeTypeHandler<MeshRender>& type)
     {
         type.Field<&MeshRender::mesh>("mesh").Attribute<UIProperty>();
-        type.Field<&MeshRender::materials>("materials").Attribute<UIProperty>();
+        type.Field<&MeshRender::materials>("materials").Attribute<UIProperty>().Attribute<UIArrayProperty>(UIArrayProperty{.canAdd = false, .canRemove = false});
     }
 }

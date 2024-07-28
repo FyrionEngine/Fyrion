@@ -7,5 +7,5 @@ namespace Fyrion::Launcher
 {
     FY_API void   Init();
     FY_API void   Shutdown();
-    FY_API String GetSelectedProject();
+    FY_API String GetProject();
 }

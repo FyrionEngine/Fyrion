@@ -5,8 +5,12 @@ set(CMAKE_CXX_STANDARD 20)
 
 include(CMake/CMakeFunctions.cmake)
 
+
+set(FY_ENGINE_VERSION "0.1")
+add_compile_definitions(FY_ENGINE_VERSION="${FY_ENGINE_VERSION}")
+
 string(TIMESTAMP TODAY "%Y%m%d")
-add_compile_definitions(FY_VERSION="0.0.1-${TODAY}-pre-alpha")
+add_compile_definitions(FY_VERSION="${FY_ENGINE_VERSION}-${TODAY}")
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)

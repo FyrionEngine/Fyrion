@@ -28,7 +28,7 @@ namespace ImGui
     struct ContentTable
     {
         f32    thumbnailSize{};
-        u32    selectedItem{};
+        u32    selectedItem = 0;
         u32    hoveredItem{};
         bool   renamingSelected{};
         u32    renamingId{};
@@ -674,6 +674,11 @@ namespace ImGui
         {
             CurrentTable(tableId).selectedItem = itemId;
         }
+    }
+
+    ImGuiID GetSelectedContentItem()
+    {
+        return CurrentTable().selectedItem;
     }
 
     bool ContentItemFocused(ImGuiID itemId)

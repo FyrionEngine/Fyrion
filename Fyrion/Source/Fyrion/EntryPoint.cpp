@@ -23,7 +23,7 @@ int main(i32 argc, char** argv)
         Engine::Init(argc, argv);
         Launcher::Init();
         Engine::Run();
-        projectPath = Launcher::GetSelectedProject();
+        projectPath = Launcher::GetProject();
         Launcher::Shutdown();
         Engine::Destroy();
     }

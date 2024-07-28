@@ -4,11 +4,13 @@
 #include "Action/EditorAction.hpp"
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Asset/AssetDatabase.hpp"
+#include "Fyrion/Asset/AssetSerialization.hpp"
 #include "Fyrion/Core/Event.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Core/UniquePtr.hpp"
 #include "Fyrion/ImGui/ImGui.hpp"
 #include "Fyrion/ImGui/Lib/imgui_internal.h"
+#include "Fyrion/IO/FileSystem.hpp"
 #include "Fyrion/IO/Path.hpp"
 
 namespace Fyrion
@@ -443,6 +445,28 @@ namespace Fyrion
     void Editor::AddMenuItem(const MenuItemCreation& menuItem)
     {
         menuContext.AddMenuItem(menuItem);
+    }
+
+    String Editor::CreateProject(StringView newProjectPath, StringView projectName)
+    {
+        String fullProjectPath = Path::Join(newProjectPath, projectName);
+        String assetsPath = Path::Join(fullProjectPath, "Assets");
+        String dataPath = Path::Join(fullProjectPath, "Data");
+        String settingsPath = Path::Join(fullProjectPath, "Settings");
+        String projectFilePath = Path::Join(fullProjectPath, projectName, FY_PROJECT_EXTENSION);
+
+        FileSystem::CreateDirectory(assetsPath);
+        FileSystem::CreateDirectory(dataPath);
+        FileSystem::CreateDirectory(settingsPath);
+
+
+        JsonAssetWriter jsonAssetWriter;
+        auto object = jsonAssetWriter.CreateObject();
+        jsonAssetWriter.WriteString(object, "engineVersion", FY_VERSION);
+
+        FileSystem::SaveFileAsString(projectFilePath, JsonAssetWriter::Stringify(object));
+
+        return fullProjectPath;
     }
 
     void Editor::Init(StringView p_projectPath)

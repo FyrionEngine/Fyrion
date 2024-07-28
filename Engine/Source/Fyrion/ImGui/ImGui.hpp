@@ -150,6 +150,7 @@ namespace ImGui
     FY_API bool       ContentItemHovered(ImGuiID itemId);
     FY_API bool       ContentItemSelected(ImGuiID itemId);
     FY_API void       SelectContentItem(ImGuiID itemId, ImGuiID tableId);
+    FY_API ImGuiID    GetSelectedContentItem();
     FY_API bool       ContentItemFocused(ImGuiID itemId);
     FY_API void       RenameContentSelected(ImGuiID id);
     FY_API void       CancelRenameContentSelected(ImGuiID id);

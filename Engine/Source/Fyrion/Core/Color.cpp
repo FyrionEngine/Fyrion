@@ -5,7 +5,7 @@
 
 namespace Fyrion
 {
-    void TColor<u8>::RegisterType(NativeTypeHandler<Color>& type)
+    template<> void TColor<u8>::RegisterType(NativeTypeHandler<Color>& type)
     {
         type.Field<&Color::red>("red");
         type.Field<&Color::green>("green");

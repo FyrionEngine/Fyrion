@@ -30,6 +30,7 @@ namespace Fyrion
         static Asset*          CreateFromPrototype(TypeID typeId, Asset* prototype, UUID uuid);
         static void            Destroy(Asset* asset);
         static void            DestroyAssets();
+        static void            EnableHotReload(bool enable);
 
         template <typename T>
         static T* Create()
@@ -67,7 +68,7 @@ namespace Fyrion
             return static_cast<T*>(FindByPath(path));
         }
 
-        static void          OnUpdate(f64 deltaTime);
+        static void OnUpdate(f64 deltaTime);
 
     private:
         static void          LoadAssetFile(AssetDirectory* directory, const StringView& filePath);

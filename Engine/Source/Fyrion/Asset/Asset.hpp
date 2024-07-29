@@ -136,6 +136,7 @@ namespace Fyrion
         TypeHandler*    assetType{};
         u64             currentVersion{};
         u64             loadedVersion{};
+        u64             lastModified{};
         String          name{};
         String          extension;
         String          absolutePath{};

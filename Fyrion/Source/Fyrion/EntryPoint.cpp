@@ -30,6 +30,8 @@ int main(i32 argc, char** argv)
 
     if (!projectPath.Empty())
     {
+        AssetDatabase::EnableHotReload(true);
+
         Engine::Init(argc, argv);
         Editor::Init(projectPath);
 

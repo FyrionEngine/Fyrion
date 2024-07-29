@@ -5,11 +5,6 @@
 - Version 1.14
 - License MIT
 
-## concurrentqueue
-- Upstream https://github.com/cameron314/concurrentqueue
-- Version v1.0.4 (6dd38b8a1dbaa7863aa907045f32308a56a6ff5d, 2023)
-- License: Simplified BSD License
-
 ## cpptrace
 - Upstream https://github.com/jeremy-rifkin/cpptrace
 - Version 0.6.1

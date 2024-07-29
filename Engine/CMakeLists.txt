@@ -8,7 +8,6 @@ add_library(FyrionEngine SHARED ${FYRION_ENGINE_SOURCES})
 target_include_directories(FyrionEngine PUBLIC Source)
 target_include_directories(FyrionEngine PUBLIC Source/Fyrion/ImGui/Lib)
 target_include_directories(FyrionEngine PRIVATE ThirdParty/dxc/include)
-target_include_directories(FyrionEngine PRIVATE ThirdParty/filewatch)
 
 target_compile_definitions(FyrionEngine PUBLIC FMT_LIB_EXPORT=1)
 

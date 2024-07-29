@@ -22,7 +22,6 @@ namespace Fyrion
         Array<Asset*>                  assets;
         HashMap<UUID, Asset*>          assetsById;
         HashMap<String, Asset*>        assetsByPath;
-        HashMap<String, Asset*>        assetsByAbsolutePath;
         Array<Pair<TypeID, AssetIO*>>  assetIOs;
         HashMap<String, AssetIO*>      importers;
         HashMap<TypeID, Array<Asset*>> assetsByType;
@@ -178,7 +177,6 @@ namespace Fyrion
 
         assetsById.Erase(asset->GetUUID());
         assetsByPath.Erase(asset->GetPath());
-        assetsByAbsolutePath.Erase(asset->GetAbsolutePath());
 
         asset->assetType->Destroy(asset);
     }
@@ -208,8 +206,6 @@ namespace Fyrion
             fileWatcher->Watch(directory);
         }
 
-        assetsByAbsolutePath.Insert(assetDirectory->absolutePath, assetDirectory);
-
         return assetDirectory;
     }
 
@@ -230,8 +226,6 @@ namespace Fyrion
             {
                 LoadAssetFile(assetDirectory, entry);
             }
-
-            assetsByAbsolutePath.Insert(assetDirectory->absolutePath, assetDirectory);
         }
         else if (extension == FY_ASSET_EXTENSION)
         {
@@ -243,8 +237,6 @@ namespace Fyrion
                 asset->loadedVersion = asset->currentVersion;
                 asset->lastModified = FileSystem::GetFileStatus(filePath).lastModifiedTime;
                 parentDirectory->AddChild(asset);
-
-                assetsByAbsolutePath.Insert(asset->absolutePath, asset);
             }
         }
         else if (auto importer = importers.Find(extension))
@@ -266,8 +258,6 @@ namespace Fyrion
                     {
                         importer->second->ImportAsset(filePath, asset);
                     }
-
-                    assetsByAbsolutePath.Insert(asset->absolutePath, asset);
                 }
             }
             else if (Asset* asset = importer->second->CreateAsset())
@@ -281,8 +271,6 @@ namespace Fyrion
                 AssetDatabaseUpdateUUID(asset, asset->GetUUID());
                 importer->second->ImportAsset(filePath, asset);
                 asset->BuildPath();
-
-                assetsByAbsolutePath.Insert(asset->absolutePath, asset);
             }
         }
     }
@@ -530,7 +518,6 @@ namespace Fyrion
 
         assetsById.Clear();
         assetsByPath.Clear();
-        assetsByAbsolutePath.Clear();
     }
 
     void AssetDatabase::OnUpdate(f64 deltaTime)
@@ -541,21 +528,20 @@ namespace Fyrion
             {
                 switch (event)
                 {
-                    case FileNotifyEvent::None:
-                        break;
                     case FileNotifyEvent::Added:
                     {
-                        String parent = Path::Parent(absolutePath);
-                        if (auto it = assetsByAbsolutePath.Find(parent))
-                        {
-                            logger.Info("file {} added on directory {} id: ", absolutePath, parent, ToString(it->second->GetUUID()));
-                        }
+                        // String parent = Path::Parent(absolutePath);
+                        // if (auto it = assetsByAbsolutePath.Find(parent))
+                        // {
+                        //     //ImportAsset()
+                        //     logger.Info("file {} added on directory {} last modified time {} ", absolutePath, parent, FileSystem::GetFileStatus(absolutePath).lastModifiedTime);
+                        // }
                         break;
                     }
                     case FileNotifyEvent::Removed:
                         break;
                     case FileNotifyEvent::Modified:
-                        logger.Info("modified on path {}", absolutePath);
+                        logger.Info("modified on path {} last modified time {} ", absolutePath, FileSystem::GetFileStatus(absolutePath).lastModifiedTime);
                         break;
                     case FileNotifyEvent::RenamedOld:
                         break;

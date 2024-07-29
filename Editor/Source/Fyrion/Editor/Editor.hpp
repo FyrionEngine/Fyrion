@@ -8,7 +8,7 @@
 
 namespace Fyrion::Editor
 {
-    FY_API void                  Init(StringView p_projectPath);
+    FY_API void                  Init(StringView projectFile);
     FY_API void                  AddMenuItem(const MenuItemCreation& menuItem);
     FY_API void                  OpenWindow(TypeID windowType, VoidPtr initUserData = nullptr);
     FY_API void                  OpenDirectory(AssetDirectory* directory);

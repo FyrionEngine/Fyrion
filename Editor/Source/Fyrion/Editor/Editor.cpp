@@ -459,19 +459,23 @@ namespace Fyrion
         FileSystem::CreateDirectory(dataPath);
         FileSystem::CreateDirectory(settingsPath);
 
-
         JsonAssetWriter jsonAssetWriter;
         auto object = jsonAssetWriter.CreateObject();
         jsonAssetWriter.WriteString(object, "engineVersion", FY_VERSION);
 
         FileSystem::SaveFileAsString(projectFilePath, JsonAssetWriter::Stringify(object));
 
-        return fullProjectPath;
+        return projectFilePath;
     }
 
-    void Editor::Init(StringView p_projectPath)
+    void Editor::Init(StringView projectFile)
     {
-        projectPath = p_projectPath;
+        if (Path::Extension(projectFile) != FY_PROJECT_EXTENSION)
+        {
+            return;
+        }
+
+        projectPath = Path::Parent(projectFile);
         sceneEditor = MakeUnique<SceneEditor>();
 
         Registry::Type<EditorWindow>();

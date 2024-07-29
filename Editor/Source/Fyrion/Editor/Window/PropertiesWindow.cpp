@@ -327,12 +327,14 @@ namespace Fyrion
 
     void PropertiesWindow::SceneObjectSelection(SceneObject* objectAsset)
     {
+        if (objectAsset == nullptr && selectedObject == nullptr) return;
         ClearSelection();
         selectedObject = objectAsset;
     }
 
     void PropertiesWindow::AssetSelection(Asset* asset)
     {
+        if (selectedAsset == nullptr && asset == nullptr) return;
         ClearSelection();
         selectedAsset = asset;
     }

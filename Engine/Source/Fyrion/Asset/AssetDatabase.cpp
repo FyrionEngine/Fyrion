@@ -25,7 +25,7 @@ namespace Fyrion
         HashMap<TypeID, Array<Asset*>> assetsByType;
         FileWatcher                    fileWatcher;
 
-        Logger& logger = Logger::GetLogger("Fyrion::AssetDatabase", LogLevel::Debug);
+        Logger& logger = Logger::GetLogger("Fyrion::AssetDatabase");
         bool    registerEvents = RegisterEvents();
 
         void OnTypeAddedImpl(const TypeHandler& typeHandler)

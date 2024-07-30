@@ -52,6 +52,8 @@ namespace Fyrion::Path
         String retPath{};
         auto append = [&](StringView path)
         {
+            if (path.Empty()) return;
+
             char first = path[0];
             if (first != '.' && first != '/' && first != '\\' && !retPath.Empty())
             {

@@ -39,6 +39,8 @@ namespace Fyrion
         Span<Asset*> GetChildren();
         bool         IsModified() const override;
 
+        bool         HasChild(const StringView& childAbsolutePath) const;
+
         static void RegisterType(NativeTypeHandler<AssetDirectory>& type);
 
     private:

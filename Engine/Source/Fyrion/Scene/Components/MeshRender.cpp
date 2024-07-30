@@ -15,7 +15,7 @@ namespace Fyrion
 {
     MeshRender::~MeshRender()
     {
-        if (object->IsActivated())
+        if (object && object->IsActivated())
         {
             RenderStorage::RemoveMeshFromRender(reinterpret_cast<usize>(this));
         }

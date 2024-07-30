@@ -74,6 +74,18 @@ namespace Fyrion
         return currentVersion != loadedVersion;
     }
 
+    bool AssetDirectory::HasChild(const StringView& childAbsolutePath) const
+    {
+        for (Asset* child : children)
+        {
+            if (child->absolutePath == childAbsolutePath)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     void UIFontAsset::RegisterType(NativeTypeHandler<UIFontAsset>& type)
     {
     }

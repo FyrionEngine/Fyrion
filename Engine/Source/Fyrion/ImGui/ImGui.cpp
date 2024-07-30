@@ -1258,7 +1258,7 @@ namespace ImGui
                         .tableRender = true
                     })).first;
 
-            desc.typeHandler->Copy(desc.instance, it->second->instance);
+            desc.typeHandler->DeepCopy(desc.instance, it->second->instance);
         }
 
         DrawTypeContent* content = it->second.Get();

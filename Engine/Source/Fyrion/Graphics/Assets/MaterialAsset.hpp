@@ -18,7 +18,6 @@ namespace Fyrion
 
         StringView GetDisplayName() const override;
 
-
         Color         GetBaseColor() const;
         void          SetBaseColor(const Color& baseColor);
         TextureAsset* GetBaseColorTexture() const;
@@ -49,6 +48,8 @@ namespace Fyrion
         void          SetAlphaMode(AlphaMode alphaMode);
         Vec2          GetUvScale() const;
         void          SetUvScale(const Vec2& uvScale);
+
+        void OnModified() override;
 
         static void RegisterType(NativeTypeHandler<MaterialAsset>& type);
 

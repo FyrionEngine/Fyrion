@@ -529,8 +529,14 @@ namespace Fyrion
             switch (modified.event)
             {
                 case FileNotifyEvent::Added:
-                    LoadAssetFile(static_cast<AssetDirectory*>(modified.userData), modified.path);
+                {
+                    AssetDirectory* directory = static_cast<AssetDirectory*>(modified.userData);
+                    if (!directory->HasChild(modified.path))
+                    {
+                        LoadAssetFile(directory, modified.path);
+                    }
                     break;
+                }
                 case FileNotifyEvent::Removed:
                     Destroy(static_cast<Asset*>(modified.userData));
                     break;

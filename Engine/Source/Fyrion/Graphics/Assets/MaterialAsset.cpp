@@ -21,6 +21,7 @@ namespace Fyrion
         if (bindingSet)
         {
             Graphics::DestroyBindingSet(bindingSet);
+            bindingSet = nullptr;
         }
     }
 
@@ -179,11 +180,18 @@ namespace Fyrion
         this->uvScale = uvScale;
     }
 
+    void MaterialAsset::OnModified()
+    {
+        if (bindingSet)
+        {
+            Graphics::WaitQueue();
+            Graphics::DestroyBindingSet(bindingSet);
+            bindingSet = nullptr;
+        }
+    }
+
     void MaterialAsset::RegisterType(NativeTypeHandler<MaterialAsset>& type)
     {
-
-
-
         type.Field<&MaterialAsset::baseColor>("baseColor").Attribute<UIProperty>();
         type.Field<&MaterialAsset::baseColorTexture>("baseColorTexture").Attribute<UIProperty>();
         type.Field<&MaterialAsset::normalTexture>("normalTexture").Attribute<UIProperty>();

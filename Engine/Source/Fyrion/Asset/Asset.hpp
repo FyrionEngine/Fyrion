@@ -33,7 +33,7 @@ namespace Fyrion
     class FY_API Asset
     {
     public:
-        virtual ~Asset() = default;
+        virtual ~Asset();
 
         UUID GetUUID() const
         {

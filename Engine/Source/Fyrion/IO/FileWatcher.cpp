@@ -75,7 +75,7 @@ namespace Fyrion
                         bool renamed = false;
                         for (const String& file : DirectoryEntries{Path::Parent(data.path)})
                         {
-                            if (FileSystem::GetFileStatus(file).fileId == fileStatus.fileId)
+                            if (FileSystem::GetFileStatus(file).fileId == data.fileId)
                             {
                                 std::unique_lock lockQueue(modifiedMutex);
                                 modified.emplace(FileWatcherModified{
@@ -83,11 +83,15 @@ namespace Fyrion
                                     .oldName = Path::Name(data.path),
                                     .name = Path::Name(file),
                                     .path = file,
-                                    .event = FileNotifyEvent::Removed
+                                    .event = FileNotifyEvent::Renamed
                                 });
+
+                                data.path = file;
+
+                                logger.Debug("file {} id {} renamed",  data.path, data.fileId);
+
                                 renamed = true;
                                 ++it;
-
                                 break;
                             }
                         }
@@ -100,6 +104,7 @@ namespace Fyrion
                                 .path = data.path,
                                 .event = FileNotifyEvent::Removed
                             });
+                            logger.Debug("file {} id {} removed",  data.path, data.fileId);
                             it = watchedFiles.Erase(it);
                         }
                     }
@@ -110,17 +115,20 @@ namespace Fyrion
                         for (const String& file : DirectoryEntries{data.path})
                         {
                             u64 fileId = FileSystem::GetFileStatus(file).fileId;
+                            if (fileId == 0) continue;
+
                             actualIds.Insert(fileId);
 
                             if (!data.children.Has(fileId))
                             {
+                                data.children.Emplace(fileId);
                                 std::unique_lock lockQueue(modifiedMutex);
                                 modified.emplace(FileWatcherModified{
                                     .userData = data.userData,
                                     .path = file,
                                     .event = FileNotifyEvent::Added
                                 });
-                                data.children.Emplace(fileId);
+                                logger.Debug("file {} id {} added on {} ", file, fileId,  data.path);
                             }
                         }
 
@@ -148,6 +156,8 @@ namespace Fyrion
                             .path = data.path,
                             .event = FileNotifyEvent::Modified
                         });
+                        logger.Debug("file {} modified",  data.path);
+
                         ++it;
                     }
                     else

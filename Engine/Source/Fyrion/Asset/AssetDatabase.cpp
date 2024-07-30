@@ -528,16 +528,16 @@ namespace Fyrion
             switch (modified.event)
             {
                 case FileNotifyEvent::Added:
-                    logger.Info("added on path {} ", modified.path);
+                    LoadAssetFile(static_cast<AssetDirectory*>(modified.userData), modified.path);
                     break;
                 case FileNotifyEvent::Removed:
-                    logger.Info("removed on path {} ", modified.path);
+                    Destroy(static_cast<Asset*>(modified.userData));
                     break;
                 case FileNotifyEvent::Modified:
-                    logger.Info("modified on path {} ", modified.path);
+                    ReimportAsset(static_cast<Asset*>(modified.userData));
                     break;
                 case FileNotifyEvent::Renamed:
-                    logger.Info("renamed on path {} ", modified.path);
+                    static_cast<Asset*>(modified.userData)->SetName(modified.name);
                     break;
             }
         });

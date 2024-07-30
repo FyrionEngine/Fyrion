@@ -64,6 +64,14 @@ namespace Fyrion
         }
     }
 
+    Asset::~Asset()
+    {
+        if (directory)
+        {
+            directory->RemoveChild(this);
+        }
+    }
+
     void Asset::SetUUID(const UUID& p_uuid)
     {
         AssetDatabaseUpdateUUID(this, p_uuid);

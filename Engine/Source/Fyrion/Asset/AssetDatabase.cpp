@@ -481,9 +481,10 @@ namespace Fyrion
         return nullptr;
     }
 
-    Asset* AssetDatabase::ImportAsset(AssetDirectory* directory, const StringView& path)
+    void AssetDatabase::ImportAsset(AssetDirectory* directory, const StringView& path)
     {
-        return nullptr;
+        FileSystem::CopyFile(path, Path::Join(directory->GetAbsolutePath(), Path::Name(path), Path::Extension(path)));
+        fileWatcher.Check();
     }
 
     bool AssetDatabase::CanReimportAsset(Asset* asset)

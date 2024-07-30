@@ -201,6 +201,11 @@ namespace Fyrion
         }
     }
 
+    void FileWatcher::Check()
+    {
+        //TODO
+    }
+
     void FileWatcher::Start()
     {
         internal = MemoryGlobals::GetDefaultAllocator().Alloc<FileWatcherInternal>();

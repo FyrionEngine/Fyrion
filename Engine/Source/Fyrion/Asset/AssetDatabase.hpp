@@ -18,7 +18,7 @@ namespace Fyrion
         static StringView      GetDataDirectory();
         static void            GetUpdatedAssets(AssetDirectory* directoryAsset, Array<Asset*>& updatedAssets);
         static AssetDirectory* LoadFromPackage(const StringView& name, const StringView& pakFile, const StringView& binFile);
-        static Asset*          ImportAsset(AssetDirectory* directory, const StringView& path);
+        static void            ImportAsset(AssetDirectory* directory, const StringView& path);
         static bool            CanReimportAsset(Asset* asset);
         static void            ReimportAsset(Asset* asset);
         static Asset*          FindById(const UUID& assetId);

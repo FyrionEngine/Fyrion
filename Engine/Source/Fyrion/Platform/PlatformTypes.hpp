@@ -1,10 +1,15 @@
 #pragma once
 
 #include "Fyrion/Common.hpp"
+#include "Fyrion/Core/StringView.hpp"
+#include "Fyrion/Core/Hash.hpp"
+#include "Fyrion/Core/Event.hpp"
 
 namespace Fyrion
 {
     FY_HANDLER(Window);
+
+    using OnDropFileCallback = EventType<"Fyrion::OnDropFileCallback"_h, void(Window window, const StringView& path)>;
 
     enum class WindowFlags : i32
     {

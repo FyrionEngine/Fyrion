@@ -20,9 +20,10 @@ namespace Fyrion
 {
     namespace
     {
-        Logger&                   logger = Logger::GetLogger("Fyrion::Platform");
-        PFN_vkGetInstanceProcAddr vulkanLoader = nullptr;
-        GLFWcursor*               glfwCursors[10] = {nullptr};
+        Logger&                          logger = Logger::GetLogger("Fyrion::Platform");
+        PFN_vkGetInstanceProcAddr        vulkanLoader = nullptr;
+        GLFWcursor*                      glfwCursors[10] = {nullptr};
+        EventHandler<OnDropFileCallback> onDropFileCallbackHandler{};
     }
 
     namespace Platform
@@ -62,6 +63,14 @@ namespace Fyrion
         }
 
         void ScrollCallback(GLFWwindow* glfwWindow, double xOffset, double yOffset) {}
+
+        void DropCallback(GLFWwindow* window, int count, const char** paths)
+        {
+            for (int i = 0; i < count; ++i)
+            {
+                onDropFileCallbackHandler.Invoke(Window{window}, StringView{paths[i]});
+            }
+        }
     }
 
 
@@ -81,11 +90,11 @@ namespace Fyrion
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-        glfwCursors[(i32)MouseCursor::Arrow]        = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
-        glfwCursors[(i32)MouseCursor::TextInput]    = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
-        glfwCursors[(i32)MouseCursor::ResizeWE]     = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
-        glfwCursors[(i32)MouseCursor::ResizeNS]     = glfwCreateStandardCursor(GLFW_VRESIZE_CURSOR);
-        glfwCursors[(i32)MouseCursor::Hand]         = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
+        glfwCursors[(i32)MouseCursor::Arrow] = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
+        glfwCursors[(i32)MouseCursor::TextInput] = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
+        glfwCursors[(i32)MouseCursor::ResizeWE] = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
+        glfwCursors[(i32)MouseCursor::ResizeNS] = glfwCreateStandardCursor(GLFW_VRESIZE_CURSOR);
+        glfwCursors[(i32)MouseCursor::Hand] = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
 
         Platform::InitStyle();
 
@@ -129,9 +138,10 @@ namespace Fyrion
             glfwSetCursorPosCallback(window, CursorPositionCallback);
             glfwSetMouseButtonCallback(window, MouseButtonCallback);
             glfwSetScrollCallback(window, ScrollCallback);
+            glfwSetDropCallback(window, DropCallback);
         }
 
-        Fyrion://Textures/FyrionLogo.png
+    Fyrion: //Textures/FyrionLogo.png
 
         ApplyDarkStyle(window);
 
@@ -219,8 +229,8 @@ namespace Fyrion
     void Platform::SetWindowIcon(Window window, const Image& image)
     {
         GLFWimage icons{
-            .width = (i32) image.GetWidth(),
-            .height = (i32) image.GetHeight(),
+            .width = (i32)image.GetWidth(),
+            .height = (i32)image.GetHeight(),
             .pixels = image.GetData().begin(),
         };
         glfwSetWindowIcon((GLFWwindow*)window.handler, 1, &icons);

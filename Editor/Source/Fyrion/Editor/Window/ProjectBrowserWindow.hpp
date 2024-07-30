@@ -39,6 +39,8 @@ namespace Fyrion
         Array<AssetDirectory*>         directoryCache;
         EventHandler<OnAssetSelection> onAssetSelectionHandler{};
 
+        inline static AssetDirectory* lastOpenedDirectory = nullptr;
+
         Texture folderTexture;
         Texture fileTexture;
 
@@ -47,6 +49,7 @@ namespace Fyrion
 
         static MenuItemContext menuItemContext;
         static void            Shutdown();
+        static void            DropFileCallback(Window window, const StringView& path);
         static void            OpenProjectBrowser(const MenuItemEventData& eventData);
 
         static void AssetNewFolder(const MenuItemEventData& eventData);

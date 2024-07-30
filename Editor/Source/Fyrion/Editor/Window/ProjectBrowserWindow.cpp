@@ -51,6 +51,8 @@ namespace Fyrion
         {
             openTreeFolders[reinterpret_cast<usize>(p_directory->GetDirectory())] = true;
         }
+
+        lastOpenedDirectory = openDirectory;
     }
 
     void ProjectBrowserWindow::DrawTreeNode(Asset* asset)
@@ -569,10 +571,19 @@ namespace Fyrion
         menuItemContext = MenuItemContext{};
     }
 
+    void ProjectBrowserWindow::DropFileCallback(Window window, const StringView& path)
+    {
+        if (lastOpenedDirectory)
+        {
+            AssetDatabase::ImportAsset(lastOpenedDirectory, path);
+        }
+    }
+
     void ProjectBrowserWindow::RegisterType(NativeTypeHandler<ProjectBrowserWindow>& type)
     {
         Editor::AddMenuItem(MenuItemCreation{.itemName = "Window/Project Browser", .action = OpenProjectBrowser});
         Event::Bind<OnShutdown, Shutdown>();
+        Event::Bind<OnDropFileCallback, DropFileCallback>();
 
         AddMenuItem(MenuItemCreation{.itemName = "New Folder", .icon = ICON_FA_FOLDER, .priority = 0, .action = AssetNewFolder});
         AddMenuItem(MenuItemCreation{.itemName = "New Scene", .icon = ICON_FA_GLOBE, .priority = 10, .action = AssetNewScene});

@@ -35,6 +35,7 @@ namespace Fyrion
 
         void Start();
         void Stop();
+        void Check();
 
         void Watch(VoidPtr userData, const StringView& fileDir);
         void CheckForUpdates(FileWatcherCallbackFn watcherCallbackFn) const;

@@ -15,7 +15,6 @@ namespace Fyrion
         ReadAndWrite    = 3
     };
 
-
     FY_HANDLER(FileHandler);
 
     struct FileStatus
@@ -24,6 +23,7 @@ namespace Fyrion
         bool    isDirectory{};
         u64     lastModifiedTime{};
         u64     fileSize{};
+        u64     fileId{};
     };
 
     class FY_API DirIterator

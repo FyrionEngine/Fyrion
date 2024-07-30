@@ -1,4 +1,3 @@
-
 #include "FileSystem.hpp"
 #include "Path.hpp"
 
@@ -43,17 +42,17 @@ namespace Fyrion
         return fs::remove_all(path.CStr());
     }
 
-    bool FileSystem::Rename(const StringView &oldName, const StringView &newName)
+    bool FileSystem::Rename(const StringView& oldName, const StringView& newName)
     {
-        std::error_code ec {};
+        std::error_code ec{};
         fs::rename(oldName.CStr(), newName.CStr(), ec);
         return ec.value() == 0;
     }
 
     bool FileSystem::CopyFile(const StringView& from, const StringView& to)
     {
-        auto toPath = fs::path(to.begin(), to.end());
-        const auto copyOptions = fs::copy_options::update_existing | fs::copy_options::recursive;
+        auto            toPath = fs::path(to.begin(), to.end());
+        const auto      copyOptions = fs::copy_options::update_existing | fs::copy_options::recursive;
         std::error_code ec{};
         fs::copy(fs::path(from.begin(), from.end()), toPath, copyOptions, ec);
         return ec.value() == 0;
@@ -61,29 +60,37 @@ namespace Fyrion
 
     String FileSystem::ReadFileAsString(const StringView& path)
     {
-        String ret{};
+        String      ret{};
         FileHandler fileHandler = OpenFile(path, AccessMode::ReadOnly);
-        ret.Resize(GetFileSize(fileHandler));
-        ReadFile(fileHandler, ret.begin(), ret.Size());
-        CloseFile(fileHandler);
+        if (fileHandler)
+        {
+            ret.Resize(GetFileSize(fileHandler));
+            ReadFile(fileHandler, ret.begin(), ret.Size());
+            CloseFile(fileHandler);
+        }
         return ret;
     }
 
     Array<u8> FileSystem::ReadFileAsByteArray(const StringView& path)
     {
-        Array<u8> ret{};
+        Array<u8>   ret{};
         FileHandler fileHandler = OpenFile(path, AccessMode::ReadOnly);
-        ret.Resize(GetFileSize(fileHandler));
-        ReadFile(fileHandler, ret.begin(), ret.Size());
-        CloseFile(fileHandler);
+        if (fileHandler)
+        {
+            ret.Resize(GetFileSize(fileHandler));
+            ReadFile(fileHandler, ret.begin(), ret.Size());
+            CloseFile(fileHandler);
+        }
         return ret;
     }
 
     void FileSystem::SaveFileAsString(const StringView& path, const StringView& string)
     {
         FileHandler fileHandler = OpenFile(path, AccessMode::WriteOnly);
-        WriteFile(fileHandler, string.Data(), string.Size());
-        CloseFile(fileHandler);
+        if (fileHandler)
+        {
+            WriteFile(fileHandler, string.Data(), string.Size());
+            CloseFile(fileHandler);
+        }
     }
-
 }

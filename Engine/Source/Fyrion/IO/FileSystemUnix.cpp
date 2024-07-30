@@ -98,8 +98,9 @@ namespace Fyrion
         return {
             .exists = exists,
             .isDirectory = S_ISDIR(st.st_mode),
-            .lastModifiedTime = static_cast<f64>(st.st_mtime),
-            .fileSize = static_cast<u64>(st.st_size)
+            .lastModifiedTime = static_cast<u64>(st.st_mtime),
+            .fileSize = static_cast<u64>(st.st_size),
+            .fileId = HashValue(st.st_ino)
         };
     }
 

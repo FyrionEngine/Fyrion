@@ -25,7 +25,7 @@ namespace Fyrion
         Array<Pair<TypeID, AssetIO*>>  assetIOs;
         HashMap<String, AssetIO*>      importers;
         HashMap<TypeID, Array<Asset*>> assetsByType;
-        std::unique_ptr<FileWatcher>   fileWatcher;
+        FileWatcher                    fileWatcher;
         bool                           hotReloadEnabled = false;
 
         Logger& logger = Logger::GetLogger("Fyrion::AssetDatabase");
@@ -200,11 +200,7 @@ namespace Fyrion
         }
 
         assetDirectory->loadedVersion = assetDirectory->currentVersion;
-
-        if (fileWatcher)
-        {
-            fileWatcher->Watch(directory);
-        }
+        fileWatcher.Watch(assetDirectory, directory);
 
         return assetDirectory;
     }
@@ -226,6 +222,8 @@ namespace Fyrion
             {
                 LoadAssetFile(assetDirectory, entry);
             }
+
+            fileWatcher.Watch(assetDirectory, filePath);
         }
         else if (extension == FY_ASSET_EXTENSION)
         {
@@ -258,6 +256,7 @@ namespace Fyrion
                     {
                         importer->second->ImportAsset(filePath, asset);
                     }
+                    fileWatcher.Watch(asset, filePath);
                 }
             }
             else if (Asset* asset = importer->second->CreateAsset())
@@ -271,6 +270,8 @@ namespace Fyrion
                 AssetDatabaseUpdateUUID(asset, asset->GetUUID());
                 importer->second->ImportAsset(filePath, asset);
                 asset->BuildPath();
+
+                fileWatcher.Watch(asset, filePath);
             }
         }
     }
@@ -522,41 +523,31 @@ namespace Fyrion
 
     void AssetDatabase::OnUpdate(f64 deltaTime)
     {
-        if (fileWatcher)
+        fileWatcher.CheckForUpdates([](const FileWatcherModified& modified)
         {
-            fileWatcher->CheckForUpdates([](const StringView& absolutePath, FileNotifyEvent event)
+            switch (modified.event)
             {
-                switch (event)
-                {
-                    case FileNotifyEvent::Added:
-                    {
-                        // String parent = Path::Parent(absolutePath);
-                        // if (auto it = assetsByAbsolutePath.Find(parent))
-                        // {
-                        //     //ImportAsset()
-                        //     logger.Info("file {} added on directory {} last modified time {} ", absolutePath, parent, FileSystem::GetFileStatus(absolutePath).lastModifiedTime);
-                        // }
-                        break;
-                    }
-                    case FileNotifyEvent::Removed:
-                        break;
-                    case FileNotifyEvent::Modified:
-                        logger.Info("modified on path {} last modified time {} ", absolutePath, FileSystem::GetFileStatus(absolutePath).lastModifiedTime);
-                        break;
-                    case FileNotifyEvent::RenamedOld:
-                        break;
-                    case FileNotifyEvent::RenamedNew:
-                        break;
-                }
-            });
-        }
+                case FileNotifyEvent::Added:
+                    logger.Info("added on path {} ", modified.path);
+                    break;
+                case FileNotifyEvent::Removed:
+                    logger.Info("removed on path {} ", modified.path);
+                    break;
+                case FileNotifyEvent::Modified:
+                    logger.Info("modified on path {} ", modified.path);
+                    break;
+                case FileNotifyEvent::Renamed:
+                    logger.Info("renamed on path {} ", modified.path);
+                    break;
+            }
+        });
     }
 
     void AssetDatabaseInit()
     {
         if (hotReloadEnabled)
         {
-            fileWatcher = std::make_unique<FileWatcher>();
+            fileWatcher.Start();
         }
         Event::Bind<OnUpdate, AssetDatabase::OnUpdate>();
     }
@@ -571,7 +562,7 @@ namespace Fyrion
         Event::Unbind<OnUpdate, AssetDatabase::OnUpdate>();
 
         hotReloadEnabled = false;
-        fileWatcher = {};
+        fileWatcher.Stop();
 
         AssetDatabase::DestroyAssets();
 

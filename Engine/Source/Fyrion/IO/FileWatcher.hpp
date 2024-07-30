@@ -6,44 +6,40 @@ namespace Fyrion
 {
     enum class FileNotifyEvent
     {
-        None,
         Added,
         Removed,
         Modified,
-        RenamedOld,
-        RenamedNew
+        Renamed,
     };
 
-
-    struct FileWatcherData
-    {
-        String  path{};
-        VoidPtr ref{};
-        u64     lastModifiedTime{};
-    };
 
     struct FileWatcherModified
     {
-        String          absolutePath{};
+        VoidPtr         userData{};
+        String          oldName{};
+        String          name{};
+        String          path{};
         FileNotifyEvent event{};
     };
 
-    typedef void (*FileWatcherCallbackFn)(const StringView& absolutePath, FileNotifyEvent event);
+    typedef void (*FileWatcherCallbackFn)(const FileWatcherModified& modified);
 
-    struct FileWatcherHandler;
+    struct FileWatcherInternal;
 
     class FileWatcher
     {
     public:
         FY_NO_COPY_CONSTRUCTOR(FileWatcher);
 
-        FileWatcher();
-        virtual ~FileWatcher();
+        FileWatcher() = default;
 
-        void Watch(const StringView& fileDir);
+        void Start();
+        void Stop();
+
+        void Watch(VoidPtr userData, const StringView& fileDir);
         void CheckForUpdates(FileWatcherCallbackFn watcherCallbackFn) const;
 
     private:
-        FileWatcherHandler* handler = nullptr;
+        FileWatcherInternal* internal = nullptr;
     };
 }

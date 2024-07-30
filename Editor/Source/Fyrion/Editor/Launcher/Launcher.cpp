@@ -433,7 +433,7 @@ namespace Fyrion
         {
             FileSystem::CreateDirectory(appFolder);
         }
-        AssetDatabase::SetDataDirectory(Path::Join(appFolder, "Data"));
+        AssetDatabase::SetCacheDirectory(Path::Join(appFolder, "Cache"));
 
         settingsFolder = Path::Join(appFolder, "Settings");
 

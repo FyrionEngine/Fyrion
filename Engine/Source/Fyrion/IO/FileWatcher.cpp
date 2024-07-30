@@ -14,7 +14,7 @@ namespace Fyrion
 {
     namespace
     {
-        Logger& logger = Logger::GetLogger("Fyrion::FileWatcher", LogLevel::Debug);
+        Logger& logger = Logger::GetLogger("Fyrion::FileWatcher");
     }
 
     struct FileWatcherData

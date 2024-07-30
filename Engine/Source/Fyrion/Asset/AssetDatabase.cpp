@@ -18,7 +18,7 @@ namespace Fyrion
     {
         bool RegisterEvents();
 
-        String                         dataDirectory;
+        String                         cacheDirectory;
         Array<Asset*>                  assets;
         HashMap<UUID, Asset*>          assetsById;
         HashMap<String, Asset*>        assetsByPath;
@@ -251,7 +251,7 @@ namespace Fyrion
                     asset->lastModified = FileSystem::GetFileStatus(filePath).lastModifiedTime;
                     parentDirectory->AddChild(asset);
 
-                    String assetDataDir = Path::Join(dataDirectory, ToString(asset->GetUUID()));
+                    String assetDataDir = Path::Join(cacheDirectory, ToString(asset->GetUUID()));
                     if (asset->hasBlobs && !FileSystem::GetFileStatus(assetDataDir).exists)
                     {
                         importer->second->ImportAsset(filePath, asset);
@@ -362,7 +362,7 @@ namespace Fyrion
                         FileSystem::Remove(infoFile);
                     }
 
-                    String assetDataDirectory = Path::Join(dataDirectory, ToString(asset->GetUUID()));
+                    String assetDataDirectory = Path::Join(cacheDirectory, ToString(asset->GetUUID()));
                     if (FileSystem::GetFileStatus(assetDataDirectory).exists)
                     {
                         FileSystem::Remove(assetDataDirectory);
@@ -442,18 +442,18 @@ namespace Fyrion
         }
     }
 
-    void AssetDatabase::SetDataDirectory(const StringView& directory)
+    void AssetDatabase::SetCacheDirectory(const StringView& directory)
     {
-        dataDirectory = directory;
-        if (!FileSystem::GetFileStatus(dataDirectory).exists)
+        cacheDirectory = directory;
+        if (!FileSystem::GetFileStatus(cacheDirectory).exists)
         {
-            FileSystem::CreateDirectory(dataDirectory);
+            FileSystem::CreateDirectory(cacheDirectory);
         }
     }
 
-    StringView AssetDatabase::GetDataDirectory()
+    StringView AssetDatabase::GetCacheDirectory()
     {
-        return dataDirectory;
+        return cacheDirectory;
     }
 
     void AssetDatabase::GetUpdatedAssets(AssetDirectory* directoryAsset, Array<Asset*>& updatedAssets)
@@ -575,7 +575,7 @@ namespace Fyrion
             }
         }
 
-        dataDirectory.Clear();
+        cacheDirectory.Clear();
 
         assetIOs.Clear();
         assetIOs.ShrinkToFit();

@@ -494,6 +494,6 @@ namespace Fyrion
 
         CreateMenuItems();
 
-        AssetDatabase::SetDataDirectory(Path::Join(projectPath, "Data"));
+        AssetDatabase::SetCacheDirectory(Path::Join(projectPath, "Cache"));
     }
 }

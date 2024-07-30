@@ -169,7 +169,7 @@ namespace Fyrion
             blob.id = Random::Xorshift64star();
         }
 
-        StringView dataDirectory = AssetDatabase::GetDataDirectory();
+        StringView dataDirectory = AssetDatabase::GetCacheDirectory();
         if (FileSystem::GetFileStatus(dataDirectory).isDirectory)
         {
             String assetDataDirectory = Path::Join(dataDirectory, ToString(physicalAsset->GetUUID()));
@@ -188,7 +188,7 @@ namespace Fyrion
 
     usize Asset::GetBlobSize(Blob blob) const
     {
-        StringView dataDirectory = AssetDatabase::GetDataDirectory();
+        StringView dataDirectory = AssetDatabase::GetCacheDirectory();
         if (FileSystem::GetFileStatus(dataDirectory).isDirectory)
         {
             String blobPath = Path::Join(Path::Join(dataDirectory, ToString(GetPhysicalAsset()->GetUUID())), blob.ToString());
@@ -200,7 +200,7 @@ namespace Fyrion
 
     void Asset::LoadBlob(Blob blob, VoidPtr data, usize dataSize) const
     {
-        StringView dataDirectory = AssetDatabase::GetDataDirectory();
+        StringView dataDirectory = AssetDatabase::GetCacheDirectory();
         if (FileSystem::GetFileStatus(dataDirectory).isDirectory)
         {
             String      blobPath = Path::Join(Path::Join(dataDirectory, ToString(GetPhysicalAsset()->GetUUID())), blob.ToString());

@@ -1,5 +1,6 @@
 #include "FileSystem.hpp"
 #include "Path.hpp"
+#include "Fyrion/Core/UUID.hpp"
 
 #ifdef FY_WIN
 
@@ -102,11 +103,26 @@ namespace Fyrion
         size.HighPart = fileAttrData.nFileSizeHigh;
         size.LowPart = fileAttrData.nFileSizeLow;
 
-        return FileStatus{
+		FileStatus fileStatus = FileStatus{
             .exists = exists,
             .isDirectory = (fileAttrData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0,
             .lastModifiedTime = (u64) (static_cast<i64>(fileAttrData.ftLastWriteTime.dwHighDateTime) << 32 | fileAttrData.ftLastWriteTime.dwLowDateTime),
-            .fileSize = (u64) size.QuadPart};
+            .fileSize = (u64) size.QuadPart,
+        };
+
+    	if (exists)
+    	{
+    		HANDLE file = CreateFile(path.CStr(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, !fileStatus.isDirectory ? FILE_ATTRIBUTE_NORMAL : FILE_FLAG_BACKUP_SEMANTICS, nullptr);
+    		if (file != INVALID_HANDLE_VALUE)
+    		{
+    			FILE_ID_INFO fileIdInfo;
+    			GetFileInformationByHandleEx(file, FileIdInfo, &fileIdInfo, sizeof(FILE_ID_INFO));
+    			fileStatus.fileId = HashValue(fileIdInfo.FileId.Identifier);
+    			CloseHandle(file);
+    		}
+    	}
+
+    	return fileStatus;
 	}
 
     String FileSystem::AppFolder()

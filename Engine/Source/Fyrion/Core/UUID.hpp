@@ -111,7 +111,7 @@ namespace Fyrion
 	template<>
 	struct Hash<UUID>
 	{
-		constexpr static bool HasHash = true;
+		constexpr static bool hasHash = true;
 		constexpr static usize Value(const UUID& uuid)
 		{
 			auto result = (usize) (uuid.firstValue ^ (uuid.firstValue >> 32));

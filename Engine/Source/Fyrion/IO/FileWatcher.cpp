@@ -103,55 +103,51 @@ namespace Fyrion
                             it = watchedFiles.Erase(it);
                         }
                     }
-                    else if (fileStatus.lastModifiedTime != data.lastModifiedTime)
+                    else if (fileStatus.isDirectory)
                     {
                         //if that's directory only need to check if there is a new file.
-                        //if that's not a directory, just send the event
+                        HashSet<u64> actualIds{};
+                        for (const String& file : DirectoryEntries{data.path})
+                        {
+                            u64 fileId = FileSystem::GetFileStatus(file).fileId;
+                            actualIds.Insert(fileId);
+
+                            if (!data.children.Has(fileId))
+                            {
+                                std::unique_lock lockQueue(modifiedMutex);
+                                modified.emplace(FileWatcherModified{
+                                    .userData = data.userData,
+                                    .path = file,
+                                    .event = FileNotifyEvent::Added
+                                });
+                                data.children.Emplace(fileId);
+                            }
+                        }
+
+                        Array<u64> toDelete{};
+                        for(auto& it: data.children)
+                        {
+                            if (!actualIds.Has(it.first))
+                            {
+                                toDelete.EmplaceBack(it.first);
+                            }
+                        }
+                        for(auto id: toDelete)
+                        {
+                            data.children.Erase(id);
+                        }
+
+                        ++it;
+                    }
+                    else if (fileStatus.lastModifiedTime != data.lastModifiedTime)
+                    {
                         data.lastModifiedTime = fileStatus.lastModifiedTime;
-                        if (fileStatus.isDirectory)
-                        {
-                            HashSet<u64> actualIds{};
-
-                            for (const String& file : DirectoryEntries{data.path})
-                            {
-                                u64 fileId = FileSystem::GetFileStatus(file).fileId;
-                                actualIds.Insert(fileId);
-
-                                if (!data.children.Has(fileId))
-                                {
-                                    std::unique_lock lockQueue(modifiedMutex);
-                                    modified.emplace(FileWatcherModified{
-                                        .userData = data.userData,
-                                        .path = file,
-                                        .event = FileNotifyEvent::Added
-                                    });
-                                    data.children.Emplace(fileId);
-                                }
-                            }
-
-                            Array<u64> toDelete{};
-
-                            for(auto& it: data.children)
-                            {
-                                if (!actualIds.Has(it.first))
-                                {
-                                    toDelete.EmplaceBack(it.first);
-                                }
-                            }
-                            for(auto id: toDelete)
-                            {
-                                data.children.Erase(id);
-                            }
-                        }
-                        else
-                        {
-                            std::unique_lock lockQueue(modifiedMutex);
-                            modified.emplace(FileWatcherModified{
-                                .userData = data.userData,
-                                .path = data.path,
-                                .event = FileNotifyEvent::Modified
-                            });
-                        }
+                        std::unique_lock lockQueue(modifiedMutex);
+                        modified.emplace(FileWatcherModified{
+                            .userData = data.userData,
+                            .path = data.path,
+                            .event = FileNotifyEvent::Modified
+                        });
                         ++it;
                     }
                     else

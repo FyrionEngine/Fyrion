@@ -230,6 +230,21 @@ namespace Fyrion
 		}
 	};
 
+	template<auto T>
+	struct Hash<unsigned char[T]>
+	{
+		constexpr static bool hasHash = true;
+		constexpr static usize Value(const unsigned char ch[T])
+		{
+			usize hash = 0;
+			for (i32 i = 0; i < T; ++i)
+			{
+				hash = ch[i] + (hash << 6) + (hash << 16) - hash;
+			}
+			return hash;
+		}
+	};
+
 	template<typename TValue>
 	constexpr usize HashValue(const TValue& value)
 	{

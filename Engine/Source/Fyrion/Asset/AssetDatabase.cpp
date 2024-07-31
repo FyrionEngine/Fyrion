@@ -397,7 +397,13 @@ namespace Fyrion
                     FileSystem::CreateDirectory(newPath);
                     logger.Debug("Directory {} created on {} ", asset->GetPath(), newPath);
                 }
-                dir->absolutePath = newPath;
+
+                if (dir->absolutePath != newPath)
+                {
+                    dir->absolutePath = newPath;
+                    fileWatcher.Watch(dir, dir->absolutePath);
+                }
+
                 SaveOnDirectory(dir, newPath);
             }
             else if (asset->IsModified())
@@ -435,7 +441,11 @@ namespace Fyrion
                 FileSystem::WriteFile(handler, str.begin(), str.Size());
                 FileSystem::CloseFile(handler);
 
-                asset->absolutePath = assetPath;
+                if (asset->absolutePath != assetPath)
+                {
+                    asset->absolutePath = assetPath;
+                    fileWatcher.Watch(asset, asset->absolutePath);
+                }
                 asset->SaveData();
             }
             asset->loadedVersion = asset->currentVersion;

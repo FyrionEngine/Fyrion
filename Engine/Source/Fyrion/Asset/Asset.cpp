@@ -83,6 +83,11 @@ namespace Fyrion
         return assetType->GetTypeInfo().typeId;
     }
 
+    void Asset::SetPath(StringView path)
+    {
+        this->path = path;
+    }
+
     void Asset::SetName(StringView p_name)
     {
         name = p_name;
@@ -189,21 +194,22 @@ namespace Fyrion
     usize Asset::GetBlobSize(Blob blob) const
     {
         StringView dataDirectory = AssetDatabase::GetCacheDirectory();
-        if (FileSystem::GetFileStatus(dataDirectory).isDirectory)
+        const Asset* physicalAsset = GetPhysicalAsset();
+        if (physicalAsset != nullptr && FileSystem::GetFileStatus(dataDirectory).isDirectory)
         {
-            String blobPath = Path::Join(Path::Join(dataDirectory, ToString(GetPhysicalAsset()->GetUUID())), blob.ToString());
+            String blobPath = Path::Join(Path::Join(dataDirectory, ToString(physicalAsset->GetUUID())), blob.ToString());
             return FileSystem::GetFileStatus(blobPath).fileSize;
         }
-
         return 0;
     }
 
     void Asset::LoadBlob(Blob blob, VoidPtr data, usize dataSize) const
     {
         StringView dataDirectory = AssetDatabase::GetCacheDirectory();
-        if (FileSystem::GetFileStatus(dataDirectory).isDirectory)
+        const Asset* physicalAsset = GetPhysicalAsset();
+        if (physicalAsset != nullptr && FileSystem::GetFileStatus(dataDirectory).isDirectory)
         {
-            String      blobPath = Path::Join(Path::Join(dataDirectory, ToString(GetPhysicalAsset()->GetUUID())), blob.ToString());
+            String      blobPath = Path::Join(Path::Join(dataDirectory, ToString(physicalAsset->GetUUID())), blob.ToString());
             FileHandler file = FileSystem::OpenFile(blobPath, AccessMode::ReadOnly);
             FileSystem::ReadFile(file, data, dataSize);
         }

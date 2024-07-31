@@ -24,6 +24,12 @@ namespace Fyrion
         SetImage(image);
     }
 
+    void TextureAsset::SetHDRImagePath(StringView path)
+    {
+        HDRImage image(path);
+        SetHDRImage(image);
+    }
+
     void TextureAsset::SetImage(const Image& image)
     {
         Span<u8> imgData = image.GetData();
@@ -33,17 +39,34 @@ namespace Fyrion
         width = image.GetWidth();
         height = image.GetHeight();
         channels = image.GetChannels();
+        format = Format::RGBA;
+    }
+
+    void TextureAsset::SetHDRImage(const HDRImage& image)
+    {
+        Span<f32> imgData = image.GetData();
+        SaveBlob(data, imgData.Data(), imgData.Size() * sizeof(f32));
+
+        width = image.GetWidth();
+        height = image.GetHeight();
+        channels = image.GetChannels();
+        format = Format::RGBA32F;
     }
 
     Texture TextureAsset::GetTexture()
     {
         if (!texture)
         {
+            usize size = GetBlobSize(data);
+            if (size == 0)
+            {
+                return Graphics::GetDefaultTexture();
+            }
+
             texture = Graphics::CreateTexture(TextureCreation{
                 .extent = {width, height, 1},
             });
 
-            usize     size = GetBlobSize(data);
             Array<u8> textureData(size);
             LoadBlob(data, textureData.Data(), textureData.Size());
 
@@ -54,7 +77,6 @@ namespace Fyrion
                 .extent = {width, height, 1}
             });
         }
-
         return texture;
     }
 
@@ -65,11 +87,17 @@ namespace Fyrion
         return image;
     }
 
+    Format TextureAsset::GetFormat() const
+    {
+        return format;
+    }
+
     void TextureAsset::RegisterType(NativeTypeHandler<TextureAsset>& type)
     {
         type.Field<&TextureAsset::width>("width");
         type.Field<&TextureAsset::height>("height");
         type.Field<&TextureAsset::channels>("channels");
+        type.Field<&TextureAsset::format>("format");
         type.Field<&TextureAsset::data>("data");
     }
 }

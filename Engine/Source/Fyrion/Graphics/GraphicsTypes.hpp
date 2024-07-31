@@ -566,22 +566,9 @@ namespace Fyrion
 
     struct BindingVar;
 
-
-    template<typename T>
-    struct BindingValueSetter
-    {
-        static void SetValue(BindingVar& bindingVar, const T& value);
-    };
-
     struct FY_API BindingVar
     {
         virtual ~BindingVar() = default;
-
-        template<typename T>
-        void Set(const T& val)
-        {
-            BindingValueSetter<T>::SetValue(*this, val);
-        }
 
         virtual void SetTexture(const Texture& texture) = 0;
         virtual void SetTextureView(const TextureView& textureView) = 0;
@@ -590,54 +577,12 @@ namespace Fyrion
         virtual void SetValue(ConstPtr ptr, usize size) = 0;
     };
 
-    template <typename T>
-    void BindingValueSetter<T>::SetValue(BindingVar& bindingVar, const T& value)
-    {
-        bindingVar.SetValue(&value, sizeof(T));
-    }
-
     struct FY_API BindingSet
     {
         virtual ~BindingSet() = default;
 
         virtual BindingVar* GetVar(const StringView& name) = 0;
         virtual void        Reload() = 0;
-    };
-
-    template<>
-    struct BindingValueSetter<Texture>
-    {
-        static void SetValue(BindingVar& bindingVar, const Texture& value)
-        {
-            bindingVar.SetTexture(value);
-        }
-    };
-
-    template<>
-    struct BindingValueSetter<TextureView>
-    {
-        static void SetValue(BindingVar& bindingVar, const TextureView& value)
-        {
-            bindingVar.SetTextureView(value);
-        }
-    };
-
-    template<>
-    struct BindingValueSetter<Sampler>
-    {
-        static void SetValue(BindingVar& bindingVar, const Sampler& value)
-        {
-            bindingVar.SetSampler(value);
-        }
-    };
-
-    template<>
-    struct BindingValueSetter<Buffer>
-    {
-        static void SetValue(BindingVar& bindingVar, const Buffer& value)
-        {
-            bindingVar.SetBuffer(value);
-        }
     };
 
     struct RenderGraphEdge

@@ -1,5 +1,6 @@
 #include "Fyrion/Asset/AssetTypes.hpp"
 #include "Fyrion/Graphics/Assets/TextureAsset.hpp"
+#include "Fyrion/IO/Path.hpp"
 
 namespace Fyrion
 {
@@ -7,11 +8,11 @@ namespace Fyrion
     {
         FY_BASE_TYPES(AssetIO);
 
-        StringView extension[5] = {".png", ".jpg", ".jpeg", ".tga", "bmp"};
+        StringView extension[6] = {".png", ".jpg", ".jpeg", ".tga", "bmp", ".hdr"};
 
         Span<StringView> GetImportExtensions() override
         {
-            return {extension, 5};
+            return {extension, 6};
         }
 
         Asset* CreateAsset() override
@@ -22,7 +23,15 @@ namespace Fyrion
         void ImportAsset(StringView path, Asset* asset) override
         {
             TextureAsset* textureAsset = asset->Cast<TextureAsset>();
-            textureAsset->SetImagePath(path);
+
+            if (Path::Extension(path) == ".hdr")
+            {
+                textureAsset->SetHDRImage(path);
+            }
+            else
+            {
+                textureAsset->SetImagePath(path);
+            }
         }
     };
 

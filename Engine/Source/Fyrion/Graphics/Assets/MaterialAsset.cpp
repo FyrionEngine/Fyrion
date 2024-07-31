@@ -6,12 +6,23 @@
 
 namespace Fyrion
 {
+    struct MaterialData
+    {
+        Vec4 baseColor;
+    };
+
+
     BindingSet* MaterialAsset::GetBindingSet()
     {
         if (!bindingSet)
         {
+            MaterialData materialData{
+                .baseColor = GetBaseColor().ToVec4()
+            };
+
             bindingSet = Graphics::CreateBindingSet(AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Shaders/BasicRenderer.raster"));
             bindingSet->GetVar("texture")->SetTexture(baseColorTexture ? baseColorTexture->GetTexture() : Graphics::GetDefaultTexture());
+            bindingSet->GetVar("material")->SetValue(&materialData, sizeof(MaterialData));
         }
         return bindingSet;
     }

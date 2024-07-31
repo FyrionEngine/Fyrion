@@ -51,7 +51,7 @@ namespace Fyrion
         }
 
 #ifdef FY_DEBUG
-       enableValidationLayers = true;
+       enableValidationLayers = false;
 #endif
 
         Platform::SetVulkanLoader(vkGetInstanceProcAddr);
@@ -713,33 +713,37 @@ namespace Fyrion
         bufferInfo.usage = Vulkan::CastBufferUsage(bufferCreation.usage);
 
         VmaAllocationCreateInfo vmaAllocInfo = {};
-        vmaAllocInfo.usage = VMA_MEMORY_USAGE_AUTO;
 
         switch (bufferCreation.allocation)
         {
             case BufferAllocation::GPUOnly:
             {
-                vmaAllocInfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
+                vmaAllocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
                 bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
                 break;
             }
+
             case BufferAllocation::TransferToGPU:
             {
-                vmaAllocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+                vmaAllocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+                vmaAllocInfo.flags |= VMA_ALLOCATION_CREATE_MAPPED_BIT;
                 bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
                 break;
             }
+
             case BufferAllocation::TransferToCPU:
             {
-                vmaAllocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+                vmaAllocInfo.usage = VMA_MEMORY_USAGE_GPU_TO_CPU;
+                vmaAllocInfo.flags |= VMA_ALLOCATION_CREATE_MAPPED_BIT;
                 bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+                break;
             }
-            break;
         }
-        vmaCreateBuffer(vmaAllocator, &bufferInfo, &vmaAllocInfo, &vulkanBuffer->buffer, &vulkanBuffer->allocation, &vulkanBuffer->allocInfo);
-
+        if (vmaCreateBuffer(vmaAllocator, &bufferInfo, &vmaAllocInfo, &vulkanBuffer->buffer, &vulkanBuffer->allocation, &vulkanBuffer->allocInfo) != VK_SUCCESS)
+        {
+            FY_ASSERT(false, "error on create buffer");
+        }
         FY_ASSERT(vulkanBuffer->buffer, "buffer not created");
-
         return {vulkanBuffer};
     }
 

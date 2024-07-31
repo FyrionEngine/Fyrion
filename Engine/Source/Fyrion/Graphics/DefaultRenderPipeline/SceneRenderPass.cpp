@@ -48,7 +48,7 @@ namespace Fyrion
             const CameraData& cameraData = graph->GetCameraData();
 
             SceneData data{.viewProjection = cameraData.projection * cameraData.view};
-            bindingSet->GetVar("scene")->Set(data);
+            bindingSet->GetVar("scene")->SetValue(&data, sizeof(SceneData));
 
             cmd.BindPipelineState(pipelineState);
             cmd.BindBindingSet(pipelineState, bindingSet);
@@ -58,11 +58,6 @@ namespace Fyrion
                 if (MeshAsset* mesh = meshRenderData.mesh)
                 {
                     Span<MeshPrimitive> primitives = mesh->GetPrimitives();
-
-                    if (primitives.Size() > meshRenderData.materials.Size())
-                    {
-                        continue;
-                    }
 
                     cmd.BindVertexBuffer(mesh->GetVertexBuffer());
                     cmd.BindIndexBuffer(mesh->GetIndexBuffeer());

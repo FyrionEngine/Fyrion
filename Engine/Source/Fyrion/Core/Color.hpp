@@ -62,6 +62,15 @@ namespace Fyrion
             return TColor{static_cast<u8>(vec4[0] * 255), static_cast<u8>(vec4[1] * 255), static_cast<u8>(vec4[2] * 255), static_cast<u8>(vec4[3] * 255)};
         }
 
+        static auto FromVec4Gamma(const f32* vec4)
+        {
+            return TColor{
+                static_cast<u8>(Math::LinearToGamma(vec4[0]) * 255),
+                static_cast<u8>(Math::LinearToGamma(vec4[1]) * 255),
+                static_cast<u8>(Math::LinearToGamma(vec4[2]) * 255),
+                static_cast<u8>(Math::LinearToGamma(vec4[3]) * 255)};
+        }
+
         static auto FromVec3(const f32* vec4)
         {
             return TColor{static_cast<u8>(vec4[0] * 255), static_cast<u8>(vec4[1] * 255), static_cast<u8>(vec4[2] * 255), static_cast<u8>(255)};

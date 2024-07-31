@@ -306,6 +306,8 @@ namespace Fyrion
                 TextureAsset* textureAsset = AssetDatabase::FindByPath<TextureAsset>(texturePath);
                 if (textureAsset == nullptr)
                 {
+                    // textureAsset = AssetDatabase::Create<TextureAsset>();
+                    // textureAsset->SetPath(texturePath);
                     logger.Error("texture {} not found", texture->image->uri);
                 }
 
@@ -356,6 +358,7 @@ namespace Fyrion
                 if (!FileSystem::GetFileStatus(bufferFile).exists)
                 {
                     logger.Error("buffer file not found {}", path.CStr());
+                    cgltf_free(data);
                     return;
                 }
                 //TODO add bufferFile as file dependency to Asset*
@@ -423,7 +426,7 @@ namespace Fyrion
 
                 if (material.has_pbr_metallic_roughness)
                 {
-                    materialAsset->SetBaseColor(Color::FromVec4(material.pbr_metallic_roughness.base_color_factor));
+                    materialAsset->SetBaseColor(Color::FromVec4Gamma(material.pbr_metallic_roughness.base_color_factor));
                     materialAsset->SetUvScale(Vec2{material.pbr_metallic_roughness.base_color_texture.scale, material.pbr_metallic_roughness.base_color_texture.scale});
 
                     if (material.pbr_metallic_roughness.base_color_texture.texture)

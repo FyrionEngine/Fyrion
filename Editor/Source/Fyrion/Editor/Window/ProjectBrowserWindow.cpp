@@ -495,6 +495,7 @@ namespace Fyrion
         ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
         Editor::CreateTransaction()->CreateAction<AssetDeleteAction>(projectBrowserWindow->selectedItem)->Commit();
         projectBrowserWindow->selectedItem = {};
+        projectBrowserWindow->focusItem = {};
         projectBrowserWindow->onAssetSelectionHandler.Invoke(projectBrowserWindow->selectedItem);
     }
 

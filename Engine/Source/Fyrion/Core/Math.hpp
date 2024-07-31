@@ -477,6 +477,11 @@ namespace Fyrion
             return retValue.Dot(other);
         }
 
+        inline Float LinearToGamma(Float value)
+        {
+            return std::pow(value, 1.0/2.2);
+        }
+
         constexpr Mat4 ToMatrix4(const Quat& q)
         {
             Mat4  result{1.0f};

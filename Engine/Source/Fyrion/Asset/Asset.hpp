@@ -63,6 +63,7 @@ namespace Fyrion
         {
             return path;
         }
+        void SetPath(StringView path);
 
         StringView GetAbsolutePath() const
         {

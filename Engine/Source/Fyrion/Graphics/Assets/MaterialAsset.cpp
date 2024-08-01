@@ -11,16 +11,13 @@ namespace Fyrion
         Vec4 baseColorAlphaCutOff;
     };
 
-
     BindingSet* MaterialAsset::GetBindingSet()
     {
         if (!bindingSet)
         {
             MaterialData materialData{
-                .baseColorAlphaCutOff = GetBaseColor().ToVec4()
+                .baseColorAlphaCutOff = Math::MakeVec4(GetBaseColor().ToVec3(), alphaCutoff)
             };
-
-            materialData.baseColorAlphaCutOff.w = alphaCutoff;
 
             bindingSet = Graphics::CreateBindingSet(AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Shaders/BasicRenderer.raster"));
             bindingSet->GetVar("texture")->SetTexture(baseColorTexture ? baseColorTexture->GetTexture() : Graphics::GetDefaultTexture());

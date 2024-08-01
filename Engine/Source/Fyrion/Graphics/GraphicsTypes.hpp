@@ -326,6 +326,14 @@ namespace Fyrion
         u32      layerCount = 1;
     };
 
+    struct TextureGetDataInfo
+    {
+        Texture        texture{};
+        Format         format{};
+        Extent         extent{};
+        ResourceLayout textureLayout{};
+    };
+
     struct SamplerCreation
     {
         SamplerFilter      filter{SamplerFilter::Linear};
@@ -622,7 +630,7 @@ namespace Fyrion
 
     struct RenderCommands
     {
-        virtual ~RenderCommands() = default;
+        virtual      ~RenderCommands() = default;
         virtual void Begin() = 0;
         virtual void End() = 0;
         virtual void BeginRenderPass(const BeginRenderPassInfo& beginRenderPassInfo) = 0;
@@ -644,6 +652,7 @@ namespace Fyrion
         virtual void ResourceBarrier(const ResourceBarrierInfo& resourceBarrierInfo) = 0;
         virtual void CopyBuffer(Buffer srcBuffer, Buffer dstBuffer, const Span<BufferCopyInfo>& info) = 0;
         virtual void CopyBufferToTexture(Buffer srcBuffer, Texture texture, const Span<BufferImageCopy>& regions) = 0;
+        virtual void CopyTextureToBuffer(Texture srcTexture, ResourceLayout textureLayout, Buffer destBuffer, const Span<BufferImageCopy>& regions) = 0;
         virtual void SubmitAndWait(GPUQueue queue) = 0;
 
     };
@@ -670,8 +679,8 @@ namespace Fyrion
         case Format::RGB16F: return 16 * 3;
         case Format::RGB32F: return 32 * 3;
         case Format::RGBA: return 8 * 4;
-        case Format::RGBA16F: return 16 * 4;
-        case Format::RGBA32F: return 32 * 4;
+        case Format::RGBA16F: return sizeof(Vec4) / 2;
+        case Format::RGBA32F: return sizeof(Vec4);
         case Format::BGRA: return 8 * 4;
         case Format::Depth:
         case Format::Undefined:

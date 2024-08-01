@@ -5,9 +5,19 @@
 #include "Fyrion/Core/Attributes.hpp"
 #include "Fyrion/Core/Image.hpp"
 #include "Fyrion/Graphics/Graphics.hpp"
+#include "Fyrion/Graphics/Assets/ShaderAsset.hpp"
 
 namespace Fyrion
 {
+    struct TextureImportData
+    {
+        TextureAsset* textureAsset;
+        u32           width;
+        u32           height;
+        ConstPtr      bytes;
+    };
+
+
     void TextureAssetImage::RegisterType(NativeTypeHandler<TextureAssetImage>& type)
     {
         type.Field<&TextureAssetImage::byteOffset>("byteOffset");
@@ -24,7 +34,7 @@ namespace Fyrion
             Graphics::DestroyTexture(texture);
         }
 
-        if(sampler)
+        if (sampler)
         {
             Graphics::DestroySampler(sampler);
         }
@@ -67,7 +77,6 @@ namespace Fyrion
             }
         }
 
-
         Array<u8> byteImages{};
         byteImages.Resize(bytesSize);
 
@@ -103,13 +112,18 @@ namespace Fyrion
 
     void TextureAsset::SetHDRImage(const HDRImage& image)
     {
-        Span<f32> imgData = image.GetData();
-        SaveBlob(textureData, imgData.Data(), imgData.Size() * sizeof(f32));
-
-        // width = image.GetWidth();
-        // height = image.GetHeight();
-        // channels = image.GetChannels();
         format = Format::RGBA32F;
+
+        switch (textureType)
+        {
+            case TextureType::Texture2D:
+                break;
+            case TextureType::Texture3D:
+                break;
+            case TextureType::Cubemap:
+                ImportCubemap(image.GetWidth(), image.GetHeight(), image.GetData().Data());
+                break;
+        }
     }
 
     Texture TextureAsset::CreateTexture() const
@@ -191,13 +205,189 @@ namespace Fyrion
         return format;
     }
 
-    void TextureAsset::GenerateMipmaps() {}
+    TextureType TextureAsset::GetTextureType() const
+    {
+        return textureType;
+    }
+
+    void TextureAsset::SetTextureType(TextureType textureType)
+    {
+        this->textureType = textureType;
+    }
+
+    void TextureAsset::ImportTexture2D()
+    {
+
+    }
+
+    void TextureAsset::ImportCubemap(u32 width, u32 height, ConstPtr bytes)
+    {
+        TextureImportData* textureImportData = MemoryGlobals::GetDefaultAllocator().Alloc<TextureImportData>(TextureImportData{
+            .textureAsset = this,
+            .width = width,
+            .height = height,
+            .bytes = bytes
+        });
+
+        Graphics::AddTask(GraphicsTaskType::Graphics, textureImportData, [](VoidPtr userData, RenderCommands& cmd, GPUQueue queue)
+        {
+            Extent cubemapSize = {1024, 1024};
+
+            TextureImportData* textureImportData = static_cast<TextureImportData*>(userData);
+            TextureAsset* textureAsset = textureImportData->textureAsset;
+
+            BufferCreation vertexBufferCreation{
+                .usage = BufferUsage::VertexBuffer,
+                .size = sizeof(cubemapVertices),
+                .allocation = BufferAllocation::TransferToGPU
+            };
+
+            Buffer renderBuffer = Graphics::CreateBuffer(vertexBufferCreation);
+
+            BufferDataInfo vertexDataInfo{
+                .buffer = renderBuffer,
+                .data = cubemapVertices,
+                .size = sizeof(cubemapVertices)
+            };
+            Graphics::UpdateBufferData(vertexDataInfo);
+
+            Texture texture = Graphics::CreateTexture(TextureCreation{
+                .extent = {textureImportData->width, textureImportData->height, 1},
+                .format = textureAsset->GetFormat(),
+            });
+
+            TextureDataRegion region{
+                .extent = {textureImportData->width, textureImportData->height, 1}
+            };
+
+            Graphics::UpdateTextureData(TextureDataInfo{
+                .texture = texture,
+                .data = static_cast<const u8*>(textureImportData->bytes),
+                .size = textureImportData->width * textureImportData->height * GetFormatSize(textureAsset->GetFormat()),
+                .regions = {&region, 1}
+            });
+
+            Texture passTexture = Graphics::CreateTexture(TextureCreation{
+                .extent = {cubemapSize.width, cubemapSize.height, 1},
+                .format = textureAsset->GetFormat(),
+                .usage = TextureUsage::RenderPass | TextureUsage::TransferSrc
+            });
+
+            AttachmentCreation attachmentCreation{
+                .texture = passTexture,
+                .finalLayout = ResourceLayout::ColorAttachment
+            };
+
+            RenderPass renderPass = Graphics::CreateRenderPass(RenderPassCreation{
+                .attachments = &attachmentCreation
+            });
+
+            ShaderAsset* shader = AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Shaders/Utils/EquirectangularToCubemap.raster");
+
+            PipelineState pipelineState = Graphics::CreateGraphicsPipelineState(GraphicsPipelineCreation{
+                .shader = shader,
+                .renderPass = renderPass,
+            });
+
+            BindingSet* bindingSet = Graphics::CreateBindingSet(shader);
+            bindingSet->GetVar("texture")->SetTexture(texture);
+
+            Mat4 captureProjection = Math::Perspective(Math::Radians(90.0f), 1.0f, 0.1f, 10.0f);
+
+            Mat4 captureViews[] =
+            {
+                Math::LookAt(Vec3{0.0f, 0.0f, 0.0f}, Vec3{-1.0f, 0.0f, 0.0f}, Vec3{0.0f, -1.0f, 0.0f}),
+                Math::LookAt(Vec3{0.0f, 0.0f, 0.0f}, Vec3{1.0f, 0.0f, 0.0f}, Vec3{0.0f, -1.0f, 0.0f}),
+                Math::LookAt(Vec3{0.0f, 0.0f, 0.0f}, Vec3{0.0f, 1.0f, 0.0f}, Vec3{0.0f, 0.0f, 1.0f}),
+                Math::LookAt(Vec3{0.0f, 0.0f, 0.0f}, Vec3{0.0f, -1.0f, 0.0f}, Vec3{0.0f, 0.0f, -1.0f}),
+                Math::LookAt(Vec3{0.0f, 0.0f, 0.0f}, Vec3{0.0f, 0.0f, 1.0f}, Vec3{0.0f, -1.0f, 0.0f}),
+                Math::LookAt(Vec3{0.0f, 0.0f, 0.0f}, Vec3{0.0f, 0.0f, -1.0f}, Vec3{0.0f, -1.0f, 0.0})
+            };
+
+            Array<u8> textureBytes{};
+            Array<u8> byteImages{};
+            byteImages.Reserve(cubemapSize.width * cubemapSize.height * GetFormatSize(textureAsset->GetFormat()));
+
+            for (int i = 0; i < 6; ++i)
+            {
+                Mat4 projView = captureProjection * captureViews[i];
+
+                cmd.Begin();
+
+                Vec4 color = {0, 0, 0, 1};
+
+                cmd.BeginRenderPass(BeginRenderPassInfo{
+                    .renderPass = renderPass,
+                    .clearValue = &color
+                });
+
+                ViewportInfo viewportInfo{
+                    .x = 0,
+                    .y = (f32)cubemapSize.height,
+                    .width = (f32)cubemapSize.width,
+                    .height = -(f32)cubemapSize.height
+                };
+
+                cmd.SetViewport(viewportInfo);
+                cmd.SetScissor(Rect{0, 0, cubemapSize.width, cubemapSize.height});
+
+                cmd.BindPipelineState(pipelineState);
+                cmd.BindVertexBuffer(renderBuffer);
+
+                cmd.PushConstants(pipelineState, ShaderStage::Vertex, &projView, sizeof(Mat4));
+                cmd.BindBindingSet(pipelineState, bindingSet);
+
+                cmd.Draw(36, 1, 0, 0);
+
+                cmd.EndRenderPass();
+
+                cmd.ResourceBarrier(ResourceBarrierInfo{
+                    .texture = passTexture,
+                    .oldLayout = ResourceLayout::ColorAttachment,
+                    .newLayout = ResourceLayout::CopySource
+                });
+
+                cmd.SubmitAndWait(queue);
+
+                TextureGetDataInfo info{
+                    .texture = passTexture,
+                    .format = textureAsset->GetFormat(),
+                    .extent = {cubemapSize.height, cubemapSize.width},
+                    .textureLayout = ResourceLayout::CopySource,
+                };
+
+                Graphics::GetTextureData(info, textureBytes);
+
+                textureAsset->images.EmplaceBack(TextureAssetImage{
+                	.byteOffset = static_cast<u32>(byteImages.Size()),
+                	.arrayLayer = static_cast<u32>(i),
+                	.extent = cubemapSize,
+                	.size = textureBytes.Size()
+                });
+
+                byteImages.Insert(byteImages.end(), textureBytes.begin(), textureBytes.end());
+            }
+
+            textureAsset->arrayLayers = 6;
+            textureAsset->mipLevels = 1;
+            textureAsset->SaveBlob(textureAsset->textureData, byteImages.Data(), byteImages.Size());
+
+            Graphics::DestroyRenderPass(renderPass);
+            Graphics::DestroyGraphicsPipelineState(pipelineState);
+            Graphics::DestroyTexture(passTexture);
+            Graphics::DestroyBuffer(renderBuffer);
+            Graphics::DestroyBindingSet(bindingSet);
+            Graphics::DestroyTexture(texture);
+
+            MemoryGlobals::GetDefaultAllocator().DestroyAndFree(textureImportData);
+        });
+    }
 
     void TextureAsset::RegisterType(NativeTypeHandler<TextureAsset>& type)
     {
         type.Field<&TextureAsset::format>("format");
+        type.Field<&TextureAsset::textureType>("textureType").Attribute<UIProperty>();
         type.Field<&TextureAsset::generateMipmaps>("generateMipmaps").Attribute<UIProperty>();
-        type.Field<&TextureAsset::generateCubemap>("generateCubemap").Attribute<UIProperty>();
 
         type.Field<&TextureAsset::mipLevels>("mipLevels");
         type.Field<&TextureAsset::arrayLayers>("arrayLayers");
@@ -205,6 +395,5 @@ namespace Fyrion
         type.Field<&TextureAsset::images>("images");
         type.Field<&TextureAsset::texture>("texture");
         type.Field<&TextureAsset::textureData>("textureData");
-        type.Field<&TextureAsset::cubeMapData>("cubeMapData");
     }
 }

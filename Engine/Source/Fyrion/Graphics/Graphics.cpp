@@ -238,6 +238,30 @@ namespace Fyrion
         return renderDevice->GetBufferMappedMemory(buffer);
     }
 
+    void Graphics::GetTextureData(const TextureGetDataInfo& info, Array<u8>& data)
+    {
+        RenderCommands& tempCmd = renderDevice->GetTempCmd();
+        usize size = info.extent.width * info.extent.height * GetFormatSize(info.format);
+        data.Resize(size);
+
+        Buffer buffer = CreateBuffer(BufferCreation{
+            .size = size,
+            .allocation = BufferAllocation::TransferToCPU
+        });
+
+        BufferImageCopy region {
+            .imageExtent = {info.extent.width, info.extent.height, 1}
+        };
+
+        tempCmd.Begin();
+        tempCmd.CopyTextureToBuffer(info.texture, info.textureLayout, buffer, {&region, 1});
+        tempCmd.SubmitAndWait(renderDevice->GetMainQueue());
+
+        MemCopy(data.Data(), GetBufferMappedMemory(buffer), size);
+
+        DestroyBuffer(buffer);
+    }
+
     RenderApiType Graphics::GetRenderApi()
     {
         return RenderApiType::Vulkan;

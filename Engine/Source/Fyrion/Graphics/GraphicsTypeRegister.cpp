@@ -75,5 +75,10 @@ namespace Fyrion
         alphaMode.Value<AlphaMode::Opaque>("Opaque");
         alphaMode.Value<AlphaMode::Mask>("Mask");
         alphaMode.Value<AlphaMode::Blend>("Blend");
+
+        auto textureType = Registry::Type<TextureType>();
+        textureType.Value<TextureType::Texture2D>("Texture2D");
+        textureType.Value<TextureType::Texture3D>("Texture3D");
+        textureType.Value<TextureType::Cubemap>("Cubemap");
     }
 }

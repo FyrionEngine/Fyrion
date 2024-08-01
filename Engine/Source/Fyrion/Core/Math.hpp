@@ -460,6 +460,11 @@ namespace Fyrion
             return VecScale(a, k);
         }
 
+        constexpr Vec4 MakeVec4(const Vec3& value, Float w = 0.0)
+        {
+            return Vec4{value[0], value[1], value[2], w};
+        }
+
         constexpr Vec4 MakeVec4(const Float* value)
         {
             return Vec4{value[0], value[1], value[2], value[4]};

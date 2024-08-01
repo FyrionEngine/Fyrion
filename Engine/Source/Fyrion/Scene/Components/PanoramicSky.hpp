@@ -22,7 +22,5 @@ namespace Fyrion
 
     private:
         TextureAsset* sphericalTexture = nullptr;
-
-        void GenerateCubemap();
     };
 }

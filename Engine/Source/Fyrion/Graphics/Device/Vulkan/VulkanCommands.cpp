@@ -317,6 +317,33 @@ namespace Fyrion
                                vkBufferImageCopies.Data());
     }
 
+    void VulkanCommands::CopyTextureToBuffer(Texture srcTexture, ResourceLayout textureLayout, Buffer destBuffer, const Span<BufferImageCopy>& regions)
+    {
+        Array<VkBufferImageCopy> vkBufferImageCopies(regions.Size());
+        for (usize i = 0; i < regions.Size(); ++i)
+        {
+            VkBufferImageCopy& dest = vkBufferImageCopies[i];
+            const BufferImageCopy& src = regions[i];
+
+            dest.bufferOffset = src.bufferOffset;
+            dest.bufferRowLength = src.bufferRowLength;
+            dest.bufferImageHeight = src.bufferImageHeight;
+            dest.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            dest.imageSubresource.layerCount = src.layerCount;
+            dest.imageSubresource.mipLevel = src.textureMipLevel;
+            dest.imageSubresource.baseArrayLayer = src.textureArrayLayer;
+            dest.imageOffset = {src.imageOffset.x, src.imageOffset.y, src.imageOffset.z};
+            dest.imageExtent = {src.imageExtent.width,  src.imageExtent.height, src.imageExtent.depth};
+        }
+
+        vkCmdCopyImageToBuffer(commandBuffer,
+                               static_cast<VulkanTexture*>(srcTexture.handler)->image,
+                               Vulkan::CastLayout(textureLayout),
+                               static_cast<VulkanBuffer*>(destBuffer.handler)->buffer,
+                               vkBufferImageCopies.Size(),
+                               vkBufferImageCopies.Data());
+    }
+
 
     void VulkanCommands::SubmitAndWait(GPUQueue queue)
     {

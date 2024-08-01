@@ -1,10 +1,83 @@
 {
     "name": "LogoSmall",
     "hasBlobs": true,
-    "width": 128,
-    "height": 128,
-    "channels": 4,
-    "data": "4ace4ca0ff11706c",
+    "generateMipmaps": true,
+    "mipLevels": 8,
+    "arrayLayers": 1,
+    "images": [
+        {
+            "extent": {
+                "width": 128,
+                "height": 128
+            },
+            "size": 65536
+        },
+        {
+            "byteOffset": 65536,
+            "mip": 1,
+            "extent": {
+                "width": 64,
+                "height": 64
+            },
+            "size": 16384
+        },
+        {
+            "byteOffset": 81920,
+            "mip": 2,
+            "extent": {
+                "width": 32,
+                "height": 32
+            },
+            "size": 4096
+        },
+        {
+            "byteOffset": 86016,
+            "mip": 3,
+            "extent": {
+                "width": 16,
+                "height": 16
+            },
+            "size": 1024
+        },
+        {
+            "byteOffset": 87040,
+            "mip": 4,
+            "extent": {
+                "width": 8,
+                "height": 8
+            },
+            "size": 256
+        },
+        {
+            "byteOffset": 87296,
+            "mip": 5,
+            "extent": {
+                "width": 4,
+                "height": 4
+            },
+            "size": 64
+        },
+        {
+            "byteOffset": 87360,
+            "mip": 6,
+            "extent": {
+                "width": 2,
+                "height": 2
+            },
+            "size": 16
+        },
+        {
+            "byteOffset": 87376,
+            "mip": 7,
+            "extent": {
+                "width": 1,
+                "height": 1
+            },
+            "size": 4
+        }
+    ],
+    "texture": {},
+    "textureData": "f92ee60f6f23c515",
     "_type": "Fyrion::TextureAsset",
-    "uuid": "989a711b-cb35-2f2d-3778-905ab0e6ddf0"
+    "uuid": "e06e1856-5f73-be26-ec42-529cec91ccd6"
 }

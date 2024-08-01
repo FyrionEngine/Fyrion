@@ -1,10 +1,110 @@
 {
     "name": "Logo",
     "hasBlobs": true,
-    "width": 1024,
-    "height": 1024,
-    "channels": 4,
-    "data": "1b4f132a4b822913",
+    "generateMipmaps": true,
+    "mipLevels": 11,
+    "arrayLayers": 1,
+    "images": [
+        {
+            "extent": {
+                "width": 1024,
+                "height": 1024
+            },
+            "size": 4194304
+        },
+        {
+            "byteOffset": 4194304,
+            "mip": 1,
+            "extent": {
+                "width": 512,
+                "height": 512
+            },
+            "size": 1048576
+        },
+        {
+            "byteOffset": 5242880,
+            "mip": 2,
+            "extent": {
+                "width": 256,
+                "height": 256
+            },
+            "size": 262144
+        },
+        {
+            "byteOffset": 5505024,
+            "mip": 3,
+            "extent": {
+                "width": 128,
+                "height": 128
+            },
+            "size": 65536
+        },
+        {
+            "byteOffset": 5570560,
+            "mip": 4,
+            "extent": {
+                "width": 64,
+                "height": 64
+            },
+            "size": 16384
+        },
+        {
+            "byteOffset": 5586944,
+            "mip": 5,
+            "extent": {
+                "width": 32,
+                "height": 32
+            },
+            "size": 4096
+        },
+        {
+            "byteOffset": 5591040,
+            "mip": 6,
+            "extent": {
+                "width": 16,
+                "height": 16
+            },
+            "size": 1024
+        },
+        {
+            "byteOffset": 5592064,
+            "mip": 7,
+            "extent": {
+                "width": 8,
+                "height": 8
+            },
+            "size": 256
+        },
+        {
+            "byteOffset": 5592320,
+            "mip": 8,
+            "extent": {
+                "width": 4,
+                "height": 4
+            },
+            "size": 64
+        },
+        {
+            "byteOffset": 5592384,
+            "mip": 9,
+            "extent": {
+                "width": 2,
+                "height": 2
+            },
+            "size": 16
+        },
+        {
+            "byteOffset": 5592400,
+            "mip": 10,
+            "extent": {
+                "width": 1,
+                "height": 1
+            },
+            "size": 4
+        }
+    ],
+    "texture": {},
+    "textureData": "3994622854a798bd",
     "_type": "Fyrion::TextureAsset",
-    "uuid": "00c5f28d-ffd1-a90b-97be-673fadedae38"
+    "uuid": "77705a3a-6199-d6ab-1625-d70791f4a5b6"
 }

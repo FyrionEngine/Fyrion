@@ -7,17 +7,11 @@
 #include "Fyrion/Core/Math.hpp"
 #include "Fyrion/Core/Span.hpp"
 
-namespace Fyrion {
-    class MaterialAsset;
-}
-
-namespace Fyrion {
-    class MeshAsset;
-}
-
 namespace Fyrion
 {
     class ShaderAsset;
+    class MeshAsset;
+    class MaterialAsset;
 
     FY_HANDLER(Adapter);
     FY_HANDLER(Swapchain);
@@ -277,6 +271,14 @@ namespace Fyrion
         Blend       = 3
     };
 
+    enum class GraphicsTaskType
+    {
+        Graphics = 1,
+        Compute  = 2,
+        Transfer = 3,
+        Destroy  = 4
+    };
+
     struct SwapchainCreation
     {
         Window window{};
@@ -503,7 +505,6 @@ namespace Fyrion
         Texture                 texture{};
         const u8*               data{nullptr};
         usize                   size{};
-        Extent3D                extent{};
         Span<TextureDataRegion> regions{};
     };
 
@@ -678,5 +679,16 @@ namespace Fyrion
         }
         return 0;
     }
+
+    typedef void (*FnGraphicsTask)(VoidPtr userData, RenderCommands& cmd, GPUQueue queue);
+
+
+    inline static f32 cubemapVertices[] = {
+        -1.0f, 1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f, -1.0f, -1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f, -1.0f, -1.0f, -1.0f, 1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,
+        -1.0f, -1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 1.0f, -1.0f,
+        -1.0f, -1.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 1.0f, -1.0f, -1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f, 1.0f,
+        1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f, 1.0f, -1.0f,
+        1.0f
+    };
 
 }

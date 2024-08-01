@@ -1,0 +1,45 @@
+struct VSInput
+{
+     float3 position  : POSITION0;
+};
+
+struct VSOutput
+{
+	float4 pos      : SV_POSITION;
+	float3 worldPos : TEXCOORD0;
+};
+
+struct PushConsts
+{
+    float4x4 projView;
+};
+
+[[vk::push_constant]] PushConsts pushConsts;
+
+VSOutput MainVS(VSInput input)
+{
+	VSOutput output = (VSOutput)0;
+	output.pos      = mul(pushConsts.projView,  float4(input.position, 1.0));
+	output.worldPos = input.position;
+	return output;
+}
+
+Texture2D     texture;
+SamplerState  samplerState;
+
+
+float2 SampleSphericalMap(float3 v)
+{
+    const float2 invAtan = float2(0.1591, 0.3183);
+    float2 uv = float2(atan2(v.z, v.x), asin(v.y));
+    uv *= invAtan;
+    uv += 0.5;
+    return uv;
+}
+
+float4 MainPS(VSOutput input) : SV_TARGET
+{
+    float2 uv = SampleSphericalMap(normalize(input.worldPos));
+    float3 rgb = texture.Sample(samplerState, uv).rgb;
+	return float4(rgb, 1.0);
+}

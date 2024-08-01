@@ -31,4 +31,5 @@ namespace Fyrion::Graphics
     FY_API RenderApiType GetRenderApi();
     FY_API Sampler       GetDefaultSampler();
     FY_API Texture       GetDefaultTexture();
+    FY_API void          AddTask(GraphicsTaskType graphicsTask, VoidPtr userData, FnGraphicsTask task);
 }

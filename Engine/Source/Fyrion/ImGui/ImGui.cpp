@@ -1270,7 +1270,7 @@ namespace ImGui
         {
             if (BeginTable("##component-table", 2))
             {
-                TableSetupColumn("Label", ImGuiTableColumnFlags_WidthStretch, 0.4f);
+                TableSetupColumn("Label", ImGuiTableColumnFlags_WidthStretch, 0.6f);
                 TableSetupColumn("Item", ImGuiTableColumnFlags_WidthStretch);
 
                 for (FieldHandler* field : content->desc.typeHandler->GetFields())

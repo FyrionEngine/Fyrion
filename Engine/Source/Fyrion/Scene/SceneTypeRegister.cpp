@@ -1,6 +1,7 @@
 #include "SceneTypes.hpp"
 #include "Assets/SceneObjectAsset.hpp"
 #include "Components/MeshRender.hpp"
+#include "Components/PanoramicSky.hpp"
 #include "Components/TransformComponent.hpp"
 #include "Fyrion/Core/Registry.hpp"
 
@@ -14,5 +15,6 @@ namespace Fyrion
         Registry::Type<TransformComponent>();
         Registry::Type<SceneObject>();
         Registry::Type<MeshRender>();
+        Registry::Type<PanoramicSky>();
     }
 }

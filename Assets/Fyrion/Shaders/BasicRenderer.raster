@@ -47,17 +47,25 @@ VSOutput MainVS(VSInput input)
 
 struct Material
 {
-    float4 baseColor;
+    float4 baseColorAlphaCutOff;
 };
 
 ConstantBuffer<Material> material   : register(b0, space1);
 
-Texture2D texture                   : register(t1, space1);
-SamplerState samplerState           : register(s2, space1);
+Texture2D       texture : register(t1, space1);
+SamplerState    baseColorSampler : register(s2, space1);
 
 float4 MainPS(VSOutput input) : SV_TARGET
 {
-	return texture.Sample(samplerState, input.uv) * float4(material.baseColor.rgb, 1.0);
+    float3 baseColor    = material.baseColorAlphaCutOff.rgb;
+    float alphaCutOff   = material.baseColorAlphaCutOff.a;
+
+    float4 color = texture.Sample(baseColorSampler, input.uv) * float4(baseColor, 1.0);
+    if (color.a < alphaCutOff)
+    {
+        discard;
+    }
+	return color;
 }
 
 

@@ -8,7 +8,7 @@ namespace Fyrion
 {
     struct MaterialData
     {
-        Vec4 baseColor;
+        Vec4 baseColorAlphaCutOff;
     };
 
 
@@ -17,11 +17,14 @@ namespace Fyrion
         if (!bindingSet)
         {
             MaterialData materialData{
-                .baseColor = GetBaseColor().ToVec4()
+                .baseColorAlphaCutOff = GetBaseColor().ToVec4()
             };
+
+            materialData.baseColorAlphaCutOff.w = alphaCutoff;
 
             bindingSet = Graphics::CreateBindingSet(AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Shaders/BasicRenderer.raster"));
             bindingSet->GetVar("texture")->SetTexture(baseColorTexture ? baseColorTexture->GetTexture() : Graphics::GetDefaultTexture());
+            bindingSet->GetVar("baseColorSampler")->SetSampler(baseColorTexture ? baseColorTexture->GetSampler() : Graphics::GetDefaultSampler());
             bindingSet->GetVar("material")->SetValue(&materialData, sizeof(MaterialData));
         }
         return bindingSet;

@@ -45,11 +45,15 @@ namespace Fyrion
         Image image(1, 1, 4);
         image.SetPixelColor(0, 0, Color::WHITE);
 
+        TextureDataRegion region{
+            .extent = {1, 1, 1}
+        };
+
         Graphics::UpdateTextureData(TextureDataInfo{
             .texture = defaultTexture,
             .data = image.GetData().Data(),
             .size = image.GetData().Size(),
-            .extent = {1, 1, 1},
+            .regions = {&region, 1}
         });
     }
 
@@ -190,23 +194,39 @@ namespace Fyrion
         RenderCommands& tempCmd = renderDevice->GetTempCmd();
         tempCmd.Begin();
 
-        tempCmd.ResourceBarrier(ResourceBarrierInfo{
-            .texture = textureDataInfo.texture,
-            .oldLayout = ResourceLayout::Undefined,
-            .newLayout = ResourceLayout::CopyDest
-        });
+        for(const TextureDataRegion& textureRegion : textureDataInfo.regions)
+        {
+            tempCmd.ResourceBarrier(ResourceBarrierInfo{
+                .texture = textureDataInfo.texture,
+                .oldLayout = ResourceLayout::Undefined,
+                .newLayout = ResourceLayout::CopyDest,
+                .mipLevel = textureRegion.mipLevel,
+                .levelCount = Math::Max(textureRegion.levelCount, 1u),
+                .baseArrayLayer = textureRegion.arrayLayer,
+                .layerCount = Math::Max(textureRegion.layerCount, 1u)
+            });
 
-        BufferImageCopy region{
-            .imageExtent = textureDataInfo.extent
-        };
+            BufferImageCopy region{
+                .bufferOffset = textureRegion.dataOffset,
+                .textureMipLevel = textureRegion.mipLevel,
+                .textureArrayLayer = textureRegion.arrayLayer,
+                .layerCount =  Math::Max(textureRegion.layerCount, 1u),
+                .imageOffset = {},
+                .imageExtent = {textureRegion.extent.width, textureRegion.extent.height, Math::Max(textureRegion.extent.depth, 1u)},
+            };
 
-        tempCmd.CopyBufferToTexture(buffer, textureDataInfo.texture, {&region, 1});
+            tempCmd.CopyBufferToTexture(buffer, textureDataInfo.texture, {&region, 1});
 
-        tempCmd.ResourceBarrier(ResourceBarrierInfo{
-            .texture = textureDataInfo.texture,
-            .oldLayout = ResourceLayout::CopyDest,
-            .newLayout = ResourceLayout::ShaderReadOnly
-        });
+            tempCmd.ResourceBarrier(ResourceBarrierInfo{
+                .texture = textureDataInfo.texture,
+                .oldLayout = ResourceLayout::CopyDest,
+                .newLayout = ResourceLayout::ShaderReadOnly,
+                .mipLevel = textureRegion.mipLevel,
+                .levelCount = Math::Max(textureRegion.levelCount, 1u),
+                .baseArrayLayer = textureRegion.arrayLayer,
+                .layerCount = Math::Max(textureRegion.layerCount, 1u)
+            });
+        }
 
         tempCmd.SubmitAndWait(renderDevice->GetMainQueue());
 
@@ -231,5 +251,13 @@ namespace Fyrion
     Texture Graphics::GetDefaultTexture()
     {
         return defaultTexture;
+    }
+
+    void Graphics::AddTask(GraphicsTaskType graphicsTask, VoidPtr userData, FnGraphicsTask task)
+    {
+        //TODO multithread enqueue.
+        //TODO choose queue by GraphicsTaskType
+        RenderCommands& tempCmd = renderDevice->GetTempCmd();
+        task(userData, tempCmd, renderDevice->GetMainQueue());
     }
 }

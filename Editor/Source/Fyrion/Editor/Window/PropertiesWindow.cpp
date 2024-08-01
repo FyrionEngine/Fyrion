@@ -322,6 +322,25 @@ namespace Fyrion
                 },
             });
             ImGui::Unindent();
+
+            if (AssetDatabase::CanReimportAsset(asset))
+            {
+                f32  width = ImGui::GetContentRegionAvail().x;
+                auto size = ImGui::GetFontSize() + style.FramePadding.y * 2.0f;
+
+                ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5 * style.ScaleFactor);
+
+                ImGui::BeginHorizontal("horizontal-02", ImVec2(width, size));
+
+                ImGui::Spring(1.f);
+                if (ImGui::BorderedButton("Reimport", ImVec2(width * 2 / 3, size)))
+                {
+                    AssetDatabase::ReimportAsset(asset);
+                }
+                ImGui::Spring(1.f);
+
+                ImGui::EndHorizontal();
+            }
         }
     }
 

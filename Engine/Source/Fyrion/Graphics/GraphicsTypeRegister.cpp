@@ -47,6 +47,7 @@ namespace Fyrion
         Registry::Type<MeshAsset>();
         Registry::Type<MaterialAsset>();
         Registry::Type<MeshPrimitive>();
+        Registry::Type<TextureAssetImage>();
 
         RegisterGLTFIO();
         RegisterShaderIO();

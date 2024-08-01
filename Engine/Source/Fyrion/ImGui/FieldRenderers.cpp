@@ -425,6 +425,27 @@ namespace Fyrion
         return true;
     }
 
+    bool BoolRenderer(ImGui::DrawTypeContent* context, const TypeInfo& typeInfo, VoidPtr value, bool* hasChanged)
+    {
+        if (typeInfo.typeId != GetTypeID<bool>()) return false;
+
+        u32 id = context->ReserveID();
+        char str[25];
+        sprintf(str, "###txtid%d", id);
+
+        bool* boolValue = static_cast<bool*>(value);
+
+        if (ImGui::Checkbox(str, boolValue))
+        {
+            if (hasChanged)
+            {
+                *hasChanged = true;
+            }
+        }
+
+        return true;
+    }
+
 
     bool QuatRenderer(ImGui::DrawTypeContent* context, const TypeInfo& typeInfo, VoidPtr value, bool* hasChanged)
     {
@@ -500,6 +521,7 @@ namespace Fyrion
     {
         AddFieldRenderer(ColorRenderer);
         AddFieldRenderer(FloatRenderer);
+        AddFieldRenderer(BoolRenderer);
         AddFieldRenderer(Vec3Renderer);
         AddFieldRenderer(Vec2Renderer);
         AddFieldRenderer(QuatRenderer);

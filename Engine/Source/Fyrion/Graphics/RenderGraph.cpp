@@ -86,11 +86,51 @@ namespace Fyrion
         return renderPass;
     }
 
+    Texture RenderGraphNode::GetInputTexture(StringView view) const
+    {
+        if (auto it = inputs.Find(view))
+        {
+            return it->second->resource->texture;
+        }
+
+        return {};
+    }
+
+    Texture RenderGraphNode::GetOutputTexture(StringView view) const
+    {
+        if (auto it = outputs.Find(view))
+        {
+            return it->second->texture;
+        }
+
+        return {};
+    }
+
+    RenderGraphResource* RenderGraphNode::GetInputResource(StringView view) const
+    {
+        if (auto it = inputs.Find(view))
+        {
+            return it->second->resource.Get();
+        }
+
+        return {};
+    }
+
+    RenderGraphResource* RenderGraphNode::GetOutputResource(StringView view) const
+    {
+        if (auto it = outputs.Find(view))
+        {
+            return it->second.Get();
+        }
+
+        return {};
+    }
+
     void RenderGraphNode::CreateRenderPass()
     {
-        Array<AttachmentCreation> attachments{};
         if (creation.type == RenderGraphPassType::Graphics)
         {
+            Array<AttachmentCreation> attachments{};
             for (const auto& output : creation.outputs)
             {
                 if (output.type == RenderGraphResourceType::Attachment)
@@ -194,15 +234,18 @@ namespace Fyrion
         {
             for (auto& input : node->creation.inputs)
             {
-                String inputName = node->name + "#" + input.name;
                 for (const auto& edge: asset->GetEdges())
                 {
-                    if (edge.nodeInput == node->name && edge.input == inputName)
+                    if (edge.nodeInput == node->name && edge.input == input.name)
                     {
                         String outputName = edge.nodeOutput + "#" + edge.output;
                         if (auto itResource = resources.Find(outputName))
                         {
-                            node->inputs.Insert(input.name, itResource->second);
+                            String inputName = node->name + "#" + input.name;
+                            node->inputs.Insert(input.name, MakeShared<RenderGraphInput>(
+                                inputName,
+                                input,
+                                itResource->second));
                         }
                     }
                 }
@@ -210,13 +253,16 @@ namespace Fyrion
 
             for(const auto& output: node->creation.outputs)
             {
+                String resourceName = node->name + "#" + output.name;
+
+                //TODO what if the output has the same name but different configs?
                 if (auto it = node->inputs.Find(output.name))
                 {
-                    node->outputs.Insert(output.name, it->second);
+                    node->outputs.Insert(output.name, it->second->resource);
+                    resources.Insert(resourceName, it->second->resource);
                     continue;
                 }
 
-                String resourceName = node->name + "#" + output.name;
                 SharedPtr<RenderGraphResource> resource = CreateResource(resourceName, output);
                 node->outputs.Insert(output.name, resource);
             }
@@ -289,7 +335,7 @@ namespace Fyrion
                 }
 
                 Extent size = Extent{viewportExtent.width, viewportExtent.height} * resource->creation.scale;
-                resource->textureCreation.extent = {(size.width), (size.width), 1};
+                resource->textureCreation.extent = {(size.width), (size.height), 1};
 
                 resource->texture = Graphics::CreateTexture(resource->textureCreation);
             }
@@ -369,7 +415,7 @@ namespace Fyrion
                 else if (creation.scale > 0.f)
                 {
                     Extent size = Extent{viewportExtent.width, viewportExtent.height} * creation.scale;
-                    resource->textureCreation.extent = {size.width, size.width, 1};
+                    resource->textureCreation.extent = {size.width, size.height, 1};
                 }
                 else
                 {
@@ -377,15 +423,24 @@ namespace Fyrion
                 }
 
                 resource->textureCreation.format = creation.format;
+
                 if (resource->textureCreation.format != Format::Depth)
                 {
-                    resource->textureCreation.usage = TextureUsage::RenderPass | TextureUsage::ShaderResource;
+                    if (creation.type == RenderGraphResourceType::Attachment)
+                    {
+                        resource->textureCreation.usage = TextureUsage::RenderPass | TextureUsage::ShaderResource;
+                    }
+                    else if (creation.type == RenderGraphResourceType::Texture)
+                    {
+                        resource->textureCreation.usage = TextureUsage::Storage | TextureUsage::ShaderResource;
+                    }
                 }
                 else
                 {
                     resource->textureCreation.usage = TextureUsage::DepthStencil | TextureUsage::ShaderResource;
                 }
 
+                resource->textureCreation.name = fullName;
                 resource->texture = Graphics::CreateTexture(resource->textureCreation);
                 break;
             }
@@ -408,17 +463,13 @@ namespace Fyrion
             node->renderGraphPass->Update(deltaTime);
 
             cmd.BeginLabel(node->name, {0, 0, 0, 1});
-
-            //				GPUDevice::BeginLabel(cmd, node.m_name, {node.m_debugColor.x,
-            //				                                         node.m_debugColor.y,
-            //				                                         node.m_debugColor.z,
-            //				                                         1});
             for(const auto& inputIt: node->inputs)
             {
-                if (inputIt.second->creation.type == RenderGraphResourceType::Texture)
+                if (inputIt.second->creation.type == RenderGraphResourceType::Texture &&
+                    inputIt.second->resource->creation.type == RenderGraphResourceType::Attachment)
                 {
                     ResourceBarrierInfo resourceBarrierInfo{};
-                    resourceBarrierInfo.texture = inputIt.second->texture;
+                    resourceBarrierInfo.texture = inputIt.second->resource->texture;
                     resourceBarrierInfo.oldLayout = inputIt.second->creation.format != Format::Depth ? ResourceLayout::ColorAttachment : ResourceLayout::DepthStencilAttachment;
                     resourceBarrierInfo.newLayout = ResourceLayout::ShaderReadOnly;
                     resourceBarrierInfo.isDepth = inputIt.second->creation.format == Format::Depth;
@@ -471,13 +522,14 @@ namespace Fyrion
             cmd.EndLabel();
         }
 
+        //TODO: need to check the layout, should I need to keep track of the texture layout?
         if (colorOutput)
         {
-            ResourceBarrierInfo resourceBarrierInfo{};
-            resourceBarrierInfo.texture = colorOutput->texture;
-            resourceBarrierInfo.oldLayout = ResourceLayout::ColorAttachment;
-            resourceBarrierInfo.newLayout = ResourceLayout::ShaderReadOnly;
-            cmd.ResourceBarrier(resourceBarrierInfo);
+            // ResourceBarrierInfo resourceBarrierInfo{};
+            // resourceBarrierInfo.texture = colorOutput->texture;
+            // resourceBarrierInfo.oldLayout = ResourceLayout::ColorAttachment;
+            // resourceBarrierInfo.newLayout = ResourceLayout::ShaderReadOnly;
+            // cmd.ResourceBarrier(resourceBarrierInfo);
         }
     }
 

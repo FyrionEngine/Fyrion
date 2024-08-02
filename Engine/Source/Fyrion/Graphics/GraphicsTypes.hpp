@@ -314,6 +314,7 @@ namespace Fyrion
         u32          mipLevels{1};
         u32          arrayLayers{1};
         ViewType     defaultView{ViewType::Type2D};
+        StringView   name{};
     };
 
     struct TextureViewCreation
@@ -376,7 +377,8 @@ namespace Fyrion
 
     struct ComputePipelineCreation
     {
-        //RID shader{};
+        ShaderAsset*  shader{};
+        PipelineState pipelineState{};
     };
 
 

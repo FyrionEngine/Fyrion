@@ -1,25 +1,25 @@
 struct VSInput
 {
-     float3 position  : POSITION0;
-     float3 normal    : NORMAL1;
-     float3 color     : COLOR2;
-     float2 uv        : UV2;
-     float4 tangent   : TANGENT1;
+    float3 position  : POSITION0;
+    float3 normal    : NORMAL1;
+    float3 color     : COLOR2;
+    float2 uv        : UV2;
+    float4 tangent   : TANGENT1;
 };
 
 struct VSOutput
 {
-	float4 pos      : SV_POSITION;
-	float3 fragPos  : POSITION0;
+    float4 pos      : SV_POSITION;
+    float3 fragPos  : POSITION0;
     float3 color    : COLOR0;
-	float2 uv       : TEXCOORD0;
-	float3 normal   : NORMAL1;
+    float2 uv       : TEXCOORD0;
+    float3 normal   : NORMAL1;
     float4 tangent  : TANGENT1;
 };
 
 struct PushConsts
 {
-	float4x4 model;
+    float4x4 model;
 };
 
 struct Scene
@@ -32,17 +32,17 @@ ConstantBuffer<Scene> scene : register(b0);
 
 VSOutput MainVS(VSInput input)
 {
-	VSOutput output = (VSOutput)0;
+    VSOutput output = (VSOutput)0;
     output.fragPos    = (float3)mul(pushConsts.model, float4(input.position, 1.0));
     output.color      = input.color;
-	output.pos        = mul(scene.viewProjection, float4(output.fragPos, 1.0));
-	output.uv         = input.uv;
+    output.pos        = mul(scene.viewProjection, float4(output.fragPos, 1.0));
+    output.uv         = input.uv;
 
-	float3x3 normalMat = (float3x3)pushConsts.model;
-	output.normal      = normalize(mul(normalMat, input.normal));
+    float3x3 normalMat = (float3x3)pushConsts.model;
+    output.normal      = normalize(mul(normalMat, input.normal));
     output.tangent     = float4(normalize(mul(normalMat, input.tangent.xyz)), input.tangent.w);
 
-	return output;
+    return output;
 }
 
 struct Material
@@ -65,7 +65,7 @@ float4 MainPS(VSOutput input) : SV_TARGET
     {
         discard;
     }
-	return color;
+    return color;
 }
 
 

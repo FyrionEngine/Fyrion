@@ -1,5 +1,7 @@
 #include <algorithm>
 #include "VulkanUtils.hpp"
+
+#include "VulkanDevice.hpp"
 #include "Fyrion/Core/Array.hpp"
 #include "Fyrion/Core/Logger.hpp"
 
@@ -587,6 +589,20 @@ namespace Fyrion::Vulkan
 		}
 		FY_ASSERT(false, "VulkanUtils.hpp: CastTextureAddressMode not found");
 		return VK_SAMPLER_MIPMAP_MODE_MAX_ENUM;
+	}
+
+	void SetObjectName(VulkanDevice& device, VkObjectType type, u64 handle, StringView name)
+	{
+		if (!device.debugUtilsExtensionPresent)
+		{
+			return;
+		}
+
+		VkDebugUtilsObjectNameInfoEXT nameInfo = { VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
+		nameInfo.objectType = type;
+		nameInfo.objectHandle = handle;
+		nameInfo.pObjectName = name.CStr();
+		vkSetDebugUtilsObjectNameEXT(device.device, &nameInfo);
 	}
 }
 

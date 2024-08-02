@@ -95,6 +95,7 @@ namespace Fyrion
         if (validationLayersAvailable)
         {
             requiredExtensions.EmplaceBack(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+            debugUtilsExtensionPresent = true;
         }
 
         if (!Vulkan::QueryInstanceExtensions(requiredExtensions))
@@ -298,6 +299,11 @@ namespace Fyrion
         if (maintenance4Available)
         {
             features12.pNext = &vkPhysicalDeviceMaintenance4FeaturesKhr;
+        }
+
+        if (debugUtilsExtensionPresent)
+        {
+
         }
 
         if (deviceFeatures.bindlessSupported)
@@ -668,7 +674,7 @@ namespace Fyrion
 			attachmentDescriptions.EmplaceBack(attachmentDescription);
 		}
 
-		vulkanRenderPass->extent = {framebufferSize.height, framebufferSize.width};
+		vulkanRenderPass->extent = {framebufferSize.width, framebufferSize.height};
 
 		VkSubpassDescription subPass = {};
 		subPass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
@@ -790,6 +796,12 @@ namespace Fyrion
         }
 
         vulkanTexture->textureView = CreateTextureView(textureViewCreation);
+
+        if(!textureCreation.name.Empty())
+        {
+            vulkanTexture->name = textureCreation.name;
+            Vulkan::SetObjectName(*this, VK_OBJECT_TYPE_IMAGE, (u64)vulkanTexture->image, vulkanTexture->name);
+        }
 
         return texture;
     }
@@ -1149,9 +1161,66 @@ namespace Fyrion
         return {vulkanPipelineState};
     }
 
-    PipelineState VulkanDevice::CreateComputePipelineState(const ComputePipelineCreation& computePipelineCreation)
+    PipelineState VulkanDevice::CreateComputePipelineState(const ComputePipelineCreation& creation)
     {
-        return {};
+        ShaderAsset* shader = creation.shader;
+        FY_ASSERT(shader, "shader is null");
+
+        if (!shader->IsCompiled())
+        {
+            shader->Compile();
+        }
+
+        //shader not valid.
+        if(!shader->IsCompiled())
+        {
+            return {};
+        }
+
+        Span<u8>         bytes = shader->GetBytes();
+        ShaderStageInfo& stage = shader->GetStages()[0];
+        ShaderInfo       shaderInfo = shader->GetShaderInfo();
+
+        VkShaderModule shaderModule{};
+        VulkanPipelineState* vulkanPipelineState;
+        if (!creation.pipelineState)
+        {
+            vulkanPipelineState = allocator.Alloc<VulkanPipelineState>();
+            vulkanPipelineState->computePipelineCreation = creation;
+            shader->AddPipelineDependency({vulkanPipelineState});
+        }
+        else
+        {
+            vulkanPipelineState = static_cast<VulkanPipelineState*>(creation.pipelineState.handler);
+
+            vkDeviceWaitIdle(device);
+            vkDestroyPipelineLayout(device, vulkanPipelineState->layout, nullptr);
+            vkDestroyPipeline(device, vulkanPipelineState->pipeline, nullptr);
+        }
+
+        vulkanPipelineState->bindingPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
+
+        VkShaderModuleCreateInfo createInfo{VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
+        createInfo.codeSize = bytes.Size();
+        createInfo.pCode = reinterpret_cast<const u32*>(bytes.Data());
+        vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule);
+
+        Vulkan::CreatePipelineLayout(device, shaderInfo.descriptors, shaderInfo.pushConstants, &vulkanPipelineState->layout);
+
+        VkPipelineShaderStageCreateInfo shaderStage = {};
+        shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        shaderStage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+        shaderStage.pName = stage.entryPoint.CStr();
+        shaderStage.module = shaderModule;
+
+        VkComputePipelineCreateInfo computePipelineCreateInfo{VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO};
+        computePipelineCreateInfo.layout = vulkanPipelineState->layout;
+        computePipelineCreateInfo.stage = shaderStage;
+
+        vkCreateComputePipelines(device, 0, 1, &computePipelineCreateInfo, nullptr, &vulkanPipelineState->pipeline);
+        vkDestroyShaderModule(device, shaderModule, nullptr);
+
+        return {vulkanPipelineState};
     }
 
     BindingSet* VulkanDevice::CreateBindingSet(ShaderAsset* shaderAsset)
@@ -1236,6 +1305,16 @@ namespace Fyrion
 
     void VulkanDevice::DestroyComputePipelineState(const PipelineState& pipelineState)
     {
+        VulkanPipelineState* vulkanPipelineState = static_cast<VulkanPipelineState*>(pipelineState.handler);
+        if (vulkanPipelineState->pipeline)
+        {
+            vkDestroyPipeline(device, vulkanPipelineState->pipeline, nullptr);
+        }
+        if (vulkanPipelineState->layout)
+        {
+            vkDestroyPipelineLayout(device, vulkanPipelineState->layout, nullptr);
+        }
+        allocator.DestroyAndFree(vulkanPipelineState);
     }
 
     void VulkanDevice::DestroyBindingSet(BindingSet* bindingSet)

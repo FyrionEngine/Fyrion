@@ -38,6 +38,7 @@ namespace Fyrion::Vulkan
     VkBorderColor                 CasterBorderColor(BorderColor borderColor);
     VkSamplerAddressMode          CastTextureAddressMode(const TextureAddressMode& mode);
     VkSamplerMipmapMode           CastSamplerMipmapMode(SamplerMipmapMode samplerMipmapMode);
+    void                          SetObjectName(VulkanDevice& device, VkObjectType type, u64 handle, StringView name);
 
     inline bool QueryInstanceExtension(const char* extension)
     {

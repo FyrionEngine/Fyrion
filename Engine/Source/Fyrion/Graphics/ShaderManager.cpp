@@ -562,6 +562,9 @@ namespace Fyrion
                         };
                         shaderInfo.outputVariables.EmplaceBack(interfaceVariable);
                     }
+                } else
+                {
+                    int a = 0;
                 }
 
                 spvReflectEnumeratePushConstantBlocks(&module, &varCount, nullptr);

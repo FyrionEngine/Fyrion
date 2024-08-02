@@ -74,12 +74,22 @@ namespace Fyrion
 
         shaderInfo = ShaderManager::ExtractShaderInfo(bytes, stages, renderApi);
 
-        for(PipelineState pipelineState : pipelineDependencies)
+        for (PipelineState pipelineState : pipelineDependencies)
         {
-            Graphics::CreateGraphicsPipelineState({
-                .shader = this,
-                .pipelineState = pipelineState
-            });
+            if (shaderType == ShaderAssetType::Graphics)
+            {
+                Graphics::CreateGraphicsPipelineState({
+                    .shader = this,
+                    .pipelineState = pipelineState
+                });
+            }
+            else if (shaderType == ShaderAssetType::Compute)
+            {
+                Graphics::CreateComputePipelineState({
+                    .shader = this,
+                    .pipelineState = pipelineState
+                });
+            }
         }
 
         for (const auto it : shaderDependencies)

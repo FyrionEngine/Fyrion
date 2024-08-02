@@ -51,6 +51,13 @@ namespace Fyrion
         ~RenderGraphResource();
     };
 
+    struct FY_API RenderGraphInput
+    {
+        String                         fullName{};
+        RenderGraphResourceCreation    creation{};
+        SharedPtr<RenderGraphResource> resource{};
+    };
+
     class FY_API RenderGraphNode
     {
     public:
@@ -62,13 +69,19 @@ namespace Fyrion
 
         RenderPass GetRenderPass() const;
 
+        Texture GetInputTexture(StringView view) const;
+        Texture GetOutputTexture(StringView view) const;
+
+        RenderGraphResource* GetInputResource(StringView view) const;
+        RenderGraphResource* GetOutputResource(StringView view) const;
+
     private:
         String                                          name{};
         RenderGraphPassCreation                         creation{};
         RenderPass                                      renderPass{};
         RenderGraphPass*                                renderGraphPass = nullptr;
         TypeHandler*                                    renderGraphPassTypeHandler = nullptr;
-        HashMap<String, SharedPtr<RenderGraphResource>> inputs{};
+        HashMap<String, SharedPtr<RenderGraphInput>>    inputs{};
         HashMap<String, SharedPtr<RenderGraphResource>> outputs{};
         Extent3D                                        extent{};
         Optional<Vec4>                                  clearColor{};

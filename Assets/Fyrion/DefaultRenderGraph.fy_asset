@@ -1,9 +1,18 @@
 {
-    "uuid": "6686350a-37e8-fcbf-401f-4b555040de37",
-    "_type": "Fyrion::RenderGraphAsset",
-    "passes" : [
-        "Fyrion::SceneRenderPass"
-    ],
-    "colorOutput" : "Fyrion::SceneRenderPass#Color",
-    "depthOutput" : "Fyrion::SceneRenderPass#Depth"
+	"uuid": "6686350a-37e8-fcbf-401f-4b555040de37",
+	"_type": "Fyrion::RenderGraphAsset",
+	"passes": [
+		"Fyrion::SceneRenderPass",
+		"Fyrion::LightingRenderPass"
+	],
+	"edges": [
+		{
+			"output": "GBufferColor",
+			"nodeOutput": "Fyrion::SceneRenderPass",
+			"input": "GBufferColor",
+			"nodeInput": "Fyrion::LightingRenderPass"
+		}
+	],
+	"colorOutput": "Fyrion::LightingRenderPass#LightColor",
+	"depthOutput": "Fyrion::SceneRenderPass#Depth"
 }

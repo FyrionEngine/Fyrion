@@ -86,7 +86,7 @@ namespace Fyrion
         {
             RenderGraphPassBuilder<SceneRenderPass>::Builder(RenderGraphPassType::Graphics)
                 .Output(RenderGraphResourceCreation{
-                    .name = "Color",
+                    .name = "GBufferColor",
                     .type = RenderGraphResourceType::Attachment,
                     .scale = {1.0, 1.0},
                     .clearValue = Color::CORNFLOWER_BLUE.ToVec4(),

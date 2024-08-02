@@ -1,0 +1,9 @@
+Texture2D               gbufferColor    : register(t0);
+RWTexture2D<float4>     lightColor      : register(u1);
+
+
+[numthreads(16, 16, 1)]
+void MainCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
+{
+    lightColor[int2(GlobalInvocationID.xy)] = gbufferColor[int2(GlobalInvocationID.xy)];
+}

@@ -9,6 +9,8 @@
 
 namespace Fyrion
 {
+    class VulkanDevice;
+
     static const u32 MaxBindlessResources = 16536;
 
     struct VulkanSwapChainSupportDetails
@@ -71,6 +73,7 @@ namespace Fyrion
         VmaAllocation   allocation{};
         TextureView     textureView{};
         VkDescriptorSet imguiDescriptorSet{};
+        String          name{};
     };
 
     struct VulkanSampler

@@ -5,7 +5,6 @@ struct LightingData
     float4x4 projInverse;
 };
 
-
 Texture2D               gbufferColor    : register(t0);
 Texture2D<float>        depthTex        : register(t1);
 TextureCube             skyCubeTex      : register(t2);
@@ -20,15 +19,14 @@ void MainCS(in uint2 px : SV_DispatchThreadID)
     float2 screenSize;
     lightColor.GetDimensions(screenSize.x, screenSize.y);
 
-    const float2 pixelCenter = px + float2(0.5, 0.5);
-    const float2 inUV = pixelCenter / screenSize;
+    const float2 uv = (float2(px) + 0.5) / screenSize;
     const float depth = depthTex[px];
 
     if (depth == 1.0)
     {
-        float2 d = inUV * 2.0 - 1.0;
-        float4 target    = mul(data.projInverse, float4(d.x, d.y, 1, 1));
-        float4 direction = mul(data.viewInverse, float4(normalize(target.xyz), 0));
+        float2 d            = uv * 2.0 - 1.0;
+        float4 target       = mul(data.projInverse, float4(d.x, d.y * -1.0, 1, 1));
+        float4 direction    = mul(data.viewInverse, float4(normalize(target.xyz), 0));
 
         float3 output = skyCubeTex.SampleLevel(samplerState, direction.xyz, 0).rgb;
         lightColor[px] = float4(output, 1.0);

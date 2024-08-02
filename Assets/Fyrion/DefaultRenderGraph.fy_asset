@@ -11,6 +11,12 @@
 			"nodeOutput": "Fyrion::SceneRenderPass",
 			"input": "GBufferColor",
 			"nodeInput": "Fyrion::LightingRenderPass"
+		},
+		{
+			"output": "Depth",
+			"nodeOutput": "Fyrion::SceneRenderPass",
+			"input": "Depth",
+			"nodeInput": "Fyrion::LightingRenderPass"
 		}
 	],
 	"colorOutput": "Fyrion::LightingRenderPass#LightColor",

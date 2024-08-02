@@ -336,7 +336,7 @@ namespace Fyrion
 
                 Extent size = Extent{viewportExtent.width, viewportExtent.height} * resource->creation.scale;
                 resource->textureCreation.extent = {(size.width), (size.height), 1};
-
+                resource->textureCreation.name = resource->fullName;
                 resource->texture = Graphics::CreateTexture(resource->textureCreation);
             }
         }
@@ -471,7 +471,7 @@ namespace Fyrion
                     ResourceBarrierInfo resourceBarrierInfo{};
                     resourceBarrierInfo.texture = inputIt.second->resource->texture;
                     resourceBarrierInfo.oldLayout = inputIt.second->creation.format != Format::Depth ? ResourceLayout::ColorAttachment : ResourceLayout::DepthStencilAttachment;
-                    resourceBarrierInfo.newLayout = ResourceLayout::ShaderReadOnly;
+                    resourceBarrierInfo.newLayout = inputIt.second->creation.format != Format::Depth ? ResourceLayout::ShaderReadOnly : ResourceLayout::DepthStencilReadOnly;
                     resourceBarrierInfo.isDepth = inputIt.second->creation.format == Format::Depth;
                     cmd.ResourceBarrier(resourceBarrierInfo);
                 }

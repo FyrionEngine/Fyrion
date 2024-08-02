@@ -191,6 +191,9 @@ namespace Fyrion
                 .viewPos = freeViewCamera.GetPosition()
             };
 
+            cameraData.viewInverse = Math::Inverse(cameraData.view);
+            cameraData.projectionInverse = Math::Inverse(cameraData.projection);
+
             renderGraph->SetCameraData(cameraData);
 
             if (open)

@@ -755,7 +755,9 @@ namespace Fyrion
 
     Texture VulkanDevice::CreateTexture(const TextureCreation& textureCreation)
     {
+        static u64 idCounter = 0;
         VulkanTexture* vulkanTexture = allocator.Alloc<VulkanTexture>(textureCreation);
+        vulkanTexture->id = idCounter++;
 
         VkImageCreateInfo imageCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
         imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -778,12 +780,7 @@ namespace Fyrion
         allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
         allocInfo.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-        vmaCreateImage(vmaAllocator, &imageCreateInfo, &allocInfo, &vulkanTexture->image, &vulkanTexture->allocation, nullptr);
-
-        Texture texture = Texture{vulkanTexture};
-
         TextureViewCreation textureViewCreation{
-            .texture = texture,
             .viewType = textureCreation.defaultView != ViewType::Undefined ? textureCreation.defaultView : ViewType::Type2D,
             .levelCount = textureCreation.mipLevels,
             .layerCount = imageCreateInfo.arrayLayers
@@ -795,6 +792,9 @@ namespace Fyrion
             imageCreateInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
         }
 
+        vmaCreateImage(vmaAllocator, &imageCreateInfo, &allocInfo, &vulkanTexture->image, &vulkanTexture->allocation, nullptr);
+
+        textureViewCreation.texture = {vulkanTexture};
         vulkanTexture->textureView = CreateTextureView(textureViewCreation);
 
         if(!textureCreation.name.Empty())
@@ -803,7 +803,7 @@ namespace Fyrion
             Vulkan::SetObjectName(*this, VK_OBJECT_TYPE_IMAGE, (u64)vulkanTexture->image, vulkanTexture->name);
         }
 
-        return texture;
+        return {vulkanTexture};
     }
 
     TextureView VulkanDevice::CreateTextureView(const TextureViewCreation& textureViewCreation)
@@ -1400,6 +1400,7 @@ namespace Fyrion
     void VulkanDevice::WaitQueue()
     {
         vkQueueWaitIdle(graphicsQueue);
+        vkDeviceWaitIdle(device);
     }
 
     GPUQueue VulkanDevice::GetMainQueue()

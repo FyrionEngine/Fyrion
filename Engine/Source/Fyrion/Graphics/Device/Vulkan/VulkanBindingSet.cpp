@@ -107,9 +107,10 @@ namespace Fyrion
 
     void VulkanBindingVar::SetTexture(const Texture& p_texture)
     {
-        if (texture != p_texture.handler)
+        VulkanTexture* newTexture = static_cast<VulkanTexture*>(p_texture.handler);
+        if (texture == nullptr || texture->id != newTexture->id)
         {
-            texture = static_cast<VulkanTexture*>(p_texture.handler);
+            texture = newTexture;
             MarkDirty();
         }
     }
@@ -297,9 +298,7 @@ namespace Fyrion
                         case DescriptorType::SampledImage:
                         case DescriptorType::StorageImage:
                         {
-                            descriptorSet->descriptorImageInfos[b].imageLayout = vulkanBindingVar->descriptorType == DescriptorType::SampledImage
-                                                                                     ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-                                                                                     : VK_IMAGE_LAYOUT_GENERAL;
+                            bool depthFormat = false;
 
                             if (vulkanBindingVar->textureView)
                             {
@@ -307,12 +306,18 @@ namespace Fyrion
                             }
                             else if (vulkanBindingVar->texture)
                             {
+                                depthFormat = vulkanBindingVar->texture->creation.format == Format::Depth;
                                 descriptorSet->descriptorImageInfos[b].imageView = static_cast<VulkanTextureView*>(vulkanBindingVar->texture->textureView.handler)->imageView;
                             }
                             else
                             {
                                 descriptorSet->descriptorImageInfos[b].imageView = static_cast<VulkanTextureView*>(static_cast<VulkanTexture*>(Graphics::GetDefaultTexture().handler)->textureView.handler)->imageView;
                             }
+
+                            descriptorSet->descriptorImageInfos[b].imageLayout = depthFormat ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL :
+                                vulkanBindingVar->descriptorType == DescriptorType::SampledImage
+                                    ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                                    : VK_IMAGE_LAYOUT_GENERAL;
 
                             writeDescriptorSet.pImageInfo = &descriptorSet->descriptorImageInfos[b];
                             break;

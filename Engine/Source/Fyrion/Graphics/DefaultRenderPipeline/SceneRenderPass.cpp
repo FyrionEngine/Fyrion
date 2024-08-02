@@ -89,7 +89,7 @@ namespace Fyrion
                     .name = "GBufferColor",
                     .type = RenderGraphResourceType::Attachment,
                     .scale = {1.0, 1.0},
-                    .clearValue = Color::CORNFLOWER_BLUE.ToVec4(),
+                    .clearValue = Color::BLACK.ToVec4(),
                     .format = Format::RGBA
                 })
                 .Output(RenderGraphResourceCreation{

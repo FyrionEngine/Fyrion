@@ -197,6 +197,7 @@ namespace Fyrion
         subresourceRange.baseMipLevel = resourceBarrierInfo.mipLevel;
         subresourceRange.levelCount = Math::Max(resourceBarrierInfo.levelCount, 1u);
         subresourceRange.layerCount = Math::Max(resourceBarrierInfo.layerCount, 1u);
+        subresourceRange.baseArrayLayer = resourceBarrierInfo.baseArrayLayer;
 
         VkImageMemoryBarrier barrier{};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;

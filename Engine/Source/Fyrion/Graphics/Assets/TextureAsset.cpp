@@ -62,6 +62,8 @@ namespace Fyrion
         mipLevels = generateMipmaps ? static_cast<u32>(std::floor(std::log2(std::max(image.GetWidth(), image.GetHeight())))) + 1 : 1;
 
         format = Format::RGBA;
+        images.Clear();
+
         arrayLayers = 1;
 
         usize bytesSize{};
@@ -113,6 +115,8 @@ namespace Fyrion
     void TextureAsset::SetHDRImage(const HDRImage& image)
     {
         format = Format::RGBA32F;
+        images.Clear();
+
 
         switch (textureType)
         {
@@ -143,7 +147,6 @@ namespace Fyrion
 
         Array<u8> textureBytes(size);
         LoadBlob(textureData, textureBytes.Data(), textureBytes.Size());
-
 
         Array<TextureDataRegion> regions{};
         regions.Reserve(images.Size());

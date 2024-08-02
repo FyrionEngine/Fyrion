@@ -74,6 +74,7 @@ namespace Fyrion
         TextureView     textureView{};
         VkDescriptorSet imguiDescriptorSet{};
         String          name{};
+        u64             id{};
     };
 
     struct VulkanSampler

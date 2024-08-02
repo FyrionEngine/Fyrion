@@ -59,10 +59,11 @@ namespace Fyrion
         General                = 1,
         ColorAttachment        = 2,
         DepthStencilAttachment = 3,
-        ShaderReadOnly         = 4,
-        CopyDest               = 5,
-        CopySource             = 6,
-        Present                = 7
+        DepthStencilReadOnly   = 4,
+        ShaderReadOnly         = 5,
+        CopyDest               = 6,
+        CopySource             = 7,
+        Present                = 8
     };
 
     enum class ViewType
@@ -562,7 +563,9 @@ namespace Fyrion
     struct CameraData
     {
         Mat4 view{1.0};
+        Mat4 viewInverse{1.0};
         Mat4 projection{1.0};
+        Mat4 projectionInverse{1.0};
         Mat4 lastViewProj{1.0};
         Vec3 viewPos{};
     };

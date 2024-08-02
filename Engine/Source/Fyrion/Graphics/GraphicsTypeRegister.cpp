@@ -80,5 +80,22 @@ namespace Fyrion
         textureType.Value<TextureType::Texture2D>("Texture2D");
         textureType.Value<TextureType::Texture3D>("Texture3D");
         textureType.Value<TextureType::Cubemap>("Cubemap");
+
+        auto format = Registry::Type<Format>();
+        format.Value<Format::R>("R");
+        format.Value<Format::R16F>("R16F");
+        format.Value<Format::R32F>("R32F");
+        format.Value<Format::RG>("RG");
+        format.Value<Format::RG16F>("RG16F");
+        format.Value<Format::RG32F>("RG32F");
+        format.Value<Format::RGB>("RGB");
+        format.Value<Format::RGB16F>("RGB16F");
+        format.Value<Format::RGB32F>("RGB32F");
+        format.Value<Format::RGBA>("RGBA");
+        format.Value<Format::RGBA16F>("RGBA16F");
+        format.Value<Format::RGBA32F>("RGBA32F");
+        format.Value<Format::BGRA>("BGRA");
+        format.Value<Format::Depth>("Depth");
+        format.Value<Format::Undefined>("Undefined");
     }
 }

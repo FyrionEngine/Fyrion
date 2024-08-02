@@ -1,16 +1,25 @@
 #include "Fyrion/Graphics/Graphics.hpp"
 #include "Fyrion/Graphics/RenderGraph.hpp"
 #include "Fyrion/Graphics/Assets/ShaderAsset.hpp"
+#include "Fyrion/Graphics/Assets/TextureAsset.hpp"
 
 namespace Fyrion
 {
+    struct LightingData
+    {
+        Mat4 viewInverse{};
+        Mat4 projInverse{};
+    };
+
     class LightingRenderPass : public RenderGraphPass
     {
     public:
         FY_BASE_TYPES(RenderGraphPass);
 
         PipelineState lightingPSO{};
-        BindingSet* bindingSet{};
+        BindingSet*   bindingSet{};
+
+        Texture skyTexture{};
 
         void Init() override
         {
@@ -20,19 +29,31 @@ namespace Fyrion
 
             lightingPSO = Graphics::CreateComputePipelineState(creation);
             bindingSet = Graphics::CreateBindingSet(creation.shader);
+
+            skyTexture = AssetDatabase::FindByPath<TextureAsset>("Sandbox://CasualDay4K.hdr")->GetTexture();
         }
 
         void Render(f64 deltaTime, RenderCommands& cmd) override
         {
+            const CameraData& cameraData = graph->GetCameraData();
+
+            LightingData data {
+                .viewInverse = cameraData.viewInverse,
+                .projInverse = cameraData.projectionInverse,
+            };
+
+
             RenderGraphResource* gbufferColor = node->GetInputResource("GBufferColor");
             RenderGraphResource* lightColor = node->GetOutputResource("LightColor");
 
             bindingSet->GetVar("gbufferColor")->SetTexture(gbufferColor->texture);
+            bindingSet->GetVar("depthTex")->SetTexture(node->GetInputTexture("Depth"));
             bindingSet->GetVar("lightColor")->SetTexture(lightColor->texture);
+            bindingSet->GetVar("skyCubeTex")->SetTexture(skyTexture);
+            bindingSet->GetVar("data")->SetValue(&data, sizeof(LightingData));
 
             cmd.BindPipelineState(lightingPSO);
             cmd.BindBindingSet(lightingPSO, bindingSet);
-
 
             //TODO : remove this barrier, render graph should manage it automatically
             ResourceBarrierInfo resourceBarrierInfo{};
@@ -64,6 +85,11 @@ namespace Fyrion
                     .name = "GBufferColor",
                     .type = RenderGraphResourceType::Texture,
                     .format = Format::RGBA
+                })
+                .Input(RenderGraphResourceCreation{
+                    .name = "Depth",
+                    .type = RenderGraphResourceType::Texture,
+                    .format = Format::Depth
                 })
                 .Output(RenderGraphResourceCreation{
                     .name = "LightColor",

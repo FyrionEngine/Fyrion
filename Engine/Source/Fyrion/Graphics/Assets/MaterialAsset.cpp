@@ -20,8 +20,9 @@ namespace Fyrion
             };
 
             bindingSet = Graphics::CreateBindingSet(AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Shaders/BasicRenderer.raster"));
-            bindingSet->GetVar("texture")->SetTexture(baseColorTexture ? baseColorTexture->GetTexture() : Graphics::GetDefaultTexture());
+            bindingSet->GetVar("baseColorTexture")->SetTexture(baseColorTexture ? baseColorTexture->GetTexture() : Graphics::GetDefaultTexture());
             bindingSet->GetVar("baseColorSampler")->SetSampler(baseColorTexture ? baseColorTexture->GetSampler() : Graphics::GetDefaultSampler());
+            bindingSet->GetVar("normalTexture")->SetTexture(normalTexture ? normalTexture->GetTexture() : Graphics::GetDefaultTexture());
             bindingSet->GetVar("material")->SetValue(&materialData, sizeof(MaterialData));
         }
         return bindingSet;

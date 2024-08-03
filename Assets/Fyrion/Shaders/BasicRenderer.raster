@@ -45,27 +45,46 @@ VSOutput MainVS(VSInput input)
     return output;
 }
 
+//pixel shader
+
 struct Material
 {
     float4 baseColorAlphaCutOff;
 };
 
-ConstantBuffer<Material> material   : register(b0, space1);
+struct PSOutput
+{
+    float4 outAlbedoMetallic    :  SV_TARGET0;
+    float4 outNormalRoughness   :  SV_TARGET1;
+    float4 outPositionAo        :  SV_TARGET2;
+};
 
-Texture2D       texture : register(t1, space1);
-SamplerState    baseColorSampler : register(s2, space1);
+ConstantBuffer<Material> material       : register(b0, space1);
+Texture2D       baseColorTexture        : register(t1, space1);
+SamplerState    baseColorSampler        : register(s2, space1);
+Texture2D       normalTexture           : register(t3, space1);
 
-float4 MainPS(VSOutput input) : SV_TARGET
+PSOutput MainPS(VSOutput input)
 {
     float3 baseColor    = material.baseColorAlphaCutOff.rgb;
-    float alphaCutOff   = material.baseColorAlphaCutOff.a;
+    float  alphaCutOff   = material.baseColorAlphaCutOff.a;
 
-    float4 color = texture.Sample(baseColorSampler, input.uv) * float4(baseColor, 1.0);
+    float4 color = baseColorTexture.Sample(baseColorSampler, input.uv) * float4(baseColor, 1.0);
     if (color.a < alphaCutOff)
     {
         discard;
     }
-    return color;
+
+    float3 binormal = input.tangent.w * cross(input.normal, input.tangent.xyz);
+    float3x3 TBN    = transpose(float3x3(input.tangent.xyz, binormal, input.normal));
+    float3 n        = normalTexture.Sample(baseColorSampler, input.uv).xyz * 2.0 - 1.0; //replace sampler
+    float3 normal   = mul(TBN, n);
+
+    PSOutput output = (PSOutput)0;
+    output.outAlbedoMetallic  = float4(color.xyz, 0.0);
+    output.outNormalRoughness = float4(normal, 1.0);
+    output.outPositionAo      = float4(input.fragPos, 1.0);
+
+    return output;
 }
-
-
+//end pixel shader

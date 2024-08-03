@@ -25,7 +25,7 @@ namespace Fyrion
         TextureAsset* skyTexture{};
 
         DiffuseIrradianceGenerator diffuseIrradianceGenerator;
-        EquirectangularToCubemap equirectangularToCubemap;
+        EquirectangularToCubemap   equirectangularToCubemap;
 
         void Init() override
         {
@@ -42,7 +42,6 @@ namespace Fyrion
 
         void Render(f64 deltaTime, RenderCommands& cmd) override
         {
-
             if (skyTexture != RenderStorage::GetSkybox())
             {
                 skyTexture = RenderStorage::GetSkybox();
@@ -61,10 +60,13 @@ namespace Fyrion
                 .skyColor = RenderStorage::GetSkybox() != nullptr ? Color::WHITE.ToVec4() : Color::BLACK.ToVec4()
             };
 
-            RenderGraphResource* gbufferColor = node->GetInputResource("GBufferColor");
+            RenderGraphResource* gbufferColor = node->GetInputResource("GBufferColorMetallic");
+            RenderGraphResource* gBufferNormalRoughness = node->GetInputResource("GBufferNormalRoughness");
             RenderGraphResource* lightColor = node->GetOutputResource("LightColor");
 
-            bindingSet->GetVar("gbufferColor")->SetTexture(gbufferColor->texture);
+
+            bindingSet->GetVar("gbufferColorMetallic")->SetTexture(gbufferColor->texture);
+            bindingSet->GetVar("gbufferNormalRoughness")->SetTexture(gBufferNormalRoughness->texture);
             bindingSet->GetVar("depthTex")->SetTexture(node->GetInputTexture("Depth"));
             bindingSet->GetVar("lightColor")->SetTexture(lightColor->texture);
             bindingSet->GetVar("sky")->SetTexture(RenderStorage::GetSkybox() != nullptr ? RenderStorage::GetSkybox()->GetTexture() : Texture{});
@@ -104,9 +106,14 @@ namespace Fyrion
         {
             RenderGraphPassBuilder<LightingRenderPass>::Builder(RenderGraphPassType::Compute)
                 .Input(RenderGraphResourceCreation{
-                    .name = "GBufferColor",
+                    .name = "GBufferColorMetallic",
                     .type = RenderGraphResourceType::Texture,
                     .format = Format::RGBA
+                })
+                .Input(RenderGraphResourceCreation{
+                    .name = "GBufferNormalRoughness",
+                    .type = RenderGraphResourceType::Texture,
+                    .format = Format::RGBA16F
                 })
                 .Input(RenderGraphResourceCreation{
                     .name = "Depth",

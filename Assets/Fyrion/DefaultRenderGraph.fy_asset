@@ -7,9 +7,15 @@
 	],
 	"edges": [
 		{
-			"output": "GBufferColor",
+			"output": "GBufferColorMetallic",
 			"nodeOutput": "Fyrion::SceneRenderPass",
-			"input": "GBufferColor",
+			"input": "GBufferColorMetallic",
+			"nodeInput": "Fyrion::LightingRenderPass"
+		},
+		{
+			"output": "GBufferNormalRoughness",
+			"nodeOutput": "Fyrion::SceneRenderPass",
+			"input": "GBufferNormalRoughness",
 			"nodeInput": "Fyrion::LightingRenderPass"
 		},
 		{

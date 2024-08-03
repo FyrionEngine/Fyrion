@@ -86,11 +86,18 @@ namespace Fyrion
         {
             RenderGraphPassBuilder<SceneRenderPass>::Builder(RenderGraphPassType::Graphics)
                 .Output(RenderGraphResourceCreation{
-                    .name = "GBufferColor",
+                    .name = "GBufferColorMetallic",
                     .type = RenderGraphResourceType::Attachment,
                     .scale = {1.0, 1.0},
                     .clearValue = Color::BLACK.ToVec4(),
                     .format = Format::RGBA
+                })
+                .Output(RenderGraphResourceCreation{
+                    .name = "GBufferNormalRoughness",
+                    .type = RenderGraphResourceType::Attachment,
+                    .scale = {1.0, 1.0},
+                    .clearValue = Color::BLACK.ToVec4(),
+                    .format = Format::RGBA16F
                 })
                 .Output(RenderGraphResourceCreation{
                     .name = "Depth",

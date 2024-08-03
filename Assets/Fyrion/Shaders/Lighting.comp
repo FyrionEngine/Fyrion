@@ -1,3 +1,5 @@
+#include "Fyrion://Shaders/Includes/PBR.inc"
+
 
 struct LightingData
 {
@@ -7,14 +9,16 @@ struct LightingData
     float4   skyColor;
 };
 
-Texture2D               gbufferColor        : register(t0);
-Texture2D<float>        depthTex            : register(t1);
-Texture2D               sky                 : register(t2);
-RWTexture2D<float4>     lightColor          : register(u3);
-SamplerState            samplerState        : register(s4);
-TextureCube<float4>     diffuseIrradiance   : register(t5);
+Texture2D               gbufferColorMetallic    : register(t0);
+Texture2D               gbufferNormalRoughness  : register(t1);
 
-ConstantBuffer<LightingData> data           : register(b6);
+Texture2D<float>        depthTex                : register(t2);
+Texture2D               sky                     : register(t3);
+RWTexture2D<float4>     lightColor              : register(u4);
+SamplerState            samplerState            : register(s5);
+TextureCube<float4>     diffuseIrradiance       : register(t6);
+
+ConstantBuffer<LightingData> data               : register(b7);
 
 
 float2 SampleSphericalMap(float3 v)
@@ -48,5 +52,16 @@ void MainCS(in uint2 px : SV_DispatchThreadID)
         return;
     }
 
-    lightColor[px] = gbufferColor[px];
+    float3 baseColor    = gbufferColorMetallic[px].xyz;
+    float3 normal       = gbufferNormalRoughness[px].rgb;
+
+    float3 indirectLight = 0.0;
+
+    float3 irradiance = diffuseIrradiance.Sample(samplerState, normal).rgb;
+
+    indirectLight = baseColor * (irradiance * 3.0);
+    indirectLight = indirectLight * 1.0 / PI;
+
+    float3 finalColor = indirectLight;
+    lightColor[px] = float4(finalColor, 1.0);
 }

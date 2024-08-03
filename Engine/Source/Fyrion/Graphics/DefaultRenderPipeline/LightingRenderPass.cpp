@@ -1,5 +1,6 @@
 #include "Fyrion/Graphics/Graphics.hpp"
 #include "Fyrion/Graphics/RenderGraph.hpp"
+#include "Fyrion/Graphics/RenderStorage.hpp"
 #include "Fyrion/Graphics/Assets/ShaderAsset.hpp"
 #include "Fyrion/Graphics/Assets/TextureAsset.hpp"
 
@@ -9,6 +10,7 @@ namespace Fyrion
     {
         Mat4 viewInverse{};
         Mat4 projInverse{};
+        Vec4 skyColor{};
     };
 
     class LightingRenderPass : public RenderGraphPass
@@ -29,19 +31,17 @@ namespace Fyrion
 
             lightingPSO = Graphics::CreateComputePipelineState(creation);
             bindingSet = Graphics::CreateBindingSet(creation.shader);
-
-            skyTexture = AssetDatabase::FindByPath<TextureAsset>("Sandbox://CasualDay4K.hdr")->GetTexture();
         }
 
         void Render(f64 deltaTime, RenderCommands& cmd) override
         {
             const CameraData& cameraData = graph->GetCameraData();
 
-            LightingData data {
+            LightingData data{
                 .viewInverse = cameraData.viewInverse,
                 .projInverse = cameraData.projectionInverse,
+                .skyColor = RenderStorage::GetSkybox() != nullptr ? Color::WHITE.ToVec4() : Color::BLACK.ToVec4()
             };
-
 
             RenderGraphResource* gbufferColor = node->GetInputResource("GBufferColor");
             RenderGraphResource* lightColor = node->GetOutputResource("LightColor");
@@ -49,7 +49,7 @@ namespace Fyrion
             bindingSet->GetVar("gbufferColor")->SetTexture(gbufferColor->texture);
             bindingSet->GetVar("depthTex")->SetTexture(node->GetInputTexture("Depth"));
             bindingSet->GetVar("lightColor")->SetTexture(lightColor->texture);
-            bindingSet->GetVar("skyCubeTex")->SetTexture(skyTexture);
+            bindingSet->GetVar("sky")->SetTexture(RenderStorage::GetSkybox() != nullptr ? RenderStorage::GetSkybox()->GetTexture() : Texture{});
             bindingSet->GetVar("data")->SetValue(&data, sizeof(LightingData));
 
             cmd.BindPipelineState(lightingPSO);

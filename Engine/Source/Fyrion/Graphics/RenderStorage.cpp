@@ -8,6 +8,8 @@ namespace Fyrion
     {
         HashMap<usize, usize> meshRenderDataIndices{};
         Array<MeshRenderData> meshRenderDataArray{};
+
+        TextureAsset* skyboxAsset = nullptr;
     }
 
     void RenderStorage::AddOrUpdateMeshToRender(usize address, const Mat4& model, MeshAsset* mesh, Span<MaterialAsset*> materials)
@@ -29,6 +31,16 @@ namespace Fyrion
     Span<MeshRenderData> RenderStorage::GetMeshesToRender()
     {
         return meshRenderDataArray;
+    }
+
+    TextureAsset* RenderStorage::GetSkybox()
+    {
+        return skyboxAsset;
+    }
+
+    void RenderStorage::AddSkybox(TextureAsset* skybox)
+    {
+        skyboxAsset = skybox;
     }
 
     void RenderStorage::RemoveMeshFromRender(usize address)

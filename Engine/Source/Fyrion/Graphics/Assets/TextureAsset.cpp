@@ -117,11 +117,24 @@ namespace Fyrion
         format = Format::RGBA32F;
         images.Clear();
 
-
         switch (textureType)
         {
             case TextureType::Texture2D:
+            {
+                arrayLayers = 1;
+
+                images.EmplaceBack(TextureAssetImage{
+                    .byteOffset = 0,
+                    .mip = 0,
+                    .arrayLayer = 0,
+                    .extent = Extent{image.GetWidth(), image.GetHeight()},
+                    .size = static_cast<usize>(image.GetWidth() * image.GetHeight() * image.GetChannels())
+                });
+
+                SaveBlob(textureData, image.GetData().Data(), image.GetData().Size() * sizeof(f32));
+
                 break;
+            }
             case TextureType::Texture3D:
                 break;
             case TextureType::Cubemap:
@@ -396,7 +409,6 @@ namespace Fyrion
         type.Field<&TextureAsset::arrayLayers>("arrayLayers");
         type.Field<&TextureAsset::imageBuffer>("imageBuffer");
         type.Field<&TextureAsset::images>("images");
-        type.Field<&TextureAsset::texture>("texture");
         type.Field<&TextureAsset::textureData>("textureData");
     }
 }

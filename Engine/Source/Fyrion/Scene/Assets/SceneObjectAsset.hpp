@@ -1,5 +1,6 @@
 #pragma once
 #include "Fyrion/Asset/Asset.hpp"
+#include "Fyrion/Graphics/Assets/MaterialAsset.hpp"
 #include "Fyrion/Scene/Component.hpp"
 #include "Fyrion/Scene/SceneObject.hpp"
 #include "Fyrion/Scene/SceneTypes.hpp"

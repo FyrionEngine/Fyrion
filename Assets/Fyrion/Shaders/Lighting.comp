@@ -3,15 +3,28 @@ struct LightingData
 {
     float4x4 viewInverse;
     float4x4 projInverse;
+
+    float4   skyColor;
 };
 
 Texture2D               gbufferColor    : register(t0);
 Texture2D<float>        depthTex        : register(t1);
-TextureCube             skyCubeTex      : register(t2);
+Texture2D               sky             : register(t2);
 RWTexture2D<float4>     lightColor      : register(u3);
 SamplerState            samplerState    : register(s4);
 
 ConstantBuffer<LightingData> data       : register(b5);
+
+
+float2 SampleSphericalMap(float3 v)
+{
+    const float2 invAtan = float2(0.1591, 0.3183);
+    float2 uv = float2(atan2(v.z, v.x), asin(v.y));
+    uv *= invAtan;
+    uv += 0.5;
+    uv *= -1.0;
+    return uv;
+}
 
 [numthreads(16, 16, 1)]
 void MainCS(in uint2 px : SV_DispatchThreadID)
@@ -28,7 +41,7 @@ void MainCS(in uint2 px : SV_DispatchThreadID)
         float4 target       = mul(data.projInverse, float4(d.x, d.y * -1.0, 1, 1));
         float4 direction    = mul(data.viewInverse, float4(normalize(target.xyz), 0));
 
-        float3 output = skyCubeTex.SampleLevel(samplerState, direction.xyz, 0).rgb;
+        float3 output = sky.SampleLevel(samplerState, SampleSphericalMap(direction.xyz), 0).rgb * data.skyColor.rgb;
         lightColor[px] = float4(output, 1.0);
 
         return;

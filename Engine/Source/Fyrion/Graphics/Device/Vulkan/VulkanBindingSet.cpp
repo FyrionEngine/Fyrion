@@ -108,11 +108,20 @@ namespace Fyrion
     void VulkanBindingVar::SetTexture(const Texture& p_texture)
     {
         VulkanTexture* newTexture = static_cast<VulkanTexture*>(p_texture.handler);
-        if (texture == nullptr || texture->id != newTexture->id)
+        if (newTexture != nullptr)
         {
-            texture = newTexture;
+            if (texture == nullptr || texture->id != newTexture->id)
+            {
+                texture = newTexture;
+                MarkDirty();
+            }
+        }
+        else if (texture != nullptr)
+        {
+            texture = {};
             MarkDirty();
         }
+
     }
 
     void VulkanBindingVar::SetTextureView(const TextureView& p_textureView)

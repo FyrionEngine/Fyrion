@@ -1,4 +1,6 @@
 #include "SceneObjectAsset.hpp"
+
+#include "Fyrion/Core/Attributes.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Graphics/RenderGraph.hpp"
 #include "Fyrion/Scene/SceneManager.hpp"

@@ -1,4 +1,7 @@
 #include "ImGui.hpp"
+
+#include <functional>
+
 #include "Fyrion/Platform/Platform.hpp"
 #include "Fyrion/IO/InputTypes.hpp"
 #include "ImGuiPlatform.hpp"
@@ -1048,8 +1051,6 @@ namespace ImGui
             ImGui::SetNextWindowSize(ImVec2(960 * ImGui::GetStyle().ScaleFactor, 540 * ImGui::GetStyle().ScaleFactor), ImGuiCond_Appearing);
         }
 
-
-
         if (ImGui::BeginPopupModal("Assets", &showAssetSelection))
         {
             {
@@ -1096,23 +1097,35 @@ namespace ImGui
                             }
                         }
 
-                        for (Asset* asset : AssetDatabase::FindAssetsByType(assetType))
+                        std::function<void(TypeID typeId)> drawAssetSelection;
+                        drawAssetSelection = [&](const TypeID typeId)
                         {
-                            ImGui::ContentItemDesc contentItem{};
-                            contentItem.ItemId = id;
-                            contentItem.ShowDetails = false;
-                            contentItem.Label = asset->GetName().CStr();
-                            contentItem.CanRename = false;
-                            //contentItem.DetailsDesc = asset->GetDisplayName().CStr();
-
-                            if (ImGui::DrawContentItem(contentItem))
+                            for (Asset* asset : AssetDatabase::FindAssetsByType(typeId))
                             {
-                                showAssetSelection = false;
-                                callback(userData, asset);
+                                ImGui::ContentItemDesc contentItem{};
+                                contentItem.ItemId = id;
+                                contentItem.ShowDetails = false;
+                                contentItem.Label = asset->GetName().CStr();
+                                contentItem.CanRename = false;
+                                //contentItem.DetailsDesc = asset->GetDisplayName().CStr();
+
+                                if (ImGui::DrawContentItem(contentItem))
+                                {
+                                    showAssetSelection = false;
+                                    callback(userData, asset);
+                                }
+                                id += 5;
                             }
 
-                            id += 1000;
-                        }
+                            if (TypeHandler* typeHandler = Registry::FindTypeById(typeId))
+                            {
+                                for(DerivedType derived: typeHandler->GetDerivedTypes())
+                                {
+                                    drawAssetSelection(derived.typeId);
+                                }
+                            }
+                        };
+                        drawAssetSelection(assetType);
                         ImGui::EndContentTable();
                     }
                     ImGui::EndChild();
@@ -1167,19 +1180,6 @@ namespace ImGui
                 }
                 it.second->hasChanged = false;
             }
-
-            // if (it.second->showResourceSelection)
-            // {
-            //     DrawAssetSelection(it.second->showResourceSelection,
-            //                        it.second->resourceTypeSelection,
-            //                        it.second.Get(), [](VoidPtr userData, Asset* asset)
-            //                        {
-            //                            DrawTypeContent* drawTypeContent = static_cast<DrawTypeContent*>(userData);
-            //                            TypeHandler* typeHandler = Registry::FindTypeById(drawTypeContent->resourceTypeSelection);
-            //                            typeHandler->Copy(asset, drawTypeContent->value);
-            //                            drawTypeContent->desc.callback(drawTypeContent->desc, drawTypeContent->instance);
-            //                        });
-            // }
 
             if (it.second->lastFrameUsage + 60 < frame)
             {

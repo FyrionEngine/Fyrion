@@ -1,7 +1,7 @@
 #include "MeshAsset.hpp"
 
 #include "Fyrion/Graphics/Graphics.hpp"
-#include "Fyrion/Graphics/MeshUtils.hpp"
+#include "Fyrion/Graphics/RenderUtils.hpp"
 
 namespace Fyrion
 {
@@ -19,13 +19,13 @@ namespace Fyrion
 
         if (missingTangents)
         {
-            MeshUtils::CalcTangents(p_vertices, p_indices, true);
+            RenderUtils::CalcTangents(p_vertices, p_indices, true);
         }
 
         indicesCount = p_indices.Size();
         verticesCount = p_vertices.Size();
 
-        boundingBox = MeshUtils::CalculateMeshAABB(p_vertices);
+        boundingBox = RenderUtils::CalculateMeshAABB(p_vertices);
 
         materials = p_materials;
         primitives = p_primitives;

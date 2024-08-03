@@ -1,5 +1,11 @@
-#include "MeshUtils.hpp"
+#include "RenderUtils.hpp"
+
+#include <algorithm>
 #include <mikktspace.h>
+
+#include "Graphics.hpp"
+#include "Fyrion/Asset/AssetDatabase.hpp"
+#include "Fyrion/Graphics/Assets/ShaderAsset.hpp"
 
 
 namespace Fyrion
@@ -9,7 +15,7 @@ namespace Fyrion
         struct UserData
         {
             Array<VertexStride>& vertices;
-            const Array<u32>&  indices;
+            const Array<u32>&    indices;
         };
 
 
@@ -44,7 +50,7 @@ namespace Fyrion
 
         void GetNormal(const SMikkTSpaceContext* pContext, float fvNormOut[], const int iFace, const int iVert)
         {
-            UserData&   mesh = *static_cast<UserData*>(pContext->m_pUserData);
+            UserData&     mesh = *static_cast<UserData*>(pContext->m_pUserData);
             VertexStride& v = mesh.vertices[GetVertexIndex(pContext, iFace, iVert)];
             fvNormOut[0] = v.normal.x;
             fvNormOut[1] = v.normal.y;
@@ -53,7 +59,7 @@ namespace Fyrion
 
         void GetTexCoord(const SMikkTSpaceContext* pContext, float fvTexcOut[], const int iFace, const int iVert)
         {
-            UserData&   mesh = *static_cast<UserData*>(pContext->m_pUserData);
+            UserData&     mesh = *static_cast<UserData*>(pContext->m_pUserData);
             VertexStride& v = mesh.vertices[GetVertexIndex(pContext, iFace, iVert)];
             fvTexcOut[0] = v.uv.x;
             fvTexcOut[1] = v.uv.y;
@@ -61,7 +67,7 @@ namespace Fyrion
 
         void SetTangentSpaceBasic(const SMikkTSpaceContext* pContext, const float fvTangent[], const float fSign, const int iFace, const int iVert)
         {
-            UserData&   mesh = *static_cast<UserData*>(pContext->m_pUserData);
+            UserData&     mesh = *static_cast<UserData*>(pContext->m_pUserData);
             VertexStride& v = mesh.vertices[GetVertexIndex(pContext, iFace, iVert)];
             v.tangent.x = fvTangent[0];
             v.tangent.y = fvTangent[1];
@@ -118,7 +124,7 @@ namespace Fyrion
     }
 
 
-    AABB MeshUtils::CalculateMeshAABB(const Array<VertexStride>& vertices)
+    AABB RenderUtils::CalculateMeshAABB(const Array<VertexStride>& vertices)
     {
         AABB boundingBox{};
 
@@ -136,7 +142,7 @@ namespace Fyrion
         return boundingBox;
     }
 
-    void MeshUtils::CalcTangents(Array<VertexStride>& vertices, const Array<u32>& indices, bool useMikktspace)
+    void RenderUtils::CalcTangents(Array<VertexStride>& vertices, const Array<u32>& indices, bool useMikktspace)
     {
         if (useMikktspace)
         {
@@ -165,5 +171,63 @@ namespace Fyrion
         {
             CalculateTangents(vertices, indices);
         }
+    }
+
+    Texture RenderUtils::ConvertEquirectangularToCubemap(RenderCommands& cmd, GPUQueue queue, Texture originTexture, Format format, Extent cubemapSize)
+    {
+        Texture texture = Graphics::CreateTexture(TextureCreation{
+            .extent = {cubemapSize.width, cubemapSize.height, 1},
+            .format = format,
+            .usage = TextureUsage::Storage | TextureUsage::ShaderResource,
+            .arrayLayers = 6,
+            .name = "Cubemap"
+        });
+
+        TextureView textureArrayView = Graphics::CreateTextureView(TextureViewCreation{
+            .texture = texture,
+            .viewType = ViewType::Type2DArray,
+            .layerCount = 6,
+        });
+
+        ShaderAsset* shaderAsset = AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Shaders/Utils/EquirectToCube.comp");
+
+        PipelineState pso = Graphics::CreateComputePipelineState({
+            .shader = shaderAsset
+        });
+
+        BindingSet* bindingSet = Graphics::CreateBindingSet(shaderAsset);
+        bindingSet->GetVar("inputTexture")->SetTexture(originTexture);
+        bindingSet->GetVar("outputTexture")->SetTextureView(textureArrayView);
+
+        cmd.Begin();
+
+        cmd.ResourceBarrier(ResourceBarrierInfo{
+            .texture = texture,
+            .oldLayout = ResourceLayout::Undefined,
+            .newLayout = ResourceLayout::General,
+            .layerCount = 6
+        });
+
+        cmd.BindPipelineState(pso);
+        cmd.BindBindingSet(pso, bindingSet);
+
+        cmd.Dispatch(std::ceil(cubemapSize.width / 32.f),
+                     std::ceil(cubemapSize.height / 32.f),
+                     6.0f);
+
+        cmd.ResourceBarrier(ResourceBarrierInfo{
+            .texture = texture,
+            .oldLayout = ResourceLayout::General,
+            .newLayout = ResourceLayout::ShaderReadOnly,
+            .layerCount = 6
+        });
+
+        cmd.SubmitAndWait(queue);
+
+        Graphics::DestroyBindingSet(bindingSet);
+        Graphics::DestroyComputePipelineState(pso);
+        Graphics::DestroyTextureView(textureArrayView);
+
+        return texture;
     }
 }

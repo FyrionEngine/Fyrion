@@ -61,8 +61,5 @@ namespace Fyrion
         Sampler sampler{};
 
         Blob textureData{};
-
-        void ImportTexture2D();
-        void ImportCubemap(u32 width, u32 height, ConstPtr bytes);
     };
 }

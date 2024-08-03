@@ -412,7 +412,7 @@ namespace Fyrion
         ResourceLayout oldLayout{};
         ResourceLayout newLayout{};
         u32 mipLevel{0};
-        u32 levelCount{0};
+        u32 levelCount{1};
         u32 baseArrayLayer{0};
         u32 layerCount{0};
         bool isDepth{false};

@@ -1,6 +1,7 @@
 #include "Fyrion/Graphics/Graphics.hpp"
 #include "Fyrion/Graphics/RenderGraph.hpp"
 #include "Fyrion/Graphics/RenderStorage.hpp"
+#include "Fyrion/Graphics/RenderUtils.hpp"
 #include "Fyrion/Graphics/Assets/ShaderAsset.hpp"
 #include "Fyrion/Graphics/Assets/TextureAsset.hpp"
 
@@ -21,7 +22,10 @@ namespace Fyrion
         PipelineState lightingPSO{};
         BindingSet*   bindingSet{};
 
-        Texture skyTexture{};
+        TextureAsset* skyTexture{};
+
+        DiffuseIrradianceGenerator diffuseIrradianceGenerator;
+        EquirectangularToCubemap equirectangularToCubemap;
 
         void Init() override
         {
@@ -31,10 +35,24 @@ namespace Fyrion
 
             lightingPSO = Graphics::CreateComputePipelineState(creation);
             bindingSet = Graphics::CreateBindingSet(creation.shader);
+
+            equirectangularToCubemap.Init({512, 512}, Format::RGBA16F);
+            diffuseIrradianceGenerator.Init({64, 64});
         }
 
         void Render(f64 deltaTime, RenderCommands& cmd) override
         {
+
+            if (skyTexture != RenderStorage::GetSkybox())
+            {
+                skyTexture = RenderStorage::GetSkybox();
+                if (skyTexture)
+                {
+                    equirectangularToCubemap.Convert(cmd, skyTexture->GetTexture());
+                    diffuseIrradianceGenerator.Generate(cmd, equirectangularToCubemap.GetTexture());
+                }
+            }
+
             const CameraData& cameraData = graph->GetCameraData();
 
             LightingData data{
@@ -50,6 +68,7 @@ namespace Fyrion
             bindingSet->GetVar("depthTex")->SetTexture(node->GetInputTexture("Depth"));
             bindingSet->GetVar("lightColor")->SetTexture(lightColor->texture);
             bindingSet->GetVar("sky")->SetTexture(RenderStorage::GetSkybox() != nullptr ? RenderStorage::GetSkybox()->GetTexture() : Texture{});
+            bindingSet->GetVar("diffuseIrradiance")->SetTexture(diffuseIrradianceGenerator.GetTexture());
             bindingSet->GetVar("data")->SetValue(&data, sizeof(LightingData));
 
             cmd.BindPipelineState(lightingPSO);
@@ -76,6 +95,9 @@ namespace Fyrion
         {
             Graphics::DestroyBindingSet(bindingSet);
             Graphics::DestroyComputePipelineState(lightingPSO);
+
+            diffuseIrradianceGenerator.Destroy();
+            equirectangularToCubemap.Destroy();
         }
 
         static void RegisterType(NativeTypeHandler<LightingRenderPass>& type)

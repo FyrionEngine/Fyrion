@@ -7,13 +7,14 @@ struct LightingData
     float4   skyColor;
 };
 
-Texture2D               gbufferColor    : register(t0);
-Texture2D<float>        depthTex        : register(t1);
-Texture2D               sky             : register(t2);
-RWTexture2D<float4>     lightColor      : register(u3);
-SamplerState            samplerState    : register(s4);
+Texture2D               gbufferColor        : register(t0);
+Texture2D<float>        depthTex            : register(t1);
+Texture2D               sky                 : register(t2);
+RWTexture2D<float4>     lightColor          : register(u3);
+SamplerState            samplerState        : register(s4);
+TextureCube<float4>     diffuseIrradiance   : register(t5);
 
-ConstantBuffer<LightingData> data       : register(b5);
+ConstantBuffer<LightingData> data           : register(b6);
 
 
 float2 SampleSphericalMap(float3 v)

@@ -168,7 +168,13 @@ namespace Fyrion
                         .regions = {&region, 1}
                     });
 
-                    Texture cubemap = RenderUtils::ConvertEquirectangularToCubemap(cmd, queue, texture, Format::RGBA16F, {1024, 1024});
+                    // cmd.Begin();
+                    //
+                    //
+                    // cmd.SubmitAndWait(queue);
+
+
+//                    Texture cubemap = RenderUtils::ConvertEquirectangularToCubemap(cmd, queue, texture, Format::RGBA16F, {1024, 1024});
 
                     // Array<u8> bytes;
                     // Graphics::GetTextureData(TextureGetDataInfo{

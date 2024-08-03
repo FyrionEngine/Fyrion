@@ -173,17 +173,25 @@ namespace Fyrion
         }
     }
 
-    Texture RenderUtils::ConvertEquirectangularToCubemap(RenderCommands& cmd, GPUQueue queue, Texture originTexture, Format format, Extent cubemapSize)
+    Texture RenderUtils::GenerateBRDFLUT()
     {
-        Texture texture = Graphics::CreateTexture(TextureCreation{
-            .extent = {cubemapSize.width, cubemapSize.height, 1},
+        return {};
+    }
+
+    void EquirectangularToCubemap::Init(Extent extent, Format format)
+    {
+        this->format = format;
+        this->extent = extent;
+
+        texture = Graphics::CreateTexture(TextureCreation{
+            .extent = {extent.width, extent.height, 1},
             .format = format,
             .usage = TextureUsage::Storage | TextureUsage::ShaderResource,
             .arrayLayers = 6,
             .name = "Cubemap"
         });
 
-        TextureView textureArrayView = Graphics::CreateTextureView(TextureViewCreation{
+        textureArrayView = Graphics::CreateTextureView(TextureViewCreation{
             .texture = texture,
             .viewType = ViewType::Type2DArray,
             .layerCount = 6,
@@ -191,15 +199,25 @@ namespace Fyrion
 
         ShaderAsset* shaderAsset = AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Shaders/Utils/EquirectToCube.comp");
 
-        PipelineState pso = Graphics::CreateComputePipelineState({
+        pipelineState = Graphics::CreateComputePipelineState({
             .shader = shaderAsset
         });
 
-        BindingSet* bindingSet = Graphics::CreateBindingSet(shaderAsset);
+        bindingSet = Graphics::CreateBindingSet(shaderAsset);
+    }
+
+    void EquirectangularToCubemap::Destroy()
+    {
+        Graphics::DestroyBindingSet(bindingSet);
+        Graphics::DestroyComputePipelineState(pipelineState);
+        Graphics::DestroyTextureView(textureArrayView);
+        Graphics::DestroyTexture(texture);
+    }
+
+    void EquirectangularToCubemap::Convert(RenderCommands& cmd, Texture originTexture)
+    {
         bindingSet->GetVar("inputTexture")->SetTexture(originTexture);
         bindingSet->GetVar("outputTexture")->SetTextureView(textureArrayView);
-
-        cmd.Begin();
 
         cmd.ResourceBarrier(ResourceBarrierInfo{
             .texture = texture,
@@ -208,11 +226,11 @@ namespace Fyrion
             .layerCount = 6
         });
 
-        cmd.BindPipelineState(pso);
-        cmd.BindBindingSet(pso, bindingSet);
+        cmd.BindPipelineState(pipelineState);
+        cmd.BindBindingSet(pipelineState, bindingSet);
 
-        cmd.Dispatch(std::ceil(cubemapSize.width / 32.f),
-                     std::ceil(cubemapSize.height / 32.f),
+        cmd.Dispatch(std::ceil(extent.width / 32.f),
+                     std::ceil(extent.height / 32.f),
                      6.0f);
 
         cmd.ResourceBarrier(ResourceBarrierInfo{
@@ -221,13 +239,77 @@ namespace Fyrion
             .newLayout = ResourceLayout::ShaderReadOnly,
             .layerCount = 6
         });
+    }
 
-        cmd.SubmitAndWait(queue);
-
-        Graphics::DestroyBindingSet(bindingSet);
-        Graphics::DestroyComputePipelineState(pso);
-        Graphics::DestroyTextureView(textureArrayView);
-
+    Texture EquirectangularToCubemap::GetTexture() const
+    {
         return texture;
+    }
+
+    void DiffuseIrradianceGenerator::Init(Extent extent)
+    {
+        this->extent = extent;
+
+        texture = Graphics::CreateTexture(TextureCreation{
+            .extent = {extent.width, extent.height, 1},
+            .format = Format::RGBA16F,
+            .usage = TextureUsage::Storage | TextureUsage::ShaderResource,
+            .arrayLayers = 6,
+            .name = "Irradiance"
+        });
+
+        textureArrayView = Graphics::CreateTextureView(TextureViewCreation{
+            .texture = texture,
+            .viewType = ViewType::Type2DArray,
+            .layerCount = 6,
+        });
+
+        ShaderAsset* shaderAsset = AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Shaders/Utils/IRMap.comp");
+
+        pipelineState = Graphics::CreateComputePipelineState({
+            .shader = shaderAsset
+        });
+
+        bindingSet = Graphics::CreateBindingSet(shaderAsset);
+    }
+
+    void DiffuseIrradianceGenerator::Generate(RenderCommands& cmd, Texture cubemap)
+    {
+        bindingSet->GetVar("inputTexture")->SetTexture(cubemap);
+        bindingSet->GetVar("outputTexture")->SetTextureView(textureArrayView);
+
+        cmd.ResourceBarrier(ResourceBarrierInfo{
+            .texture = texture,
+            .oldLayout = ResourceLayout::Undefined,
+            .newLayout = ResourceLayout::General,
+            .layerCount = 6
+        });
+
+        cmd.BindPipelineState(pipelineState);
+        cmd.BindBindingSet(pipelineState, bindingSet);
+
+        cmd.Dispatch(std::ceil(extent.width / 32.f),
+                     std::ceil(extent.height / 32.f),
+                     6.0f);
+
+        cmd.ResourceBarrier(ResourceBarrierInfo{
+            .texture = texture,
+            .oldLayout = ResourceLayout::General,
+            .newLayout = ResourceLayout::ShaderReadOnly,
+            .layerCount = 6
+        });
+    }
+
+    Texture DiffuseIrradianceGenerator::GetTexture() const
+    {
+        return texture;
+    }
+
+    void DiffuseIrradianceGenerator::Destroy()
+    {
+        Graphics::DestroyComputePipelineState(pipelineState);
+        Graphics::DestroyTexture(texture);
+        Graphics::DestroyTextureView(textureArrayView);
+        Graphics::DestroyBindingSet(bindingSet);
     }
 }

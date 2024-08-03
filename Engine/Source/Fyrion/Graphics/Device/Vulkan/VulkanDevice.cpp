@@ -1305,16 +1305,18 @@ namespace Fyrion
 
     void VulkanDevice::DestroyComputePipelineState(const PipelineState& pipelineState)
     {
-        VulkanPipelineState* vulkanPipelineState = static_cast<VulkanPipelineState*>(pipelineState.handler);
-        if (vulkanPipelineState->pipeline)
+        if (VulkanPipelineState* vulkanPipelineState = static_cast<VulkanPipelineState*>(pipelineState.handler))
         {
-            vkDestroyPipeline(device, vulkanPipelineState->pipeline, nullptr);
+            if (vulkanPipelineState->pipeline)
+            {
+                vkDestroyPipeline(device, vulkanPipelineState->pipeline, nullptr);
+            }
+            if (vulkanPipelineState->layout)
+            {
+                vkDestroyPipelineLayout(device, vulkanPipelineState->layout, nullptr);
+            }
+            allocator.DestroyAndFree(vulkanPipelineState);
         }
-        if (vulkanPipelineState->layout)
-        {
-            vkDestroyPipelineLayout(device, vulkanPipelineState->layout, nullptr);
-        }
-        allocator.DestroyAndFree(vulkanPipelineState);
     }
 
     void VulkanDevice::DestroyBindingSet(BindingSet* bindingSet)

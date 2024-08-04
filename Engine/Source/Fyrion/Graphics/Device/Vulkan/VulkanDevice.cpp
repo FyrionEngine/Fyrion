@@ -1464,6 +1464,11 @@ namespace Fyrion
         return vulkanBuffer.allocInfo.pMappedData;
     }
 
+    TextureCreation VulkanDevice::GetTextureCreationInfo(Texture texture)
+    {
+        VulkanTexture* vulkanTexture = static_cast<VulkanTexture*>(texture.handler);
+        return vulkanTexture->creation;
+    }
 
     static void CheckVkResult(VkResult err)
     {

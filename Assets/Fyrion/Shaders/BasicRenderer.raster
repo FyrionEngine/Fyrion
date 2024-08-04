@@ -50,6 +50,9 @@ VSOutput MainVS(VSInput input)
 struct Material
 {
     float4 baseColorAlphaCutOff;
+    float4 uvScaleNormalMultiplier;
+    float4 metallicRoughness;
+    float4 emissiveFactor;
 };
 
 struct PSOutput
@@ -60,14 +63,19 @@ struct PSOutput
 };
 
 ConstantBuffer<Material> material       : register(b0, space1);
-Texture2D       baseColorTexture        : register(t1, space1);
-SamplerState    baseColorSampler        : register(s2, space1);
-Texture2D       normalTexture           : register(t3, space1);
+
+Texture2D       baseColorTexture            : register(t1, space1);
+SamplerState    baseColorSampler            : register(s2, space1);
+Texture2D       normalTexture               : register(t3, space1);
+Texture2D       metallicRoughnessTexture    : register(t4, space1);
 
 PSOutput MainPS(VSOutput input)
 {
     float3 baseColor    = material.baseColorAlphaCutOff.rgb;
     float  alphaCutOff   = material.baseColorAlphaCutOff.a;
+
+    float metallic      = 0.0;  //metallicRoughnessTexture.r;
+    float roughness     = 1.0;  //metallicRoughnessTexture.g;
 
     float4 color = baseColorTexture.Sample(baseColorSampler, input.uv) * float4(baseColor, 1.0);
     if (color.a < alphaCutOff)
@@ -81,8 +89,8 @@ PSOutput MainPS(VSOutput input)
     float3 normal   = mul(TBN, n);
 
     PSOutput output = (PSOutput)0;
-    output.outAlbedoMetallic  = float4(color.xyz, 0.0);
-    output.outNormalRoughness = float4(normal, 1.0);
+    output.outAlbedoMetallic  = float4(color.xyz, metallic);
+    output.outNormalRoughness = float4(normal, roughness);
     output.outPositionAo      = float4(input.fragPos, 1.0);
 
     return output;

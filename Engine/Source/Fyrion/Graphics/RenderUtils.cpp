@@ -258,6 +258,8 @@ namespace Fyrion
             .name = "Irradiance"
         });
 
+        Graphics::UpdateTextureLayout(texture, ResourceLayout::Undefined, ResourceLayout::ShaderReadOnly);
+
         textureArrayView = Graphics::CreateTextureView(TextureViewCreation{
             .texture = texture,
             .viewType = ViewType::Type2DArray,
@@ -280,7 +282,7 @@ namespace Fyrion
 
         cmd.ResourceBarrier(ResourceBarrierInfo{
             .texture = texture,
-            .oldLayout = ResourceLayout::Undefined,
+            .oldLayout = ResourceLayout::ShaderReadOnly,
             .newLayout = ResourceLayout::General,
             .layerCount = 6
         });

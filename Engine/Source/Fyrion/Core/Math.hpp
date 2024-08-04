@@ -370,6 +370,11 @@ namespace Fyrion
             return {value[0], value[1]};
         }
 
+        constexpr Vec2 MakeVec2(const Float& x, const Float& y)
+        {
+            return {x, y};
+        }
+
         constexpr auto Radians(const Vec3& other)
         {
             return Vec3{Radians(other.x), Radians(other.y), Radians(other.z)};
@@ -430,6 +435,11 @@ namespace Fyrion
             return Vec3{value[0], value[1], value[2]};
         }
 
+        constexpr auto MakeVec3(const Vec4& value)
+        {
+            return Vec3{value.x, value.y, value.z};
+        }
+
         constexpr auto MakeVec3(const f64* value)
         {
             return Vec3{
@@ -468,6 +478,11 @@ namespace Fyrion
         constexpr Vec4 MakeVec4(const Float* value)
         {
             return Vec4{value[0], value[1], value[2], value[4]};
+        }
+
+        constexpr Vec4 MakeVec4(const Vec2& value1, const Vec2& value2)
+        {
+            return Vec4{value1[0], value1[1], value2[0], value2[1]};
         }
 
         constexpr Quat Normalize(const Quat& value)

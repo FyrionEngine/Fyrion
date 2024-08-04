@@ -52,11 +52,6 @@ float3 TangentToWorld(const float3 v, const float3 N, const float3 S, const floa
     return S * v.x + T * v.y + N * v.z;
 }
 
-float3 F_FresnelSchlick(float3 f0, float3 f90, float cosTheta)
-{
-    return f0 + (f90 - f0) * pow(max(1 - cosTheta, 0), 5);
-}
-
 float D_GGXNdf(float a2, float cosTheta)
 {
     float denom_sqrt = cosTheta * cosTheta * (a2 - 1.0) + 1.0;
@@ -68,4 +63,51 @@ float G_SmithGGXCorrelated(float a2, float NdotV, float NdotL)
     float V = NdotV * sqrt((-NdotV * a2 + NdotV) * NdotV + a2);
     float L = NdotV * sqrt((-NdotV * a2 + NdotV) * NdotV + a2);
     return 2.0 * NdotL * NdotV / (V + L);
+}
+
+// ----------------------------------------------------------------------------
+
+float DistributionGGX(float3 N, float3 H, float roughness)
+{
+    float a = roughness*roughness;
+    float a2 = a*a;
+    float NdotH = max(dot(N, H), 0.0);
+    float NdotH2 = NdotH*NdotH;
+
+    float nom   = a2;
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = PI * denom * denom;
+
+    return nom / denom;
+}
+
+// ----------------------------------------------------------------------------
+
+float GeometrySchlickGGX(float NdotV, float roughness)
+{
+    float r = (roughness + 1.0);
+    float k = (r*r) / 8.0;
+
+    float nom   = NdotV;
+    float denom = NdotV * (1.0 - k) + k;
+
+    return nom / denom;
+}
+
+// ----------------------------------------------------------------------------
+float GeometrySmith(float3 N, float3 V, float3 L, float roughness)
+{
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotL = max(dot(N, L), 0.0);
+    float ggx2 = GeometrySchlickGGX(NdotV, roughness);
+    float ggx1 = GeometrySchlickGGX(NdotL, roughness);
+
+    return ggx1 * ggx2;
+}
+
+// ----------------------------------------------------------------------------
+
+float3 FresnelSchlick(float cosTheta, float3 F0)
+{
+    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }

@@ -2,6 +2,7 @@
 
 #include "Fyrion/Common.hpp"
 #include "Fyrion/Core/Array.hpp"
+#include "Fyrion/Core/Color.hpp"
 #include "Fyrion/Platform/PlatformTypes.hpp"
 #include "Fyrion/Core/StringView.hpp"
 #include "Fyrion/Core/Math.hpp"
@@ -278,6 +279,23 @@ namespace Fyrion
         Compute  = 2,
         Transfer = 3,
         Destroy  = 4
+    };
+
+    enum class LightType
+    {
+        Directional = 0,
+        Point       = 1,
+        Spot        = 2,
+        Area        = 3
+    };
+
+    struct DirectionalLight
+    {
+        Vec4  direction;
+        Color color;
+        f32   intensity;
+        f32   indirectMultipler;
+        bool  castShadows;
     };
 
     struct SwapchainCreation
@@ -695,14 +713,5 @@ namespace Fyrion
     }
 
     typedef void (*FnGraphicsTask)(VoidPtr userData, RenderCommands& cmd, GPUQueue queue);
-
-
-    inline static f32 cubemapVertices[] = {
-        -1.0f, 1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f, -1.0f, -1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f, -1.0f, -1.0f, -1.0f, 1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,
-        -1.0f, -1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 1.0f, -1.0f,
-        -1.0f, -1.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 1.0f, -1.0f, -1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f, 1.0f,
-        1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f, 1.0f, -1.0f,
-        1.0f
-    };
 
 }

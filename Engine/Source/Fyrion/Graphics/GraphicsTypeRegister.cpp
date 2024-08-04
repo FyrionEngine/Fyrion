@@ -97,5 +97,11 @@ namespace Fyrion
         format.Value<Format::BGRA>("BGRA");
         format.Value<Format::Depth>("Depth");
         format.Value<Format::Undefined>("Undefined");
+
+        auto lightType = Registry::Type<LightType>();
+        lightType.Value<LightType::Directional>("Directional");
+        lightType.Value<LightType::Point>("Point");
+        lightType.Value<LightType::Spot>("Spot");
+        lightType.Value<LightType::Area>("Area");
     }
 }

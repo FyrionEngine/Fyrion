@@ -1,4 +1,7 @@
 #include "RenderStorage.hpp"
+
+#include <optional>
+
 #include "GraphicsTypes.hpp"
 #include "Fyrion/Core/HashMap.hpp"
 
@@ -10,7 +13,10 @@ namespace Fyrion
         Array<MeshRenderData> meshRenderDataArray{};
 
         TextureAsset* skyboxAsset = nullptr;
+
+        std::optional<DirectionalLight> directionalLight;
     }
+
 
     void RenderStorage::AddOrUpdateMeshToRender(usize address, const Mat4& model, MeshAsset* mesh, Span<MaterialAsset*> materials)
     {
@@ -23,7 +29,7 @@ namespace Fyrion
 
         MeshRenderData& data = meshRenderDataArray[it->second];
         data.address = address;
-        data.model = model,
+        data.model = model;
         data.mesh = mesh;
         data.materials = materials;
     }
@@ -54,6 +60,24 @@ namespace Fyrion
             meshRenderDataArray.PopBack();
             meshRenderDataIndices.Erase(it);
         }
+    }
 
+    void RenderStorage::AddDirectionalLight(usize address, const DirectionalLight& dirLight)
+    {
+        directionalLight = dirLight;
+    }
+
+    void RenderStorage::RemoveDirectionalLight(usize address)
+    {
+        directionalLight.reset();
+    }
+
+    DirectionalLight* RenderStorage::GetDirectionalLight()
+    {
+        if (directionalLight)
+        {
+            return &directionalLight.value();
+        }
+        return nullptr;
     }
 }

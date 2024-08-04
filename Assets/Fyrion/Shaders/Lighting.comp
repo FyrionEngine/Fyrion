@@ -1,12 +1,21 @@
 #include "Fyrion://Shaders/Includes/PBR.inc"
 
 
+struct DirectionalLight
+{
+	float4 direction;
+	float4 color;
+	float4 intensityIndirect;
+};
+
 struct LightingData
 {
-    float4x4 viewInverse;
-    float4x4 projInverse;
-
-    float4   skyColor;
+    float4x4            viewInverse;
+    float4x4            projInverse;
+    float4              skyColor;
+    float4              viewPos;
+    DirectionalLight    directionalLight[4];
+    uint                directionalLightCount;
 };
 
 Texture2D               gbufferColorMetallic    : register(t0);
@@ -37,8 +46,8 @@ void MainCS(in uint2 px : SV_DispatchThreadID)
     float2 screenSize;
     lightColor.GetDimensions(screenSize.x, screenSize.y);
 
-    const float2 uv = (float2(px) + 0.5) / screenSize;
-    const float depth = depthTex[px];
+    const float2 uv     = (float2(px) + 0.5) / screenSize;
+    const float depth   = depthTex[px];
 
     if (depth == 1.0)
     {
@@ -52,15 +61,51 @@ void MainCS(in uint2 px : SV_DispatchThreadID)
         return;
     }
 
-    float3 baseColor    = gbufferColorMetallic[px].xyz;
-    float3 normal       = gbufferNormalRoughness[px].rgb;
+    float3  baseColor   = gbufferColorMetallic[px].xyz;
+    float3  N           = gbufferNormalRoughness[px].rgb;
+    float   roughness   = 1.0;
+    float   metallic    = 0.0;
+    float3  fragPos     = 0.0;
+    float3  ao          = 1.0;
+
+	float3 V = normalize(data.viewPos.xyz - fragPos);
+
+    float3 F0 = 0.04;
+    F0 = lerp(F0, baseColor, metallic);
+
+    float3 directLightColor = 0.0;
+
+    if (data.directionalLightCount > 0)
+    {
+        float shadow = 0.0;
+
+        DirectionalLight light = data.directionalLight[0];
+        float3 L = normalize(light.direction.xyz);
+        float3 H = normalize(V + L);
+
+        // Cook-Torrance BRDF
+        float  NDF  = DistributionGGX(N, H, roughness);
+        float  G    = GeometrySmith(N, V, L, roughness);
+        float3 F    = FresnelSchlick(clamp(dot(H, V), 0.0, 1.0), F0);
+
+        float3 numerator    = NDF * G * F;
+        float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001;
+        float3 specular = numerator / denominator;
+
+        float3 kD = 1.0 - F;
+        kD *= 1.0 - metallic;
+        float NdotL = max(dot(N, L), 0.0);
+
+        float3 directLight = (kD * (baseColor / PI) + specular) * light.intensityIndirect.x * NdotL;
+        directLightColor += directLight * (1.0 - shadow);
+    }
+
 
     float3 indirectLight = 0.0;
-
-    float3 irradiance = diffuseIrradiance.Sample(samplerState, normal).rgb;
+    float3 irradiance = diffuseIrradiance.Sample(samplerState, N).rgb;
 
     indirectLight = baseColor * (irradiance * 3.0);
-    indirectLight = indirectLight * 1.0 / PI;
+    indirectLight = directLightColor + indirectLight * 1.0 / PI;
 
     float3 finalColor = indirectLight;
     lightColor[px] = float4(finalColor, 1.0);

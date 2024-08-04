@@ -9,6 +9,9 @@ namespace Fyrion
     struct MaterialData
     {
         Vec4 baseColorAlphaCutOff;
+        Vec4 uvScaleNormalMultiplierAlphaMode;
+        Vec4 metallicRoughness;
+        Vec4 emissiveFactor;
     };
 
     BindingSet* MaterialAsset::GetBindingSet()
@@ -16,13 +19,17 @@ namespace Fyrion
         if (!bindingSet)
         {
             MaterialData materialData{
-                .baseColorAlphaCutOff = Math::MakeVec4(GetBaseColor().ToVec3(), alphaCutoff)
+                .baseColorAlphaCutOff = Math::MakeVec4(GetBaseColor().ToVec3(), alphaCutoff),
+                .uvScaleNormalMultiplierAlphaMode = Math::MakeVec4(GetUvScale(), Math::MakeVec2(GetNormalMultiplier(), static_cast<f32>(GetAlphaMode()))),
+                .metallicRoughness = Vec4{GetRoughness(), GetMetallic(), 0.0f, 0.0f},
+                .emissiveFactor = Math::MakeVec4(GetEmissiveFactor(), 0.0)
             };
 
             bindingSet = Graphics::CreateBindingSet(AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Shaders/BasicRenderer.raster"));
             bindingSet->GetVar("baseColorTexture")->SetTexture(baseColorTexture ? baseColorTexture->GetTexture() : Graphics::GetDefaultTexture());
             bindingSet->GetVar("baseColorSampler")->SetSampler(baseColorTexture ? baseColorTexture->GetSampler() : Graphics::GetDefaultSampler());
             bindingSet->GetVar("normalTexture")->SetTexture(normalTexture ? normalTexture->GetTexture() : Graphics::GetDefaultTexture());
+            bindingSet->GetVar("metallicRoughnessTexture")->SetTexture(metallicRoughnessTexture ? metallicRoughnessTexture->GetTexture() : Graphics::GetDefaultTexture());
             bindingSet->GetVar("material")->SetValue(&materialData, sizeof(MaterialData));
         }
         return bindingSet;

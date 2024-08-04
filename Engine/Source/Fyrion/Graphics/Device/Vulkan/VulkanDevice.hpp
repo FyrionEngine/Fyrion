@@ -87,6 +87,7 @@ namespace Fyrion
         RenderCommands& GetTempCmd() override;
         void            UpdateBufferData(const BufferDataInfo& bufferDataInfo) override;
         VoidPtr         GetBufferMappedMemory(const Buffer& buffer) override;
+        TextureCreation GetTextureCreationInfo(Texture texture) override;
 
 
         bool CreateSwapchain(VulkanSwapchain* vulkanSwapchain);

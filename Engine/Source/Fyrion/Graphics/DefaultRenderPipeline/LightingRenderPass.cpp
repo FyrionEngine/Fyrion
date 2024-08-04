@@ -7,11 +7,21 @@
 
 namespace Fyrion
 {
+    struct DirectionalLightData
+    {
+        Vec4             direction;
+        Vec4             color;
+        alignas(16) Vec2 intensityIndirect;
+    };
+
     struct LightingData
     {
-        Mat4 viewInverse{};
-        Mat4 projInverse{};
-        Vec4 skyColor{};
+        Mat4                 viewInverse{};
+        Mat4                 projInverse{};
+        Vec4                 skyColor{};
+        Vec4                 viewPos{};
+        DirectionalLightData directionalLight[4];
+        alignas(16) u32      directionalLightCount = 0;
     };
 
     class LightingRenderPass : public RenderGraphPass
@@ -57,8 +67,23 @@ namespace Fyrion
             LightingData data{
                 .viewInverse = cameraData.viewInverse,
                 .projInverse = cameraData.projectionInverse,
-                .skyColor = RenderStorage::GetSkybox() != nullptr ? Color::WHITE.ToVec4() : Color::BLACK.ToVec4()
+                .skyColor = RenderStorage::GetSkybox() != nullptr ? Color::WHITE.ToVec4() : Color::BLACK.ToVec4(),
+                .viewPos = Math::MakeVec4(cameraData.viewPos, 0.0),
             };
+
+            if (DirectionalLight* directionalLight = RenderStorage::GetDirectionalLight())
+            {
+                data.directionalLight[0].color = directionalLight->color.ToVec4();
+                data.directionalLight[0].direction = directionalLight->direction;
+                data.directionalLight[0].intensityIndirect.x = directionalLight->intensity;
+                data.directionalLight[0].intensityIndirect.y = directionalLight->indirectMultipler;
+                data.directionalLightCount = 1;
+            }
+            else
+            {
+                data.directionalLightCount = 0;
+            }
+
 
             RenderGraphResource* gbufferColor = node->GetInputResource("GBufferColorMetallic");
             RenderGraphResource* gBufferNormalRoughness = node->GetInputResource("GBufferNormalRoughness");

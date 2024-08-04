@@ -16,8 +16,8 @@ namespace Fyrion
     namespace
     {
         SharedPtr<RenderDevice> renderDevice = {};
-        Sampler defaultSampler = {};
-        Texture defaultTexture = {};
+        Sampler                 defaultSampler = {};
+        Texture                 defaultTexture = {};
     }
 
     void GraphicsInit()
@@ -194,7 +194,7 @@ namespace Fyrion
         RenderCommands& tempCmd = renderDevice->GetTempCmd();
         tempCmd.Begin();
 
-        for(const TextureDataRegion& textureRegion : textureDataInfo.regions)
+        for (const TextureDataRegion& textureRegion : textureDataInfo.regions)
         {
             tempCmd.ResourceBarrier(ResourceBarrierInfo{
                 .texture = textureDataInfo.texture,
@@ -210,7 +210,7 @@ namespace Fyrion
                 .bufferOffset = textureRegion.dataOffset,
                 .textureMipLevel = textureRegion.mipLevel,
                 .textureArrayLayer = textureRegion.arrayLayer,
-                .layerCount =  Math::Max(textureRegion.layerCount, 1u),
+                .layerCount = Math::Max(textureRegion.layerCount, 1u),
                 .imageOffset = {},
                 .imageExtent = {textureRegion.extent.width, textureRegion.extent.height, Math::Max(textureRegion.extent.depth, 1u)},
             };
@@ -233,6 +233,32 @@ namespace Fyrion
         DestroyBuffer(buffer);
     }
 
+    void Graphics::UpdateTextureLayout(Texture texture, ResourceLayout oldLayout, ResourceLayout newLayout)
+    {
+        RenderCommands& tempCmd = renderDevice->GetTempCmd();
+        tempCmd.Begin();
+
+        TextureCreation creation = GetTextureCreationInfo(texture);
+
+        for (u32 m = 0; m < creation.mipLevels; ++m)
+        {
+            for (u32 a = 0; a < creation.arrayLayers; ++a)
+            {
+                tempCmd.ResourceBarrier(ResourceBarrierInfo{
+                    .texture = texture,
+                    .oldLayout = oldLayout,
+                    .newLayout = newLayout,
+                    .mipLevel = m,
+                    .levelCount = 1,
+                    .baseArrayLayer = a,
+                    .layerCount = 1
+                });
+            }
+        }
+
+        tempCmd.SubmitAndWait(renderDevice->GetMainQueue());
+    }
+
     VoidPtr Graphics::GetBufferMappedMemory(const Buffer& buffer)
     {
         return renderDevice->GetBufferMappedMemory(buffer);
@@ -241,7 +267,7 @@ namespace Fyrion
     void Graphics::GetTextureData(const TextureGetDataInfo& info, Array<u8>& data)
     {
         RenderCommands& tempCmd = renderDevice->GetTempCmd();
-        usize size = info.extent.width * info.extent.height * GetFormatSize(info.format);
+        usize           size = info.extent.width * info.extent.height * GetFormatSize(info.format);
         data.Resize(size);
 
         Buffer buffer = CreateBuffer(BufferCreation{
@@ -249,7 +275,7 @@ namespace Fyrion
             .allocation = BufferAllocation::TransferToCPU
         });
 
-        BufferImageCopy region {
+        BufferImageCopy region{
             .imageExtent = {info.extent.width, info.extent.height, 1}
         };
 
@@ -260,6 +286,11 @@ namespace Fyrion
         MemCopy(data.Data(), GetBufferMappedMemory(buffer), size);
 
         DestroyBuffer(buffer);
+    }
+
+    TextureCreation Graphics::GetTextureCreationInfo(Texture texture)
+    {
+        return renderDevice->GetTextureCreationInfo(texture);
     }
 
     RenderApiType Graphics::GetRenderApi()

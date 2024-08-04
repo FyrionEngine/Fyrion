@@ -25,9 +25,9 @@ namespace Fyrion
     class DiffuseIrradianceGenerator
     {
     public:
-        void Init(Extent extent);
-        void Destroy();
-        void Generate(RenderCommands& cmd, Texture cubemap);
+        void    Init(Extent extent);
+        void    Destroy();
+        void    Generate(RenderCommands& cmd, Texture cubemap);
         Texture GetTexture() const;
 
     private:
@@ -36,6 +36,38 @@ namespace Fyrion
         TextureView   textureArrayView{};
         PipelineState pipelineState{};
         BindingSet*   bindingSet{};
+    };
+
+    class BRDFLUTGenerator
+    {
+    public:
+        void    Init(Extent extent);
+        void    Destroy();
+        Texture GetTexture() const;
+        Sampler GetSampler() const;
+
+    private:
+        Texture texture{};
+        Sampler sampler{};
+    };
+
+    class SpecularMapGenerator
+    {
+    public:
+        void Init(Extent extent, u32 mips);
+        void Destroy();
+        void Generate(RenderCommands& cmd, Texture cubemap);
+
+        Texture GetTexture() const;
+
+    private:
+        u32           mips{};
+        Extent        extent{};
+        Texture       texture{};
+        PipelineState pipelineState{};
+
+        Array<BindingSet*> bindingSets;
+        Array<TextureView> textureViews;
     };
 }
 

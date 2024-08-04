@@ -36,7 +36,9 @@ namespace Fyrion
     {
         renderDevice->CreateDevice(adapter);
 
-        defaultSampler = renderDevice->CreateSampler({});
+        defaultSampler = renderDevice->CreateSampler({
+            .maxLod = 200
+        });
 
         defaultTexture = renderDevice->CreateTexture({
             .extent = {1, 1, 1}
@@ -306,6 +308,16 @@ namespace Fyrion
     Texture Graphics::GetDefaultTexture()
     {
         return defaultTexture;
+    }
+
+    RenderCommands& Graphics::GetCmd()
+    {
+        return renderDevice->GetTempCmd();
+    }
+
+    GPUQueue Graphics::GetMainQueue()
+    {
+        return renderDevice->GetMainQueue();
     }
 
     void Graphics::AddTask(GraphicsTaskType graphicsTask, VoidPtr userData, FnGraphicsTask task)

@@ -52,17 +52,22 @@ float3 TangentToWorld(const float3 v, const float3 N, const float3 S, const floa
     return S * v.x + T * v.y + N * v.z;
 }
 
-float D_GGXNdf(float a2, float cosTheta)
-{
-    float denom_sqrt = cosTheta * cosTheta * (a2 - 1.0) + 1.0;
-    return a2 / (PI * denom_sqrt * denom_sqrt);
-}
-
 float G_SmithGGXCorrelated(float a2, float NdotV, float NdotL)
 {
     float V = NdotV * sqrt((-NdotV * a2 + NdotV) * NdotV + a2);
     float L = NdotV * sqrt((-NdotV * a2 + NdotV) * NdotV + a2);
     return 2.0 * NdotL * NdotV / (V + L);
+}
+
+// GGX/Towbridge-Reitz normal distribution function.
+// Uses Disney's reparametrization of alpha = roughness^2.
+float NDFGGX(float cosLh, float roughness)
+{
+    float alpha   = roughness * roughness;
+    float alphaSq = alpha * alpha;
+
+    float denom = (cosLh * cosLh) * (alphaSq - 1.0) + 1.0;
+    return alphaSq / (PI * denom * denom);
 }
 
 // ----------------------------------------------------------------------------
@@ -110,4 +115,9 @@ float GeometrySmith(float3 N, float3 V, float3 L, float roughness)
 float3 FresnelSchlick(float cosTheta, float3 F0)
 {
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
+float3 FresnelSchlickRoughness(float cosTheta, float3 F0, float roughness) {
+    float3 r = 1.0 - roughness;
+    return F0 + (max(r, F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }

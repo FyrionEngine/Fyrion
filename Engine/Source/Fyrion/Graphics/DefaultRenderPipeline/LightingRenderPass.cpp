@@ -36,6 +36,8 @@ namespace Fyrion
 
         DiffuseIrradianceGenerator diffuseIrradianceGenerator;
         EquirectangularToCubemap   equirectangularToCubemap;
+        BRDFLUTGenerator           brdflutGenerator;
+        SpecularMapGenerator       specularMapGenerator;
 
         void Init() override
         {
@@ -48,6 +50,8 @@ namespace Fyrion
 
             equirectangularToCubemap.Init({512, 512}, Format::RGBA16F);
             diffuseIrradianceGenerator.Init({64, 64});
+            brdflutGenerator.Init({512, 512});
+            specularMapGenerator.Init({128, 128}, 5);
         }
 
         void Render(f64 deltaTime, RenderCommands& cmd) override
@@ -59,6 +63,7 @@ namespace Fyrion
                 {
                     equirectangularToCubemap.Convert(cmd, skyTexture->GetTexture());
                     diffuseIrradianceGenerator.Generate(cmd, equirectangularToCubemap.GetTexture());
+                    specularMapGenerator.Generate(cmd, equirectangularToCubemap.GetTexture());
                 }
             }
 
@@ -84,7 +89,6 @@ namespace Fyrion
                 data.directionalLightCount = 0;
             }
 
-
             RenderGraphResource* gbufferColor = node->GetInputResource("GBufferColorMetallic");
             RenderGraphResource* gBufferNormalRoughness = node->GetInputResource("GBufferNormalRoughness");
             RenderGraphResource* gBufferPositionAO = node->GetInputResource("GBufferPositionAO");
@@ -97,6 +101,8 @@ namespace Fyrion
             bindingSet->GetVar("lightColor")->SetTexture(lightColor->texture);
             bindingSet->GetVar("sky")->SetTexture(RenderStorage::GetSkybox() != nullptr ? RenderStorage::GetSkybox()->GetTexture() : Texture{});
             bindingSet->GetVar("diffuseIrradiance")->SetTexture(diffuseIrradianceGenerator.GetTexture());
+            bindingSet->GetVar("brdfLUT")->SetTexture(brdflutGenerator.GetTexture());
+            bindingSet->GetVar("specularMap")->SetTexture(specularMapGenerator.GetTexture());
             bindingSet->GetVar("data")->SetValue(&data, sizeof(LightingData));
 
             cmd.BindPipelineState(lightingPSO);
@@ -126,6 +132,8 @@ namespace Fyrion
 
             diffuseIrradianceGenerator.Destroy();
             equirectangularToCubemap.Destroy();
+            brdflutGenerator.Destroy();
+            specularMapGenerator.Destroy();
         }
 
         static void RegisterType(NativeTypeHandler<LightingRenderPass>& type)

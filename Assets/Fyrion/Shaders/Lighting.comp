@@ -27,9 +27,18 @@ Texture2D               sky                     : register(t4);
 RWTexture2D<float4>     lightColor              : register(u5);
 SamplerState            samplerState            : register(s6);
 TextureCube<float4>     diffuseIrradiance       : register(t7);
+Texture2D               brdfLUT                 : register(t8);
+SamplerState            brdfLUTSampler          : register(s9);
+TextureCube<float4>     specularMap             : register(t10);
 
-ConstantBuffer<LightingData> data               : register(b8);
+ConstantBuffer<LightingData> data               : register(b11);
 
+
+uint QuerySpecularTextureLevels(){
+	uint width, height, levels;
+	specularMap.GetDimensions(0, width, height, levels);
+	return levels;
+}
 
 float2 SampleSphericalMap(float3 v)
 {
@@ -76,7 +85,10 @@ void MainCS(in uint2 px : SV_DispatchThreadID)
     float3  fragPos     = gBufferPositionAO[px].xyz;
     float3  ao          = gBufferPositionAO[px].a;
 
-	float3 V = normalize(data.viewPos.xyz - fragPos);
+	float3 V    = normalize(data.viewPos.xyz - fragPos);
+	float cosLo = max(dot(N, V), 0.0);
+
+	float3 Lr   = 2.0 * cosLo * N - V;
 
     float3 F0 = 0.04;
     F0 = lerp(F0, baseColor, metallic);
@@ -111,14 +123,29 @@ void MainCS(in uint2 px : SV_DispatchThreadID)
         directLightColor += directLight * (1.0 - shadow);
     }
 
-
     float3 indirectLight = 0.0;
-    float3 irradiance = diffuseIrradiance.Sample(samplerState, N).rgb;
 
-    indirectLight = baseColor * (irradiance * indirectMultiplier);
-    indirectLight = directLightColor + indirectLight * 1.0 / PI;
+    //indirect light
+    {
+        float3 irradiance = diffuseIrradiance.Sample(samplerState, N).rgb * indirectMultiplier;
 
-    float3 finalColor = indirectLight;
+        float3 F = FresnelSchlickRoughness(cosLo, F0, 1.0);
+        float3 kd = lerp(1.0 - F, 0.0, metallic);
+
+        //diffuse irradiance
+        float3 diffuseIBL = kd * baseColor * irradiance;
+
+        //specular
+        uint    specularTextureLevels   = QuerySpecularTextureLevels();
+        float3  specularIrradiance      = specularMap.SampleLevel(samplerState, Lr, roughness * specularTextureLevels).rgb;
+
+        float2  specularBRDF            = brdfLUT.SampleLevel(brdfLUTSampler, float2(cosLo, roughness), 0).rg;
+        float3  specularIBL             = specularIrradiance * (F0 * specularBRDF.x + specularBRDF.y);
+
+        indirectLight = diffuseIBL + specularIBL;
+    }
+
+    float3 finalColor = directLightColor + indirectLight;
 
     // HDR tonemapping
     finalColor = finalColor / (finalColor + 1.0);

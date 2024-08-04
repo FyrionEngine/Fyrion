@@ -31,6 +31,8 @@ namespace Fyrion::Graphics
     FY_API VoidPtr         GetBufferMappedMemory(const Buffer& buffer);
     FY_API void            GetTextureData(const TextureGetDataInfo& info, Array<u8>& data);
     FY_API TextureCreation GetTextureCreationInfo(Texture texture);
+    FY_API RenderCommands& GetCmd();
+    FY_API GPUQueue        GetMainQueue();
     FY_API RenderApiType   GetRenderApi();
     FY_API Sampler         GetDefaultSampler();
     FY_API Texture         GetDefaultTexture();

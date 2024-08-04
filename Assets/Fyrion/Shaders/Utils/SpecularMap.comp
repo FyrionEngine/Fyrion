@@ -1,0 +1,78 @@
+// https://github.com/Nadrin/PBR
+// Physically Based Rendering
+// Copyright (c) 2017-2018 Michał Siejak
+
+#include "Fyrion://Shaders/Includes/PBR.inc"
+
+TextureCube                 inputTexture        : register(t0);
+RWTexture2DArray<float4>    outputTexture       : register(u1);
+SamplerState                defaultSampler      : register(s2);
+
+struct SpecularMapFilterSettings
+{
+    float roughness;
+};
+
+[[vk::push_constant]] SpecularMapFilterSettings settings;
+
+
+static const uint NumSamples = 1024;
+static const float InvNumSamples = 1.0 / float(NumSamples);
+
+
+float2 SampleHammersley(uint i)
+{
+	return float2(i * InvNumSamples, RadicalInverseVDC(i));
+}
+
+[numthreads(32, 32, 1)]
+void MainCS(uint3 threadID : SV_DispatchthreadID)
+{
+    float roughness = settings.roughness.x;
+
+	uint outputWidth, outputHeight, outputDepth;
+	outputTexture.GetDimensions(outputWidth, outputHeight, outputDepth);
+	if(threadID.x >= outputWidth || threadID.y >= outputHeight)
+	{
+		return;
+	}
+
+	float inputWidth, inputHeight, inputLevels;
+	inputTexture.GetDimensions(0, inputWidth, inputHeight, inputLevels);
+
+	float wt = 4.0 * PI / (6 * inputWidth * inputHeight);
+
+	float3 N = GetSamplingVector(outputWidth, outputHeight, outputDepth, threadID);
+	float3 Lo = N;
+
+	float3 S, T;
+	ComputeBasisVectors(N, S, T);
+
+	float3 color = 0;
+	float weight = 0;
+
+	for(uint i=0; i<NumSamples; ++i)
+	{
+		float2 u = SampleHammersley(i);
+		float3 Lh = TangentToWorld(SampleGGX(u.x, u.y, roughness), N, S, T);
+
+		float3 Li = 2.0 * dot(Lo, Lh) * Lh - Lo;
+
+		float cosLi = dot(N, Li);
+		if(cosLi > 0.0)
+		{
+			float cosLh = max(dot(N, Lh), 0.0);
+			float pdf = NDFGGX(cosLh, roughness) * 0.25;
+			float ws = 1.0 / (NumSamples * pdf);
+
+			// Mip level to sample from.
+			float mipLevel = max(0.5 * log2(ws / wt) + 1.0, 0.0);
+
+			color  += inputTexture.SampleLevel(defaultSampler, Li, mipLevel).rgb * cosLi;
+			weight += cosLi;
+		}
+	}
+	color /= weight;
+
+	outputTexture[threadID] = float4(color, 1.0);
+}

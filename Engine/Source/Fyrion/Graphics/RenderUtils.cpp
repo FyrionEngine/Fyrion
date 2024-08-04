@@ -12,6 +12,11 @@ namespace Fyrion
 {
     namespace
     {
+        struct SpecularMapFilterSettings
+        {
+            alignas(16) f32 roughness;
+        };
+
         struct UserData
         {
             Array<VertexStride>& vertices;
@@ -305,6 +310,169 @@ namespace Fyrion
     Texture DiffuseIrradianceGenerator::GetTexture() const
     {
         return texture;
+    }
+
+    void BRDFLUTGenerator::Init(Extent extent)
+    {
+        texture = Graphics::CreateTexture(TextureCreation{
+            .extent = {extent.width, extent.height, 1},
+            .format = Format::RG16F,
+            .usage = TextureUsage::Storage | TextureUsage::ShaderResource,
+            .arrayLayers = 1,
+            .name = "BRDFLUT"
+        });
+
+        sampler = Graphics::CreateSampler(SamplerCreation{
+            .addressMode = TextureAddressMode::ClampToEdge,
+        });
+
+        ShaderAsset* shader = AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Shaders/Utils/GenBRDFLUT.comp");
+
+        PipelineState pipelineState = Graphics::CreateComputePipelineState({
+            .shader = shader
+        });
+
+        BindingSet* bindingSet = Graphics::CreateBindingSet(shader);
+        bindingSet->GetVar("LUT")->SetTexture(texture);
+
+        RenderCommands& cmd = Graphics::GetCmd();
+        cmd.Begin();
+
+        cmd.ResourceBarrier(ResourceBarrierInfo{
+            .texture = texture,
+            .oldLayout = ResourceLayout::Undefined,
+            .newLayout = ResourceLayout::General,
+        });
+
+        cmd.BindPipelineState(pipelineState);
+        cmd.BindBindingSet(pipelineState, bindingSet);
+        cmd.Dispatch(std::ceil(extent.width / 32.f),
+                     std::ceil(extent.height / 32.f),
+                     1);
+
+        cmd.ResourceBarrier(ResourceBarrierInfo{
+            .texture = texture,
+            .oldLayout = ResourceLayout::General,
+            .newLayout = ResourceLayout::ShaderReadOnly,
+        });
+
+        cmd.SubmitAndWait(Graphics::GetMainQueue());
+
+        Graphics::DestroyComputePipelineState(pipelineState);
+        Graphics::DestroyBindingSet(bindingSet);
+    }
+
+    void BRDFLUTGenerator::Destroy()
+    {
+        Graphics::DestroyTexture(texture);
+        Graphics::DestroySampler(sampler);
+    }
+
+    Texture BRDFLUTGenerator::GetTexture() const
+    {
+        return texture;
+    }
+
+    Sampler BRDFLUTGenerator::GetSampler() const
+    {
+        return sampler;
+    }
+
+    void SpecularMapGenerator::Init(Extent extent, u32 mips)
+    {
+        this->extent = extent;
+        this->mips = mips;
+
+        texture = Graphics::CreateTexture(TextureCreation{
+            .extent = {extent.width, extent.height, 1},
+            .format = Format::RGBA16F,
+            .usage = TextureUsage::Storage | TextureUsage::ShaderResource,
+            .mipLevels = mips,
+            .arrayLayers = 6,
+            .name = "SpecularMap"
+        });
+
+        Graphics::UpdateTextureLayout(texture, ResourceLayout::Undefined, ResourceLayout::ShaderReadOnly);
+
+        ShaderAsset* shaderAsset = AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Shaders/Utils/SpecularMap.comp");
+
+        pipelineState = Graphics::CreateComputePipelineState({
+            .shader = shaderAsset
+        });
+
+        bindingSets.Resize(mips);
+        textureViews.Resize(mips);
+
+        for (u32 i = 0; i < mips; ++i)
+        {
+            bindingSets[i] = Graphics::CreateBindingSet(shaderAsset);
+            textureViews[i] = Graphics::CreateTextureView(TextureViewCreation{
+                .texture = texture,
+                .viewType = ViewType::Type2DArray,
+                .baseMipLevel = i,
+                .layerCount = 6,
+            });
+        }
+    }
+
+    void SpecularMapGenerator::Generate(RenderCommands& cmd, Texture cubemap)
+    {
+        for (int i = 0; i < mips; ++i)
+        {
+            bindingSets[i]->GetVar("inputTexture")->SetTexture(cubemap);
+            bindingSets[i]->GetVar("outputTexture")->SetTextureView(textureViews[i]);
+        }
+
+        cmd.BindPipelineState(pipelineState);
+
+        for (u32 mip = 0; mip < mips; ++mip)
+        {
+            cmd.ResourceBarrier(ResourceBarrierInfo{
+                .texture = texture,
+                .oldLayout = ResourceLayout::ShaderReadOnly,
+                .newLayout = ResourceLayout::General,
+                .mipLevel = mip,
+                .layerCount = 6
+            });
+
+            u32 mipWidth  = extent.width * std::pow(0.5, mip);
+            u32 mipHeight = extent.height * std::pow(0.5, mip);
+
+            SpecularMapFilterSettings settings{
+                .roughness = static_cast<float>(mip) / static_cast<float>(mips - 1)
+            };
+
+            cmd.PushConstants(pipelineState, ShaderStage::Compute, &settings, sizeof(settings));
+            cmd.BindBindingSet(pipelineState, bindingSets[mip]);
+            cmd.Dispatch(std::ceil(mipWidth / 32.f),
+                         std::ceil(mipHeight / 32.f),
+                         6);
+
+            cmd.ResourceBarrier(ResourceBarrierInfo{
+                .texture = texture,
+                .oldLayout = ResourceLayout::General,
+                .newLayout = ResourceLayout::ShaderReadOnly,
+                .mipLevel = mip,
+                .layerCount = 6
+            });
+        }
+    }
+
+    Texture SpecularMapGenerator::GetTexture() const
+    {
+        return texture;
+    }
+
+    void SpecularMapGenerator::Destroy()
+    {
+        Graphics::DestroyTexture(texture);
+        Graphics::DestroyComputePipelineState(pipelineState);
+
+        for (u32 i = 0; i < mips; ++i)
+        {
+            Graphics::DestroyBindingSet(bindingSets[i]);
+            Graphics::DestroyTextureView(textureViews[i]);
+        }
     }
 
     void DiffuseIrradianceGenerator::Destroy()

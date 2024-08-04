@@ -87,11 +87,12 @@ namespace Fyrion
 
             RenderGraphResource* gbufferColor = node->GetInputResource("GBufferColorMetallic");
             RenderGraphResource* gBufferNormalRoughness = node->GetInputResource("GBufferNormalRoughness");
+            RenderGraphResource* gBufferPositionAO = node->GetInputResource("GBufferPositionAO");
             RenderGraphResource* lightColor = node->GetOutputResource("LightColor");
-
 
             bindingSet->GetVar("gbufferColorMetallic")->SetTexture(gbufferColor->texture);
             bindingSet->GetVar("gbufferNormalRoughness")->SetTexture(gBufferNormalRoughness->texture);
+            bindingSet->GetVar("gBufferPositionAO")->SetTexture(gBufferPositionAO->texture);
             bindingSet->GetVar("depthTex")->SetTexture(node->GetInputTexture("Depth"));
             bindingSet->GetVar("lightColor")->SetTexture(lightColor->texture);
             bindingSet->GetVar("sky")->SetTexture(RenderStorage::GetSkybox() != nullptr ? RenderStorage::GetSkybox()->GetTexture() : Texture{});
@@ -133,12 +134,17 @@ namespace Fyrion
                 .Input(RenderGraphResourceCreation{
                     .name = "GBufferColorMetallic",
                     .type = RenderGraphResourceType::Texture,
-                    .format = Format::RGBA
+                    .format = Format::RGBA16F
                 })
                 .Input(RenderGraphResourceCreation{
                     .name = "GBufferNormalRoughness",
                     .type = RenderGraphResourceType::Texture,
                     .format = Format::RGBA16F
+                })
+                .Input(RenderGraphResourceCreation{
+                    .name = "GBufferPositionAO",
+                    .type = RenderGraphResourceType::Texture,
+                    .format = Format::RGBA32F
                 })
                 .Input(RenderGraphResourceCreation{
                     .name = "Depth",

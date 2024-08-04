@@ -90,7 +90,7 @@ namespace Fyrion
                     .type = RenderGraphResourceType::Attachment,
                     .scale = {1.0, 1.0},
                     .clearValue = Color::BLACK.ToVec4(),
-                    .format = Format::RGBA
+                    .format = Format::RGBA16F
                 })
                 .Output(RenderGraphResourceCreation{
                     .name = "GBufferNormalRoughness",
@@ -98,6 +98,13 @@ namespace Fyrion
                     .scale = {1.0, 1.0},
                     .clearValue = Color::BLACK.ToVec4(),
                     .format = Format::RGBA16F
+                })
+                .Output(RenderGraphResourceCreation{
+                    .name = "GBufferPositionAO",
+                    .type = RenderGraphResourceType::Attachment,
+                    .scale = {1.0, 1.0},
+                    .clearValue = Color::BLACK.ToVec4(),
+                    .format = Format::RGBA32F
                 })
                 .Output(RenderGraphResourceCreation{
                     .name = "Depth",

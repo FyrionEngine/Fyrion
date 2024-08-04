@@ -30,6 +30,20 @@ namespace Fyrion
             }
             case SceneNotifications_OnDeactivated:
             {
+                switch (type)
+                {
+                    case LightType::Directional:
+                    {
+                        RenderStorage::RemoveDirectionalLight(reinterpret_cast<usize>(this));
+                        break;
+                    }
+                    case LightType::Point:
+                        break;
+                    case LightType::Spot:
+                        break;
+                    case LightType::Area:
+                        break;
+                }
                 break;
             }
         }

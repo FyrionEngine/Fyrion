@@ -19,6 +19,12 @@
 			"nodeInput": "Fyrion::LightingRenderPass"
 		},
 		{
+			"output": "GBufferPositionAO",
+			"nodeOutput": "Fyrion::SceneRenderPass",
+			"input": "GBufferPositionAO",
+			"nodeInput": "Fyrion::LightingRenderPass"
+		},
+		{
 			"output": "Depth",
 			"nodeOutput": "Fyrion::SceneRenderPass",
 			"input": "Depth",

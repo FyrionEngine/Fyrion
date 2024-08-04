@@ -150,7 +150,7 @@ namespace Fyrion
                             .position = Math::MakeVec3(&positions[v * 3]),
                             .normal = !normals.Empty() ? Math::MakeVec3(&normals[v * 3]) : Vec3{},
                             .color = !colors.Empty() ? Math::MakeVec3(&colors[v * 3]) : Vec3{1, 1, 1},
-                            .uv = !texCoords.Empty() ? Math::MakeVec2(&texCoords[v * 2]) : Vec2{},
+                            .uv = !texCoords.Empty() ? Math::MakeVec2(&texCoords[v * 2]) : Vec2{-1, 1},
                             .tangent = !tangents.Empty() ? Math::MakeVec4(&tangents[v * 4]) : Vec4{},
                         });
                     }

@@ -90,9 +90,8 @@ PSOutput MainPS(VSOutput input)
 
     color = pow(color,2.2);
 
-    float metallic      = 0.0;  //metallicRoughnessTexture.r;
-    float roughness     = 1.0;  //metallicRoughnessTexture.g;
-
+    float roughness     = material.metallicRoughness.x;
+    float metallic      = material.metallicRoughness.y;
 
     float3 normal = input.normal;
 
@@ -117,9 +116,9 @@ PSOutput MainPS(VSOutput input)
 
     if (material.textureProps.w == 1.0)
     {
-        float2 metallicRoughness = metallicRoughnessTexture.Sample(defaultSampler, uv).rg;
-        metallic = metallicRoughness.r;
-        roughness = metallicRoughness.g;
+        float2 metallicRoughness = metallicRoughnessTexture.Sample(defaultSampler, uv).zy;
+        metallic = metallicRoughness.x;
+        roughness = metallicRoughness.y;
     }
 
     PSOutput output = (PSOutput)0;

@@ -24,7 +24,7 @@ namespace Fyrion
                 .uvScaleNormalMultiplierAlphaMode = Math::MakeVec4(GetUvScale(), Math::MakeVec2(GetNormalMultiplier(), static_cast<f32>(GetAlphaMode()))),
                 .metallicRoughness = Vec4{GetRoughness(), GetMetallic(), 0.0f, 0.0f},
                 .emissiveFactor = Math::MakeVec4(GetEmissiveFactor(), 0.0),
-                .textureProps = {},
+                .textureProps = {0.0, 0.0, 0.0, 0.0},
             };
 
             bindingSet = Graphics::CreateBindingSet(AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Shaders/BasicRenderer.raster"));

@@ -333,7 +333,7 @@ namespace Fyrion
         });
 
         BindingSet* bindingSet = Graphics::CreateBindingSet(shader);
-        bindingSet->GetVar("LUT")->SetTexture(texture);
+        bindingSet->GetVar("texture")->SetTexture(texture);
 
         RenderCommands& cmd = Graphics::GetCmd();
         cmd.Begin();
@@ -346,8 +346,8 @@ namespace Fyrion
 
         cmd.BindPipelineState(pipelineState);
         cmd.BindBindingSet(pipelineState, bindingSet);
-        cmd.Dispatch(std::ceil(extent.width / 32.f),
-                     std::ceil(extent.height / 32.f),
+        cmd.Dispatch(extent.width / 32.f,
+                     extent.height / 32.f,
                      1);
 
         cmd.ResourceBarrier(ResourceBarrierInfo{

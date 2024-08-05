@@ -51,7 +51,7 @@ namespace Fyrion
             equirectangularToCubemap.Init({512, 512}, Format::RGBA16F);
             diffuseIrradianceGenerator.Init({64, 64});
             brdflutGenerator.Init({512, 512});
-            specularMapGenerator.Init({128, 128}, 5);
+            specularMapGenerator.Init({256, 256}, 5);
         }
 
         void Render(f64 deltaTime, RenderCommands& cmd) override

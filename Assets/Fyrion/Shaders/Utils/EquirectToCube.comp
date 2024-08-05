@@ -16,5 +16,6 @@ void MainCS(uint3 threadID : SV_DispatchThreadID)
 	float theta = acos(v.y);
 
     float4 color = inputTexture.SampleLevel(defaultSampler, float2(phi/TwoPI, theta/PI), 0);
+    color = min(color, 10.0);
     outputTexture[threadID] = color;
 }

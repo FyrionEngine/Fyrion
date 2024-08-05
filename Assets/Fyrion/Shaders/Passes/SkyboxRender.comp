@@ -3,12 +3,13 @@ struct SkyboxRenderData
     float4x4    viewInverse;
     float4x4    projInverse;
     float4      skyboxProperties;       //rgb color, a = hasSkyboxTexture.
-}
+};
 
 Texture2D<float>                    depthTexture    : register(t0);
 TextureCube<float4>                 skyboxTexture   : register(t1);
 RWTexture2D<float4>                 colorTexture    : register(u2);
 ConstantBuffer<SkyboxRenderData>    data            : register(b3);
+SamplerState                        defaultSampler  : register(s4);
 
 [numthreads(16, 16, 1)]
 void MainCS(in uint2 px : SV_DispatchThreadID)
@@ -17,22 +18,22 @@ void MainCS(in uint2 px : SV_DispatchThreadID)
     colorTexture.GetDimensions(screenSize.x, screenSize.y);
 
     const float2 uv     = (float2(px) + 0.5) / screenSize;
-    const float depth   = depthTex[px];
+    const float depth   = depthTexture[px];
 
     if (depth == 1.0)
     {
-        if (data.skyboxProperties.a == 1.0)
+        if (data.skyboxProperties.w == 1.0)
         {
             float2 d            = uv * 2.0 - 1.0;
             float4 target       = mul(data.projInverse, float4(d.x, d.y * -1.0, 1, 1));
             float4 direction    = mul(data.viewInverse, float4(normalize(target.xyz), 0));
-            float3 output       = sky.SampleLevel(samplerState, direction.xyz, 0).rgb * data.skyColor.rgb;
+            float3 output       = skyboxTexture.SampleLevel(defaultSampler, direction.xyz, 0).rgb * data.skyboxProperties.rgb;
 
-            colorTexture[px] = float4(output.rgb);
+            colorTexture[px] = float4(output.rgb, 1.0);
         }
         else
         {
-            colorTexture[px] = float4(data.skyboxProperties.rgb);
+            colorTexture[px] = float4(pow(data.skyboxProperties.rgb, 2.2), 1.0);
         }
     }
 }

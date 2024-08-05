@@ -3,8 +3,9 @@
 	"_type": "Fyrion::RenderGraphAsset",
 	"passes": [
 		"Fyrion::SceneRenderPass",
+		"Fyrion::SkyboxGenRenderPass",
 		"Fyrion::LightingRenderPass",
-		"Fyrion::SkyboxRenderPass",
+		"Fyrion::SkyboxBlitRenderPass",
 		"Fyrion::PostProcessRenderPass"
 	],
 	"edges": [
@@ -27,20 +28,38 @@
 			"nodeInput": "Fyrion::LightingRenderPass"
 		},
 		{
+			"output": "Skybox",
+			"nodeOutput": "Fyrion::SkyboxGenRenderPass",
+			"input": "Skybox",
+			"nodeInput": "Fyrion::LightingRenderPass"
+		},
+		{
 			"output": "Depth",
 			"nodeOutput": "Fyrion::SceneRenderPass",
 			"input": "Depth",
 			"nodeInput": "Fyrion::LightingRenderPass"
 		},
 		{
-			"output": "LightColor",
-			"nodeOutput": "Fyrion::LightingRenderPass",
-			"input": "LightColor",
-			"nodeInput": "Fyrion::SkyboxRenderPass"
+			"output": "Skybox",
+			"nodeOutput": "Fyrion::SkyboxGenRenderPass",
+			"input": "Skybox",
+			"nodeInput": "Fyrion::SkyboxBlitRenderPass"
 		},
 		{
 			"output": "LightColor",
-			"nodeOutput": "Fyrion::SkyboxRenderPass",
+			"nodeOutput": "Fyrion::LightingRenderPass",
+			"input": "LightColor",
+			"nodeInput": "Fyrion::SkyboxBlitRenderPass"
+		},
+		{
+			"output": "Depth",
+			"nodeOutput": "Fyrion::SceneRenderPass",
+			"input": "Depth",
+			"nodeInput": "Fyrion::SkyboxBlitRenderPass"
+		},
+		{
+			"output": "LightColor",
+			"nodeOutput": "Fyrion::SkyboxBlitRenderPass",
 			"input": "LightColor",
 			"nodeInput": "Fyrion::PostProcessRenderPass"
 		}

@@ -31,11 +31,9 @@ namespace Fyrion
 
         PipelineState lightingPSO{};
         BindingSet*   bindingSet{};
-
-        TextureAsset* skyTexture{};
+        VoidPtr       skyboxReference{};
 
         DiffuseIrradianceGenerator diffuseIrradianceGenerator;
-        EquirectangularToCubemap   equirectangularToCubemap;
         BRDFLUTGenerator           brdflutGenerator;
         SpecularMapGenerator       specularMapGenerator;
 
@@ -48,25 +46,13 @@ namespace Fyrion
             lightingPSO = Graphics::CreateComputePipelineState(creation);
             bindingSet = Graphics::CreateBindingSet(creation.shader);
 
-            equirectangularToCubemap.Init({512, 512}, Format::RGBA16F);
             diffuseIrradianceGenerator.Init({64, 64});
             brdflutGenerator.Init({512, 512});
-            specularMapGenerator.Init({256, 256}, 5);
+            specularMapGenerator.Init({128, 128}, 4);
         }
 
         void Render(f64 deltaTime, RenderCommands& cmd) override
         {
-            if (skyTexture != RenderStorage::GetSkybox())
-            {
-                skyTexture = RenderStorage::GetSkybox();
-                if (skyTexture)
-                {
-                    equirectangularToCubemap.Convert(cmd, skyTexture->GetTexture());
-                    diffuseIrradianceGenerator.Generate(cmd, equirectangularToCubemap.GetTexture());
-                    specularMapGenerator.Generate(cmd, equirectangularToCubemap.GetTexture());
-                }
-            }
-
             const CameraData& cameraData = graph->GetCameraData();
 
             LightingData data{
@@ -87,6 +73,14 @@ namespace Fyrion
             else
             {
                 data.directionalLightCount = 0;
+            }
+
+            RenderGraphResource* skybox = node->GetInputResource("Skybox");
+            if (skybox->reference != skyboxReference)
+            {
+                diffuseIrradianceGenerator.Generate(cmd, skybox->texture);
+                specularMapGenerator.Generate(cmd, skybox->texture);
+                skyboxReference = skybox->reference;
             }
 
             RenderGraphResource* gbufferColor = node->GetInputResource("GBufferColorMetallic");
@@ -119,7 +113,6 @@ namespace Fyrion
             Graphics::DestroyComputePipelineState(lightingPSO);
 
             diffuseIrradianceGenerator.Destroy();
-            equirectangularToCubemap.Destroy();
             brdflutGenerator.Destroy();
             specularMapGenerator.Destroy();
         }
@@ -127,6 +120,10 @@ namespace Fyrion
         static void RegisterType(NativeTypeHandler<LightingRenderPass>& type)
         {
             RenderGraphPassBuilder<LightingRenderPass>::Builder(RenderGraphPassType::Compute)
+                .Input(RenderGraphResourceCreation{
+                    .name = "Skybox",
+                    .type = RenderGraphResourceType::Reference,
+                })
                 .Input(RenderGraphResourceCreation{
                     .name = "GBufferColorMetallic",
                     .type = RenderGraphResourceType::Texture,

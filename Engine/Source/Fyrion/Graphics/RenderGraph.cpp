@@ -56,7 +56,7 @@ namespace Fyrion
 
     RenderGraphResource::~RenderGraphResource()
     {
-        if (texture)
+        if (texture && (creation.type == RenderGraphResourceType::Texture || creation.type == RenderGraphResourceType::Attachment))
         {
             Graphics::DestroyTexture(texture);
         }

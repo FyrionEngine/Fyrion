@@ -2,15 +2,17 @@ namespace Fyrion
 {
 
     void RegisterSceneRenderPass();
+    void RegisterSkyboxGenRenderPass();
     void RegisterLightingRenderPass();
-    void RegisterSkyboxRenderPass();
+    void RegisterSkyboxBlitRenderPass();
     void RegisterPostProcessRenderPass();
 
     void DefaultRenderPipelineInit()
     {
         RegisterSceneRenderPass();
+        RegisterSkyboxGenRenderPass();
         RegisterLightingRenderPass();
-        RegisterSkyboxRenderPass();
+        RegisterSkyboxBlitRenderPass();
         RegisterPostProcessRenderPass();
     }
 

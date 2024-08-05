@@ -31,7 +31,7 @@ namespace Fyrion
         void Init() override
         {
             GraphicsPipelineCreation graphicsPipelineCreation{
-                .shader = AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Shaders/BasicRenderer.raster"),
+                .shader = AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Shaders/Passes/GBufferRender.raster"),
                 .renderPass = node->GetRenderPass(),
                 .depthWrite = true,
                 .cullMode = CullMode::Back,

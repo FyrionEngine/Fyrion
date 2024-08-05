@@ -10,9 +10,6 @@ struct DirectionalLight
 
 struct LightingData
 {
-    float4x4            viewInverse;
-    float4x4            projInverse;
-    float4              skyColor;
     float4              viewPos;
     DirectionalLight    directionalLight[4];
     uint                directionalLightCount;
@@ -23,15 +20,14 @@ Texture2D               gbufferNormalRoughness  : register(t1);
 Texture2D               gBufferPositionAO       : register(t2);
 
 Texture2D<float>        depthTex                : register(t3);
-Texture2D               sky                     : register(t4);
-RWTexture2D<float4>     lightColor              : register(u5);
-SamplerState            samplerState            : register(s6);
-TextureCube<float4>     diffuseIrradiance       : register(t7);
-Texture2D               brdfLUT                 : register(t8);
-SamplerState            brdfLUTSampler          : register(s9);
-TextureCube<float4>     specularMap             : register(t10);
+RWTexture2D<float4>     lightColor              : register(u4);
+SamplerState            samplerState            : register(s5);
+TextureCube<float4>     diffuseIrradiance       : register(t6);
+Texture2D               brdfLUT                 : register(t7);
+SamplerState            brdfLUTSampler          : register(s8);
+TextureCube<float4>     specularMap             : register(t9);
 
-ConstantBuffer<LightingData> data               : register(b11);
+ConstantBuffer<LightingData> data               : register(b10);
 
 
 uint QuerySpecularTextureLevels(){
@@ -40,45 +36,16 @@ uint QuerySpecularTextureLevels(){
 	return levels;
 }
 
-float2 SampleSphericalMap(float3 v)
-{
-    const float2 invAtan = float2(0.1591, 0.3183);
-    float2 uv = float2(atan2(v.z, v.x), asin(v.y));
-    uv *= invAtan;
-    uv += 0.5;
-    uv *= -1.0;
-    return uv;
-}
-
 [numthreads(16, 16, 1)]
 void MainCS(in uint2 px : SV_DispatchThreadID)
 {
-#if 1
+
     const float depth   = depthTex[px];
     if (depth == 1.0)
     {
         lightColor[px] = float4(0.0, 0.0, 0.0, 1.0);
         return;
     }
-#else
-    float2 screenSize;
-    lightColor.GetDimensions(screenSize.x, screenSize.y);
-
-    const float2 uv     = (float2(px) + 0.5) / screenSize;
-    const float depth   = depthTex[px];
-
-    if (depth == 1.0)
-    {
-        float2 d            = uv * 2.0 - 1.0;
-        float4 target       = mul(data.projInverse, float4(d.x, d.y * -1.0, 1, 1));
-        float4 direction    = mul(data.viewInverse, float4(normalize(target.xyz), 0));
-
-        float3 output = sky.SampleLevel(samplerState, SampleSphericalMap(direction.xyz), 0).rgb * data.skyColor.rgb;
-
-        lightColor[px] = float4(output, 1.0);
-        return;
-    }
-#endif
 
     float3  baseColor   = gbufferColorMetallic[px].rgb;
     float3  N           = gbufferNormalRoughness[px].rgb;

@@ -16,9 +16,6 @@ namespace Fyrion
 
     struct LightingData
     {
-        Mat4                 viewInverse{};
-        Mat4                 projInverse{};
-        Vec4                 skyColor{};
         Vec4                 viewPos{};
         DirectionalLightData directionalLight[4];
         alignas(16) u32      directionalLightCount = 0;
@@ -40,7 +37,7 @@ namespace Fyrion
         void Init() override
         {
             ComputePipelineCreation creation{
-                .shader = AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Shaders/Lighting.comp")
+                .shader = AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Shaders/Passes/LightingPass.comp")
             };
 
             lightingPSO = Graphics::CreateComputePipelineState(creation);
@@ -48,7 +45,7 @@ namespace Fyrion
 
             diffuseIrradianceGenerator.Init({64, 64});
             brdflutGenerator.Init({512, 512});
-            specularMapGenerator.Init({128, 128}, 4);
+            specularMapGenerator.Init({128, 128}, 6);
         }
 
         void Render(f64 deltaTime, RenderCommands& cmd) override
@@ -56,9 +53,6 @@ namespace Fyrion
             const CameraData& cameraData = graph->GetCameraData();
 
             LightingData data{
-                .viewInverse = cameraData.viewInverse,
-                .projInverse = cameraData.projectionInverse,
-                .skyColor = RenderStorage::GetSkybox() != nullptr ? Color::WHITE.ToVec4() : Color::BLACK.ToVec4(),
                 .viewPos = Math::MakeVec4(cameraData.viewPos, 0.0),
             };
 
@@ -93,7 +87,6 @@ namespace Fyrion
             bindingSet->GetVar("gBufferPositionAO")->SetTexture(gBufferPositionAO->texture);
             bindingSet->GetVar("depthTex")->SetTexture(node->GetInputTexture("Depth"));
             bindingSet->GetVar("lightColor")->SetTexture(lightColor->texture);
-            bindingSet->GetVar("sky")->SetTexture(RenderStorage::GetSkybox() != nullptr ? RenderStorage::GetSkybox()->GetTexture() : Texture{});
             bindingSet->GetVar("diffuseIrradiance")->SetTexture(diffuseIrradianceGenerator.GetTexture());
             bindingSet->GetVar("brdfLUT")->SetTexture(brdflutGenerator.GetTexture());
             bindingSet->GetVar("specularMap")->SetTexture(specularMapGenerator.GetTexture());

@@ -3,7 +3,8 @@
 	"_type": "Fyrion::RenderGraphAsset",
 	"passes": [
 		"Fyrion::SceneRenderPass",
-		"Fyrion::LightingRenderPass"
+		"Fyrion::LightingRenderPass",
+		"Fyrion::PostProcessRenderPass"
 	],
 	"edges": [
 		{
@@ -29,8 +30,14 @@
 			"nodeOutput": "Fyrion::SceneRenderPass",
 			"input": "Depth",
 			"nodeInput": "Fyrion::LightingRenderPass"
+		},
+		{
+			"output": "LightColor",
+			"nodeOutput": "Fyrion::LightingRenderPass",
+			"input": "LightColor",
+			"nodeInput": "Fyrion::PostProcessRenderPass"
 		}
 	],
-	"colorOutput": "Fyrion::LightingRenderPass#LightColor",
+	"colorOutput": "Fyrion::PostProcessRenderPass#OutputColor",
 	"depthOutput": "Fyrion::SceneRenderPass#Depth"
 }

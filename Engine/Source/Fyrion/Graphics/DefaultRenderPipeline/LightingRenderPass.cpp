@@ -163,7 +163,7 @@ namespace Fyrion
                     .name = "LightColor",
                     .type = RenderGraphResourceType::Texture,
                     .scale = {1.0, 1.0},
-                    .format = Format::RGBA
+                    .format = Format::RGBA16F
                 });
         }
     };

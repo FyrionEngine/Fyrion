@@ -69,6 +69,7 @@ namespace Fyrion
         f32           alphaCutoff{0.5};
         AlphaMode     alphaMode{};
         Vec2          uvScale{1.0f, 1.0f};
+
         BindingSet*   bindingSet = nullptr;
     };
 }

@@ -143,7 +143,7 @@ namespace Fyrion
         void BlitSwapchapin(RenderCommands& cmd);
     };
 
-    template <typename T>
+    template <typename T = void>
     class RenderGraphPassBuilder
     {
     public:
@@ -153,6 +153,12 @@ namespace Fyrion
             builder.creation.name = GetTypeName<T>();
             builder.creation.type = type;
             return builder;
+        }
+
+        RenderGraphPassBuilder& Shader(StringView shaderPath)
+        {
+            FY_ASSERT(false, "not implemented yet");
+            return *this;
         }
 
         RenderGraphPassBuilder& Input(const RenderGraphResourceCreation& resource)

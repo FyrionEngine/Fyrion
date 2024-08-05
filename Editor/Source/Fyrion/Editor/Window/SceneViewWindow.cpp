@@ -145,10 +145,12 @@ namespace Fyrion
             if (movingScene)
             {
                 ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouse;
+                ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoKeyboard;
             }
             else
             {
                 ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
+                ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoKeyboard;
             }
 
             if (!movingScene)

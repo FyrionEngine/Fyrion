@@ -5,6 +5,7 @@
 
 #include "Graphics.hpp"
 #include "Fyrion/Asset/AssetDatabase.hpp"
+#include "Fyrion/Core/Logger.hpp"
 #include "Fyrion/Graphics/Assets/ShaderAsset.hpp"
 
 
@@ -12,6 +13,8 @@ namespace Fyrion
 {
     namespace
     {
+        Logger& logger = Logger::GetLogger("Fyrion::RenderUtils");
+
         struct SpecularMapFilterSettings
         {
             alignas(16) f32 roughness;

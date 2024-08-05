@@ -53,6 +53,14 @@ float2 SampleSphericalMap(float3 v)
 [numthreads(16, 16, 1)]
 void MainCS(in uint2 px : SV_DispatchThreadID)
 {
+#if 0
+    const float depth   = depthTex[px];
+    if (depth == 1.0)
+    {
+        lightColor[px] = float4(0.0, 0.0, 0.0, 1.0);
+        return;
+    }
+#else
     float2 screenSize;
     lightColor.GetDimensions(screenSize.x, screenSize.y);
 
@@ -67,16 +75,10 @@ void MainCS(in uint2 px : SV_DispatchThreadID)
 
         float3 output = sky.SampleLevel(samplerState, SampleSphericalMap(direction.xyz), 0).rgb * data.skyColor.rgb;
 
-
-        // HDR tonemapping
-        output = output / (output + 1.0);
-        // gamma correct
-        output = pow(output, 1.0/2.2);
-
         lightColor[px] = float4(output, 1.0);
-
         return;
     }
+#endif
 
     float3  baseColor   = gbufferColorMetallic[px].rgb;
     float3  N           = gbufferNormalRoughness[px].rgb;
@@ -145,12 +147,5 @@ void MainCS(in uint2 px : SV_DispatchThreadID)
         indirectLight = diffuseIBL + specularIBL;
     }
 
-    float3 finalColor = directLightColor + indirectLight;
-
-    // HDR tonemapping
-    finalColor = finalColor / (finalColor + 1.0);
-    // gamma correct
-    finalColor = pow(finalColor, 1.0/2.2);
-
-    lightColor[px] = float4(finalColor, 1.0);
+    lightColor[px] = float4(directLightColor + indirectLight, 1.0);
 }

@@ -4,6 +4,7 @@
 	"passes": [
 		"Fyrion::SceneRenderPass",
 		"Fyrion::LightingRenderPass",
+		"Fyrion::SkyboxRenderPass",
 		"Fyrion::PostProcessRenderPass"
 	],
 	"edges": [
@@ -34,6 +35,12 @@
 		{
 			"output": "LightColor",
 			"nodeOutput": "Fyrion::LightingRenderPass",
+			"input": "LightColor",
+			"nodeInput": "Fyrion::SkyboxRenderPass"
+		},
+		{
+			"output": "LightColor",
+			"nodeOutput": "Fyrion::SkyboxRenderPass",
 			"input": "LightColor",
 			"nodeInput": "Fyrion::PostProcessRenderPass"
 		}

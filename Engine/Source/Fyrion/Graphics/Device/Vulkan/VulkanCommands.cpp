@@ -218,6 +218,10 @@ namespace Fyrion
                 barrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
                 break;
 
+            case VK_IMAGE_LAYOUT_GENERAL:
+                barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+                break;
+
             case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
                 barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
                 break;
@@ -250,6 +254,10 @@ namespace Fyrion
 
             case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
                 barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+                break;
+
+            case VK_IMAGE_LAYOUT_GENERAL:
+                barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
                 break;
 
             case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:

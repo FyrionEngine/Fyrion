@@ -7,7 +7,10 @@ namespace Fyrion
     public:
         FY_BASE_TYPES(RenderGraphPass);
 
-        void Init() override {}
+        void Init() override
+        {
+
+        }
 
         void Render(f64 deltaTime, RenderCommands& cmd) override
         {

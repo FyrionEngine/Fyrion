@@ -228,7 +228,18 @@ namespace Fyrion
             logger.Error("pass {} not found", pass);
         }
 
+        for (const auto& edge: asset->GetEdges())
+        {
+            graph.AddEdge(edge.nodeInput, edge.nodeOutput);
+        }
+
         nodes = graph.Sort();
+
+
+        for(auto& node: nodes)
+        {
+            logger.Debug("node {} created ", node->name);
+        }
 
         for (SharedPtr<RenderGraphNode>& node : nodes)
         {
@@ -338,6 +349,12 @@ namespace Fyrion
                 resource->textureCreation.extent = {(size.width), (size.height), 1};
                 resource->textureCreation.name = resource->fullName;
                 resource->texture = Graphics::CreateTexture(resource->textureCreation);
+
+                if (resource->creation.type == RenderGraphResourceType::Texture)
+                {
+                    Graphics::UpdateTextureLayout(resource->texture, ResourceLayout::Undefined, ResourceLayout::ShaderReadOnly);
+                    resource->currentLayout = ResourceLayout::ShaderReadOnly;
+                }
             }
         }
 
@@ -442,6 +459,12 @@ namespace Fyrion
 
                 resource->textureCreation.name = fullName;
                 resource->texture = Graphics::CreateTexture(resource->textureCreation);
+
+                if (creation.type == RenderGraphResourceType::Texture)
+                {
+                    Graphics::UpdateTextureLayout(resource->texture, ResourceLayout::Undefined, ResourceLayout::ShaderReadOnly);
+                    resource->currentLayout = ResourceLayout::ShaderReadOnly;
+                }
                 break;
             }
             case RenderGraphResourceType::Reference:
@@ -465,15 +488,38 @@ namespace Fyrion
             cmd.BeginLabel(node->name, {0, 0, 0, 1});
             for(const auto& inputIt: node->inputs)
             {
-                if (inputIt.second->creation.type == RenderGraphResourceType::Texture &&
-                    inputIt.second->resource->creation.type == RenderGraphResourceType::Attachment)
+                if (inputIt.second->inputCreation.type == RenderGraphResourceType::Texture)
                 {
-                    ResourceBarrierInfo resourceBarrierInfo{};
-                    resourceBarrierInfo.texture = inputIt.second->resource->texture;
-                    resourceBarrierInfo.oldLayout = inputIt.second->creation.format != Format::Depth ? ResourceLayout::ColorAttachment : ResourceLayout::DepthStencilAttachment;
-                    resourceBarrierInfo.newLayout = inputIt.second->creation.format != Format::Depth ? ResourceLayout::ShaderReadOnly : ResourceLayout::DepthStencilReadOnly;
-                    resourceBarrierInfo.isDepth = inputIt.second->creation.format == Format::Depth;
-                    cmd.ResourceBarrier(resourceBarrierInfo);
+                    ResourceLayout newLayout = inputIt.second->inputCreation.format != Format::Depth ? ResourceLayout::ShaderReadOnly : ResourceLayout::DepthStencilReadOnly;
+                    if (inputIt.second->resource->currentLayout != newLayout)
+                    {
+                        ResourceBarrierInfo resourceBarrierInfo{};
+                        resourceBarrierInfo.texture = inputIt.second->resource->texture;
+                        resourceBarrierInfo.oldLayout = inputIt.second->resource->currentLayout;
+                        resourceBarrierInfo.newLayout = newLayout;
+                        resourceBarrierInfo.isDepth = inputIt.second->inputCreation.format == Format::Depth;
+                        cmd.ResourceBarrier(resourceBarrierInfo);
+
+                        inputIt.second->resource->currentLayout = newLayout;
+                    }
+                }
+            }
+
+            for (const auto output : node->outputs)
+            {
+                if (output.second->creation.type == RenderGraphResourceType::Texture)
+                {
+                    if (output.second->currentLayout != ResourceLayout::General)
+                    {
+                        ResourceBarrierInfo resourceBarrierInfo{};
+                        resourceBarrierInfo.texture = output.second->texture;
+                        resourceBarrierInfo.oldLayout = output.second->currentLayout;
+                        resourceBarrierInfo.newLayout = ResourceLayout::General;
+                        resourceBarrierInfo.isDepth = false;
+                        cmd.ResourceBarrier(resourceBarrierInfo);
+
+                        output.second->currentLayout = ResourceLayout::General;
+                    }
                 }
             }
 
@@ -517,19 +563,28 @@ namespace Fyrion
             if (node->renderPass)
             {
                 cmd.EndRenderPass();
+
+                for (auto output : node->outputs)
+                {
+                    if (output.second->creation.type == RenderGraphResourceType::Attachment)
+                    {
+                        output.second->currentLayout = output.second->textureCreation.format != Format::Depth ? ResourceLayout::ColorAttachment : ResourceLayout::DepthStencilAttachment;
+                    }
+                }
             }
 
             cmd.EndLabel();
         }
 
-        //TODO: need to check the layout, should I need to keep track of the texture layout?
-        if (colorOutput)
+        if (colorOutput && colorOutput->currentLayout != ResourceLayout::ShaderReadOnly)
         {
-            // ResourceBarrierInfo resourceBarrierInfo{};
-            // resourceBarrierInfo.texture = colorOutput->texture;
-            // resourceBarrierInfo.oldLayout = ResourceLayout::ColorAttachment;
-            // resourceBarrierInfo.newLayout = ResourceLayout::ShaderReadOnly;
-            // cmd.ResourceBarrier(resourceBarrierInfo);
+            ResourceBarrierInfo resourceBarrierInfo{};
+            resourceBarrierInfo.texture = colorOutput->texture;
+            resourceBarrierInfo.oldLayout = colorOutput->currentLayout;
+            resourceBarrierInfo.newLayout = ResourceLayout::ShaderReadOnly;
+            cmd.ResourceBarrier(resourceBarrierInfo);
+
+            colorOutput->currentLayout = ResourceLayout::ShaderReadOnly;
         }
     }
 

@@ -47,6 +47,7 @@ namespace Fyrion
         Texture                     texture{};
         Buffer                      buffer{};
         VoidPtr                     reference{};
+        ResourceLayout              currentLayout{};
 
         ~RenderGraphResource();
     };
@@ -54,7 +55,7 @@ namespace Fyrion
     struct FY_API RenderGraphInput
     {
         String                         fullName{};
-        RenderGraphResourceCreation    creation{};
+        RenderGraphResourceCreation    inputCreation{};
         SharedPtr<RenderGraphResource> resource{};
     };
 

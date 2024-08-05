@@ -33,25 +33,9 @@ namespace Fyrion
             cmd.BindPipelineState(pipelineState);
             cmd.BindBindingSet(pipelineState, bindingSet);
 
-
-            //TODO : remove this barrier, render graph should manage it automatically
-            ResourceBarrierInfo resourceBarrierInfo{};
-            resourceBarrierInfo.texture = outputColor->texture;
-            resourceBarrierInfo.oldLayout = ResourceLayout::Undefined;
-            resourceBarrierInfo.newLayout = ResourceLayout::General;
-            cmd.ResourceBarrier(resourceBarrierInfo);
-
-            cmd.Dispatch(std::ceil(lightColor->textureCreation.extent.width / 8),
-                         std::ceil(lightColor->textureCreation.extent.height / 8),
-                         1);
-
-            //TODO : remove this barrier, render graph should manage it automatically
-            resourceBarrierInfo.oldLayout = ResourceLayout::General;
-            resourceBarrierInfo.newLayout = ResourceLayout::ShaderReadOnly;
-            cmd.ResourceBarrier(resourceBarrierInfo);
-
-
-
+            cmd.Dispatch(std::ceil(lightColor->textureCreation.extent.width / 8.f),
+                         std::ceil(lightColor->textureCreation.extent.height / 8.f),
+                         1.f);
         }
 
         void Destroy() override

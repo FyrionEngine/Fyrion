@@ -307,6 +307,7 @@ namespace Fyrion
     struct AttachmentCreation
     {
         Texture        texture{};
+        TextureView    textureView{};
         ResourceLayout initialLayout{ResourceLayout::Undefined};
         ResourceLayout finalLayout{ResourceLayout::Undefined};
         LoadOp         loadOp{LoadOp::Clear};
@@ -376,22 +377,32 @@ namespace Fyrion
         RenderApiType renderApi{};
     };
 
+    struct VertexInputAttribute
+    {
+        u32    location;
+        u32    binding;
+        Format format;
+        u32    offset;
+    };
+
     struct GraphicsPipelineCreation
     {
-        ShaderAsset*      shader{};
-        Span<Format>      attachments{};
-        Format            depthFormat = Format::Undefined;
-        RenderPass        renderPass{};
-        bool              depthWrite{false};
-        bool              stencilTest{false};
-        bool              blendEnabled{false};
-        f32               minDepthBounds{1.0};
-        f32               maxDepthBounds{0.0};
-        CullMode          cullMode{CullMode::None};
-        CompareOp         compareOperator{CompareOp::Always};
-        PolygonMode       polygonMode{PolygonMode::Fill};
-        PrimitiveTopology primitiveTopology{PrimitiveTopology::TriangleList};
-        PipelineState     pipelineState{};
+        ShaderAsset*               shader{};
+        Span<Format>               attachments{};
+        Format                     depthFormat = Format::Undefined;
+        RenderPass                 renderPass{};
+        bool                       depthWrite{false};
+        bool                       stencilTest{false};
+        bool                       blendEnabled{false};
+        f32                        minDepthBounds{1.0};
+        f32                        maxDepthBounds{0.0};
+        CullMode                   cullMode{CullMode::None};
+        CompareOp                  compareOperator{CompareOp::Always};
+        PolygonMode                polygonMode{PolygonMode::Fill};
+        PrimitiveTopology          primitiveTopology{PrimitiveTopology::TriangleList};
+        Span<VertexInputAttribute> inputs{};
+        u32                        stride{};
+        PipelineState              pipelineState{};
     };
 
     struct ComputePipelineCreation
@@ -586,6 +597,8 @@ namespace Fyrion
         Mat4 projectionInverse{1.0};
         Mat4 lastViewProj{1.0};
         Vec3 viewPos{};
+        f32 nearClip{};
+        f32 farClip{};
     };
 
     struct MeshRenderData

@@ -2,6 +2,7 @@
 	"uuid": "6686350a-37e8-fcbf-401f-4b555040de37",
 	"_type": "Fyrion::RenderGraphAsset",
 	"passes": [
+		"Fyrion::ShadowMapRenderPass",
 		"Fyrion::SceneRenderPass",
 		"Fyrion::SkyboxGenRenderPass",
 		"Fyrion::LightingRenderPass",
@@ -31,6 +32,12 @@
 			"output": "Skybox",
 			"nodeOutput": "Fyrion::SkyboxGenRenderPass",
 			"input": "Skybox",
+			"nodeInput": "Fyrion::LightingRenderPass"
+		},
+		{
+			"output": "ShadowDepthTexture",
+			"nodeOutput": "Fyrion::ShadowMapRenderPass",
+			"input": "ShadowDepthTexture",
 			"nodeInput": "Fyrion::LightingRenderPass"
 		},
 		{

@@ -6,7 +6,6 @@
 #include "Fyrion/Graphics/RenderStorage.hpp"
 #include "Fyrion/Graphics/Assets/DCCAsset.hpp"
 #include "Fyrion/Graphics/Assets/ShaderAsset.hpp"
-#include "Fyrion/Graphics/Assets/TextureAsset.hpp"
 
 
 namespace Fyrion
@@ -16,8 +15,6 @@ namespace Fyrion
     struct SceneData
     {
         Mat4 viewProjection;
-        // Mat4 lightSpace;
-        // Vec4 viewPos;
     };
 
     class SceneRenderPass : public RenderGraphPass

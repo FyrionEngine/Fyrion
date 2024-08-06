@@ -137,6 +137,10 @@ namespace Fyrion
                     .type = RenderGraphResourceType::Texture,
                     .format = Format::Depth
                 })
+                .Input(RenderGraphResourceCreation{
+                    .name = "ShadowDepthTexture",
+                    .type = RenderGraphResourceType::Reference,
+                })
                 .Output(RenderGraphResourceCreation{
                     .name = "LightColor",
                     .type = RenderGraphResourceType::Texture,

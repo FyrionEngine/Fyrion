@@ -634,13 +634,26 @@ namespace Fyrion
 		{
 			const AttachmentCreation& attachment = renderPassCreation.attachments[i];
 
-			VulkanTexture* vulkanTexture = static_cast<VulkanTexture*>(attachment.texture.handler);
-			FY_ASSERT(vulkanTexture, "texture is mandatory");
+			VkFormat format;
 
-			imageViews.EmplaceBack(static_cast<VulkanTextureView*>(vulkanTexture->textureView.handler)->imageView);
+            if (VulkanTexture* vulkanTexture = static_cast<VulkanTexture*>(attachment.texture.handler))
+            {
+                imageViews.EmplaceBack(static_cast<VulkanTextureView*>(vulkanTexture->textureView.handler)->imageView);
+                format = Vulkan::CastFormat(vulkanTexture->creation.format);
+                framebufferSize = vulkanTexture->creation.extent;
+            }
+            else if (VulkanTextureView* vulkanTextureView = static_cast<VulkanTextureView*>(attachment.textureView.handler))
+            {
+                imageViews.EmplaceBack(vulkanTextureView->imageView);
+                VulkanTexture* vulkanTexture = static_cast<VulkanTexture*>(vulkanTextureView->texture.handler);
+                format = Vulkan::CastFormat(vulkanTexture->creation.format);
+                framebufferSize = vulkanTexture->creation.extent;
+            }
+            else
+            {
+                FY_ASSERT(false, "texture or texture view must be provieded");
+            }
 
-			VkFormat format = Vulkan::CastFormat(vulkanTexture->creation.format);
-			framebufferSize = vulkanTexture->creation.extent;
 			bool isDepthFormat = Vulkan::IsDepthFormat(format);
 
 			VkAttachmentDescription attachmentDescription{};
@@ -791,6 +804,10 @@ namespace Fyrion
             textureViewCreation.viewType = ViewType::TypeCube;
             imageCreateInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
         }
+        else if (imageCreateInfo.arrayLayers > 1)
+        {
+            textureViewCreation.viewType = ViewType::Type2DArray;
+        }
 
         vmaCreateImage(vmaAllocator, &imageCreateInfo, &allocInfo, &vulkanTexture->image, &vulkanTexture->allocation, nullptr);
 
@@ -938,15 +955,37 @@ namespace Fyrion
             });
         }
 
-        for (const auto& input : shaderInfo.inputVariables)
+        u32 stride = shaderInfo.stride;
+        if (creation.stride > 0)
         {
-            attributeDescriptions.EmplaceBack(VkVertexInputAttributeDescription{
-                .location = input.location,
-                .binding = 0,
-                .format = Vulkan::CastFormat(input.format),
-                .offset = input.offset
-            });
+            stride = creation.stride;
         }
+
+        if (!creation.inputs.Empty())
+        {
+            for (const auto& input : creation.inputs)
+            {
+                attributeDescriptions.EmplaceBack(VkVertexInputAttributeDescription{
+                    .location = input.location,
+                    .binding = 0,
+                    .format = Vulkan::CastFormat(input.format),
+                    .offset = input.offset
+                });
+            }
+        }
+        else
+        {
+            for (const auto& input : shaderInfo.inputVariables)
+            {
+                attributeDescriptions.EmplaceBack(VkVertexInputAttributeDescription{
+                    .location = input.location,
+                    .binding = 0,
+                    .format = Vulkan::CastFormat(input.format),
+                    .offset = input.offset
+                });
+            }
+        }
+
 
         for (const auto& output : shaderInfo.outputVariables)
         {
@@ -973,7 +1012,7 @@ namespace Fyrion
 
         VkVertexInputBindingDescription bindingDescription{};
         bindingDescription.binding = 0;
-        bindingDescription.stride = shaderInfo.stride;
+        bindingDescription.stride = stride;
         bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
         VkPipelineVertexInputStateCreateInfo vertexInputInfo{VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};

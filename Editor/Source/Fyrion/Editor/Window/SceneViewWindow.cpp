@@ -188,9 +188,11 @@ namespace Fyrion
                 .projection = Math::Perspective(Math::Radians(60.f),
                                                 (f32)extent.width / (f32)extent.height,
                                                 0.1,
-                                                1000),
+                                                200.f),
                 .lastViewProj = Mat4{1.0},
-                .viewPos = freeViewCamera.GetPosition()
+                .viewPos = freeViewCamera.GetPosition(),
+                .nearClip = 0.1,
+                .farClip = 200.f
             };
 
             cameraData.viewInverse = Math::Inverse(cameraData.view);

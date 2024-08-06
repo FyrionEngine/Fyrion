@@ -29,8 +29,8 @@ TextureCube<float4>     specularMap             : register(t9);
 
 ConstantBuffer<LightingData> data               : register(b10);
 
-
-uint QuerySpecularTextureLevels(){
+uint QuerySpecularTextureLevels()
+{
 	uint width, height, levels;
 	specularMap.GetDimensions(0, width, height, levels);
 	return levels;
@@ -39,7 +39,6 @@ uint QuerySpecularTextureLevels(){
 [numthreads(16, 16, 1)]
 void MainCS(in uint2 px : SV_DispatchThreadID)
 {
-
     const float depth   = depthTex[px];
     if (depth == 1.0)
     {
@@ -65,6 +64,7 @@ void MainCS(in uint2 px : SV_DispatchThreadID)
     float3 directLightColor = 0.0;
     float indirectMultiplier = 1.0;
 
+    //direct light
     if (data.directionalLightCount > 0)
     {
         float shadow = 0.0;

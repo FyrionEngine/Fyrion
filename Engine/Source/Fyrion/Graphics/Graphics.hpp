@@ -27,7 +27,7 @@ namespace Fyrion::Graphics
     FY_API void            WaitQueue();
     FY_API void            UpdateBufferData(const BufferDataInfo& bufferDataInfo);
     FY_API void            UpdateTextureData(const TextureDataInfo& textureDataInfo);
-    FY_API void            UpdateTextureLayout(Texture texture, ResourceLayout oldLayout, ResourceLayout newLayout);
+    FY_API void            UpdateTextureLayout(Texture texture, ResourceLayout oldLayout, ResourceLayout newLayout, bool isDepth = false);
     FY_API VoidPtr         GetBufferMappedMemory(const Buffer& buffer);
     FY_API void            GetTextureData(const TextureGetDataInfo& info, Array<u8>& data);
     FY_API TextureCreation GetTextureCreationInfo(Texture texture);

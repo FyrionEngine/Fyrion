@@ -1,11 +1,9 @@
+#include "DefaultRenderPipelineTypes.hpp"
 #include "Fyrion/Graphics/Graphics.hpp"
 #include "Fyrion/Graphics/RenderGraph.hpp"
 #include "Fyrion/Graphics/RenderStorage.hpp"
 #include "Fyrion/Graphics/Assets/ShaderAsset.hpp"
 #include "Fyrion/Graphics/Assets/MeshAsset.hpp"
-
-#define FY_SHADOW_MAP_CASCADE_COUNT 4
-#define FY_SHADOW_MAP_DIM 4096
 
 
 namespace Fyrion
@@ -22,6 +20,7 @@ namespace Fyrion
         TextureView shadowMapTextureViews[FY_SHADOW_MAP_CASCADE_COUNT];
         RenderPass  shadowMapPass[FY_SHADOW_MAP_CASCADE_COUNT];
 
+        ShadowMapDataInfo shadowMapDataInfo{};
 
         struct PushConsts
         {
@@ -38,6 +37,7 @@ namespace Fyrion
                 .arrayLayers = FY_SHADOW_MAP_CASCADE_COUNT
             });
 
+            Graphics::UpdateTextureLayout(shadowMapTexture, ResourceLayout::Undefined, ResourceLayout::DepthStencilReadOnly, true);
 
             for (u32 i = 0; i < FY_SHADOW_MAP_CASCADE_COUNT; ++i)
             {
@@ -65,16 +65,17 @@ namespace Fyrion
             };
 
             pipelineState = Graphics::CreateGraphicsPipelineState(graphicsPipelineCreation);
-
         }
 
         void Render(f64 deltaTime, RenderCommands& cmd) override
         {
+            RenderGraphResource* shadowDepthTexture = node->GetOutputResource("ShadowDepthTexture");
+            shadowDepthTexture->texture = shadowMapTexture;
+            shadowDepthTexture->reference = &shadowMapDataInfo;
+
             if (DirectionalLight* directionalLight = RenderStorage::GetDirectionalLight(); directionalLight != nullptr && directionalLight->castShadows)
             {
                 const CameraData& cameraData = graph->GetCameraData();
-
-                float cascadeSplits[FY_SHADOW_MAP_CASCADE_COUNT];
 
                 float nearClip = cameraData.nearClip;
                 float farClip = cameraData.farClip;
@@ -94,14 +95,14 @@ namespace Fyrion
                     float log = minZ * std::pow(ratio, p);
                     float uniform = minZ + range * p;
                     float d = cascadeSplitLambda * (log - uniform) + uniform;
-                    cascadeSplits[i] = (d - nearClip) / clipRange;
+                    shadowMapDataInfo.cascadeSplits[i] = (d - nearClip) / clipRange;
                 }
 
                 // Calculate orthographic projection matrix for each cascade
                 float lastSplitDist = 0.0;
                 for (uint32_t i = 0; i < FY_SHADOW_MAP_CASCADE_COUNT; i++)
                 {
-                    float splitDist = cascadeSplits[i];
+                    float splitDist = shadowMapDataInfo.cascadeSplits[i];
 
                     Vec3 frustumCorners[8] = {
                         Vec3{-1.0f, 1.0f, 0.0f},
@@ -154,9 +155,9 @@ namespace Fyrion
 
                     // Store split distance and matrix in cascade
                     f32 splitDepth = (cameraData.nearClip + splitDist * clipRange) * -1.0f;
-                    Mat4 viewProjMatrix = lightOrthoMatrix * lightViewMatrix;
+                    shadowMapDataInfo.cascadeViewProjMat[i] = lightOrthoMatrix * lightViewMatrix;
 
-                    lastSplitDist = cascadeSplits[i];
+                    lastSplitDist = shadowMapDataInfo.cascadeSplits[i];
 
                     ClearDepthStencilValue depthStencilValue{
                     };
@@ -176,7 +177,7 @@ namespace Fyrion
                         .maxDepth = 1.0f,
                     });
 
-                    cmd.SetScissor(Rect{0,0, FY_SHADOW_MAP_DIM, FY_SHADOW_MAP_DIM});
+                    cmd.SetScissor(Rect{0, 0, FY_SHADOW_MAP_DIM, FY_SHADOW_MAP_DIM});
                     cmd.BindPipelineState(pipelineState);
 
                     for (MeshRenderData& meshRenderData : RenderStorage::GetMeshesToRender())
@@ -190,7 +191,7 @@ namespace Fyrion
 
                             PushConsts pushConsts{
                                 .model = meshRenderData.model,
-                                .viewProjection = viewProjMatrix,
+                                .viewProjection = shadowMapDataInfo.cascadeViewProjMat[i],
                             };
 
                             cmd.PushConstants(pipelineState, ShaderStage::Vertex, &pushConsts, sizeof(PushConsts));
@@ -206,6 +207,13 @@ namespace Fyrion
                     }
                     cmd.EndRenderPass();
 
+                    cmd.ResourceBarrier(ResourceBarrierInfo{
+                        .texture = shadowMapTexture,
+                        .oldLayout = ResourceLayout::DepthStencilAttachment,
+                        .newLayout = ResourceLayout::DepthStencilReadOnly,
+                        .baseArrayLayer = i,
+                        .isDepth = true
+                    });
                 }
             }
         }

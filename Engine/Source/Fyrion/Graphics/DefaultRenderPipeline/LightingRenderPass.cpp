@@ -1,3 +1,4 @@
+#include "DefaultRenderPipelineTypes.hpp"
 #include "Fyrion/Graphics/Graphics.hpp"
 #include "Fyrion/Graphics/RenderGraph.hpp"
 #include "Fyrion/Graphics/RenderStorage.hpp"
@@ -16,6 +17,8 @@ namespace Fyrion
 
     struct LightingData
     {
+        Vec4                 cascadeSplits;
+        Mat4                 cascadeViewProjMat[FY_SHADOW_MAP_CASCADE_COUNT];
         Vec4                 viewPos{};
         DirectionalLightData directionalLight[4];
         alignas(16) u32      directionalLightCount = 0;
@@ -34,6 +37,8 @@ namespace Fyrion
         BRDFLUTGenerator           brdflutGenerator;
         SpecularMapGenerator       specularMapGenerator;
 
+        Sampler                    shadowMapSampler;
+
         void Init() override
         {
             ComputePipelineCreation creation{
@@ -46,6 +51,12 @@ namespace Fyrion
             diffuseIrradianceGenerator.Init({64, 64});
             brdflutGenerator.Init({512, 512});
             specularMapGenerator.Init({128, 128}, 6);
+
+            shadowMapSampler = Graphics::CreateSampler({
+                .addressMode = TextureAddressMode::ClampToEdge,
+                .maxLod = 1.0,
+                .borderColor = BorderColor::FloatOpaqueWhite
+            });
         }
 
         void Render(f64 deltaTime, RenderCommands& cmd) override
@@ -80,7 +91,16 @@ namespace Fyrion
             RenderGraphResource* gbufferColor = node->GetInputResource("GBufferColorMetallic");
             RenderGraphResource* gBufferNormalRoughness = node->GetInputResource("GBufferNormalRoughness");
             RenderGraphResource* gBufferPositionAO = node->GetInputResource("GBufferPositionAO");
+            RenderGraphResource* shadowDepthTexture = node->GetInputResource("ShadowDepthTexture");
             RenderGraphResource* lightColor = node->GetOutputResource("LightColor");
+
+            ShadowMapDataInfo* shadowMapDataInfo = static_cast<ShadowMapDataInfo*>(shadowDepthTexture->reference);
+            data.cascadeSplits = shadowMapDataInfo->cascadeSplits;
+
+            for (int i = 0; i < FY_SHADOW_MAP_CASCADE_COUNT; ++i)
+            {
+                data.cascadeViewProjMat[i] = shadowMapDataInfo->cascadeViewProjMat[i];
+            }
 
             bindingSet->GetVar("gbufferColorMetallic")->SetTexture(gbufferColor->texture);
             bindingSet->GetVar("gbufferNormalRoughness")->SetTexture(gBufferNormalRoughness->texture);
@@ -90,6 +110,8 @@ namespace Fyrion
             bindingSet->GetVar("diffuseIrradiance")->SetTexture(diffuseIrradianceGenerator.GetTexture());
             bindingSet->GetVar("brdfLUT")->SetTexture(brdflutGenerator.GetTexture());
             bindingSet->GetVar("specularMap")->SetTexture(specularMapGenerator.GetTexture());
+            bindingSet->GetVar("shadowMapTexture")->SetTexture(shadowDepthTexture->texture);
+            bindingSet->GetVar("shadowMapSampler")->SetSampler(shadowMapSampler);
             bindingSet->GetVar("data")->SetValue(&data, sizeof(LightingData));
 
             cmd.BindPipelineState(lightingPSO);
@@ -102,12 +124,14 @@ namespace Fyrion
 
         void Destroy() override
         {
+            Graphics::DestroySampler(shadowMapSampler);
             Graphics::DestroyBindingSet(bindingSet);
             Graphics::DestroyComputePipelineState(lightingPSO);
 
             diffuseIrradianceGenerator.Destroy();
             brdflutGenerator.Destroy();
             specularMapGenerator.Destroy();
+
         }
 
         static void RegisterType(NativeTypeHandler<LightingRenderPass>& type)

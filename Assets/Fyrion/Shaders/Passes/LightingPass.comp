@@ -1,6 +1,7 @@
 #include "Fyrion://Shaders/Includes/PBR.inc"
 
 #define SHADOW_MAP_CASCADE_COUNT 4
+#define FY_CASCADE_DEBUG 0
 
 struct DirectionalLight
 {
@@ -14,8 +15,9 @@ struct LightingData
 	float4              cascadeSplits;
 	float4x4            cascadeViewProjMat[SHADOW_MAP_CASCADE_COUNT];
     float4              viewPos;
+    float4x4            view;
     DirectionalLight    directionalLight[4];
-    uint                directionalLightCount;
+    uint4               lightCount;
 };
 
 Texture2D               gbufferColorMetallic    : register(t0);
@@ -52,7 +54,7 @@ static const float4x4 biasMat = float4x4(
 float textureProj(float4 shadowCoord, float2 offset, uint cascadeIndex)
 {
 	float shadow = 1.0;
-	float bias = 0.05;
+	float bias = 0.0005;
 
 	if ( shadowCoord.z > -1.0 && shadowCoord.z < 1.0 ) {
 		float dist = shadowMapTexture.Sample(shadowMapSampler, float3(shadowCoord.xy + offset, cascadeIndex)).r;
@@ -73,7 +75,7 @@ float filterPCF(float4 sc, uint cascadeIndex)
 
 	float shadowFactor = 0.0;
 	int count = 0;
-	int range = 2;
+	int range = 3;
 
 	for (int x = -range; x <= range; x++) {
 		for (int y = -range; y <= range; y++) {
@@ -103,13 +105,12 @@ void MainCS(in uint2 px : SV_DispatchThreadID)
     float3  fragPos     = gBufferPositionAO[px].xyz;
     float3  ao          = gBufferPositionAO[px].a;
 
-    float3  viewPos    = (data.viewPos * float4(fragPos, 1)).xyz;
+    float3  fragViewPos  = mul(data.view, float4(fragPos, 1.0)).xyz;
 
-    // Get cascade index for the current fragment's view position
     uint cascadeIndex = 0;
     for(uint i = 0; i < SHADOW_MAP_CASCADE_COUNT - 1; ++i)
     {
-        if(viewPos.z < data.cascadeSplits[i])
+        if(fragViewPos.z < data.cascadeSplits[i])
         {
             cascadeIndex = i + 1;
         }
@@ -131,7 +132,7 @@ void MainCS(in uint2 px : SV_DispatchThreadID)
     float indirectMultiplier = 1.0;
 
     //direct light
-    if (data.directionalLightCount > 0)
+    if (data.lightCount.x > 0)
     {
         DirectionalLight light = data.directionalLight[0];
         indirectMultiplier = light.intensityIndirect.y;
@@ -183,6 +184,7 @@ void MainCS(in uint2 px : SV_DispatchThreadID)
     lightColor[px] = float4(directLightColor + indirectLight, 1.0);
 
 
+#if FY_CASCADE_DEBUG
 
     switch(cascadeIndex) {
         case 0 :
@@ -198,4 +200,5 @@ void MainCS(in uint2 px : SV_DispatchThreadID)
             lightColor[px].rgb *= float3(1.0f, 1.0f, 0.25f);
             break;
     }
+#endif
 }

@@ -8,7 +8,7 @@ namespace Fyrion
 {
     struct ShadowMapDataInfo
     {
-        Vec4 cascadeSplits;
+        f32  cascadeSplit[FY_SHADOW_MAP_CASCADE_COUNT];
         Mat4 cascadeViewProjMat[FY_SHADOW_MAP_CASCADE_COUNT];
     };
 }

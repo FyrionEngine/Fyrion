@@ -183,16 +183,19 @@ namespace Fyrion
                 renderGraph->Resize(extent);
             }
 
+            f32 near = 0.1f;
+            f32 far = 300.f;
+
             CameraData cameraData = CameraData{
                 .view = freeViewCamera.GetView(),
                 .projection = Math::Perspective(Math::Radians(60.f),
                                                 (f32)extent.width / (f32)extent.height,
-                                                0.1,
-                                                200.f),
+                                                near,
+                                                far),
                 .lastViewProj = Mat4{1.0},
                 .viewPos = freeViewCamera.GetPosition(),
-                .nearClip = 0.1,
-                .farClip = 200.f
+                .nearClip = near,
+                .farClip = far
             };
 
             cameraData.viewInverse = Math::Inverse(cameraData.view);

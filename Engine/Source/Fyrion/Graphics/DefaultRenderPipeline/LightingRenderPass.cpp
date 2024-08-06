@@ -20,8 +20,9 @@ namespace Fyrion
         Vec4                 cascadeSplits;
         Mat4                 cascadeViewProjMat[FY_SHADOW_MAP_CASCADE_COUNT];
         Vec4                 viewPos{};
+        Mat4                 view{};
         DirectionalLightData directionalLight[4];
-        alignas(16) u32      directionalLightCount = 0;
+        u32                  lightCount[4] = {};
     };
 
     class LightingRenderPass : public RenderGraphPass
@@ -65,6 +66,7 @@ namespace Fyrion
 
             LightingData data{
                 .viewPos = Math::MakeVec4(cameraData.viewPos, 0.0),
+                .view = cameraData.view,
             };
 
             if (DirectionalLight* directionalLight = RenderStorage::GetDirectionalLight())
@@ -73,11 +75,11 @@ namespace Fyrion
                 data.directionalLight[0].direction = directionalLight->direction;
                 data.directionalLight[0].intensityIndirect.x = directionalLight->intensity;
                 data.directionalLight[0].intensityIndirect.y = directionalLight->indirectMultipler;
-                data.directionalLightCount = 1;
+                data.lightCount[0] = 1;
             }
             else
             {
-                data.directionalLightCount = 0;
+                data.lightCount[0] = 0;
             }
 
             RenderGraphResource* skybox = node->GetInputResource("Skybox");
@@ -95,10 +97,10 @@ namespace Fyrion
             RenderGraphResource* lightColor = node->GetOutputResource("LightColor");
 
             ShadowMapDataInfo* shadowMapDataInfo = static_cast<ShadowMapDataInfo*>(shadowDepthTexture->reference);
-            data.cascadeSplits = shadowMapDataInfo->cascadeSplits;
 
             for (int i = 0; i < FY_SHADOW_MAP_CASCADE_COUNT; ++i)
             {
+                data.cascadeSplits[i] = shadowMapDataInfo->cascadeSplit[i];
                 data.cascadeViewProjMat[i] = shadowMapDataInfo->cascadeViewProjMat[i];
             }
 

@@ -8,14 +8,14 @@ RWTexture2D<float4>     outputTexture   : register(u1);
 [numthreads(8, 8, 1)]
 void MainCS(in uint2 px : SV_DispatchThreadID)
 {
-    float exposure = 1.0;
+    float exposure = 2.0;
     float3 color = inputTexture[px].rgb;
 
     // HDR tonemapping
 
     color *= exposure;
-    color = color / (color + 1.0);
-    //color = Uncharted2Tonemap(color);
+    //color = color / (color + 1.0);
+    color = Uncharted2Tonemap(color);
     //color =  ACESTonemap(color);
 
     // gamma correct

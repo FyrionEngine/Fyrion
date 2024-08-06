@@ -12,7 +12,7 @@ namespace Fyrion
     {
         FY_BASE_TYPES(RenderGraphPass);
 
-        float cascadeSplitLambda = 0.95f;
+        float cascadeSplitLambda = 0.75f;
 
         Texture       shadowMapTexture{};
         PipelineState pipelineState{};
@@ -69,6 +69,8 @@ namespace Fyrion
 
         void Render(f64 deltaTime, RenderCommands& cmd) override
         {
+            float cascadeSplits[FY_SHADOW_MAP_CASCADE_COUNT];
+            
             RenderGraphResource* shadowDepthTexture = node->GetOutputResource("ShadowDepthTexture");
             shadowDepthTexture->texture = shadowMapTexture;
             shadowDepthTexture->reference = &shadowMapDataInfo;
@@ -95,14 +97,14 @@ namespace Fyrion
                     float log = minZ * std::pow(ratio, p);
                     float uniform = minZ + range * p;
                     float d = cascadeSplitLambda * (log - uniform) + uniform;
-                    shadowMapDataInfo.cascadeSplits[i] = (d - nearClip) / clipRange;
+                    cascadeSplits[i] = (d - nearClip) / clipRange;
                 }
 
                 // Calculate orthographic projection matrix for each cascade
                 float lastSplitDist = 0.0;
                 for (uint32_t i = 0; i < FY_SHADOW_MAP_CASCADE_COUNT; i++)
                 {
-                    float splitDist = shadowMapDataInfo.cascadeSplits[i];
+                    float splitDist = cascadeSplits[i];
 
                     Vec3 frustumCorners[8] = {
                         Vec3{-1.0f, 1.0f, 0.0f},
@@ -154,10 +156,10 @@ namespace Fyrion
                     Mat4 lightOrthoMatrix = Math::Ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f, maxExtents.z - minExtents.z);
 
                     // Store split distance and matrix in cascade
-                    f32 splitDepth = (cameraData.nearClip + splitDist * clipRange) * -1.0f;
+                    shadowMapDataInfo.cascadeSplit[i] = (cameraData.nearClip + splitDist * clipRange) * -1.0f;
                     shadowMapDataInfo.cascadeViewProjMat[i] = lightOrthoMatrix * lightViewMatrix;
 
-                    lastSplitDist = shadowMapDataInfo.cascadeSplits[i];
+                    lastSplitDist = cascadeSplits[i];
 
                     ClearDepthStencilValue depthStencilValue{
                     };

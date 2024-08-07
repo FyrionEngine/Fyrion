@@ -7,7 +7,8 @@
 		"Fyrion::SkyboxGenRenderPass",
 		"Fyrion::LightingRenderPass",
 		"Fyrion::SkyboxBlitRenderPass",
-		"Fyrion::PostProcessRenderPass"
+		"Fyrion::PostProcessRenderPass",
+		"Fyrion::HBAOPlus::LinearDepthPass"
 	],
 	"edges": [
 		{

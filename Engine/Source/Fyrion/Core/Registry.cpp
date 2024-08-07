@@ -445,7 +445,6 @@ namespace Fyrion
                         continue;
                     }
                 }
-
                 field->SetValue(dest, field->GetFieldPointer(source));
             }
         }

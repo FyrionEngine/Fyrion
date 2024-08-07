@@ -1305,7 +1305,7 @@ namespace ImGui
     {
         if (auto it = drawTypes.Find(reinterpret_cast<usize>(ptr)))
         {
-            it->second->desc.typeHandler->Copy(it->second->desc.instance, it->second->instance);
+            it->second->desc.typeHandler->DeepCopy(it->second->desc.instance, it->second->instance);
         }
         if (clearActiveId)
         {

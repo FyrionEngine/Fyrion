@@ -1,0 +1,28 @@
+struct LinearizeDepthData
+{
+    float4 fields;//x = inverseDepthRangeA; y = inverseDepthRangeB, z = linearizeDepthA, w = linearizeDepthB;
+};
+
+
+Texture2D<float>                    depthTextureInput   : register(t0);
+RWTexture2D<float>                  depthTextureOutput  : register(u1);
+
+ConstantBuffer<LinearizeDepthData>  data                : register(b2);
+
+float ConvertToViewDepth(float hardwareDepth)
+{
+    float inverseDepthRangeA = data.fields.x;
+    inverseDepthRangeB = data.fields.y;
+    linearizeDepthA = data.fields.z;
+    linearizeDepthB  = data.fields.w;
+
+    float normalizedDepth = saturate(inverseDepthRangeA * hardwareDepth + inverseDepthRangeB);
+    return 1.0 / (normalizedDepth * linearizeDepthA + linearizeDepthB);
+}
+
+[numthreads(16, 16, 1)]
+void MainCS(in uint2 px : SV_DispatchThreadID)
+{
+    float hardwareDepth     = depthTextureInput.Load(int3(in.xy, 0));
+    depthTextureOutput[px]  = ConvertToViewDepth(hardwareDepth);
+}

@@ -164,7 +164,7 @@ void MainCS(in uint2 px : SV_DispatchThreadID)
     {
         float3 irradiance = diffuseIrradiance.Sample(samplerState, N).rgb;
 
-        float3 F = FresnelSchlickRoughness(cosLo, F0, 1.0);
+        float3 F = FresnelSchlickRoughness(cosLo, F0, roughness);
         float3 kd = lerp(1.0 - F, 0.0, metallic);
 
         //diffuse irradiance
@@ -175,7 +175,7 @@ void MainCS(in uint2 px : SV_DispatchThreadID)
         float3  specularIrradiance      = specularMap.SampleLevel(samplerState, Lr, roughness * specularTextureLevels).rgb;
 
         float2  specularBRDF            = brdfLUT.SampleLevel(brdfLUTSampler, float2(cosLo, roughness), 0).rg;
-        float3  specularIBL             = specularIrradiance * (F0 * specularBRDF.x + specularBRDF.y);
+        float3  specularIBL             = specularIrradiance * (F * specularBRDF.x + specularBRDF.y);
 
         indirectLight = diffuseIBL + specularIBL;
         indirectLight *= indirectMultiplier;

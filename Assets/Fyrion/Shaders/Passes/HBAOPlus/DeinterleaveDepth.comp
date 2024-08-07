@@ -1,0 +1,48 @@
+#include "Fyrion://Shaders/Passes/HBAOPlus/SharedDefs.inc"
+
+Texture2D<float> DepthTexture   : register(t0);
+Texture2D<float> DepthTexture2  : register(t1);
+
+RWTexture2D<float> Z00   : register(u3);
+RWTexture2D<float> Z10   : register(u4);
+RWTexture2D<float> Z20   : register(u5);
+RWTexture2D<float> Z30   : register(u6);
+#if MRT_COUNT == 8
+RWTexture2D<float> Z01   : register(u7);
+RWTexture2D<float> Z11   : register(u8);
+RWTexture2D<float> Z21   : register(u9);
+RWTexture2D<float> Z31   : register(u10);
+#endif
+
+
+[numthreads(16, 16, 1)]
+void MainCS(in uint2 px : SV_DispatchThreadID)
+{
+
+
+
+    IN.pos.xy = floor(IN.pos.xy) * 4.0 + (g_PerPassConstants.f2Offset + 0.5);
+    IN.uv = IN.pos.xy * g_f2InvFullResolution;
+
+    // Gather sample ordering: (-,+),(+,+),(+,-),(-,-),
+    float4 S0 = DepthTexture.GatherRed(PointClampSampler, IN.uv);
+    float4 S1 = DepthTexture.GatherRed(PointClampSampler, IN.uv, int2(2,0));
+
+    float4 S01 = DepthTexture2.GatherRed(PointClampSampler, IN.uv);
+    float4 S11 = DepthTexture2.GatherRed(PointClampSampler, IN.uv, int2(2,0));
+
+    Z00[px] = float2(S0.w, S01.w);
+    Z10[px] = float2(S0.z, S01.z);
+    Z20[px] = float2(S1.w, S11.w);
+    Z30[px] = float2(S1.z, S11.z);
+
+#if MRT_COUNT == 8
+    Z01[px] = float2(S0.x, S01.x);
+    Z11[px] = float2(S0.y, S01.y);
+    Z21[px] = float2(S1.x, S11.x);
+    Z31[px] = float2(S1.y, S11.y);
+#endif
+
+}
+
+

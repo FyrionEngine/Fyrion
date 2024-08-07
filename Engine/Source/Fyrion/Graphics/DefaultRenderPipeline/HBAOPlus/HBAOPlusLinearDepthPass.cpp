@@ -6,6 +6,8 @@ namespace Fyrion::HBAOPlus
 {
     struct LinearDepthPass : RenderGraphPass
     {
+        FY_BASE_TYPES(RenderGraphPass);
+
         void Init() override
         {
 

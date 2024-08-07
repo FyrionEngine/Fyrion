@@ -2,6 +2,8 @@
 #include "Fyrion/Common.hpp"
 
 
+//**TODO -  effect in progress ** //
+
 namespace Fyrion::HBAOPlus
 {
     enum class BlurRadius

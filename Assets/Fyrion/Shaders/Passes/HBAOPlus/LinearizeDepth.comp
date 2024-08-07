@@ -1,28 +1,27 @@
-struct LinearizeDepthData
-{
-    float4 fields;//x = inverseDepthRangeA; y = inverseDepthRangeB, z = linearizeDepthA, w = linearizeDepthB;
-};
+#include "Fyrion://Shaders/Passes/HBAOPlus/SharedDefs.inc"
 
+Texture2D<float>                    depthTextureInput0   : register(t0);
+Texture2D<float>                    depthTextureInput1   : register(t1);
+RWTexture2D<float>                  depthTextureOutput0  : register(u2);
+RWTexture2D<float>                  depthTextureOutput1  : register(u3);
 
-Texture2D<float>                    depthTextureInput   : register(t0);
-RWTexture2D<float>                  depthTextureOutput  : register(u1);
-
-ConstantBuffer<LinearizeDepthData>  data                : register(b2);
+ConstantBuffer<HBAOConstantBuffer>  data                 : register(b4);
 
 float ConvertToViewDepth(float hardwareDepth)
 {
-    float inverseDepthRangeA = data.fields.x;
-    inverseDepthRangeB = data.fields.y;
-    linearizeDepthA = data.fields.z;
-    linearizeDepthB  = data.fields.w;
-
-    float normalizedDepth = saturate(inverseDepthRangeA * hardwareDepth + inverseDepthRangeB);
-    return 1.0 / (normalizedDepth * linearizeDepthA + linearizeDepthB);
+    float normalizedDepth = saturate(data.GetInverseDepthRangeA() * hardwareDepth + data.GetInverseDepthRangeB());
+    return 1.0 / (normalizedDepth * data.GetLinearizeDepthA() + data.GetLinearizeDepthB());
 }
 
 [numthreads(16, 16, 1)]
 void MainCS(in uint2 px : SV_DispatchThreadID)
 {
-    float hardwareDepth     = depthTextureInput.Load(int3(in.xy, 0));
-    depthTextureOutput[px]  = ConvertToViewDepth(hardwareDepth);
+    float hardwareDepth0     = depthTextureInput0.Load(int3(px.xy, 0));
+    float hardwareDepth1     = depthTextureInput1.Load(int3(px.xy, 0));
+
+    float viewDepth0 =  ConvertToViewDepth(hardwareDepth0);
+    float viewDepth1 =  ConvertToViewDepth(hardwareDepth1);
+
+    depthTextureOutput0[px] = min(viewDepth0, viewDepth1);
+    depthTextureOutput1[px] = max(viewDepth0, viewDepth1);
 }

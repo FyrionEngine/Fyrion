@@ -32,4 +32,14 @@ float2 SampleSphericalMap(float3 v)
     return uv;
 }
 
+float3 GammaToLinear(float3 input)
+{
+    return pow(max(input,0.0f), 2.2f);
+}
+
+float3 LinearToGamma(float3 input)
+{
+    return pow(max(input,0.0f), 1.0f/2.2f);
+}
+
 

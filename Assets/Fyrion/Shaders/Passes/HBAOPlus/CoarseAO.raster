@@ -1,0 +1,261 @@
+#include "Fyrion://Shaders/Common.hlsl"
+#include "Fyrion://Shaders/Passes/HBAOPlus/SharedDefs.inc"
+
+struct VSOutput
+{
+	float4 pos  : SV_POSITION;
+	float2 uv   : TEXCOORD0;
+};
+
+struct GSOut
+{
+    float4 pos      : SV_Position;
+    float2 uv       : TEXCOORD0;
+    uint layerIndex : SV_RenderTargetArrayIndex;
+};
+
+[[vk::push_constant]] HBAOPerPassConstantStruct perPassConstants;
+
+
+VSOutput MainVS(uint vertexIndex : SV_VertexID)
+{
+	VSOutput output = (VSOutput)0;
+	output.uv       = float2((vertexIndex << 1) & 2, vertexIndex & 2);
+	output.pos      = float4(output.uv * 2.0f - 1.0f, 0.0f, 1.0f);
+	return output;
+}
+
+[maxvertexcount(3)]
+void MainGS(triangle VSOutput input[3], inout TriangleStream<GSOut> OUT)
+{
+    GSOut outVertex;
+    outVertex.layerIndex = perPassConstants.uSliceIndex;
+
+    [unroll]
+    for (int vertexID = 0; vertexID < 3; vertexID++)
+    {
+        outVertex.uv  = input[vertexID].uv;
+        outVertex.pos = input[vertexID].pos;
+        OUT.Append(outVertex);
+    }
+}
+//----------------------------------------------------------------------------------
+//----------------------------------- pixel shader----------------------------------
+//----------------------------------------------------------------------------------
+
+Texture2D<float4>           FullResNormalTexture      : register(t0);
+Texture2DArray<float2>      QuarterResDepthTexture    : register(t1);
+sampler                     PointClampSampler         : register(s2);
+
+//----------------------------------------------------------------------------------
+float3 UVToView(float2 UV, float ViewDepth)
+{
+    UV = hbao.uvToViewA * UV + hbao.uvToViewB;
+    return float3(UV * ViewDepth, ViewDepth);
+}
+
+//----------------------------------------------------------------------------------
+
+//TODO - **normal maybe should move to other file?
+
+void AddViewportOrigin(inout VSOutput IN)
+{
+    IN.pos.xy += hbao.inputViewportTopLeft;
+    IN.uv = IN.pos.xy * hbao.invFullResolution;
+}
+
+float3 FetchFullResWorldNormal_GBuffer(VSOutput IN)
+{
+    AddViewportOrigin(IN);
+    return FullResNormalTexture.Load(int3(IN.pos.xy, 0)).xyz;
+}
+
+float3 FetchFullResViewNormal_GBuffer(VSOutput IN)
+{
+    float3 WorldNormal = FetchFullResWorldNormal_GBuffer(IN) * hbao.normalDecodeScale + hbao.normalDecodeBias;
+    float3 ViewNormal = normalize(mul(WorldNormal, (float3x3)hbao.normalMatrix));
+    return ViewNormal;
+}
+
+//----------------------------------------------------------------------------------
+float3 FetchFullResViewNormal(VSOutput input)
+{
+    return FetchFullResViewNormal_GBuffer(input);
+}
+
+//----------------------------------------------------------------------------------
+void FetchQuarterResViewPos(float2 UV, out float3 OutViewPos0, out float3 OutViewPos1)
+{
+    float2 ViewDepths = QuarterResDepthTexture.SampleLevel(PointClampSampler, float3(UV, 0), 0).rg;
+    OutViewPos0 = UVToView(UV, ViewDepths.r);
+    OutViewPos1 = UVToView(UV, ViewDepths.g);
+}
+
+//----------------------------------------------------------------------------------
+float2 RotateDirection(float2 V, float2 RotationCosSin)
+{
+    // RotationCosSin is (cos(alpha),sin(alpha)) where alpha is the rotation angle
+    // A 2D rotation matrix is applied (see https://en.wikipedia.org/wiki/Rotation_matrix)
+    return float2(V.x*RotationCosSin.x - V.y*RotationCosSin.y,
+                  V.x*RotationCosSin.y + V.y*RotationCosSin.x);
+}
+
+//----------------------------------------------------------------------------------
+float DepthThresholdFactor(float ViewDepth)
+{
+    return saturate((ViewDepth * hbao.viewDepthThresholdNegInv + 1.0) * hbao.viewDepthThresholdSharpness);
+}
+
+//----------------------------------------------------------------------------------
+struct AORadiusParams
+{
+    float fRadiusPixels;
+    float fNegInvR2;
+};
+
+//----------------------------------------------------------------------------------
+void ScaleAORadius(inout AORadiusParams Params, float ScaleFactor)
+{
+    Params.fRadiusPixels *= ScaleFactor;
+    Params.fNegInvR2 *= 1.0 / (ScaleFactor * ScaleFactor);
+}
+
+//----------------------------------------------------------------------------------
+AORadiusParams GetAORadiusParams(float ViewDepth)
+{
+    AORadiusParams Params;
+    Params.fRadiusPixels = hbao.radiusToScreen / ViewDepth;
+    Params.fNegInvR2 = hbao.negInvR2;
+
+    [branch] if (hbao.backgroundAORadiusPixels != -1.f)
+    {
+        ScaleAORadius(Params, max(1.0, hbao.backgroundAORadiusPixels / Params.fRadiusPixels));
+    }
+
+    [branch] if (hbao.foregroundAORadiusPixels != -1.f)
+    {
+        ScaleAORadius(Params, min(1.0, hbao.foregroundAORadiusPixels / Params.fRadiusPixels));
+    }
+
+    return Params;
+}
+
+//----------------------------------------------------------------------------------
+float Falloff(float DistanceSquare, AORadiusParams Params)
+{
+    // 1 scalar mad instruction
+    return DistanceSquare * Params.fNegInvR2 + 1.0;
+}
+
+//----------------------------------------------------------------------------------
+// P = view-space position at the kernel center
+// N = view-space normal at the kernel center
+// S = view-space position of the current sample
+//----------------------------------------------------------------------------------
+float ComputeAO(float3 P, float3 N, float3 S, AORadiusParams Params)
+{
+    float3 V = S - P;
+    float VdotV = dot(V, V);
+    float NdotV = dot(N, V) * rsqrt(VdotV);
+
+    // Use saturate(x) instead of max(x,0.f) because that is faster
+    return saturate(NdotV - hbao.nDotVBias) * saturate(Falloff(VdotV, Params));
+}
+
+
+void AccumulateAO(
+    inout float AO,
+    inout float RayPixels,
+    float StepSizePixels,
+    float2 Direction,
+    float2 FullResUV,
+    float3 ViewPosition,
+    float3 ViewNormal,
+    AORadiusParams Params
+)
+{
+    float2 SnappedUV = round(RayPixels * Direction) * hbao.invQuarterResolution + FullResUV;
+    float3 S0, S1;
+    FetchQuarterResViewPos(SnappedUV, S0, S1);
+
+    RayPixels += StepSizePixels;
+
+    AO += max(
+        ComputeAO(ViewPosition, ViewNormal, S0, Params),
+        ComputeAO(ViewPosition, ViewNormal, S1, Params));
+}
+
+
+
+//----------------------------------------------------------------------------------
+float ComputeCoarseAO(float2 FullResUV, float3 ViewPosition, float3 ViewNormal, AORadiusParams Params)
+{
+    // Divide by NUM_STEPS+1 so that the farthest samples are not fully attenuated
+    float StepSizePixels = (Params.fRadiusPixels / 4.0) / (NUM_STEPS + 1);
+
+    float4 Rand = perPassConstants.jitter;
+
+    const float Alpha = 2.0 * PI / NUM_DIRECTIONS;
+    float SmallScaleAO = 0;
+    float LargeScaleAO = 0;
+
+    [unroll]
+    for (float DirectionIndex = 0; DirectionIndex < NUM_DIRECTIONS; ++DirectionIndex)
+    {
+        float Angle = Alpha * DirectionIndex;
+
+        // Compute normalized 2D direction
+        float2 Direction = RotateDirection(float2(cos(Angle), sin(Angle)), Rand.xy);
+
+        // Jitter starting sample within the first step
+        float RayPixels = (Rand.z * StepSizePixels + 1.0);
+
+        {
+            AccumulateAO(SmallScaleAO, RayPixels, StepSizePixels, Direction, FullResUV, ViewPosition, ViewNormal, Params);
+        }
+
+        [unroll]
+        for (float StepIndex = 1; StepIndex < NUM_STEPS; ++StepIndex)
+        {
+            AccumulateAO(LargeScaleAO, RayPixels, StepSizePixels, Direction, FullResUV, ViewPosition, ViewNormal, Params);
+        }
+    }
+
+    float AO = (SmallScaleAO * hbao.smallScaleAOAmount) + (LargeScaleAO * hbao.largeScaleAOAmount);
+
+    AO /= (NUM_DIRECTIONS * NUM_STEPS);
+
+    return AO;
+}
+
+float MainPS(VSOutput input) : SV_TARGET
+{
+    input.pos.xy = floor(input.pos.xy) * 4.0 + perPassConstants.offset;
+    input.uv = input.pos.xy * (hbao.invQuarterResolution / 4.0);
+
+    // Batch 2 texture fetches before the branch
+    float3 ViewPosition;
+    float3 ViewPosition1;
+    FetchQuarterResViewPos(input.uv, ViewPosition, ViewPosition1);
+
+    float3 ViewNormal = FetchFullResViewNormal(input);
+
+    AORadiusParams Params = GetAORadiusParams(ViewPosition.z);
+
+    // Early exit if the projected radius is smaller than 1 full-res pixel
+    [branch]
+    if (Params.fRadiusPixels < 1.0)
+    {
+        return 1.0;
+    }
+
+    float AO = ComputeCoarseAO(input.uv, ViewPosition, ViewNormal, Params);
+
+    [branch]
+    if (hbao.viewDepthThresholdSharpness != -1.f)
+    {
+        AO *= DepthThresholdFactor(ViewPosition.z);
+    }
+
+    return saturate(1.0 - AO * 2.0);
+}

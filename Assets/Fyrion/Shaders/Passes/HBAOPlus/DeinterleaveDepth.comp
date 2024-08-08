@@ -2,11 +2,12 @@
 
 Texture2D<float> DepthTexture   : register(t0);
 Texture2D<float> DepthTexture2  : register(t1);
+SamplerState pointClampSampler  : register(s2);
 
-RWTexture2D<float> Z00   : register(u3);
-RWTexture2D<float> Z10   : register(u4);
-RWTexture2D<float> Z20   : register(u5);
-RWTexture2D<float> Z30   : register(u6);
+RWTexture2D<float2> Z00   : register(u3);
+RWTexture2D<float2> Z10   : register(u4);
+RWTexture2D<float2> Z20   : register(u5);
+RWTexture2D<float2> Z30   : register(u6);
 #if MRT_COUNT == 8
 RWTexture2D<float> Z01   : register(u7);
 RWTexture2D<float> Z11   : register(u8);
@@ -14,22 +15,21 @@ RWTexture2D<float> Z21   : register(u9);
 RWTexture2D<float> Z31   : register(u10);
 #endif
 
+[[vk::push_constant]] HBAOPerPassConstantStruct perPassConstants;
+
 
 [numthreads(16, 16, 1)]
 void MainCS(in uint2 px : SV_DispatchThreadID)
 {
-
-
-
-    IN.pos.xy = floor(IN.pos.xy) * 4.0 + (g_PerPassConstants.f2Offset + 0.5);
-    IN.uv = IN.pos.xy * g_f2InvFullResolution;
+    uint2 pos = floor(px.xy) * 4.0 + (perPassConstants.offset + 0.5);
+    float2 uv = pos.xy * hbao.invFullResolution;
 
     // Gather sample ordering: (-,+),(+,+),(+,-),(-,-),
-    float4 S0 = DepthTexture.GatherRed(PointClampSampler, IN.uv);
-    float4 S1 = DepthTexture.GatherRed(PointClampSampler, IN.uv, int2(2,0));
+    float4 S0 = DepthTexture.GatherRed(pointClampSampler, uv);
+    float4 S1 = DepthTexture.GatherRed(pointClampSampler, uv, int2(2,0));
 
-    float4 S01 = DepthTexture2.GatherRed(PointClampSampler, IN.uv);
-    float4 S11 = DepthTexture2.GatherRed(PointClampSampler, IN.uv, int2(2,0));
+    float4 S01 = DepthTexture2.GatherRed(pointClampSampler, uv);
+    float4 S11 = DepthTexture2.GatherRed(pointClampSampler, uv, int2(2,0));
 
     Z00[px] = float2(S0.w, S01.w);
     Z10[px] = float2(S0.z, S01.z);

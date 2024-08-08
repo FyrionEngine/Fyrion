@@ -34,7 +34,7 @@ namespace Fyrion
                 .size = (u32)tempBytes.Size()
             });
 
-            u32 pixelOffset = (u32)tempBytes.Size();
+            u32 offset = (u32)tempBytes.Size();
 
             if (!ShaderManager::CompileShader(ShaderCreation{.asset = this, .source = source, .entryPoint = "MainPS", .shaderStage = ShaderStage::Pixel, .renderApi = renderApi}, tempBytes))
             {
@@ -44,9 +44,33 @@ namespace Fyrion
             tempStages.EmplaceBack(ShaderStageInfo{
                 .stage = ShaderStage::Pixel,
                 .entryPoint = "MainPS",
-                .offset = pixelOffset,
-                .size = (u32)tempBytes.Size() - pixelOffset
+                .offset = offset,
+                .size = (u32)tempBytes.Size() - offset
             });
+
+            offset = (u32)tempBytes.Size();
+
+
+            std::string_view str = {source.CStr(), source.Size()};
+            str.find("MainGS") != std::string_view::npos;
+
+            if (str.find("MainGS") != std::string_view::npos)
+            {
+                if (!ShaderManager::CompileShader(ShaderCreation{.asset = this, .source = source, .entryPoint = "MainGS", .shaderStage = ShaderStage::Geometry, .renderApi = renderApi}, tempBytes))
+                {
+                    return;
+                }
+
+                tempStages.EmplaceBack(ShaderStageInfo{
+                    .stage = ShaderStage::Geometry,
+                    .entryPoint = "MainGS",
+                    .offset = offset,
+                    .size = (u32)tempBytes.Size() - offset
+                });
+
+                offset = (u32)tempBytes.Size();
+            }
+
         }
         else if (shaderType == ShaderAssetType::Compute)
         {

@@ -1,0 +1,43 @@
+#include "Fyrion://Shaders/Passes/HBAOPlus/SharedDefs.inc"
+
+
+Texture2DArray<float>   AOTexture       : register(t0);
+Texture2D<float>        DepthTexture1   : register(t1);
+Texture2D<float>        DepthTexture2   : register(t2);
+sampler                 PointSampler    : register(s3);
+RWTexture2D<float2>     outputTexture   : register(u4);
+
+struct PSOut
+{
+    float2 AOZ  : SV_TARGET;
+};
+
+//-------------------------------------------------------------------------
+
+[numthreads(16, 16, 1)]
+void MainCS(in uint2 px : SV_DispatchThreadID)
+{
+    float2 screenSize;
+    DepthTexture1.GetDimensions(screenSize.x, screenSize.y);
+
+    const float2 uv = (float2(px) + 0.5) / screenSize;
+
+#if USE_INTEGER_MATH
+    int2 FullResPos = int2(px.xy);
+    int2 Offset = FullResPos & 3;
+    int SliceId = Offset.y * 4 + Offset.x;
+    int2 QuarterResPos = FullResPos >> 2;
+#else
+    float2 FullResPos = floor(px.xy);
+    float2 Offset = fmod(abs(FullResPos), float2(4,4));
+    float SliceId = Offset.y * 4.0 + Offset.x;
+    float2 QuarterResPos = FullResPos / 4.0;
+#endif
+
+    float AO = AOTexture.Load(int4(QuarterResPos, SliceId, 0));
+    float ViewDepth1 = DepthTexture1.Sample(PointSampler, uv);
+    float ViewDepth2 = DepthTexture2.Sample(PointSampler, uv);
+    float ViewDepth = min(ViewDepth1, ViewDepth2);
+
+    outputTexture[px] = float2(AO, ViewDepth);
+}

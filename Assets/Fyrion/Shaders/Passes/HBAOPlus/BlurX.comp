@@ -1,0 +1,20 @@
+#include "Fyrion://Shaders/Passes/HBAOPlus/Blur.inc"
+
+RWTexture2D<float2>   outputTexture      : register(u4);
+
+//----------------------------------------------------------------------------------
+
+[numthreads(16, 16, 1)]
+void MainCS(in uint2 px : SV_DispatchThreadID)
+{
+    float2 screenSize;
+    outputTexture.GetDimensions(screenSize.x, screenSize.y);
+
+    BlurParameters params = (BlurParameters)0;
+    params.pos = px;
+    params.uv = (float2(px) + 0.5) / screenSize;
+
+    float CenterDepth;
+    float AO = ComputeBlur(params, float2(hbao.invFullResolution.x,0), CenterDepth);
+    outputTexture[px] = float2(AO, CenterDepth);
+}

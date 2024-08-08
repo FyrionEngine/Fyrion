@@ -381,6 +381,11 @@ namespace Fyrion::Vulkan
 			stage |= VK_SHADER_STAGE_FRAGMENT_BIT;
 		}
 
+		if (shaderStage && ShaderStage::Geometry)
+		{
+			stage |= VK_SHADER_STAGE_GEOMETRY_BIT;
+		}
+
 		if (shaderStage && ShaderStage::Compute)
 		{
 			stage |= VK_SHADER_STAGE_COMPUTE_BIT;

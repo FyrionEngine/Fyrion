@@ -5,12 +5,10 @@ Texture2D<float>                    depthTextureInput1   : register(t1);
 RWTexture2D<float>                  depthTextureOutput0  : register(u2);
 RWTexture2D<float>                  depthTextureOutput1  : register(u3);
 
-ConstantBuffer<HBAOConstantBuffer>  data                 : register(b4);
-
 float ConvertToViewDepth(float hardwareDepth)
 {
-    float normalizedDepth = saturate(data.GetInverseDepthRangeA() * hardwareDepth + data.GetInverseDepthRangeB());
-    return 1.0 / (normalizedDepth * data.GetLinearizeDepthA() + data.GetLinearizeDepthB());
+    float normalizedDepth = saturate(hbao.inverseDepthRangeA * hardwareDepth + hbao.inverseDepthRangeB);
+    return 1.0 / (normalizedDepth * hbao.linearizeDepthA + hbao.linearizeDepthB);
 }
 
 [numthreads(16, 16, 1)]

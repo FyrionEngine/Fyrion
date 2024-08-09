@@ -29,22 +29,14 @@ namespace Fyrion
         FY_BASE_TYPES(Asset);
 
         void BuildPath() override;
-        void OnActiveChanged() override;
 
         void SetExtension(StringView p_extension) override {}
 
         StringView   GetDisplayName() const override;
-        void         AddChild(Asset* child);
-        void         RemoveChild(Asset* child);
-        Span<Asset*> GetChildren();
         bool         IsModified() const override;
-
-        bool         HasChild(const StringView& childAbsolutePath) const;
+        void         OnCreated() override;
 
         static void RegisterType(NativeTypeHandler<AssetDirectory>& type);
-
-    private:
-        Array<Asset*> children;
     };
 
     struct UIFontAsset final : Asset

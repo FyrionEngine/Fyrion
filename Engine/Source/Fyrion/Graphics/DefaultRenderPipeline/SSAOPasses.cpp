@@ -106,7 +106,6 @@ namespace Fyrion
         {
             RenderGraphResource* gBufferNormalRoughness = node->GetInputResource("GBufferNormalRoughness");
             RenderGraphResource* gBufferPositionAO = node->GetInputResource("GBufferPositionAO");
-
             RenderGraphResource* ssaoTexture = node->GetOutputResource("SSAOTexture");
 
             bindingSet->GetVar("texturePositionDepth")->SetTexture(gBufferPositionAO->texture);
@@ -188,7 +187,7 @@ namespace Fyrion
 
     void RegisterSSAOPasses()
     {
-        Registry::Type<SSAOPass>();
-        Registry::Type<SSAOBlurPass>();
+        // Registry::Type<SSAOPass>();
+        // Registry::Type<SSAOBlurPass>();
     }
 }

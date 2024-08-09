@@ -4,6 +4,7 @@
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Core/Span.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
+#include "Fyrion/IO/Path.hpp"
 
 
 namespace Fyrion
@@ -28,62 +29,33 @@ namespace Fyrion
         }
     }
 
-    void AssetDirectory::OnActiveChanged()
-    {
-        for (Asset* child : children)
-        {
-            child->SetActive(IsActive());
-        }
-    }
+    // void AssetDirectory::OnActiveChanged()
+    // {
+    //     for (Asset* child : children)
+    //     {
+    //         child->SetActive(IsActive());
+    //     }
+    // }
 
     StringView AssetDirectory::GetDisplayName() const
     {
         return "Folder";
     }
 
-    void AssetDirectory::AddChild(Asset* child)
-    {
-        if (child->GetDirectory() != nullptr)
-        {
-            child->GetDirectory()->RemoveChild(child);
-        }
-        child->directory = this;
-        child->BuildPath();
-        children.EmplaceBack(child);
-    }
-
-    void AssetDirectory::RemoveChild(Asset* child)
-    {
-        if (Asset** it = FindFirst(children.begin(), children.end(), child))
-        {
-            children.Erase(it);
-        }
-    }
-
-    Span<Asset*> AssetDirectory::GetChildren()
-    {
-        return children;
-    }
-
     bool AssetDirectory::IsModified() const
     {
-        if (!IsActive() && loadedVersion == 0)
-        {
-            return false;
-        }
-        return currentVersion != loadedVersion;
+        return false;
     }
 
-    bool AssetDirectory::HasChild(const StringView& childAbsolutePath) const
+    void AssetDirectory::OnCreated()
     {
-        for (Asset* child : children)
+        AssetDirectory* parentDirectory = dynamic_cast<AssetDirectory*>(GetParent());
+        FY_ASSERT(parentDirectory, "directories must have parent directories");
+        if (parentDirectory)
         {
-            if (child->absolutePath == childAbsolutePath)
-            {
-                return true;
-            }
+            absolutePath = Path::Join(parentDirectory->GetAbsolutePath(), GetName());
+            FileSystem::CreateDirectory(absolutePath);
         }
-        return false;
     }
 
     void UIFontAsset::RegisterType(NativeTypeHandler<UIFontAsset>& type)

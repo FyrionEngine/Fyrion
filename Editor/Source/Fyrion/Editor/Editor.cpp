@@ -310,19 +310,12 @@ namespace Fyrion
                                 {
                                     ImGui::TableNextRow();
 
-                                    ImVec4 color = style.Colors[ImGuiCol_Text];
-                                    if (!asset->IsActive())
-                                    {
-                                        color = ImVec4{180.f / 255.f, 85.f / 255.f, 85.f / 255.f, 255};
-                                    }
-
                                     ImGui::TableSetColumnIndex(0);
-                                    ImGui::TextColored(color, "%s", asset->GetName().CStr());
+                                    ImGui::Text("%s", asset->GetName().CStr());
                                     ImGui::TableSetColumnIndex(1);
-                                    ImGui::TextColored(color, "%s", asset->GetPath().CStr());
+                                    ImGui::Text("%s", asset->GetPath().CStr());
                                     ImGui::TableSetColumnIndex(2);
-
-                                    ImGui::TextColored(color, "%s", asset->GetDisplayName().CStr());
+                                    ImGui::Text("%s", asset->GetDisplayName().CStr());
                                 }
                                 ImGui::EndTable();
                             }
@@ -330,7 +323,7 @@ namespace Fyrion
                             ImGui::EndChild();
                         }
 
-                        ImGui::BeginHorizontal("#jitrjirt", ImVec2(width, buttonHeight));
+                        ImGui::BeginHorizontal("#horizontal-save", ImVec2(width, buttonHeight));
 
                         ImGui::Spring(1.0f);
 

@@ -109,29 +109,20 @@ namespace Fyrion
         return {};
     }
 
-    Asset* AssetDatabase::Create(TypeID typeId)
+    Asset* AssetDatabase::Create(TypeID typeId, const AssetCreation& assetCreation)
     {
-        return Create(typeId, {});
-    }
-
-    Asset* AssetDatabase::Create(TypeID typeId, UUID uuid)
-    {
-        if (auto it = assetsById.Find(uuid))
-        {
-            return it->second;
-        }
-
         TypeHandler* typeHandler = Registry::FindTypeById(typeId);
         FY_ASSERT(typeHandler, "type not found");
 
         Asset* asset = typeHandler->Cast<Asset>(typeHandler->NewInstance());
         FY_ASSERT(asset, "type cannot be casted to Asset, check if FY_BASE_TYPES(Asset) is included on the class");
 
-        asset->uuid = uuid;
+        asset->uuid = assetCreation.uuid;
         asset->assetType = typeHandler;
         asset->loadedVersion = 0;
         asset->currentVersion = 1;
-        asset->index = assets.Size();
+        asset->prototype = assetCreation.prototype;
+        asset->name = assetCreation.name;
 
         assets.EmplaceBack(asset);
 
@@ -140,45 +131,21 @@ namespace Fyrion
             assetsById.Insert(asset->uuid, asset);
         }
 
+        auto itByType = assetsByType.Find(typeId);
+        if (itByType == assetsByType.end())
         {
-            auto itByType = assetsByType.Find(typeId);
-            if (itByType == assetsByType.end())
-            {
-                itByType = assetsByType.Emplace(typeId, {}).first;
-            }
-            itByType->second.EmplaceBack(asset);
+            itByType = assetsByType.Emplace(typeId, {}).first;
         }
 
-        return asset;
-    }
+        itByType->second.EmplaceBack(asset);
 
-    Asset* AssetDatabase::CreateFromPrototype(TypeID typeId, Asset* prototype)
-    {
-        return CreateFromPrototype(typeId, prototype, {});
-    }
-
-    Asset* AssetDatabase::CreateFromPrototype(TypeID typeId, Asset* prototype, UUID uuid)
-    {
-        Asset* asset = Create(typeId, uuid);
-        asset->prototype = prototype;
         return asset;
     }
 
     void AssetDatabase::Destroy(Asset* asset)
     {
-        Asset* lastAsset = assets.Back();
-        if (lastAsset != asset)
-        {
-            lastAsset->index = asset->index;
-            assets[lastAsset->index] = lastAsset;
-        }
-
-        assets.PopBack();
-
         assetsById.Erase(asset->GetUUID());
         assetsByPath.Erase(asset->GetPath());
-
-        asset->assetType->Destroy(asset);
     }
 
     AssetDirectory* AssetDatabase::LoadFromDirectory(const StringView& name, const StringView& directory)
@@ -323,14 +290,14 @@ namespace Fyrion
 
     ArchiveObject AssetDatabase::SerializeAsset(ArchiveWriter& writer, Asset* asset)
     {
-        ArchiveObject object = Serialization::Serialize(asset->GetAssetType(), writer, asset);
-        writer.WriteString(object, "_type", asset->GetAssetType()->GetName());
+        ArchiveObject object = Serialization::Serialize(asset->GetType(), writer, asset);
+        writer.WriteString(object, "_type", asset->GetType()->GetName());
         writer.WriteString(object, "uuid", ToString(asset->GetUUID()));
 
-        if (!asset->assets.Empty())
+        if (!asset->children.Empty())
         {
             ArchiveObject arr = writer.CreateArray();
-            for (Asset* child : asset->assets)
+            for (Asset* child : asset->children)
             {
                 ArchiveObject assetObj = SerializeAsset(writer, child);
                 writer.WriteValue(assetObj, "_data", child->SerializeData(writer));
@@ -343,6 +310,7 @@ namespace Fyrion
 
     void AssetDatabase::SaveOnDirectory(AssetDirectory* directoryAsset, const StringView& directoryPath)
     {
+        /*
         if (!FileSystem::GetFileStatus(directoryPath).exists)
         {
             FileSystem::CreateDirectory(directoryPath);
@@ -450,6 +418,7 @@ namespace Fyrion
             }
             asset->loadedVersion = asset->currentVersion;
         }
+        */
     }
 
     void AssetDatabase::SetCacheDirectory(const StringView& directory)
@@ -522,7 +491,7 @@ namespace Fyrion
 
         for (Asset* asset : assets)
         {
-            asset->GetAssetType()->Destroy(asset);
+            asset->GetType()->Destroy(asset);
         }
 
         assets.Clear();
@@ -540,10 +509,9 @@ namespace Fyrion
             {
                 case FileNotifyEvent::Added:
                 {
-                    AssetDirectory* directory = static_cast<AssetDirectory*>(modified.userData);
-                    if (!directory->HasChild(modified.path))
+                    if (Asset* directory = static_cast<AssetDirectory*>(modified.userData); directory->FindChildByAbsolutePath(modified.path) == nullptr)
                     {
-                        LoadAssetFile(directory, modified.path);
+                        LoadAssetFile(dynamic_cast<AssetDirectory*>(directory), modified.path);
                     }
                     break;
                 }
@@ -572,6 +540,14 @@ namespace Fyrion
     void AssetDatabase::EnableHotReload(bool enable)
     {
         hotReloadEnabled = enable;
+    }
+
+    void AssetDatabase::WatchAsset(Asset* asset)
+    {
+        if (asset && hotReloadEnabled)
+        {
+            fileWatcher.Watch(asset, asset->absolutePath);
+        }
     }
 
     void AssetDatabaseShutdown()

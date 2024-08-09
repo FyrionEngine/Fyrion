@@ -9,6 +9,24 @@ namespace Fyrion
     class Asset;
     class AssetDirectory;
 
+
+    struct AssetCreation
+    {
+        //UUIDs are not mandatory, but it should be used to persist the asset.
+        UUID       uuid;
+        StringView name{};
+
+        //selecting a AssetDirectory, create the asset inside the directory.
+        //selecting a different asset, persist the asset data as a child.
+        Asset* parent{};
+
+        //paths are build using directory + name, but in case of missing one of these info,
+        //desired path can be used to lookup the asset.
+        StringView desiredPath{};
+
+        Asset* prototype{};
+    };
+
     class FY_API AssetDatabase
     {
     public:
@@ -24,13 +42,11 @@ namespace Fyrion
         static Asset*          FindById(const UUID& assetId);
         static Asset*          FindByPath(const StringView& path);
         static Span<Asset*>    FindAssetsByType(TypeID typeId);
-        static Asset*          Create(TypeID typeId);
-        static Asset*          Create(TypeID typeId, UUID uuid);
-        static Asset*          CreateFromPrototype(TypeID typeId, Asset* prototype);
-        static Asset*          CreateFromPrototype(TypeID typeId, Asset* prototype, UUID uuid);
+        static Asset*          Create(TypeID typeId, const AssetCreation& assetCreation);
         static void            Destroy(Asset* asset);
         static void            DestroyAssets();
         static void            EnableHotReload(bool enable);
+        static void            WatchAsset(Asset* asset);
 
         template <typename T>
         static T* Create()
@@ -42,12 +58,6 @@ namespace Fyrion
         static T* Create(UUID uuid)
         {
             return static_cast<T*>(Create(GetTypeID<T>(), uuid));
-        }
-
-        template <typename T>
-        static T* CreateFromPrototype(T* prototype)
-        {
-            return static_cast<T*>(CreateFromPrototype(GetTypeID<T>(), prototype));
         }
 
         template <typename T>

@@ -21,6 +21,7 @@ namespace Fyrion
         void Init(u32 id, VoidPtr userData) override;
         void Draw(u32 id, bool& open) override;
         void SetOpenDirectory(AssetDirectory* p_directory);
+        void SetSelectedAsset(Asset* selectedItem);
 
         static void AddMenuItem(const MenuItemCreation& menuItem);
         static void RegisterType(NativeTypeHandler<ProjectBrowserWindow>& type);
@@ -29,7 +30,6 @@ namespace Fyrion
         u32                            windowId{};
         AssetDirectory*                openDirectory{};
         Asset*                         selectedItem{};
-        Asset*                         focusItem{};
         String                         searchString{};
         String                         stringCache{};
         AssetPayload                   assetPayload{};

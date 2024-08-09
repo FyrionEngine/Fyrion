@@ -52,47 +52,6 @@ namespace Fyrion
         AssetDirectory* newDirectory;
     };
 
-
-    class AssetCreateAction : public EditorAction
-    {
-    public:
-        FY_BASE_TYPES(EditorAction);
-
-        AssetCreateAction(AssetDirectory* directory, TypeID typeId);
-
-        void Commit() override;
-        void Rollback() override;
-
-        Asset* GetNewAsset() const
-        {
-            return newAsset;
-        }
-
-        static void RegisterType(NativeTypeHandler<AssetCreateAction>& type);
-
-        ~AssetCreateAction() override;
-
-    private:
-        Asset* newAsset;
-    };
-
-    class AssetDeleteAction : public EditorAction
-    {
-    public:
-        FY_BASE_TYPES(EditorAction);
-        AssetDeleteAction(Asset* asset);
-
-        void Commit() override;
-        void Rollback() override;
-
-        ~AssetDeleteAction() override;
-
-        static void RegisterType(NativeTypeHandler<AssetDeleteAction>& type);
-
-    private:
-        Asset* asset;
-    };
-
     struct UpdateAssetAction : EditorAction
     {
         FY_BASE_TYPES(EditorAction);

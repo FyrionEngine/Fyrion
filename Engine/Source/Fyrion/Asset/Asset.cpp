@@ -23,7 +23,7 @@ namespace Fyrion
             }
             path = newPath;
 
-            for (Asset* child : assets)
+            for (Asset* child : children)
             {
                 String newPathChild = String().Append(newPath).Append("#").Append(child->name);
                 AssetDatabaseUpdatePath(child, child->path, newPathChild);
@@ -42,8 +42,6 @@ namespace Fyrion
             for (Asset* child : directory->GetChildren())
             {
                 if (child == this) continue;
-
-                if (!child->IsActive()) continue;
 
                 if (finalName == child->name)
                 {
@@ -66,16 +64,26 @@ namespace Fyrion
 
     Asset::~Asset()
     {
-        if (directory)
-        {
-            directory->RemoveChild(this);
-        }
+        // if (directory)
+        // {
+        //     directory->RemoveChild(this);
+        // }
     }
 
-    void Asset::SetUUID(const UUID& p_uuid)
+    UUID Asset::GetUUID() const
     {
-        AssetDatabaseUpdateUUID(this, p_uuid);
-        uuid = p_uuid;
+        return uuid;
+    }
+
+    void Asset::SetUUID(const UUID& uuid)
+    {
+        AssetDatabaseUpdateUUID(this, uuid);
+        this->uuid = uuid;
+    }
+
+    TypeHandler* Asset::GetType() const
+    {
+        return assetType;
     }
 
     TypeID Asset::GetAssetTypeId() const
@@ -83,16 +91,41 @@ namespace Fyrion
         return assetType->GetTypeInfo().typeId;
     }
 
-    void Asset::SetPath(StringView path)
+    Asset* Asset::GetPrototype() const
     {
-        this->path = path;
+        return prototype;
     }
 
-    void Asset::SetName(StringView p_name)
+    StringView Asset::GetName() const
     {
-        name = p_name;
+        return name;
+    }
+
+    StringView Asset::GetPath() const
+    {
+        return path;
+    }
+
+    Asset* Asset::GetParent() const
+    {
+        return parent;
+    }
+
+    StringView Asset::GetAbsolutePath() const
+    {
+        return absolutePath;
+    }
+
+    void Asset::SetName(StringView name)
+    {
+        this->name = name;
         BuildPath();
         SetModified();
+    }
+
+    void Asset::AddRelatedFile(StringView fileAbsolutePath)
+    {
+        relatedFiles.EmplaceBack(fileAbsolutePath);
     }
 
     void Asset::SetExtension(StringView p_extension)
@@ -105,33 +138,18 @@ namespace Fyrion
         return extension;
     }
 
-    void Asset::SetActive(bool p_active)
-    {
-        const bool changed = active != p_active;
-        active = p_active;
-        if (changed)
-        {
-            OnActiveChanged();
-        }
-        if (active)
-        {
-            BuildPath();
-        }
-        SetModified();
-    }
-
     bool Asset::IsChildOf(Asset* parent) const
     {
         if (parent == this) return true;
 
-        if (directory != nullptr)
+        if (this->parent != nullptr)
         {
-            if (reinterpret_cast<usize>(this->directory) == reinterpret_cast<usize>(parent))
+            if (this->parent == parent)
             {
                 return true;
             }
 
-            return directory->IsChildOf(parent);
+            return this->parent->IsChildOf(parent);
         }
         return false;
     }
@@ -144,7 +162,7 @@ namespace Fyrion
 
     bool Asset::IsModified() const
     {
-        if (!IsActive() && loadedVersion == 0)
+        if (loadedVersion == 0)
         {
             return false;
         }
@@ -217,7 +235,39 @@ namespace Fyrion
 
     Span<Asset*> Asset::GetChildrenAssets() const
     {
-        return assets;
+        return children;
+    }
+
+    void Asset::RemoveChild(Asset* child)
+    {
+        if (Asset** it = FindFirst(children.begin(), children.end(), child))
+        {
+            children.Erase(it);
+        }
+    }
+
+    void Asset::AddChild(Asset* child)
+    {
+        if (child->parent != nullptr)
+        {
+            child->parent->RemoveChild(child);
+        }
+
+        child->directory = this;
+        child->BuildPath();
+        children.EmplaceBack(child);
+    }
+
+    Asset* Asset::FindChildByAbsolutePath(StringView absolutePath) const
+    {
+        for (Asset* child : children)
+        {
+            if (child->absolutePath == absolutePath)
+            {
+                return child;
+            }
+        }
+        return nullptr;
     }
 
     Asset* Asset::GetPhysicalAsset()
@@ -227,9 +277,9 @@ namespace Fyrion
             return this;
         }
 
-        if (owner != nullptr)
+        if (parent != nullptr)
         {
-            return owner->GetPhysicalAsset();
+            return parent->GetPhysicalAsset();
         }
 
         return {};
@@ -242,26 +292,21 @@ namespace Fyrion
             return this;
         }
 
-        if (owner != nullptr)
+        if (parent != nullptr)
         {
-            return owner->GetPhysicalAsset();
+            return parent->GetPhysicalAsset();
         }
 
         return {};
     }
 
-    Asset* Asset::GetOwner() const
-    {
-        return owner;
-    }
-
     void Asset::SetOwner(Asset* p_owner)
     {
-        FY_ASSERT(!owner, "asset already have a owner");
+        FY_ASSERT(!parent, "asset already have a owner");
         if (p_owner != this)
         {
-            owner = p_owner;
-            owner->assets.EmplaceBack(this);
+            parent = p_owner;
+            parent->children.EmplaceBack(this);
         }
     }
 
@@ -313,6 +358,28 @@ namespace Fyrion
     ArchiveObject Asset::SerializeData(ArchiveWriter& writer) const
     {
         return {};
+    }
+
+    void Asset::Destroy()
+    {
+        OnDestroyed();
+
+        if (!absolutePath.Empty())
+        {
+            FileSystem::Remove(absolutePath);
+        }
+
+        for (const String& relatedFile : relatedFiles)
+        {
+            FileSystem::Remove(relatedFile);
+        }
+
+        if (parent)
+        {
+            parent->RemoveChild(this);
+        }
+
+        //TODO - remove references from AssetDatabase.
     }
 
     void Asset::RegisterType(NativeTypeHandler<Asset>& type)

@@ -312,7 +312,7 @@ namespace Fyrion
             ImGui::Indent();
             ImGui::DrawType(ImGui::DrawTypeDesc{
                 .itemId = reinterpret_cast<usize>(asset),
-                .typeHandler = asset->GetAssetType(),
+                .typeHandler = asset->GetType(),
                 .instance = asset,
                 .flags = readOnly ? ImGuiDrawTypeFlags_ReadOnly : 0u,
                 .userData = this,

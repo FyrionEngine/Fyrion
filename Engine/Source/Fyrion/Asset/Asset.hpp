@@ -35,72 +35,45 @@ namespace Fyrion
     public:
         virtual ~Asset();
 
-        UUID GetUUID() const
-        {
-            return uuid;
-        }
+        UUID                  GetUUID() const;
+        void                  SetUUID(const UUID& p_uuid);
+        TypeHandler*          GetType() const;
+        TypeID                GetAssetTypeId() const;
+        Asset*                GetParent() const;
+        Asset*                GetPrototype() const;
+        virtual StringView    GetName() const;
+        virtual StringView    GetDisplayName() const;
+        StringView            GetPath() const;
+        StringView            GetAbsolutePath() const;
+        virtual void          SetName(StringView name);
+        void                  AddRelatedFile(StringView fileAbsolutePath);
+        virtual void          SetExtension(StringView p_extension);
+        StringView            GetExtension() const;
+        virtual void          BuildPath();
+        virtual void          OnCreated() {}
+        virtual void          OnDestroyed() {}
+        virtual void          OnModified() {}
+        void                  SetModified();
+        virtual bool          IsModified() const;
+        void                  SaveBlob(Blob& blob, ConstPtr data, usize dataSize);
+        usize                 GetBlobSize(Blob blob) const;
+        void                  LoadBlob(Blob blob, VoidPtr, usize dataSize) const;
+        bool                  IsChildOf(Asset* parent) const;
+        Span<Asset*>          GetChildrenAssets() const;
+        void                  RemoveChild(Asset* child);
+        void                  AddChild(Asset* child);
+        Asset*                FindChildByAbsolutePath(StringView absolutePath) const;
 
-        void SetUUID(const UUID& p_uuid);
+        //TODO - rename to GetCacheDirectory ?
+        Asset*                GetPhysicalAsset();       //used for save/load blobs
+        const Asset*          GetPhysicalAsset() const; //used for save/load blobs
 
-        Asset* GetPrototype() const
-        {
-            return prototype;
-        }
-
-        TypeHandler* GetAssetType() const
-        {
-            return assetType;
-        }
-
-        TypeID GetAssetTypeId() const;
-
-        virtual StringView GetName() const
-        {
-            return name;
-        }
-
-        StringView GetPath() const
-        {
-            return path;
-        }
-        void SetPath(StringView path);
-
-        StringView GetAbsolutePath() const
-        {
-            return absolutePath;
-        }
-
-        virtual void SetName(StringView p_name);
-        virtual void SetExtension(StringView p_extension);
-        StringView   GetExtension() const;
-
-
-        bool IsActive() const
-        {
-            return active;
-        }
-
-        void SetActive(bool p_active);
-
-        AssetDirectory* GetDirectory() const
-        {
-            return directory;
-        }
-
-        bool IsChildOf(Asset* parent) const;
-
-        virtual void BuildPath();
-        virtual void OnActiveChanged() {}
-
-        virtual void OnModified() {};
-        void SetModified();
-
-        virtual bool       IsModified() const;
-        virtual StringView GetDisplayName() const;
-
-        friend class AssetDatabase;
-        friend class AssetDirectory;
-
+        virtual bool          LoadData();
+        virtual void          SaveData();
+        virtual StringView    GetDataExtesion();
+        virtual void          DeserializeData(ArchiveReader& reader, ArchiveObject object);
+        virtual ArchiveObject SerializeData(ArchiveWriter& writer) const;
+        void                  Destroy();
 
         template <typename T, Traits::EnableIf<Traits::IsBaseOf<Asset, T>>* = nullptr>
         T* Cast()
@@ -108,41 +81,24 @@ namespace Fyrion
             return dynamic_cast<T*>(this);
         }
 
-        void  SaveBlob(Blob& blob, ConstPtr data, usize dataSize);
-        usize GetBlobSize(Blob blob) const;
-        void  LoadBlob(Blob blob, VoidPtr, usize dataSize) const;
-
-        Span<Asset*> GetChildrenAssets() const;
-
-        Asset*       GetPhysicalAsset();
-        const Asset* GetPhysicalAsset() const;
-
-        Asset* GetOwner() const;
-        void   SetOwner(Asset* owner);
-
-        virtual bool          LoadData();
-        virtual void          SaveData();
-        virtual StringView    GetDataExtesion();
-        virtual void          DeserializeData(ArchiveReader& reader, ArchiveObject object);
-        virtual ArchiveObject SerializeData(ArchiveWriter& writer) const;
+        friend class AssetDatabase;
+        friend class AssetDirectory;
 
     private:
-        usize           index{};
-        UUID            uuid{};
-        bool            hasBlobs = false;
-        String          path{};
-        Asset*          prototype{};
-        Asset*          owner{};
-        Array<Asset*>   assets{};
-        TypeHandler*    assetType{};
-        u64             currentVersion{};
-        u64             loadedVersion{};
-        u64             lastModified{};
-        String          name{};
-        String          extension;
-        String          absolutePath{};
-        AssetDirectory* directory{};
-        bool            active = true;
+        UUID          uuid{};
+        bool          hasBlobs = false;
+        String        path{};
+        Asset*        prototype{};
+        Asset*        parent{};
+        Array<Asset*> children{};
+        Array<String> relatedFiles{};
+        TypeHandler*  assetType{};
+        u64           currentVersion{};
+        u64           loadedVersion{};
+        u64           lastModified{};
+        String        name{};
+        String        extension;
+        String        absolutePath{};
 
         void ValidateName();
 
@@ -152,12 +108,12 @@ namespace Fyrion
 
     struct AssetApi
     {
-        Asset* (*castAsset)(VoidPtr ptr);
-        void   (*setAsset)(VoidPtr ptr,Asset* asset);
+        Asset* (*            castAsset)(VoidPtr ptr);
+        void (*              setAsset)(VoidPtr ptr, Asset* asset);
         const TypeHandler* (*getTypeHandler)();
     };
 
-    template<typename T>
+    template <typename T>
     struct TypeApiInfo<T, Traits::EnableIf<Traits::IsBaseOf<Asset, T>>>
     {
         static void ExtractApi(VoidPtr pointer)
@@ -168,7 +124,7 @@ namespace Fyrion
                 return static_cast<Asset*>(*static_cast<T**>(ptr));
             };
 
-            api->setAsset = [](VoidPtr ptr,Asset* asset)
+            api->setAsset = [](VoidPtr ptr, Asset* asset)
             {
                 *static_cast<T**>(ptr) = static_cast<T*>(asset);
             };
@@ -192,6 +148,7 @@ namespace Fyrion
                 writer.WriteString(object, name, ToString((*value)->GetUUID()));
             }
         }
+
         static void Read(ArchiveReader& reader, ArchiveObject object, StringView name, T** value)
         {
             UUID uuid = UUID::FromString(reader.ReadString(object, name));
@@ -205,7 +162,7 @@ namespace Fyrion
             }
         }
 
-        static void Add(ArchiveWriter& writer, ArchiveObject array, T*const * value)
+        static void Add(ArchiveWriter& writer, ArchiveObject array, T* const * value)
         {
             if (*value)
             {
@@ -243,6 +200,7 @@ namespace Fyrion
                 writer.WriteString(object, name, value->ToString());
             }
         }
+
         static void Read(ArchiveReader& reader, ArchiveObject object, StringView name, Blob* value)
         {
             *value = Blob::FromString(reader.ReadString(object, name));

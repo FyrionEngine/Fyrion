@@ -64,9 +64,9 @@ namespace Fyrion
 
     struct Offset3D
     {
-        i32 x;
-        i32 y;
-        i32 z;
+        i32 x = 0;
+        i32 y = 0;
+        i32 z = 0;
     };
 
 

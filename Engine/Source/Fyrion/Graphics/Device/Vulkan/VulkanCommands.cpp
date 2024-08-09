@@ -351,6 +351,43 @@ namespace Fyrion
                                static_cast<VulkanBuffer*>(destBuffer.handler)->buffer,
                                vkBufferImageCopies.Size(),
                                vkBufferImageCopies.Data());
+
+
+    }
+
+    void VulkanCommands::CopyTexture(Texture srcTexture, ResourceLayout srcTextureLayout, Texture dstTexture, ResourceLayout dstTextureLayout, const Span<TextureCopy>& regions)
+    {
+        Array<VkImageCopy> vkImageCopies;
+        vkImageCopies.Reserve(regions.Size());
+
+        for (const TextureCopy& textureCopy : regions)
+        {
+            vkImageCopies.EmplaceBack(VkImageCopy{
+                .srcSubresource = {
+                    .aspectMask = Vulkan::CastTextureAspect(textureCopy.srcSubresource.textureAspect),
+                    .mipLevel = textureCopy.srcSubresource.mipLevel,
+                    .baseArrayLayer = textureCopy.srcSubresource.baseArrayLayer,
+                    .layerCount = textureCopy.srcSubresource.layerCount
+                },
+                .srcOffset = {textureCopy.srcOffset.x, textureCopy.srcOffset.y, textureCopy.srcOffset.z},
+                .dstSubresource = {
+                    .aspectMask = Vulkan::CastTextureAspect(textureCopy.dstSubresource.textureAspect),
+                    .mipLevel = textureCopy.dstSubresource.mipLevel,
+                    .baseArrayLayer = textureCopy.dstSubresource.baseArrayLayer,
+                    .layerCount = textureCopy.dstSubresource.layerCount
+                },
+                .dstOffset = {textureCopy.dstOffset.x, textureCopy.dstOffset.y, textureCopy.dstOffset.z},
+                .extent = {textureCopy.extent.width, textureCopy.extent.height, textureCopy.extent.depth},
+            });
+        }
+
+        vkCmdCopyImage(commandBuffer,
+                       static_cast<VulkanTexture*>(srcTexture.handler)->image,
+                       Vulkan::CastLayout(srcTextureLayout),
+                       static_cast<VulkanTexture*>(dstTexture.handler)->image,
+                       Vulkan::CastLayout(dstTextureLayout),
+                       vkImageCopies.Size(),
+                       vkImageCopies.Data());
     }
 
 

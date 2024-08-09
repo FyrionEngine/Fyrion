@@ -52,8 +52,6 @@ namespace Fyrion
 
 
             std::string_view str = {source.CStr(), source.Size()};
-            str.find("MainGS") != std::string_view::npos;
-
             if (str.find("MainGS") != std::string_view::npos)
             {
                 if (!ShaderManager::CompileShader(ShaderCreation{.asset = this, .source = source, .entryPoint = "MainGS", .shaderStage = ShaderStage::Geometry, .renderApi = renderApi}, tempBytes))

@@ -597,6 +597,18 @@ namespace Fyrion::Vulkan
 		return VK_SAMPLER_MIPMAP_MODE_MAX_ENUM;
 	}
 
+	VkImageAspectFlags CastTextureAspect(TextureAspect textureAspect)
+	{
+		switch (textureAspect)
+		{
+			case TextureAspect::None: return VK_IMAGE_ASPECT_NONE;
+			case TextureAspect::Color: return VK_IMAGE_ASPECT_COLOR_BIT;
+			case TextureAspect::Depth: return VK_IMAGE_ASPECT_DEPTH_BIT;
+			case TextureAspect::Stencil: return VK_IMAGE_ASPECT_STENCIL_BIT;
+		}
+		return VK_IMAGE_ASPECT_NONE;
+	}
+
 	void SetObjectName(VulkanDevice& device, VkObjectType type, u64 handle, StringView name)
 	{
 		if (!device.debugUtilsExtensionPresent)

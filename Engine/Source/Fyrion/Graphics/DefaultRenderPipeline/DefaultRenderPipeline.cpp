@@ -7,7 +7,7 @@ namespace Fyrion
     void RegisterLightingRenderPass();
     void RegisterSkyboxBlitRenderPass();
     void RegisterPostProcessRenderPass();
-    void RegisterHBAOPlus();
+    void RegisterSSAOPasses();
 
     void DefaultRenderPipelineInit()
     {
@@ -17,7 +17,7 @@ namespace Fyrion
         RegisterLightingRenderPass();
         RegisterSkyboxBlitRenderPass();
         RegisterPostProcessRenderPass();
-        RegisterHBAOPlus();
+        RegisterSSAOPasses();
     }
 
     void DefaultRenderPipelineShutdown()

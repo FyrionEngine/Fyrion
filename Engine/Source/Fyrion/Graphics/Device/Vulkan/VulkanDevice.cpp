@@ -51,7 +51,7 @@ namespace Fyrion
         }
 
 #ifdef FY_DEBUG
-       enableValidationLayers = false;
+       enableValidationLayers = true;
 #endif
 
         Platform::SetVulkanLoader(vkGetInstanceProcAddr);

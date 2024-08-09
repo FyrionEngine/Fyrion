@@ -136,6 +136,16 @@ namespace Fyrion
 
     ENUM_FLAGS(TextureUsage, u32)
 
+    enum class TextureAspect :u32
+    {
+        None    = 0x00000000,
+        Color   = 0x00000001,
+        Depth   = 0x00000002,
+        Stencil = 0x00000004,
+    };
+
+    ENUM_FLAGS(TextureAspect, u32)
+
     enum class SamplerFilter
     {
         Nearest  = 0,
@@ -362,7 +372,7 @@ namespace Fyrion
         CompareOp          compareOperator{CompareOp::Always};
         f32                mipLodBias = 0.0f;
         f32                minLod{};
-        f32                maxLod{};
+        f32                maxLod{1.0};
         bool               anisotropyEnable = true;
         BorderColor        borderColor{BorderColor::IntOpaqueBlack};
         SamplerMipmapMode  samplerMipmapMode = SamplerMipmapMode::Linear;
@@ -529,6 +539,23 @@ namespace Fyrion
         Extent3D imageExtent;
     };
 
+    struct TextureSubresourceLayers
+    {
+        TextureAspect textureAspect;
+        u32           mipLevel = 0;
+        u32           baseArrayLayer = 0;
+        u32           layerCount = 1;
+    };
+
+    struct TextureCopy
+    {
+        TextureSubresourceLayers srcSubresource{};
+        Offset3D                 srcOffset{};
+        TextureSubresourceLayers dstSubresource{};
+        Offset3D                 dstOffset{};
+        Extent3D                 extent{};
+    };
+
 
     struct TextureDataRegion
     {
@@ -689,6 +716,7 @@ namespace Fyrion
         virtual void CopyBuffer(Buffer srcBuffer, Buffer dstBuffer, const Span<BufferCopyInfo>& info) = 0;
         virtual void CopyBufferToTexture(Buffer srcBuffer, Texture texture, const Span<BufferImageCopy>& regions) = 0;
         virtual void CopyTextureToBuffer(Texture srcTexture, ResourceLayout textureLayout, Buffer destBuffer, const Span<BufferImageCopy>& regions) = 0;
+        virtual void CopyTexture(Texture srcTexture, ResourceLayout srcTextureLayout, Texture dstTexture, ResourceLayout dstTextureLayout, const Span<TextureCopy>& regions) = 0;
         virtual void SubmitAndWait(GPUQueue queue) = 0;
 
     };

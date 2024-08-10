@@ -19,6 +19,17 @@ namespace Fyrion
     };
 
 
+    TypeHandler* TextureImportSettings::GetTypeHandler()
+    {
+        return Registry::FindType<TextureImportSettings>();
+    }
+
+    void TextureImportSettings::RegisterType(NativeTypeHandler<TextureImportSettings>& type)
+    {
+        type.Field<&TextureImportSettings::generateMipmaps>("generateMipmaps");
+        type.Field<&TextureImportSettings::textureType>("textureType");
+    }
+
     void TextureAssetImage::RegisterType(NativeTypeHandler<TextureAssetImage>& type)
     {
         type.Field<&TextureAssetImage::byteOffset>("byteOffset");
@@ -60,7 +71,7 @@ namespace Fyrion
 
     void TextureAsset::SetImage(const Image& image)
     {
-        mipLevels = generateMipmaps ? static_cast<u32>(std::floor(std::log2(std::max(image.GetWidth(), image.GetHeight())))) + 1 : 1;
+        mipLevels = textureImportSettings.generateMipmaps ? static_cast<u32>(std::floor(std::log2(std::max(image.GetWidth(), image.GetHeight())))) + 1 : 1;
 
         format = Format::RGBA;
         images.Clear();
@@ -118,7 +129,7 @@ namespace Fyrion
         format = Format::RGBA32F;
         images.Clear();
 
-        switch (textureType)
+        switch (textureImportSettings.textureType)
         {
             case TextureType::Texture2D:
             {
@@ -268,21 +279,14 @@ namespace Fyrion
         return format;
     }
 
-    TextureType TextureAsset::GetTextureType() const
+    ImportSettings* TextureAsset::GetImportSettings()
     {
-        return textureType;
-    }
-
-    void TextureAsset::SetTextureType(TextureType textureType)
-    {
-        this->textureType = textureType;
+        return &textureImportSettings;
     }
 
     void TextureAsset::RegisterType(NativeTypeHandler<TextureAsset>& type)
     {
         type.Field<&TextureAsset::format>("format");
-        type.Field<&TextureAsset::textureType>("textureType").Attribute<UIProperty>();
-        type.Field<&TextureAsset::generateMipmaps>("generateMipmaps").Attribute<UIProperty>();
 
         type.Field<&TextureAsset::mipLevels>("mipLevels");
         type.Field<&TextureAsset::arrayLayers>("arrayLayers");

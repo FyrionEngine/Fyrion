@@ -138,6 +138,7 @@ namespace Fyrion
 
     JsonAssetReader::JsonAssetReader(StringView data)
     {
+        FY_ASSERT(!data.Empty(), "data cannot be empty");
         const yyjson_read_flag flg = {};
         yyjson_read_err        err;
         doc = yyjson_read_opts(const_cast<char*>(data.begin()), data.Size(), flg, &alloc, &err);

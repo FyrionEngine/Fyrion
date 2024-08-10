@@ -43,6 +43,7 @@ namespace Fyrion
         Registry::Type<RenderGraphPass>();
         Registry::Type<ShaderAsset>();
         Registry::Type<TextureAsset>();
+        Registry::Type<TextureImportSettings>();
         Registry::Type<DCCAsset>();
         Registry::Type<MeshAsset>();
         Registry::Type<MaterialAsset>();

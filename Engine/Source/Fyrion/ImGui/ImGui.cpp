@@ -974,7 +974,9 @@ namespace ImGui
             font.SizePixels = fontSize * scaleFactor;
             memcpy(font.Name, "NotoSans", 9);
             font.FontDataOwnedByAtlas = false;
-            io.Fonts->AddFontFromMemoryTTF(fontAsset->fontBytes.Data(), fontAsset->fontBytes.Size(), font.SizePixels, &font);
+
+            Array<u8> bytes = fontAsset->GetFont();
+            io.Fonts->AddFontFromMemoryTTF(bytes.Data(), bytes.Size(), font.SizePixels, &font);
         }
         else
         {
@@ -995,7 +997,8 @@ namespace ImGui
             config.FontDataOwnedByAtlas = false;
             memcpy(config.Name, "FontAwesome", 11);
 
-            io.Fonts->AddFontFromMemoryTTF(fontAsset->fontBytes.Data(), fontAsset->fontBytes.Size(), config.SizePixels, &config, icon_ranges);
+            Array<u8> bytes = fontAsset->GetFont();
+            io.Fonts->AddFontFromMemoryTTF(bytes.Data(), bytes.Size(), config.SizePixels, &config, icon_ranges);
         }
     }
 

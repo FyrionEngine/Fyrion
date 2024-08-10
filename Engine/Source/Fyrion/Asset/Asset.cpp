@@ -79,12 +79,11 @@ namespace Fyrion
     void Asset::SetUUID(const UUID& uuid)
     {
         FY_ASSERT(!this->uuid, "UUID cannot be changed");
-        if (this->uuid)
+        if (!this->uuid)
         {
             AssetDatabaseUpdateUUID(this, uuid);
             this->uuid = uuid;
         }
-
     }
 
     TypeHandler* Asset::GetType() const

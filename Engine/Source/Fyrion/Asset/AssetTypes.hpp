@@ -24,6 +24,7 @@ namespace Fyrion
 
     struct ImportSettings
     {
+        virtual              ~ImportSettings() = default;
         virtual TypeHandler* GetTypeHandler() = 0;
     };
 
@@ -47,7 +48,9 @@ namespace Fyrion
     {
         FY_BASE_TYPES(Asset);
 
-        Array<u8> fontBytes;
+        Stream fontBytes;
+
+        Array<u8> GetFont() const;
 
         static void RegisterType(NativeTypeHandler<UIFontAsset>& type);
     };

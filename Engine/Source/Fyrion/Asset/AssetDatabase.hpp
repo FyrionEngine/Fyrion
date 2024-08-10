@@ -24,8 +24,11 @@ namespace Fyrion
         //desired path can be used to lookup the asset.
         StringView desiredPath{};
 
-        Asset* prototype{};
+        Asset*     prototype{};
         StringView absolutePath{};
+
+        //generate a random UUID if field uuid is not provided
+        bool generateUUID = true;
     };
 
     class FY_API AssetDatabase
@@ -76,12 +79,13 @@ namespace Fyrion
 
     private:
         static void          LoadAssetFile(AssetDirectory* directory, const StringView& filePath);
-        //static Asset*        ReadAssetFile(const StringView& path);
-        static ArchiveObject SerializeAsset(ArchiveWriter& writer, Asset* asset);
-        static void          PersistInfo(StringView file, Asset* asset);
-        static void          PersistAsset(StringView file, Asset* asset);
-        //static Asset*        DeserializeAsset(ArchiveReader& reader, ArchiveObject object);
-        static void          DeserializeAssetInfo(ArchiveReader& reader, Asset* asset);
+        static void          SaveInfoJson(StringView file, Asset* asset);
+        static ArchiveObject SaveInfo(ArchiveWriter& writer, Asset* asset, bool child = false);
+        static void          SaveAsset(StringView file, Asset* asset);
+        static void          LoadInfoJson(StringView file, Asset* asset);
+        static void          LoadInfo(ArchiveReader& reader, ArchiveObject object, Asset* asset);
+        static void          LoadAssetJson(StringView file, Asset* asset);
+        static void          LoadAsset(ArchiveReader& reader, ArchiveObject object, Asset* asset);
         static void          QueueAssetImport(AssetIO* io, Asset* asset);
     };
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include "Fyrion/Asset/Asset.hpp"
+#include "Fyrion/Asset/AssetTypes.hpp"
 #include "Fyrion/Core/Image.hpp"
 #include "Fyrion/Graphics/GraphicsTypes.hpp"
 
@@ -10,6 +11,16 @@ namespace Fyrion
         Texture2D,
         Texture3D,
         Cubemap
+    };
+
+    struct FY_API TextureImportSettings : ImportSettings
+    {
+        TypeHandler* GetTypeHandler() override;
+
+        bool        generateMipmaps = true;
+        TextureType textureType = TextureType::Texture2D;
+
+        static void RegisterType(NativeTypeHandler<TextureImportSettings>& type);
     };
 
     struct TextureAssetImage
@@ -41,16 +52,15 @@ namespace Fyrion
         Image      GetImage() const;
         Format     GetFormat() const;
 
-        TextureType GetTextureType() const;
-        void        SetTextureType(TextureType textureType);
+        ImportSettings* GetImportSettings() override;
+
+        void SetTextureType(TextureType textureType);
 
         static void RegisterType(NativeTypeHandler<TextureAsset>& type);
 
     private:
+        TextureImportSettings textureImportSettings{};
         Format format{Format::RGBA};
-
-        TextureType textureType = TextureType::Texture2D;
-        bool        generateMipmaps = true;
 
         u32                      mipLevels{};
         u32                      arrayLayers{};

@@ -11,9 +11,9 @@ namespace Fyrion
             return {};
         }
 
-        virtual Asset* CreateAsset()
+        virtual TypeID GetAssetTypeID(StringView path)
         {
-            return nullptr;
+            return 0;
         }
 
         virtual void ImportAsset(StringView path, Asset* asset) {}
@@ -22,19 +22,23 @@ namespace Fyrion
         static void RegisterType(NativeTypeHandler<AssetIO>& type);
     };
 
+    struct ImportSettings
+    {
+        virtual TypeHandler* GetTypeHandler() = 0;
+    };
+
 
     class FY_API AssetDirectory final : public Asset
     {
     public:
         FY_BASE_TYPES(Asset);
 
-        void BuildPath() override;
-
-        void SetExtension(StringView p_extension) override {}
-
-        StringView   GetDisplayName() const override;
-        bool         IsModified() const override;
-        void         OnCreated() override;
+        void       BuildPath() override;
+        void       SetName(StringView name) override;
+        StringView GetDisplayName() const override;
+        bool       IsModified() const override;
+        void       OnCreated() override;
+        String     GetCacheDirectory() const override;
 
         static void RegisterType(NativeTypeHandler<AssetDirectory>& type);
     };
@@ -55,7 +59,7 @@ namespace Fyrion
         StringView extensions[2] = {".ttf", ".otf"};
 
         Span<StringView> GetImportExtensions() override;
-        Asset*           CreateAsset() override;
+        TypeID           GetAssetTypeID(StringView path) override;
         void             ImportAsset(StringView path, Asset* asset) override;
     };
 }

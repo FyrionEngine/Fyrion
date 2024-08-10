@@ -45,11 +45,11 @@ namespace Fyrion
         static void RegisterType(NativeTypeHandler<MoveAssetAction>& type);
 
     private:
-        void MoveToFolder(AssetDirectory* directory) const;
+        void MoveToFolder(Asset* directory) const;
 
-        Asset*          asset;
-        AssetDirectory* oldDirectory;
-        AssetDirectory* newDirectory;
+        Asset* asset;
+        Asset* oldDirectory;
+        Asset* newDirectory;
     };
 
     struct UpdateAssetAction : EditorAction

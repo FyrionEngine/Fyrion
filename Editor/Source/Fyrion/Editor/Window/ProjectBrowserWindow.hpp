@@ -20,7 +20,7 @@ namespace Fyrion
 
         void Init(u32 id, VoidPtr userData) override;
         void Draw(u32 id, bool& open) override;
-        void SetOpenDirectory(AssetDirectory* p_directory);
+        void SetOpenDirectory(AssetDirectory* directory);
         void SetSelectedAsset(Asset* selectedItem);
 
         static void AddMenuItem(const MenuItemCreation& menuItem);

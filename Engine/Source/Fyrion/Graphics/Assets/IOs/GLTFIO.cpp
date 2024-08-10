@@ -29,9 +29,9 @@ namespace Fyrion
             return {extension, 2};
         }
 
-        Asset* CreateAsset() override
+        TypeID GetAssetTypeID(StringView path) override
         {
-            return AssetDatabase::Create<DCCAsset>(UUID::RandomUUID());
+            return GetTypeID<DCCAsset>();
         }
 
         MeshAsset* LoadGltfMesh(DCCAsset* dccAsset, ImportedMaterialMap& materialMap, cgltf_data* data, cgltf_mesh& gltfMesh, u32 index)
@@ -51,8 +51,7 @@ namespace Fyrion
             {
                 meshAsset = AssetDatabase::Create<MeshAsset>();
                 meshAsset->SetName(name);
-                meshAsset->SetUUID(UUID::RandomUUID());
-                meshAsset->SetOwner(dccAsset);
+                dccAsset->AddChild(meshAsset);
             }
 
             for (u32 p = 0; p < gltfMesh.primitives_count; ++p)
@@ -301,7 +300,7 @@ namespace Fyrion
         {
             if (texture->image->uri != nullptr)
             {
-                String texturePath = String(dccAsset->GetDirectory()->GetPath()).Append("/").Append(StringView{texture->image->uri});
+                String texturePath = String(dccAsset->GetParent()->GetPath()).Append("/").Append(StringView{texture->image->uri});
 
                 TextureAsset* textureAsset = AssetDatabase::FindByPath<TextureAsset>(texturePath);
                 if (textureAsset == nullptr)
@@ -394,8 +393,7 @@ namespace Fyrion
                     {
                         textureAsset = AssetDatabase::Create<TextureAsset>();
                         textureAsset->SetName(textureName);
-                        textureAsset->SetUUID(UUID::RandomUUID());
-                        textureAsset->SetOwner(dccAsset);
+                        dccAsset->AddChild(textureAsset);
                     }
 
                     Span<const u8> imageBuffer{
@@ -420,8 +418,7 @@ namespace Fyrion
                 {
                     materialAsset = AssetDatabase::Create<MaterialAsset>();
                     materialAsset->SetName(materialName);
-                    materialAsset->SetUUID(UUID::RandomUUID());
-                    materialAsset->SetOwner(dccAsset);
+                    dccAsset->AddChild(materialAsset);
                 }
 
                 if (material.has_pbr_metallic_roughness)
@@ -477,8 +474,7 @@ namespace Fyrion
                 {
                     rootObjectAsset = AssetDatabase::Create<SceneObjectAsset>();
                     rootObjectAsset->SetName(dccAsset->GetName());
-                    rootObjectAsset->SetUUID(UUID::RandomUUID());
-                    rootObjectAsset->SetOwner(dccAsset);
+                    dccAsset->AddChild(rootObjectAsset);
 
                     TransformComponent& transformComponent = rootObjectAsset->GetObject()->CreateComponent<TransformComponent>();
                     transformComponent.SetUUID(UUID::RandomUUID());

@@ -22,11 +22,6 @@ namespace Fyrion
 
         SceneObject* GetObject();
 
-        StringView GetDataExtesion() override
-        {
-            return FY_SCENE_EXTENSION;
-        }
-
         void DestroySceneObject();
 
         void          DeserializeData(ArchiveReader& reader, ArchiveObject object) override;

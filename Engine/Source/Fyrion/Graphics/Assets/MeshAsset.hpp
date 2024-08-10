@@ -32,8 +32,8 @@ namespace Fyrion
         usize                 verticesCount = 0;
         Array<MaterialAsset*> materials;
         Array<MeshPrimitive>  primitives{};
-        Blob                  vertices{};
-        Blob                  indices{};
+        Stream                  vertices{};
+        Stream                  indices{};
 
 
         Buffer vertexBuffer{};

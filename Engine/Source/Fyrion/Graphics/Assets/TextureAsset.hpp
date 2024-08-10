@@ -60,6 +60,6 @@ namespace Fyrion
         Texture texture{};
         Sampler sampler{};
 
-        Blob textureData{};
+        Stream textureData{};
     };
 }

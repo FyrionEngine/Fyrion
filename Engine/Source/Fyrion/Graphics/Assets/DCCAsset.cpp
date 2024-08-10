@@ -4,7 +4,7 @@ namespace Fyrion
 {
     MaterialAsset* DCCAsset::FindMaterialByName(const StringView& materialName)
     {
-        for (Asset* asset : GetChildrenAssets())
+        for (Asset* asset : GetChildren())
         {
             if (MaterialAsset* materialAsset = dynamic_cast<MaterialAsset*>(asset))
             {
@@ -19,7 +19,7 @@ namespace Fyrion
 
     MeshAsset* DCCAsset::FindMeshByName(const StringView& meshName)
     {
-        for (Asset* asset : GetChildrenAssets())
+        for (Asset* asset : GetChildren())
         {
             if (MeshAsset* meshAsset = dynamic_cast<MeshAsset*>(asset))
             {
@@ -34,7 +34,7 @@ namespace Fyrion
 
     TextureAsset* DCCAsset::FindTextureByName(const StringView& textureName)
     {
-        for (Asset* asset : GetChildrenAssets())
+        for (Asset* asset : GetChildren())
         {
             if (TextureAsset* textureAsset = dynamic_cast<TextureAsset*>(asset))
             {
@@ -49,7 +49,7 @@ namespace Fyrion
 
     SceneObjectAsset* DCCAsset::GetSceneObjectAsset()
     {
-        for (Asset* asset : GetChildrenAssets())
+        for (Asset* asset : GetChildren())
         {
             if (SceneObjectAsset* sceneObjectAsset = dynamic_cast<SceneObjectAsset*>(asset))
             {

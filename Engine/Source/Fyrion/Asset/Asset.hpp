@@ -7,8 +7,9 @@ namespace Fyrion
 {
     class Asset;
     class AssetDirectory;
+    struct ImportSettings;
 
-    struct Blob
+    struct Stream
     {
         u64 id;
 
@@ -24,9 +25,9 @@ namespace Fyrion
             return {strBuffer, bufSize};
         }
 
-        static Blob FromString(StringView str)
+        static Stream FromString(StringView str)
         {
-            return Blob{HexTo64(str)};
+            return Stream{HexTo64(str)};
         }
     };
 
@@ -35,42 +36,39 @@ namespace Fyrion
     public:
         virtual ~Asset();
 
-        UUID                  GetUUID() const;
-        void                  SetUUID(const UUID& p_uuid);
-        TypeHandler*          GetType() const;
-        TypeID                GetAssetTypeId() const;
-        Asset*                GetParent() const;
-        Asset*                GetPrototype() const;
-        virtual StringView    GetName() const;
-        virtual StringView    GetDisplayName() const;
-        StringView            GetPath() const;
-        StringView            GetAbsolutePath() const;
-        virtual void          SetName(StringView name);
-        void                  AddRelatedFile(StringView fileAbsolutePath);
-        virtual void          SetExtension(StringView p_extension);
-        StringView            GetExtension() const;
-        virtual void          BuildPath();
-        virtual void          OnCreated() {}
-        virtual void          OnDestroyed() {}
-        virtual void          OnModified() {}
-        void                  SetModified();
-        virtual bool          IsModified() const;
-        void                  SaveBlob(Blob& blob, ConstPtr data, usize dataSize);
-        usize                 GetBlobSize(Blob blob) const;
-        void                  LoadBlob(Blob blob, VoidPtr, usize dataSize) const;
-        bool                  IsChildOf(Asset* parent) const;
-        Span<Asset*>          GetChildrenAssets() const;
-        void                  RemoveChild(Asset* child);
-        void                  AddChild(Asset* child);
-        Asset*                FindChildByAbsolutePath(StringView absolutePath) const;
-
-        //TODO - rename to GetCacheDirectory ?
-        Asset*                GetPhysicalAsset();       //used for save/load blobs
-        const Asset*          GetPhysicalAsset() const; //used for save/load blobs
+        UUID                    GetUUID() const;
+        void                    SetUUID(const UUID& uuid);
+        TypeHandler*            GetType() const;
+        TypeID                  GetAssetTypeId() const;
+        Asset*                  GetParent() const;
+        Asset*                  GetPrototype() const;
+        virtual StringView      GetName() const;
+        virtual StringView      GetDisplayName() const;
+        StringView              GetPath() const;
+        StringView              GetAbsolutePath() const;
+        virtual void            SetName(StringView name);
+        void                    AddRelatedFile(StringView fileAbsolutePath);
+        StringView              GetExtension() const;
+        virtual void            BuildPath();
+        virtual void            OnCreated() {}
+        virtual void            OnDestroyed() {}
+        virtual void            OnModified() {}
+        virtual ImportSettings* GetImportSettings();
+        void                    SetModified();
+        virtual bool            IsModified() const;
+        void                    SaveStream(Stream& stream, ConstPtr data, usize dataSize);
+        usize                   GetStreamSize(Stream stream) const;
+        void                    LoadStream(Stream stream, VoidPtr, usize dataSize) const;
+        bool                    IsChildOf(Asset* parent) const;
+        Span<Asset*>            GetChildren() const;
+        void                    RemoveChild(Asset* child);
+        void                    RemoveFromParent();
+        void                    AddChild(Asset* child);
+        Asset*                  FindChildByAbsolutePath(StringView absolutePath) const;
+        virtual String          GetCacheDirectory() const;
 
         virtual bool          LoadData();
         virtual void          SaveData();
-        virtual StringView    GetDataExtesion();
         virtual void          DeserializeData(ArchiveReader& reader, ArchiveObject object);
         virtual ArchiveObject SerializeData(ArchiveWriter& writer) const;
         void                  Destroy();
@@ -82,11 +80,9 @@ namespace Fyrion
         }
 
         friend class AssetDatabase;
-        friend class AssetDirectory;
 
     private:
         UUID          uuid{};
-        bool          hasBlobs = false;
         String        path{};
         Asset*        prototype{};
         Asset*        parent{};
@@ -95,9 +91,8 @@ namespace Fyrion
         TypeHandler*  assetType{};
         u64           currentVersion{};
         u64           loadedVersion{};
-        u64           lastModified{};
+        u64           lastModifiedTime{};
         String        name{};
-        String        extension;
         String        absolutePath{};
 
         void ValidateName();
@@ -154,7 +149,7 @@ namespace Fyrion
             UUID uuid = UUID::FromString(reader.ReadString(object, name));
             if (uuid)
             {
-                *value = AssetDatabase::Create<T>(uuid);
+                *value = AssetDatabase::Create<T>({.uuid = uuid});
             }
             else if (*value)
             {
@@ -179,7 +174,9 @@ namespace Fyrion
             UUID uuid = UUID::FromString(reader.GetString(item));
             if (uuid)
             {
-                *value = AssetDatabase::Create<T>(uuid);
+                *value = AssetDatabase::Create<T>(AssetCreation{
+                    .uuid = uuid
+                });
             }
             else if (*value)
             {
@@ -189,11 +186,11 @@ namespace Fyrion
     };
 
     template <>
-    struct ArchiveType<Blob>
+    struct ArchiveType<Stream>
     {
         constexpr static bool hasArchiveImpl = true;
 
-        static void Write(ArchiveWriter& writer, ArchiveObject object, StringView name, const Blob* value)
+        static void Write(ArchiveWriter& writer, ArchiveObject object, StringView name, const Stream* value)
         {
             if (*value)
             {
@@ -201,17 +198,17 @@ namespace Fyrion
             }
         }
 
-        static void Read(ArchiveReader& reader, ArchiveObject object, StringView name, Blob* value)
+        static void Read(ArchiveReader& reader, ArchiveObject object, StringView name, Stream* value)
         {
-            *value = Blob::FromString(reader.ReadString(object, name));
+            *value = Stream::FromString(reader.ReadString(object, name));
         }
 
-        static void Add(ArchiveWriter& writer, ArchiveObject array, const Blob* value)
+        static void Add(ArchiveWriter& writer, ArchiveObject array, const Stream* value)
         {
             FY_ASSERT(false, "not implemented");
         }
 
-        static void Get(ArchiveReader& reader, ArchiveObject item, Blob* value)
+        static void Get(ArchiveReader& reader, ArchiveObject item, Stream* value)
         {
             FY_ASSERT(false, "not implemented");
         }

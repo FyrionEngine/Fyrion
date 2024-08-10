@@ -4,7 +4,6 @@
 #include "Fyrion/Core/Serialization.hpp"
 #include "Fyrion/Core/String.hpp"
 
-
 typedef struct yyjson_mut_doc yyjson_mut_doc;
 typedef struct yyjson_mut_val yyjson_mut_val;
 typedef struct yyjson_doc     yyjson_doc;

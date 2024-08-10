@@ -16,9 +16,9 @@ namespace Fyrion
             return {extension, sizeof(extension)/sizeof(StringView)};
         }
 
-        Asset* CreateAsset() override
+        TypeID GetAssetTypeID(StringView path) override
         {
-            return AssetDatabase::Create<ShaderAsset>();
+            return GetTypeID<ShaderAsset>();
         }
 
         void ImportAsset(StringView path, Asset* asset) override

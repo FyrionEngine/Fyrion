@@ -30,8 +30,8 @@ namespace Fyrion
         materials = p_materials;
         primitives = p_primitives;
 
-        SaveBlob(vertices, p_vertices.Data(), p_vertices.Size() * sizeof(VertexStride));
-        SaveBlob(indices, p_indices.Data(), p_indices.Size() * sizeof(u32));
+        SaveStream(vertices, p_vertices.Data(), p_vertices.Size() * sizeof(VertexStride));
+        SaveStream(indices, p_indices.Data(), p_indices.Size() * sizeof(u32));
     }
 
     Span<MeshPrimitive> MeshAsset::GetPrimitives() const
@@ -43,10 +43,10 @@ namespace Fyrion
     {
         if (!vertexBuffer)
         {
-            usize size = GetBlobSize(vertices);
+            usize size = GetStreamSize(vertices);
             Array<u8> data;
             data.Resize(size);
-            LoadBlob(vertices, data.Data(), size);
+            LoadStream(vertices, data.Data(), size);
 
             BufferCreation creation{
                 .usage = BufferUsage::VertexBuffer,
@@ -69,10 +69,10 @@ namespace Fyrion
     {
         if (!indexBuffer)
         {
-            usize size = GetBlobSize(indices);
+            usize size = GetStreamSize(indices);
             Array<u8> data;
             data.Resize(size);
-            LoadBlob(indices, data.Data(), size);
+            LoadStream(indices, data.Data(), size);
 
             BufferCreation creation{
                 .usage = BufferUsage::IndexBuffer,

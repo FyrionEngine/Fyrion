@@ -6,14 +6,14 @@
 
 namespace Fyrion
 {
+    struct AssetIO;
     class Asset;
     class AssetDirectory;
 
 
     struct AssetCreation
     {
-        //UUIDs are not mandatory, but it should be used to persist the asset.
-        UUID       uuid;
+        UUID       uuid{};
         StringView name{};
 
         //selecting a AssetDirectory, create the asset inside the directory.
@@ -25,6 +25,7 @@ namespace Fyrion
         StringView desiredPath{};
 
         Asset* prototype{};
+        StringView absolutePath{};
     };
 
     class FY_API AssetDatabase
@@ -43,7 +44,6 @@ namespace Fyrion
         static Asset*          FindByPath(const StringView& path);
         static Span<Asset*>    FindAssetsByType(TypeID typeId);
         static Asset*          Create(TypeID typeId, const AssetCreation& assetCreation);
-        static void            Destroy(Asset* asset);
         static void            DestroyAssets();
         static void            EnableHotReload(bool enable);
         static void            WatchAsset(Asset* asset);
@@ -51,19 +51,13 @@ namespace Fyrion
         template <typename T>
         static T* Create()
         {
-            return static_cast<T*>(Create(GetTypeID<T>()));
+            return static_cast<T*>(Create(GetTypeID<T>(), {}));
         }
 
         template <typename T>
-        static T* Create(UUID uuid)
+        static T* Create(const AssetCreation& assetCreation)
         {
-            return static_cast<T*>(Create(GetTypeID<T>(), uuid));
-        }
-
-        template <typename T>
-        static T* CreateFromPrototype(T* prototype, UUID uuid)
-        {
-            return static_cast<T*>(CreateFromPrototype(GetTypeID<T>(), prototype, uuid));
+            return static_cast<T*>(Create(GetTypeID<T>(), assetCreation));
         }
 
         template <typename T>
@@ -82,8 +76,12 @@ namespace Fyrion
 
     private:
         static void          LoadAssetFile(AssetDirectory* directory, const StringView& filePath);
-        static Asset*        ReadAssetFile(const StringView& path);
+        //static Asset*        ReadAssetFile(const StringView& path);
         static ArchiveObject SerializeAsset(ArchiveWriter& writer, Asset* asset);
-        static Asset*        DeserializeAsset(ArchiveReader& reader, ArchiveObject object);
+        static void          PersistInfo(StringView file, Asset* asset);
+        static void          PersistAsset(StringView file, Asset* asset);
+        //static Asset*        DeserializeAsset(ArchiveReader& reader, ArchiveObject object);
+        static void          DeserializeAssetInfo(ArchiveReader& reader, Asset* asset);
+        static void          QueueAssetImport(AssetIO* io, Asset* asset);
     };
 }

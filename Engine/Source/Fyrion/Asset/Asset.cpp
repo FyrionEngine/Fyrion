@@ -13,10 +13,11 @@ namespace Fyrion
 
     void Asset::BuildPath()
     {
-        if (directory != nullptr && !name.Empty())
+        if (parent != nullptr && !name.Empty())
         {
             ValidateName();
-            String newPath = String().Append(directory->GetPath()).Append("/").Append(name).Append(extension);
+
+            String newPath = String().Append(parent->GetPath()).Append("/").Append(name).Append(GetExtension());
             if (path != newPath)
             {
                 AssetDatabaseUpdatePath(this, path, newPath);
@@ -39,7 +40,7 @@ namespace Fyrion
         do
         {
             nameFound = true;
-            for (Asset* child : directory->GetChildren())
+            for (Asset* child : parent->GetChildren())
             {
                 if (child == this) continue;
 
@@ -64,9 +65,9 @@ namespace Fyrion
 
     Asset::~Asset()
     {
-        // if (directory)
+        // if (parent)
         // {
-        //     directory->RemoveChild(this);
+        //     parent->RemoveChild(this);
         // }
     }
 
@@ -77,8 +78,13 @@ namespace Fyrion
 
     void Asset::SetUUID(const UUID& uuid)
     {
-        AssetDatabaseUpdateUUID(this, uuid);
-        this->uuid = uuid;
+        FY_ASSERT(!this->uuid, "UUID cannot be changed");
+        if (this->uuid)
+        {
+            AssetDatabaseUpdateUUID(this, uuid);
+            this->uuid = uuid;
+        }
+
     }
 
     TypeHandler* Asset::GetType() const
@@ -128,14 +134,9 @@ namespace Fyrion
         relatedFiles.EmplaceBack(fileAbsolutePath);
     }
 
-    void Asset::SetExtension(StringView p_extension)
-    {
-        extension = p_extension;
-    }
-
     StringView Asset::GetExtension() const
     {
-        return extension;
+        return Path::Extension(absolutePath);
     }
 
     bool Asset::IsChildOf(Asset* parent) const
@@ -152,6 +153,11 @@ namespace Fyrion
             return this->parent->IsChildOf(parent);
         }
         return false;
+    }
+
+    ImportSettings* Asset::GetImportSettings()
+    {
+        return nullptr;
     }
 
     void Asset::SetModified()
@@ -182,58 +188,51 @@ namespace Fyrion
         return "Asset";
     }
 
-    void Asset::SaveBlob(Blob& blob, ConstPtr data, usize dataSize)
+    void Asset::SaveStream(Stream& stream, ConstPtr data, usize dataSize)
     {
-        Asset* physicalAsset = GetPhysicalAsset();
-        FY_ASSERT(physicalAsset->GetPhysicalAsset(), "blob cannot be saved, no physical asset found");
-
-        if (!blob)
+        if (!stream)
         {
-            blob.id = Random::Xorshift64star();
+            stream.id = Random::Xorshift64star();
         }
 
-        StringView dataDirectory = AssetDatabase::GetCacheDirectory();
-        if (FileSystem::GetFileStatus(dataDirectory).isDirectory)
+        String cacheDirectory = GetCacheDirectory();
+        if (!cacheDirectory.Empty())
         {
-            String assetDataDirectory = Path::Join(dataDirectory, ToString(physicalAsset->GetUUID()));
-            if (!FileSystem::GetFileStatus(assetDataDirectory).exists)
+            if (!FileSystem::GetFileStatus(cacheDirectory).exists)
             {
-                FileSystem::CreateDirectory(assetDataDirectory);
+                FileSystem::CreateDirectory(cacheDirectory);
             }
-            String      blobPath = Path::Join(assetDataDirectory, blob.ToString());
-            FileHandler file = FileSystem::OpenFile(blobPath, AccessMode::WriteOnly);
+
+            String      streamPath = Path::Join(cacheDirectory, stream.ToString());
+            FileHandler file = FileSystem::OpenFile(streamPath, AccessMode::WriteOnly);
             FileSystem::WriteFile(file, data, dataSize);
             FileSystem::CloseFile(file);
-
-            physicalAsset->hasBlobs = true;
         }
     }
 
-    usize Asset::GetBlobSize(Blob blob) const
+    usize Asset::GetStreamSize(Stream stream) const
     {
-        StringView dataDirectory = AssetDatabase::GetCacheDirectory();
-        const Asset* physicalAsset = GetPhysicalAsset();
-        if (physicalAsset != nullptr && FileSystem::GetFileStatus(dataDirectory).isDirectory)
+        String cacheDirectory = GetCacheDirectory();
+        if (!cacheDirectory.Empty())
         {
-            String blobPath = Path::Join(Path::Join(dataDirectory, ToString(physicalAsset->GetUUID())), blob.ToString());
-            return FileSystem::GetFileStatus(blobPath).fileSize;
+            String streamPath = Path::Join(cacheDirectory, stream.ToString());
+            return FileSystem::GetFileStatus(streamPath).fileSize;
         }
         return 0;
     }
 
-    void Asset::LoadBlob(Blob blob, VoidPtr data, usize dataSize) const
+    void Asset::LoadStream(Stream stream, VoidPtr data, usize dataSize) const
     {
-        StringView dataDirectory = AssetDatabase::GetCacheDirectory();
-        const Asset* physicalAsset = GetPhysicalAsset();
-        if (physicalAsset != nullptr && FileSystem::GetFileStatus(dataDirectory).isDirectory)
+        String cacheDirectory = GetCacheDirectory();
+        if (!cacheDirectory.Empty())
         {
-            String      blobPath = Path::Join(Path::Join(dataDirectory, ToString(physicalAsset->GetUUID())), blob.ToString());
-            FileHandler file = FileSystem::OpenFile(blobPath, AccessMode::ReadOnly);
+            String streamPath = Path::Join(cacheDirectory, stream.ToString());
+            FileHandler file = FileSystem::OpenFile(streamPath, AccessMode::ReadOnly);
             FileSystem::ReadFile(file, data, dataSize);
         }
     }
 
-    Span<Asset*> Asset::GetChildrenAssets() const
+    Span<Asset*> Asset::GetChildren() const
     {
         return children;
     }
@@ -246,14 +245,19 @@ namespace Fyrion
         }
     }
 
+    void Asset::RemoveFromParent()
+    {
+        if (parent != nullptr)
+        {
+            parent->RemoveChild(this);
+        }
+        parent = nullptr;
+    }
+
     void Asset::AddChild(Asset* child)
     {
-        if (child->parent != nullptr)
-        {
-            child->parent->RemoveChild(child);
-        }
-
-        child->directory = this;
+        child->RemoveFromParent();
+        child->parent = this;
         child->BuildPath();
         children.EmplaceBack(child);
     }
@@ -270,48 +274,19 @@ namespace Fyrion
         return nullptr;
     }
 
-    Asset* Asset::GetPhysicalAsset()
+    String Asset::GetCacheDirectory() const
     {
-        if (directory != nullptr)
+        String parentCacheDir = parent != nullptr ? parent->GetCacheDirectory() : "";
+        if (!parentCacheDir.Empty())
         {
-            return this;
+            return Path::Join(parentCacheDir, ToString(uuid));
         }
-
-        if (parent != nullptr)
-        {
-            return parent->GetPhysicalAsset();
-        }
-
-        return {};
-    }
-
-    const Asset* Asset::GetPhysicalAsset() const
-    {
-        if (directory != nullptr)
-        {
-            return this;
-        }
-
-        if (parent != nullptr)
-        {
-            return parent->GetPhysicalAsset();
-        }
-
-        return {};
-    }
-
-    void Asset::SetOwner(Asset* p_owner)
-    {
-        FY_ASSERT(!parent, "asset already have a owner");
-        if (p_owner != this)
-        {
-            parent = p_owner;
-            parent->children.EmplaceBack(this);
-        }
+        return Path::Join(AssetDatabase::GetCacheDirectory(), ToString(uuid));
     }
 
     bool Asset::LoadData()
     {
+        /*
         StringView dataExtension = GetDataExtesion();
         if (!dataExtension.Empty())
         {
@@ -326,11 +301,13 @@ namespace Fyrion
                 }
             }
         }
+        */
         return false;
     }
 
     void Asset::SaveData()
     {
+        /*
         StringView dataExtension = GetDataExtesion();
         if (!dataExtension.Empty())
         {
@@ -344,11 +321,7 @@ namespace Fyrion
                 }
             }
         }
-    }
-
-    StringView Asset::GetDataExtesion()
-    {
-        return {};
+        */
     }
 
     void Asset::DeserializeData(ArchiveReader& reader, ArchiveObject object)
@@ -379,13 +352,16 @@ namespace Fyrion
             parent->RemoveChild(this);
         }
 
+        //TODO - clean cache folder
+        //TODO - delete asset/info files.
         //TODO - remove references from AssetDatabase.
+        // assetsById.Erase(asset->GetUUID());
+        // assetsByPath.Erase(asset->GetPath());
     }
 
     void Asset::RegisterType(NativeTypeHandler<Asset>& type)
     {
         type.Field<&Asset::name>("name");
-        type.Field<&Asset::hasBlobs>("hasBlobs");
         type.Function<&Asset::GetName>("GetName");
     }
 }

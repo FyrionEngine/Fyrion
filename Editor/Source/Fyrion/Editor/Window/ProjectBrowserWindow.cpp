@@ -42,14 +42,14 @@ namespace Fyrion
         }
     }
 
-    void ProjectBrowserWindow::SetOpenDirectory(AssetDirectory* p_directory)
+    void ProjectBrowserWindow::SetOpenDirectory(AssetDirectory* directory)
     {
-        openDirectory = p_directory;
+        openDirectory = directory;
         selectedItem = {};
 
-        if (p_directory->GetDirectory() != nullptr)
+        if (directory->GetParent() != nullptr)
         {
-            openTreeFolders[reinterpret_cast<usize>(p_directory->GetDirectory())] = true;
+            openTreeFolders[reinterpret_cast<usize>(directory->GetParent())] = true;
         }
 
         lastOpenedDirectory = openDirectory;
@@ -105,7 +105,7 @@ namespace Fyrion
             ImGui::EndDragDropTarget();
         }
 
-        if (asset->GetDirectory() != nullptr && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoDisableHover | ImGuiDragDropFlags_SourceNoHoldToOpenOthers))
+        if (asset->GetParent() != nullptr && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoDisableHover | ImGuiDragDropFlags_SourceNoHoldToOpenOthers))
         {
             assetPayload.asset = asset;
             ImGui::SetDragDropPayload(AssetDragDropType, &assetPayload, sizeof(AssetPayload));
@@ -143,7 +143,7 @@ namespace Fyrion
             while (item != nullptr)
             {
                 directoryCache.EmplaceBack(item);
-                item = item->GetDirectory();
+                item = dynamic_cast<AssetDirectory*>(item->GetParent());
             }
         }
 
@@ -421,7 +421,7 @@ namespace Fyrion
                     {
                         if (ImGui::IsKeyPressed(ImGuiKey_Backspace) && openDirectory)
                         {
-                            selectedDiretory = openDirectory->GetDirectory();
+                            selectedDiretory = dynamic_cast<AssetDirectory*>(openDirectory->GetParent());
                         }
                     }
                 }
@@ -504,7 +504,7 @@ namespace Fyrion
     void ProjectBrowserWindow::AssetDelete(const MenuItemEventData& eventData)
     {
         ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
-        AssetDatabase::Destroy(projectBrowserWindow->selectedItem);
+        projectBrowserWindow->selectedItem->Destroy();
         projectBrowserWindow->SetSelectedAsset(nullptr);
     }
 
@@ -566,7 +566,7 @@ namespace Fyrion
 
     void ProjectBrowserWindow::NewAsset(TypeID typeId)
     {
-        Asset* asset = AssetDatabase::Create(typeId, UUID::RandomUUID());
+        Asset* asset = AssetDatabase::Create(typeId, {.uuid = UUID::RandomUUID()});
         asset->SetName(String("New ").Append(asset->GetDisplayName()));
         openDirectory->AddChild(asset);
         asset->OnCreated();

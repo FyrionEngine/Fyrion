@@ -15,9 +15,9 @@ namespace Fyrion
             return {extension, 6};
         }
 
-        Asset* CreateAsset() override
+        TypeID GetAssetTypeID(StringView path) override
         {
-            return AssetDatabase::Create<TextureAsset>(UUID::RandomUUID());
+            return GetTypeID<TextureAsset>();
         }
 
         void ImportAsset(StringView path, Asset* asset) override

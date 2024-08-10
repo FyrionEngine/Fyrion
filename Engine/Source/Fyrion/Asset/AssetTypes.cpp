@@ -17,13 +17,12 @@ namespace Fyrion
 
     void AssetDirectory::RegisterType(NativeTypeHandler<AssetDirectory>& type)
     {
-        type.Field<&AssetDirectory::children>("children");
     }
 
     void AssetDirectory::BuildPath()
     {
         Asset::BuildPath();
-        for (Asset* child : children)
+        for (Asset* child : GetChildren())
         {
             child->BuildPath();
         }
@@ -37,6 +36,20 @@ namespace Fyrion
     //     }
     // }
 
+    void AssetDirectory::SetName(StringView name)
+    {
+        // this->name = name;
+        // BuildPath();
+        //
+        // if (parent)
+        // {
+        //     String newAbsolutePath = Path::Join(parent->GetAbsolutePath(), GetName());
+        //     FileSystem::Rename(GetAbsolutePath(), newAbsolutePath);
+        //     absolutePath = newAbsolutePath;
+        //     AssetDatabase::WatchAsset(this);
+        // }
+   }
+
     StringView AssetDirectory::GetDisplayName() const
     {
         return "Folder";
@@ -49,13 +62,13 @@ namespace Fyrion
 
     void AssetDirectory::OnCreated()
     {
-        AssetDirectory* parentDirectory = dynamic_cast<AssetDirectory*>(GetParent());
-        FY_ASSERT(parentDirectory, "directories must have parent directories");
-        if (parentDirectory)
-        {
-            absolutePath = Path::Join(parentDirectory->GetAbsolutePath(), GetName());
-            FileSystem::CreateDirectory(absolutePath);
-        }
+        FileSystem::CreateDirectory(GetAbsolutePath());
+    }
+
+    String AssetDirectory::GetCacheDirectory() const
+    {
+        //directories don't have cache directory.
+        return {};
     }
 
     void UIFontAsset::RegisterType(NativeTypeHandler<UIFontAsset>& type)
@@ -67,9 +80,9 @@ namespace Fyrion
         return {extensions, 2};
     }
 
-    Asset* UIFontAssetIO::CreateAsset()
+    TypeID UIFontAssetIO::GetAssetTypeID(StringView path)
     {
-        return AssetDatabase::Create<UIFontAsset>();
+        return GetTypeID<UIFontAsset>();
     }
 
     void UIFontAssetIO::ImportAsset(StringView path, Asset* asset)

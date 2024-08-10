@@ -447,11 +447,10 @@ namespace Fyrion
         projectLauncherSettings = AssetDatabase::FindByPath<ProjectLauncherSettings>("Settings://ProjectLauncherSettings.fy_asset");
         if (projectLauncherSettings == nullptr)
         {
-            projectLauncherSettings = AssetDatabase::Create<ProjectLauncherSettings>();
-            projectLauncherSettings->SetExtension(FY_ASSET_EXTENSION);
-            projectLauncherSettings->SetUUID(UUID::RandomUUID());
-            projectLauncherSettings->SetName("ProjectLauncherSettings");
-            settingsDir->AddChild(projectLauncherSettings);
+            projectLauncherSettings = AssetDatabase::Create<ProjectLauncherSettings>({
+                .name = "ProjectLauncherSettings",
+                .parent = settingsDir,
+            });
         }
 
         Event::Bind<OnInit, &LauncherInit>();

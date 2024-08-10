@@ -26,7 +26,7 @@ namespace Fyrion
 
     MoveAssetAction::MoveAssetAction(Asset* asset, AssetDirectory* newDirectory)
         : asset(asset),
-          oldDirectory(asset->GetDirectory()),
+          oldDirectory(asset->GetParent()),
           newDirectory(newDirectory) {}
 
     void MoveAssetAction::Commit()
@@ -39,7 +39,7 @@ namespace Fyrion
         MoveToFolder(oldDirectory);
     }
 
-    void MoveAssetAction::MoveToFolder(AssetDirectory* directory) const
+    void MoveAssetAction::MoveToFolder(Asset* directory) const
     {
         directory->AddChild(asset);
         asset->SetModified();
@@ -49,7 +49,6 @@ namespace Fyrion
     {
         type.Constructor<Asset*, AssetDirectory*>();
     }
-
 
     UpdateAssetAction::UpdateAssetAction(Asset* asset, Asset* newValue) : asset(asset)
     {

@@ -72,9 +72,9 @@ inline void operator delete(void*, Fyrion::PlaceHolder, Fyrion::VoidPtr) noexcep
 //--general defines
 #define FY_STRING_BUFFER_SIZE 18
 #define FY_FRAMES_IN_FLIGHT 2
-#define FY_ASSET_EXTENSION ".fy_asset"
 #define FY_INFO_EXTENSION ".fy_info"
-#define FY_SCENE_EXTENSION ".fy_scene"
+#define FY_IMPORT_EXTENSION ".fy_import"
+#define FY_ASSET_EXTENSION ".fy_asset"
 #define FY_PROJECT_EXTENSION ".fy_project"
 
 //---platform defines

@@ -45,6 +45,7 @@ namespace Fyrion
         Registry::Type<TextureAsset>();
         Registry::Type<TextureImportSettings>();
         Registry::Type<DCCAsset>();
+        Registry::Type<DCCAssetImportSettings>();
         Registry::Type<MeshAsset>();
         Registry::Type<MaterialAsset>();
         Registry::Type<MeshPrimitive>();

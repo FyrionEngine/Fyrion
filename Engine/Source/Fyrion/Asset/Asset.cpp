@@ -63,6 +63,11 @@ namespace Fyrion
         }
     }
 
+    void Asset::MarkSaved()
+    {
+        loadedVersion = currentVersion;
+    }
+
     Asset::~Asset()
     {
         // if (parent)
@@ -79,6 +84,7 @@ namespace Fyrion
     void Asset::SetUUID(const UUID& uuid)
     {
         FY_ASSERT(!this->uuid, "UUID cannot be changed");
+        FY_ASSERT(uuid, "UUID cannot be zero");
         if (!this->uuid)
         {
             AssetDatabaseUpdateUUID(this, uuid);
@@ -167,14 +173,6 @@ namespace Fyrion
 
     bool Asset::IsModified() const
     {
-        if (loadedVersion == 0)
-        {
-            return false;
-        }
-        if (!GetUUID())
-        {
-            return false;
-        }
         return currentVersion != loadedVersion;
     }
 

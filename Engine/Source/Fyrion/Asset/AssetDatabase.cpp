@@ -128,10 +128,17 @@ namespace Fyrion
         asset->loadedVersion = 0;
         asset->currentVersion = 1;
         asset->prototype = assetCreation.prototype;
-        asset->name = assetCreation.name;
+        asset->name = !assetCreation.generateName ? String(assetCreation.name) : String("New").Append(" ").Append(asset->GetDisplayName());
         asset->absolutePath = assetCreation.absolutePath;
         asset->path = assetCreation.desiredPath;
         asset->parent = assetCreation.parent;
+
+        asset->BuildPath();
+
+        if (assetCreation.absolutePath.Empty() && asset->parent != nullptr && !asset->name.Empty())
+        {
+            asset->absolutePath = Path::Join(asset->parent->GetAbsolutePath(), asset->name, typeId != GetTypeID<AssetDirectory>() ? FY_ASSET_EXTENSION : "");
+        }
 
         assets.EmplaceBack(asset);
 
@@ -140,12 +147,9 @@ namespace Fyrion
             asset->parent->AddChild(asset);
         }
 
-        assetsById.Insert(asset->uuid, asset);
-
-        if (!asset->path.Empty())
+        if (asset->uuid)
         {
-            assetsByPath.Insert(String{asset->path}, asset);
-            logger.Debug("asset {} registred to path {} ", asset->GetName(), asset->path);
+            assetsById.Insert(asset->uuid, asset);
         }
 
         auto itByType = assetsByType.Find(typeId);
@@ -155,6 +159,13 @@ namespace Fyrion
         }
 
         itByType->second.EmplaceBack(asset);
+
+        asset->OnCreated();
+
+        if (FileSystem::GetFileStatus(asset->GetAbsolutePath()).exists)
+        {
+            WatchAsset(asset);
+        }
 
         return asset;
     }
@@ -234,13 +245,14 @@ namespace Fyrion
                 String assetPath = Path::Join(asset->GetCacheDirectory(), asset->name, FY_ASSET_EXTENSION);
                 LoadAssetJson(assetPath, asset);
 
-                if (u64 lastModifiedTime = FileSystem::GetFileStatus(filePath).lastModifiedTime; asset->lastModifiedTime != lastModifiedTime)
+                if (u64 lastModifiedTime = FileSystem::GetFileStatus(filePath).lastModifiedTime; asset->lastModifiedTime != lastModifiedTime || !FileSystem::GetFileStatus(asset->GetCacheDirectory()).exists)
                 {
                     asset->lastModifiedTime = lastModifiedTime;
                     QueueAssetImport(io, asset);
                 }
             }
             fileWatcher.Watch(asset, filePath);
+            asset->MarkSaved();
         }
 
 #if 0
@@ -314,7 +326,7 @@ namespace Fyrion
         FileSystem::SaveFileAsString(file, JsonAssetWriter::Stringify(SaveInfo(jsonAssetWriter, asset)));
     }
 
-    ArchiveObject AssetDatabase::SaveInfo(ArchiveWriter& writer, Asset* asset, bool child)
+    ArchiveObject AssetDatabase::SaveInfo(ArchiveWriter& writer, Asset* asset, bool isChild)
     {
         ArchiveObject object = writer.CreateObject();
         writer.WriteString(object, "uuid", ToString(asset->GetUUID()));
@@ -323,7 +335,7 @@ namespace Fyrion
             writer.WriteUInt(object, "lastModifiedTime", asset->lastModifiedTime);
         }
         writer.WriteString(object, "type", asset->GetType()->GetName());
-        if (child)
+        if (isChild)
         {
             writer.WriteString(object, "name", asset->GetName());
         }
@@ -338,6 +350,7 @@ namespace Fyrion
             {
                 writer.AddValue(arr, SaveInfo(writer, child, true));
             }
+            writer.WriteValue(object, "children", arr);
         }
         return object;
     }
@@ -400,7 +413,8 @@ namespace Fyrion
                     {
                         Asset* child = Create(typeHandler->GetTypeInfo().typeId, AssetCreation{
                             .name = reader.ReadString(item, "name"),
-                            .parent = asset
+                            .parent = asset,
+                            .generateUUID = false,
                         });
                         LoadInfo(reader, item, child);
                     }
@@ -430,8 +444,14 @@ namespace Fyrion
             item = reader.Next(arr, item);
             if (item)
             {
-                //Asset* child = DeserializeAsset(reader, item);
-//                asset->AddChild(child);
+                StringView uuidStr = reader.ReadString(item, "_uuid");
+                if (Asset* childAsset = FindById(UUID::FromString(uuidStr)))
+                {
+                    LoadAsset(reader, item, childAsset);
+                } else
+                {
+                    logger.Warn("child asset {} from {} not found", uuidStr, asset->GetPath());
+                }
             }
         }
     }

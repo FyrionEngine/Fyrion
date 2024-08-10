@@ -34,13 +34,12 @@ namespace Fyrion
     public:
         FY_BASE_TYPES(Asset);
 
-        void       BuildPath() override;
-        void       SetName(StringView name) override;
-        StringView GetDisplayName() const override;
-        bool       IsModified() const override;
-        void       OnCreated() override;
-        String     GetCacheDirectory() const override;
-
+        void        BuildPath() override;
+        void        SetName(StringView name) override;
+        StringView  GetDisplayName() const override;
+        bool        IsModified() const override;
+        void        OnCreated() override;
+        String      GetCacheDirectory() const override;
         static void RegisterType(NativeTypeHandler<AssetDirectory>& type);
     };
 

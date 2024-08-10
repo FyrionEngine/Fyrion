@@ -566,11 +566,10 @@ namespace Fyrion
 
     void ProjectBrowserWindow::NewAsset(TypeID typeId)
     {
-        Asset* asset = AssetDatabase::Create(typeId, {.uuid = UUID::RandomUUID()});
-        asset->SetName(String("New ").Append(asset->GetDisplayName()));
-        openDirectory->AddChild(asset);
-        asset->OnCreated();
-        AssetDatabase::WatchAsset(asset);
+        Asset* asset = AssetDatabase::Create(typeId, {
+            .parent = openDirectory,
+            .generateName = true,
+        });
 
         ImGui::SelectContentItem(reinterpret_cast<usize>(asset), CONTENT_TABLE_ID + windowId);
         ImGui::RenameContentSelected(CONTENT_TABLE_ID + windowId);

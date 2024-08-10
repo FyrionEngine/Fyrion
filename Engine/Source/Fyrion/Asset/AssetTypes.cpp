@@ -112,5 +112,6 @@ namespace Fyrion
         Registry::Type<AssetDirectory>();
         Registry::Type<UIFontAsset>();
         Registry::Type<UIFontAssetIO>();
+        Registry::Type<ImportSettings>();
     }
 }

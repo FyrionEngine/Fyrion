@@ -59,11 +59,19 @@ namespace Fyrion
         return nullptr;
     }
 
+    ImportSettings* DCCAsset::GetImportSettings()
+    {
+        return &importSettings;
+    }
+
+    void DCCAssetImportSettings::RegisterType(NativeTypeHandler<DCCAssetImportSettings>& type)
+    {
+        type.Field<&DCCAssetImportSettings::scaleFactor>("scaleFactor");
+        type.Field<&DCCAssetImportSettings::mergeMaterials>("mergeMaterials");
+        type.Field<&DCCAssetImportSettings::mergeMeshes>("mergeMeshes");
+    }
 
     void DCCAsset::RegisterType(NativeTypeHandler<DCCAsset>& type)
     {
-        type.Field<&DCCAsset::scaleFactor>("scaleFactor");
-        type.Field<&DCCAsset::mergeMaterials>("mergeMaterials");
-        type.Field<&DCCAsset::mergeMeshes>("mergeMeshes");
     }
 }

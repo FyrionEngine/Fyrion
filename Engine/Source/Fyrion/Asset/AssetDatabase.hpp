@@ -29,6 +29,9 @@ namespace Fyrion
 
         //generate a random UUID if field uuid is not provided
         bool generateUUID = true;
+
+        //generate name using new + DisplayName.
+        bool generateName = false;
     };
 
     class FY_API AssetDatabase
@@ -80,7 +83,7 @@ namespace Fyrion
     private:
         static void          LoadAssetFile(AssetDirectory* directory, const StringView& filePath);
         static void          SaveInfoJson(StringView file, Asset* asset);
-        static ArchiveObject SaveInfo(ArchiveWriter& writer, Asset* asset, bool child = false);
+        static ArchiveObject SaveInfo(ArchiveWriter& writer, Asset* asset, bool isChild = false);
         static void          SaveAsset(StringView file, Asset* asset);
         static void          LoadInfoJson(StringView file, Asset* asset);
         static void          LoadInfo(ArchiveReader& reader, ArchiveObject object, Asset* asset);

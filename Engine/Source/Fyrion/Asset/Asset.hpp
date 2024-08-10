@@ -95,7 +95,9 @@ namespace Fyrion
         String        name{};
         String        absolutePath{};
 
+
         void ValidateName();
+        void MarkSaved();
 
     public:
         static void RegisterType(NativeTypeHandler<Asset>& type);

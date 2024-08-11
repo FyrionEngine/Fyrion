@@ -138,22 +138,79 @@ namespace Fyrion
     {
         constexpr static bool hasArchiveImpl = true;
 
+        static ArchiveObject GetObjectFromAsset(ArchiveWriter& writer, const T* asset)
+        {
+            ArchiveObject object = writer.CreateObject();
+
+            if (asset->GetUUID())
+            {
+                writer.WriteString(object, "uuid", ToString(asset->GetUUID()));
+            }
+            else if (!asset->GetPath().Empty())
+            {
+                writer.WriteString(object, "path", asset->GetPath());
+            }
+
+            if (asset->GetAssetTypeId() != GetTypeID<T>())
+            {
+                writer.WriteString(object, "type", asset->GetType()->GetName());
+            }
+            return object;
+        }
+
         static void Write(ArchiveWriter& writer, ArchiveObject object, StringView name, T* const* value)
         {
             if (*value)
             {
-                writer.WriteString(object, name, ToString((*value)->GetUUID()));
+                writer.WriteValue(object, name, GetObjectFromAsset(writer, *value));
             }
+        }
+
+        static T* GetAssetFromObject(ArchiveReader& reader, ArchiveObject asserRef)
+        {
+
+            UUID uuid = UUID::FromString(reader.ReadString(asserRef, "uuid"));
+            if (uuid)
+            {
+                if (T* asset = AssetDatabase::FindById<T>(uuid))
+                {
+                    return asset;
+                }
+            }
+            String path = reader.ReadString(asserRef, "path");
+            if (!path.Empty())
+            {
+                if (T* asset = AssetDatabase::FindByPath<T>(path))
+                {
+                    return asset;
+                }
+            }
+
+            if (!path.Empty() || uuid)
+            {
+                TypeHandler* typeHandler = nullptr;
+                if (StringView type = reader.ReadString(asserRef, "type"); !type.Empty())
+                {
+                    typeHandler = Registry::FindTypeByName(type);
+                }
+
+                if (!typeHandler)
+                {
+                    typeHandler = Registry::FindType<T>();
+                }
+
+                return static_cast<T*>(AssetDatabase::Create(typeHandler, {.uuid = uuid, .desiredPath = path}));
+            }
+
+            return nullptr;
         }
 
         static void Read(ArchiveReader& reader, ArchiveObject object, StringView name, T** value)
         {
-            UUID uuid = UUID::FromString(reader.ReadString(object, name));
-            if (uuid)
+            if (ArchiveObject asserRef = reader.ReadObject(object, name))
             {
-                *value = AssetDatabase::Create<T>({.uuid = uuid});
-            }
-            else if (*value)
+                *value = GetAssetFromObject(reader, asserRef);
+            } else if (*value)
             {
                 *value = nullptr;
             }

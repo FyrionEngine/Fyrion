@@ -10,6 +10,7 @@ namespace Fyrion
 {
     void AssetDatabaseUpdatePath(Asset* asset, const StringView& oldPath, const StringView& newPath);
     void AssetDatabaseUpdateUUID(Asset* asset, const UUID& newUUID);
+    void AssetDatabaseCleanRefs(Asset* asset);
 
     void Asset::BuildPath()
     {
@@ -337,6 +338,17 @@ namespace Fyrion
     {
         OnDestroyed();
 
+        if (FileSystem::GetFileStatus(GetCacheDirectory()).exists)
+        {
+            FileSystem::Remove(GetCacheDirectory());
+        }
+
+        String infoPath = Path::Join(Path::Parent(GetAbsolutePath()), GetName(), FY_INFO_EXTENSION);
+        if (FileSystem::GetFileStatus(infoPath).exists)
+        {
+            FileSystem::Remove(infoPath);
+        }
+
         if (!absolutePath.Empty())
         {
             FileSystem::Remove(absolutePath);
@@ -352,12 +364,7 @@ namespace Fyrion
             parent->RemoveChild(this);
         }
 
-        //TODO - clean cache folder
-        //TODO - delete asset/info/import files.
-        //TODO - remove references from AssetDatabase.
-        // assetsById.Erase(asset->GetUUID());
-        // assetsByPath.Erase(asset->GetPath());
-        // assetsByType
+        AssetDatabaseCleanRefs(this);
     }
 
     void Asset::RegisterType(NativeTypeHandler<Asset>& type)

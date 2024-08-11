@@ -566,7 +566,7 @@ namespace Fyrion
 
     void ProjectBrowserWindow::NewAsset(TypeID typeId)
     {
-        Asset* asset = AssetDatabase::Create(typeId, {
+        Asset* asset = AssetDatabase::Create(Registry::FindTypeById(typeId), {
             .parent = openDirectory,
             .generateName = true,
         });

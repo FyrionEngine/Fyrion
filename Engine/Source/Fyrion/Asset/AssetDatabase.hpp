@@ -3,6 +3,7 @@
 #include "Fyrion/Core/StringView.hpp"
 #include "Fyrion/Core/Array.hpp"
 #include "Fyrion/Core/UUID.hpp"
+#include "Fyrion/Core/Registry.hpp"
 
 namespace Fyrion
 {
@@ -31,6 +32,8 @@ namespace Fyrion
 
         //generate name using new + DisplayName.
         bool generateName = false;
+
+        bool loading = false;
     };
 
     class FY_API AssetDatabase
@@ -48,21 +51,15 @@ namespace Fyrion
         static Asset*          FindById(const UUID& assetId);
         static Asset*          FindByPath(const StringView& path);
         static Span<Asset*>    FindAssetsByType(TypeID typeId);
-        static Asset*          Create(TypeID typeId, const AssetCreation& assetCreation);
+        static Asset*          Create(TypeHandler* typeHandler, const AssetCreation& assetCreation);
         static void            DestroyAssets();
         static void            EnableHotReload(bool enable);
         static void            WatchAsset(Asset* asset);
 
         template <typename T>
-        static T* Create()
+        static T* Create(const AssetCreation& assetCreation = {})
         {
-            return static_cast<T*>(Create(GetTypeID<T>(), {}));
-        }
-
-        template <typename T>
-        static T* Create(const AssetCreation& assetCreation)
-        {
-            return static_cast<T*>(Create(GetTypeID<T>(), assetCreation));
+            return static_cast<T*>(Create(Registry::FindType<T>(), assetCreation));
         }
 
         template <typename T>

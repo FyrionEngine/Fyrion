@@ -220,24 +220,20 @@ namespace Fyrion
         {
             if (*value)
             {
-                writer.AddString(array, ToString((*value)->GetUUID()));
+                writer.AddValue(array, GetObjectFromAsset(writer, *value));
             }
             else if (writer.HasOpt(SerializationOptions::IncludeNullOrEmptyValues))
             {
-                writer.AddString(array, ToString(UUID{}));
+                writer.AddValue(array, writer.CreateObject());
             }
         }
 
         static void Get(ArchiveReader& reader, ArchiveObject item, T** value)
         {
-            UUID uuid = UUID::FromString(reader.GetString(item));
-            if (uuid)
+            if (item)
             {
-                *value = AssetDatabase::Create<T>(AssetCreation{
-                    .uuid = uuid
-                });
-            }
-            else if (*value)
+                *value = GetAssetFromObject(reader, item);
+            } else if (*value)
             {
                 *value = nullptr;
             }

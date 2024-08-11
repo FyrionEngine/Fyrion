@@ -1,0 +1,9 @@
+{
+    "uuid": "b0848ba9-25cf-79fa-f6b4-6912c5ec2ecc",
+    "lastModifiedTime": 133668443494249772,
+    "type": "Fyrion::TextureAsset",
+    "importSettings": {
+        "generateMipmaps": true,
+        "textureType": "Texture2D"
+    }
+}

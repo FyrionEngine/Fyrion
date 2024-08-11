@@ -1,6 +1,4 @@
 {
-	"uuid": "6686350a-37e8-fcbf-401f-4b555040de37",
-	"name" : "DefaultRenderGraph",
 	"passes": [
 		"Fyrion::ShadowMapRenderPass",
 		"Fyrion::SceneRenderPass",

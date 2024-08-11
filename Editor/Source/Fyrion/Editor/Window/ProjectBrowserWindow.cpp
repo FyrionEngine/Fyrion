@@ -363,29 +363,29 @@ namespace Fyrion
                             }
                         }
 
-                        for (AssetInfo* asset : openDirectory->GetChildren())
+                        for (AssetInfo* assetInfo : openDirectory->GetChildren())
                         {
-                            if (asset->GetType()->GetTypeInfo().typeId != GetTypeID<DirectoryInfo>())
+                            if (DirectoryInfo* directoryInfo = dynamic_cast<DirectoryInfo*>(assetInfo); directoryInfo == nullptr)
                             {
                                 ImGui::ContentItemDesc contentItem{};
-                                contentItem.ItemId = reinterpret_cast<usize>(asset);
+                                contentItem.ItemId = reinterpret_cast<usize>(assetInfo);
                                 contentItem.ShowDetails = true;
-                                contentItem.Label = asset->GetName().CStr();
-                                contentItem.DetailsDesc = asset->GetDisplayName().CStr();
+                                contentItem.Label = assetInfo->GetName().CStr();
+                                contentItem.DetailsDesc = assetInfo->GetDisplayName().CStr();
                                 contentItem.DragDropType = AssetDragDropType;
                                 contentItem.DragDropPayload = &assetPayload;
                                 contentItem.DragDropPayloadSize = sizeof(AssetPayload);
-                                contentItem.TooltipText = asset->GetPath().CStr();
+                                contentItem.TooltipText = assetInfo->GetPath().CStr();
                                 contentItem.Texture = fileTexture;
 
-                                if (asset->IsModified())
+                                if (assetInfo->IsModified())
                                 {
                                     contentItem.PreLabel = "*";
                                 }
 
                                 if (ImGui::DrawContentItem(contentItem))
                                 {
-                                    if (SceneObjectAsset* sceneObjectAsset = dynamic_cast<SceneObjectAsset*>(asset))
+                                    if (SceneObjectAsset* sceneObjectAsset = dynamic_cast<SceneObjectAsset*>(assetInfo))
                                     {
                                         Editor::CreateTransaction()->CreateAction<OpenSceneAction>(Editor::GetSceneEditor(), sceneObjectAsset)->Commit();
                                     }
@@ -397,14 +397,14 @@ namespace Fyrion
 
                                 if (ImGui::ContentItemSelected(contentItem.ItemId))
                                 {
-                                    newItemSelected = asset;
+                                    newItemSelected = assetInfo;
                                 }
 
                                 if (ImGui::ContentItemRenamed(contentItem.ItemId))
                                 {
-                                    if (ImGui::ContentRenameString() != asset->GetName())
+                                    if (ImGui::ContentRenameString() != assetInfo->GetName())
                                     {
-                                        Editor::CreateTransaction()->CreateAction<RenameAssetAction>(asset, ImGui::ContentRenameString())->Commit();
+                                        Editor::CreateTransaction()->CreateAction<RenameAssetAction>(assetInfo, ImGui::ContentRenameString())->Commit();
                                     }
                                 }
 

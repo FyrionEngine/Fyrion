@@ -118,6 +118,16 @@ namespace Fyrion
         return nullptr;
     }
 
+    AssetInfo* AssetManager::FindInfoByPath(const StringView& path)
+    {
+        if (auto it = assetsByPath.Find(path))
+        {
+            return it->second;
+        }
+
+        return nullptr;
+    }
+
     Span<Asset*> AssetManager::FindAssetsByType(TypeID typeId)
     {
         // if (auto it = assetsByType.Find(typeId))
@@ -219,6 +229,7 @@ namespace Fyrion
         directoryInfo->name = name;
         directoryInfo->path = String(name) + ":/";
         directoryInfo->absolutePath = directory;
+        directoryInfo->UpdatePath();
 
         for (const auto& entry : DirectoryEntries{directory})
         {
@@ -255,6 +266,51 @@ namespace Fyrion
 
     void AssetManager::LoadAssetFile(DirectoryInfo* parentDirectory, const StringView& filePath)
     {
+        if (FileSystem::GetFileStatus(filePath).isDirectory)
+        {
+            DirectoryInfo* directoryInfo = MemoryGlobals::GetDefaultAllocator().Alloc<DirectoryInfo>();
+            directoryInfo->name = Path::Name(filePath),
+            directoryInfo->parent = parentDirectory,
+            directoryInfo->absolutePath = filePath;
+
+            parentDirectory->AddChild(directoryInfo);
+            parentDirectory->UpdatePath();
+
+
+            directoryInfo->lastModifiedTime = FileSystem::GetFileStatus(filePath).lastModifiedTime;
+
+            for (const auto& entry : DirectoryEntries{filePath})
+            {
+                LoadAssetFile(directoryInfo, entry);
+            }
+
+            fileWatcher.Watch(directoryInfo, filePath);
+        }
+        else
+        {
+            String extension = Path::Extension(filePath);
+            if (extension == FY_INFO_EXTENSION)
+            {
+                //LOAD ASSETS
+            }
+            else if (auto importer = importers.Find(extension))
+            {
+
+                AssetInfo* assetInfo = MemoryGlobals::GetDefaultAllocator().Alloc<AssetInfo>();
+                assetInfo->name = Path::Name(filePath);
+                assetInfo->parent = parentDirectory;
+                assetInfo->absolutePath = filePath;
+                assetInfo->imported = true;
+                parentDirectory->AddChild(assetInfo);
+
+                assetInfo->UpdatePath();
+
+
+                //String importPath = Path::Join(Path::Parent(filePath), Path::Name(filePath), FY_IMPORT_EXTENSION);
+            }
+        }
+
+
 #if 0
         String extension = Path::Extension(filePath);
         if (FileSystem::GetFileStatus(filePath).isDirectory)

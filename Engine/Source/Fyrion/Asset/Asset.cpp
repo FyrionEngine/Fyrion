@@ -112,6 +112,10 @@ namespace Fyrion
             }
             path = newPath;
         }
+        else if (!path.Empty())
+        {
+            AssetDatabaseUpdatePath(this, path, path);
+        }
     }
 
     void AssetInfo::AddRelatedFile(StringView fileAbsolutePath)

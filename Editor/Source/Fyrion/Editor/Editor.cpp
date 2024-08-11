@@ -121,7 +121,7 @@ namespace Fyrion
             }
 
             //TODO: Create a setting for that.
-            //Editor::OpenDirectory(AssetManager::FindByPath<DirectoryInfo>("Fyrion:/"));
+            Editor::OpenDirectory(AssetManager::FindInfoByPath<DirectoryInfo>("Fyrion:/"));
             Editor::OpenDirectory(AssetManager::LoadFromDirectory(Path::Name(projectPath), Path::Join(projectPath, "Assets")));
         }
 

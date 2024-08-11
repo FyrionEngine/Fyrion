@@ -51,6 +51,7 @@ namespace Fyrion
         static void           ReimportAsset(AssetInfo* asset);
         static Asset*         FindById(const UUID& assetId);
         static Asset*         FindByPath(const StringView& path);
+        static AssetInfo*     FindInfoByPath(const StringView& path);
         static Span<Asset*>   FindAssetsByType(TypeID typeId);
         static Asset*         Create(TypeHandler* typeHandler, const AssetCreation& assetCreation);
         static void           DestroyAssets();
@@ -73,6 +74,12 @@ namespace Fyrion
         static T* FindByPath(const StringView& path)
         {
             return static_cast<T*>(FindByPath(path));
+        }
+
+        template <typename T>
+        static T* FindInfoByPath(const StringView& path)
+        {
+            return static_cast<T*>(FindInfoByPath(path));
         }
 
         static void OnUpdate(f64 deltaTime);

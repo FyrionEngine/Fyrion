@@ -7,15 +7,11 @@
 
 namespace Fyrion
 {
-    class RenderGraph;
-}
-
-namespace Fyrion
-{
     class SceneObjectAsset;
     class TypeHandler;
+    class RenderGraph;
 
-    class FY_API SceneObject final
+    class FY_API SceneObject
     {
     public:
         FY_NO_COPY_CONSTRUCTOR(SceneObject);
@@ -87,5 +83,28 @@ namespace Fyrion
         HashSet<UUID>       componentOverride{};
         SceneObject*        parent = nullptr;
         bool                active = false;
+    };
+
+    template <typename T>
+    struct ArchiveType<T, Traits::EnableIf<Traits::IsBaseOf<SceneObject, T>>>
+    {
+        constexpr static bool hasArchiveImpl = true;
+
+        static void Write(ArchiveWriter& writer, ArchiveObject object, StringView name, const T* value)
+        {
+            writer.WriteValue(object, name, value->Serialize(writer));
+        }
+
+        static void Read(ArchiveReader& reader, ArchiveObject object, StringView name, T* value)
+        {
+            value->Deserialize(reader, reader.ReadObject(object, name));
+        }
+
+        static void Add(ArchiveWriter& writer, ArchiveObject array, const T* value)
+        {
+
+        }
+
+        static void Get(ArchiveReader& reader, ArchiveObject item, T* value) {}
     };
 }

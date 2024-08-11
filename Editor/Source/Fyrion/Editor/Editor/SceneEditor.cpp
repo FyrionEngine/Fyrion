@@ -133,14 +133,12 @@ namespace Fyrion
         if (scene)
         {
             GetRootObject()->SetActive(false);
-            scene->DestroySceneObject();
         }
 
         scene = asset;
 
         if (scene)
         {
-            scene->LoadData();
             GetRootObject()->SetActive(true);
         }
     }

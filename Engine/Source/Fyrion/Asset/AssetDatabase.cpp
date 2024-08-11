@@ -438,7 +438,6 @@ namespace Fyrion
                 for (Asset* child : asset->GetChildren())
                 {
                     ArchiveObject assetObj = serialize(writer, child);
-                    writer.WriteValue(assetObj, "_data", child->SerializeData(writer));
                     writer.AddValue(arr, assetObj);
                 }
                 writer.WriteValue(object, "_children", arr);

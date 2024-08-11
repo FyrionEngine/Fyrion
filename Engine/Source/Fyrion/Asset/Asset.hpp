@@ -46,7 +46,7 @@ namespace Fyrion
         virtual StringView      GetDisplayName() const;
         StringView              GetPath() const;
         StringView              GetAbsolutePath() const;
-        virtual void            SetName(StringView name);
+        virtual void            SetName(StringView newName);
         void                    AddRelatedFile(StringView fileAbsolutePath);
         StringView              GetExtension() const;
         virtual void            BuildPath();
@@ -66,12 +66,7 @@ namespace Fyrion
         void                    AddChild(Asset* child);
         Asset*                  FindChildByAbsolutePath(StringView absolutePath) const;
         virtual String          GetCacheDirectory() const;
-
-        virtual bool          LoadData();
-        virtual void          SaveData();
-        virtual void          DeserializeData(ArchiveReader& reader, ArchiveObject object);
-        virtual ArchiveObject SerializeData(ArchiveWriter& writer) const;
-        void                  Destroy();
+        void                    Destroy();
 
         template <typename T, Traits::EnableIf<Traits::IsBaseOf<Asset, T>>* = nullptr>
         T* Cast()
@@ -168,7 +163,6 @@ namespace Fyrion
 
         static T* GetAssetFromObject(ArchiveReader& reader, ArchiveObject asserRef)
         {
-
             UUID uuid = UUID::FromString(reader.ReadString(asserRef, "uuid"));
             if (uuid)
             {
@@ -210,7 +204,8 @@ namespace Fyrion
             if (ArchiveObject asserRef = reader.ReadObject(object, name))
             {
                 *value = GetAssetFromObject(reader, asserRef);
-            } else if (*value)
+            }
+            else if (*value)
             {
                 *value = nullptr;
             }
@@ -233,7 +228,8 @@ namespace Fyrion
             if (item)
             {
                 *value = GetAssetFromObject(reader, item);
-            } else if (*value)
+            }
+            else if (*value)
             {
                 *value = nullptr;
             }

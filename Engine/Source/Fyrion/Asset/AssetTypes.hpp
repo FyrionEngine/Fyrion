@@ -34,7 +34,6 @@ namespace Fyrion
         FY_BASE_TYPES(Asset);
 
         void        BuildPath() override;
-        void        SetName(StringView name) override;
         StringView  GetDisplayName() const override;
         bool        IsModified() const override;
         void        OnCreated() override;

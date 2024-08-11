@@ -1,6 +1,5 @@
 #include "SceneObjectAsset.hpp"
 
-#include "Fyrion/Core/Attributes.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Graphics/RenderGraph.hpp"
 #include "Fyrion/Scene/SceneManager.hpp"
@@ -8,63 +7,14 @@
 
 namespace Fyrion
 {
+    StringView SceneObjectAsset::GetDisplayName() const
+    {
+        return "Scene Object";
+    }
+
     SceneObject* SceneObjectAsset::GetObject()
     {
-        if (!object)
-        {
-            if (!LoadData())
-            {
-                object = SharedPtr(MemoryGlobals::GetDefaultAllocator().Alloc<SceneObject>(this));
-            }
-        }
-        pendingDestroy = false;
-        return object.Get();
-    }
-
-    void SceneObjectAsset::DestroySceneObject()
-    {
-        if (!IsModified())
-        {
-            object = {};
-        }
-        else
-        {
-            pendingDestroy = true;
-        }
-    }
-
-    void SceneObjectAsset::DeserializeData(ArchiveReader& reader, ArchiveObject archiveObject)
-    {
-        if (!object)
-        {
-            object = SharedPtr(MemoryGlobals::GetDefaultAllocator().Alloc<SceneObject>(this));
-            object->Deserialize(reader, archiveObject);
-        }
-    }
-
-    ArchiveObject SceneObjectAsset::SerializeData(ArchiveWriter& writer) const
-    {
-        if (object)
-        {
-            return object->Serialize(writer);
-        }
-        return {};
-    }
-
-    bool SceneObjectAsset::LoadData()
-    {
-        pendingDestroy = false;
-        return Asset::LoadData();
-    }
-
-    void SceneObjectAsset::SaveData()
-    {
-        Asset::SaveData();
-        if (pendingDestroy)
-        {
-            pendingDestroy = false;
-            object = {};
-        }
+        return &object;
     }
 
     SceneObjectAsset* SceneObjectAsset::GetSceneObjectAsset()
@@ -74,5 +24,6 @@ namespace Fyrion
 
     void SceneObjectAsset::RegisterType(NativeTypeHandler<SceneObjectAsset>& type)
     {
+        type.Field<&SceneObjectAsset::object>("object");
     }
 }

@@ -35,20 +35,6 @@ namespace Fyrion
     //     }
     // }
 
-    void AssetDirectory::SetName(StringView name)
-    {
-        // this->name = name;
-        // BuildPath();
-        //
-        // if (parent)
-        // {
-        //     String newAbsolutePath = Path::Join(parent->GetAbsolutePath(), GetName());
-        //     FileSystem::Rename(GetAbsolutePath(), newAbsolutePath);
-        //     absolutePath = newAbsolutePath;
-        //     AssetDatabase::WatchAsset(this);
-        // }
-   }
-
     StringView AssetDirectory::GetDisplayName() const
     {
         return "Folder";

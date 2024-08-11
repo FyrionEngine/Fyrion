@@ -115,21 +115,32 @@ namespace Fyrion
         return absolutePath;
     }
 
-    void Asset::SetName(StringView name)
+    void Asset::SetName(StringView newName)
     {
-        if (this->name != name)
+        if (this->name != newName)
         {
-            if (this->imported)
+            if (!absolutePath.Empty())
             {
+                auto rename = [this, newName](StringView extension)
+                {
+                    String oldPath = Path::Join(Path::Parent(absolutePath), this->name, extension);
+                    String newPath = Path::Join(Path::Parent(absolutePath), newName, extension);
 
+                    if (FileSystem::GetFileStatus(oldPath).exists)
+                    {
+                        FileSystem::Rename(oldPath, newPath);
+                    }
+                    return newPath;
+                };
+
+                String newAbsolutePath = rename(Path::Extension(absolutePath));
+                rename(FY_IMPORT_EXTENSION);
+                rename(FY_INFO_EXTENSION);
+
+                this->absolutePath = newAbsolutePath;
             }
 
-            // String infoPath = Path::Join(Path::Parent(absolutePath), name, FY_IMPORT_EXTENSION);
-            // String importPath = Path::Join(Path::Parent(absolutePath), name, FY_IMPORT_EXTENSION);
-            // String assetPath = Path::Join(Path::Parent(absolutePath), name, FY_ASSET_EXTENSION);
-//            String assetPath = Path::Join(asset->GetCacheDirectory(), asset->name, FY_ASSET_EXTENSION);
-
-            this->name = name;
+            this->name = newName;
             BuildPath();
             SetModified();
         }
@@ -230,6 +241,7 @@ namespace Fyrion
             String streamPath = Path::Join(cacheDirectory, cache.ToString());
             FileHandler file = FileSystem::OpenFile(streamPath, AccessMode::ReadOnly);
             FileSystem::ReadFile(file, data, dataSize);
+            FileSystem::CloseFile(file);
         }
     }
 
@@ -285,55 +297,6 @@ namespace Fyrion
         return Path::Join(AssetDatabase::GetCacheDirectory(), ToString(uuid));
     }
 
-    bool Asset::LoadData()
-    {
-        /*
-        StringView dataExtension = GetDataExtesion();
-        if (!dataExtension.Empty())
-        {
-            if (!absolutePath.Empty())
-            {
-                String buffer = FileSystem::ReadFileAsString(Path::Join(Path::Parent(absolutePath), Path::Name(absolutePath), dataExtension));
-                if (!buffer.Empty())
-                {
-                    JsonAssetReader reader(buffer);
-                    DeserializeData(reader, reader.ReadObject());
-                    return true;
-                }
-            }
-        }
-        */
-        return false;
-    }
-
-    void Asset::SaveData()
-    {
-        /*
-        StringView dataExtension = GetDataExtesion();
-        if (!dataExtension.Empty())
-        {
-            if (!absolutePath.Empty())
-            {
-                String dataPath = Path::Join(Path::Parent(absolutePath), Path::Name(absolutePath), dataExtension);
-                JsonAssetWriter writer{};
-                if (ArchiveObject object = SerializeData(writer))
-                {
-                    FileSystem::SaveFileAsString(dataPath, JsonAssetWriter::Stringify(object));
-                }
-            }
-        }
-        */
-    }
-
-    void Asset::DeserializeData(ArchiveReader& reader, ArchiveObject object)
-    {
-    }
-
-    ArchiveObject Asset::SerializeData(ArchiveWriter& writer) const
-    {
-        return {};
-    }
-
     void Asset::Destroy()
     {
         OnDestroyed();
@@ -343,11 +306,17 @@ namespace Fyrion
             FileSystem::Remove(GetCacheDirectory());
         }
 
-        String infoPath = Path::Join(Path::Parent(GetAbsolutePath()), GetName(), FY_INFO_EXTENSION);
-        if (FileSystem::GetFileStatus(infoPath).exists)
+        auto deleteFile = [this](StringView extension)
         {
-            FileSystem::Remove(infoPath);
-        }
+            String path = Path::Join(Path::Parent(GetAbsolutePath()), GetName(), extension);
+            if (FileSystem::GetFileStatus(path).exists)
+            {
+                FileSystem::Remove(path);
+            }
+        };
+
+        deleteFile(FY_INFO_EXTENSION);
+        deleteFile(FY_IMPORT_EXTENSION);
 
         if (!absolutePath.Empty())
         {

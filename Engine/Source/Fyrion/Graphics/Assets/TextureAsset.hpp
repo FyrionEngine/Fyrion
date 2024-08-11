@@ -70,6 +70,6 @@ namespace Fyrion
         Texture texture{};
         Sampler sampler{};
 
-        Stream textureData{};
+        CacheRef textureData{};
     };
 }

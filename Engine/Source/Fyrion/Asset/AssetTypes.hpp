@@ -4,21 +4,20 @@
 
 namespace Fyrion
 {
+    typedef Span<StringView>(*FnGetImportExtensions)();
+    typedef TypeID (*FnGetAssetTypeID)(StringView path);
+    typedef void(*FnImportAsset)(StringView path, Asset* asset);
+    typedef void(*FnRenameAsset)(Asset* asset, StringView newName);
+
     struct AssetIO
     {
-        virtual Span<StringView> GetImportExtensions()
-        {
-            return {};
-        }
+        virtual ~AssetIO() = default;
 
-        virtual TypeID GetAssetTypeID(StringView path)
-        {
-            return 0;
-        }
+        FnGetImportExtensions getImportExtensions = nullptr;
+        FnGetAssetTypeID      getAssetTypeId = nullptr;
+        FnImportAsset         importAsset = nullptr;
+        FnRenameAsset         renameAsset = nullptr;
 
-        virtual void ImportAsset(StringView path, Asset* asset) {}
-
-        virtual     ~AssetIO() = default;
         static void RegisterType(NativeTypeHandler<AssetIO>& type);
     };
 
@@ -47,7 +46,7 @@ namespace Fyrion
     {
         FY_BASE_TYPES(Asset);
 
-        Stream fontBytes;
+        CacheRef fontBytes;
 
         Array<u8> GetFont() const;
 
@@ -57,11 +56,11 @@ namespace Fyrion
     struct UIFontAssetIO : AssetIO
     {
         FY_BASE_TYPES(AssetIO);
+        UIFontAssetIO();
 
-        StringView extensions[2] = {".ttf", ".otf"};
-
-        Span<StringView> GetImportExtensions() override;
-        TypeID           GetAssetTypeID(StringView path) override;
-        void             ImportAsset(StringView path, Asset* asset) override;
+        static inline StringView extensions[2] = {".ttf", ".otf"};
+        static Span<StringView> GetImportExtensions();
+        static TypeID           GetAssetTypeID(StringView path);
+        static void             ImportAsset(StringView path, Asset* asset);
     };
 }

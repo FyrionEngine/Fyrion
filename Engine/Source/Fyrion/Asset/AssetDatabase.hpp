@@ -10,7 +10,6 @@ namespace Fyrion
     class Asset;
     class AssetDirectory;
 
-
     struct AssetCreation
     {
         UUID       uuid{};
@@ -84,7 +83,7 @@ namespace Fyrion
         static void          LoadAssetFile(AssetDirectory* directory, const StringView& filePath);
         static void          SaveInfoJson(StringView file, Asset* asset);
         static ArchiveObject SaveInfo(ArchiveWriter& writer, Asset* asset, bool isChild = false);
-        static void          SaveAsset(StringView file, Asset* asset);
+        static void          SaveAssetJson(StringView file, Asset* asset);
         static void          LoadInfoJson(StringView file, Asset* asset);
         static void          LoadInfo(ArchiveReader& reader, ArchiveObject object, Asset* asset);
         static void          LoadAssetJson(StringView file, Asset* asset);

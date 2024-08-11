@@ -63,19 +63,6 @@ namespace Fyrion
         }
     }
 
-    void Asset::MarkSaved()
-    {
-        loadedVersion = currentVersion;
-    }
-
-    Asset::~Asset()
-    {
-        // if (parent)
-        // {
-        //     parent->RemoveChild(this);
-        // }
-    }
-
     UUID Asset::GetUUID() const
     {
         return uuid;
@@ -129,9 +116,23 @@ namespace Fyrion
 
     void Asset::SetName(StringView name)
     {
-        this->name = name;
-        BuildPath();
-        SetModified();
+        if (this->name != name)
+        {
+            if (this->imported)
+            {
+
+            }
+
+            // String infoPath = Path::Join(Path::Parent(absolutePath), name, FY_IMPORT_EXTENSION);
+            // String importPath = Path::Join(Path::Parent(absolutePath), name, FY_IMPORT_EXTENSION);
+            // String assetPath = Path::Join(Path::Parent(absolutePath), name, FY_ASSET_EXTENSION);
+//            String assetPath = Path::Join(asset->GetCacheDirectory(), asset->name, FY_ASSET_EXTENSION);
+
+            this->name = name;
+            BuildPath();
+            SetModified();
+        }
+
     }
 
     void Asset::AddRelatedFile(StringView fileAbsolutePath)
@@ -173,6 +174,8 @@ namespace Fyrion
 
     bool Asset::IsModified() const
     {
+        if (imported) return false;
+
         return currentVersion != loadedVersion;
     }
 
@@ -185,11 +188,11 @@ namespace Fyrion
         return "Asset";
     }
 
-    void Asset::SaveStream(Stream& stream, ConstPtr data, usize dataSize)
+    void Asset::SaveCache(CacheRef& cache, ConstPtr data, usize dataSize)
     {
-        if (!stream)
+        if (!cache)
         {
-            stream.id = Random::Xorshift64star();
+            cache.id = Random::Xorshift64star();
         }
 
         String cacheDirectory = GetCacheDirectory();
@@ -200,30 +203,30 @@ namespace Fyrion
                 FileSystem::CreateDirectory(cacheDirectory);
             }
 
-            String      streamPath = Path::Join(cacheDirectory, stream.ToString());
+            String      streamPath = Path::Join(cacheDirectory, cache.ToString());
             FileHandler file = FileSystem::OpenFile(streamPath, AccessMode::WriteOnly);
             FileSystem::WriteFile(file, data, dataSize);
             FileSystem::CloseFile(file);
         }
     }
 
-    usize Asset::GetStreamSize(Stream stream) const
+    usize Asset::GetCacheSize(CacheRef cache) const
     {
         String cacheDirectory = GetCacheDirectory();
         if (!cacheDirectory.Empty())
         {
-            String streamPath = Path::Join(cacheDirectory, stream.ToString());
+            String streamPath = Path::Join(cacheDirectory, cache.ToString());
             return FileSystem::GetFileStatus(streamPath).fileSize;
         }
         return 0;
     }
 
-    void Asset::LoadStream(Stream stream, VoidPtr data, usize dataSize) const
+    void Asset::LoadCache(CacheRef cache, VoidPtr data, usize dataSize) const
     {
         String cacheDirectory = GetCacheDirectory();
         if (!cacheDirectory.Empty())
         {
-            String streamPath = Path::Join(cacheDirectory, stream.ToString());
+            String streamPath = Path::Join(cacheDirectory, cache.ToString());
             FileHandler file = FileSystem::OpenFile(streamPath, AccessMode::ReadOnly);
             FileSystem::ReadFile(file, data, dataSize);
         }
@@ -350,10 +353,11 @@ namespace Fyrion
         }
 
         //TODO - clean cache folder
-        //TODO - delete asset/info files.
+        //TODO - delete asset/info/import files.
         //TODO - remove references from AssetDatabase.
         // assetsById.Erase(asset->GetUUID());
         // assetsByPath.Erase(asset->GetPath());
+        // assetsByType
     }
 
     void Asset::RegisterType(NativeTypeHandler<Asset>& type)

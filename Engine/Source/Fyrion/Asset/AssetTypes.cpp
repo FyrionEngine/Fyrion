@@ -11,8 +11,7 @@ namespace Fyrion
 {
     void AssetIO::RegisterType(NativeTypeHandler<AssetIO>& type)
     {
-        type.Function<&AssetIO::GetImportExtensions>("GetImportExtensions");
-        type.Function<&AssetIO::ImportAsset>("ImportAsset");
+
     }
 
     void AssetDirectory::RegisterType(NativeTypeHandler<AssetDirectory>& type)
@@ -73,10 +72,10 @@ namespace Fyrion
 
     Array<u8> UIFontAsset::GetFont() const
     {
-        if (usize size = GetStreamSize(fontBytes))
+        if (usize size = GetCacheSize(fontBytes))
         {
             Array<u8> ret(size);
-            LoadStream(fontBytes, ret.Data(), ret.Size());
+            LoadCache(fontBytes, ret.Data(), ret.Size());
             return ret;
         }
         return {};
@@ -85,6 +84,13 @@ namespace Fyrion
     void UIFontAsset::RegisterType(NativeTypeHandler<UIFontAsset>& type)
     {
         type.Field<&UIFontAsset::fontBytes>("fontBytes");
+    }
+
+    UIFontAssetIO::UIFontAssetIO()
+    {
+        getImportExtensions = GetImportExtensions;
+        getAssetTypeId = GetAssetTypeID;
+        importAsset = ImportAsset;
     }
 
     Span<StringView> UIFontAssetIO::GetImportExtensions()
@@ -102,7 +108,7 @@ namespace Fyrion
         UIFontAsset* fontAsset = asset->Cast<UIFontAsset>();
 
         Array<u8> bytes = FileSystem::ReadFileAsByteArray(path);
-        fontAsset->SaveStream(fontAsset->fontBytes, bytes.begin(), bytes.Size());
+        fontAsset->SaveCache(fontAsset->fontBytes, bytes.begin(), bytes.Size());
     }
 
     void RegisterAssetTypes()

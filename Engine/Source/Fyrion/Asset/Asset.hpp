@@ -9,7 +9,7 @@ namespace Fyrion
     class AssetDirectory;
     struct ImportSettings;
 
-    struct Stream
+    struct CacheRef
     {
         u64 id;
 
@@ -25,16 +25,16 @@ namespace Fyrion
             return {strBuffer, bufSize};
         }
 
-        static Stream FromString(StringView str)
+        static CacheRef FromString(StringView str)
         {
-            return Stream{HexTo64(str)};
+            return CacheRef{HexTo64(str)};
         }
     };
 
     class FY_API Asset
     {
     public:
-        virtual ~Asset();
+        virtual ~Asset() = default;
 
         UUID                    GetUUID() const;
         void                    SetUUID(const UUID& uuid);
@@ -56,9 +56,9 @@ namespace Fyrion
         virtual ImportSettings* GetImportSettings();
         void                    SetModified();
         virtual bool            IsModified() const;
-        void                    SaveStream(Stream& stream, ConstPtr data, usize dataSize);
-        usize                   GetStreamSize(Stream stream) const;
-        void                    LoadStream(Stream stream, VoidPtr, usize dataSize) const;
+        void                    SaveCache(CacheRef& cache, ConstPtr data, usize dataSize);
+        usize                   GetCacheSize(CacheRef cache) const;
+        void                    LoadCache(CacheRef cache, VoidPtr, usize dataSize) const;
         bool                    IsChildOf(Asset* parent) const;
         Span<Asset*>            GetChildren() const;
         void                    RemoveChild(Asset* child);
@@ -94,10 +94,10 @@ namespace Fyrion
         u64           lastModifiedTime{};
         String        name{};
         String        absolutePath{};
+        bool          imported = false;
 
 
         void ValidateName();
-        void MarkSaved();
 
     public:
         static void RegisterType(NativeTypeHandler<Asset>& type);
@@ -188,11 +188,11 @@ namespace Fyrion
     };
 
     template <>
-    struct ArchiveType<Stream>
+    struct ArchiveType<CacheRef>
     {
         constexpr static bool hasArchiveImpl = true;
 
-        static void Write(ArchiveWriter& writer, ArchiveObject object, StringView name, const Stream* value)
+        static void Write(ArchiveWriter& writer, ArchiveObject object, StringView name, const CacheRef* value)
         {
             if (*value)
             {
@@ -200,17 +200,17 @@ namespace Fyrion
             }
         }
 
-        static void Read(ArchiveReader& reader, ArchiveObject object, StringView name, Stream* value)
+        static void Read(ArchiveReader& reader, ArchiveObject object, StringView name, CacheRef* value)
         {
-            *value = Stream::FromString(reader.ReadString(object, name));
+            *value = CacheRef::FromString(reader.ReadString(object, name));
         }
 
-        static void Add(ArchiveWriter& writer, ArchiveObject array, const Stream* value)
+        static void Add(ArchiveWriter& writer, ArchiveObject array, const CacheRef* value)
         {
             FY_ASSERT(false, "not implemented");
         }
 
-        static void Get(ArchiveReader& reader, ArchiveObject item, Stream* value)
+        static void Get(ArchiveReader& reader, ArchiveObject item, CacheRef* value)
         {
             FY_ASSERT(false, "not implemented");
         }

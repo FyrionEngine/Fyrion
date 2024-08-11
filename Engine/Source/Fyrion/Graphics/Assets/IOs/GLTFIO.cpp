@@ -12,6 +12,11 @@
 
 namespace Fyrion
 {
+    namespace
+    {
+        Logger& logger = Logger::GetLogger("Fyrion::GLTFIO");
+    }
+
     struct FY_API GLTFIO : AssetIO
     {
         using ImportedTextureMap = HashMap<usize, TextureAsset*>;
@@ -20,21 +25,26 @@ namespace Fyrion
 
         FY_BASE_TYPES(AssetIO);
 
-        Logger& logger = Logger::GetLogger("Fyrion::GLTFIO");
+        GLTFIO()
+        {
+            getImportExtensions = GetImportExtensions;
+            getAssetTypeId = GetAssetTypeID;
+            importAsset = ImportAsset;
+        }
 
-        StringView extension[2] = {".gltf", ".glb"};
+        static inline StringView extension[2] = {".gltf", ".glb"};
 
-        Span<StringView> GetImportExtensions() override
+        static Span<StringView> GetImportExtensions()
         {
             return {extension, 2};
         }
 
-        TypeID GetAssetTypeID(StringView path) override
+        static TypeID GetAssetTypeID(StringView path)
         {
             return GetTypeID<DCCAsset>();
         }
 
-        MeshAsset* LoadGltfMesh(DCCAsset* dccAsset, ImportedMaterialMap& materialMap, cgltf_data* data, cgltf_mesh& gltfMesh, u32 index)
+        static MeshAsset* LoadGltfMesh(DCCAsset* dccAsset, ImportedMaterialMap& materialMap, cgltf_data* data, cgltf_mesh& gltfMesh, u32 index)
         {
             String name = gltfMesh.name != nullptr ? gltfMesh.name : String{"Mesh_"}.Append(index);
 
@@ -230,7 +240,7 @@ namespace Fyrion
             return meshAsset;
         }
 
-        void LoadGltfNode(const ImportedMeshMap& meshMap, SceneObject* parentObject, cgltf_node* node, u32& meshCount)
+        static void LoadGltfNode(const ImportedMeshMap& meshMap, SceneObject* parentObject, cgltf_node* node, u32& meshCount)
         {
             String nodeName = node->name != nullptr ? String{node->name}.Append("_").Append(meshCount++) : String("MeshNode_").Append(meshCount++);
 
@@ -296,7 +306,7 @@ namespace Fyrion
         }
 
 
-        TextureAsset* FindTexture(const ImportedTextureMap& textureMap, DCCAsset* dccAsset, cgltf_texture* texture)
+        static TextureAsset* FindTexture(const ImportedTextureMap& textureMap, DCCAsset* dccAsset, cgltf_texture* texture)
         {
             if (texture->image->uri != nullptr)
             {
@@ -321,7 +331,7 @@ namespace Fyrion
             return nullptr;
         }
 
-        void ImportAsset(StringView path, Asset* asset) override
+        static void ImportAsset(StringView path, Asset* asset)
         {
             DCCAsset* dccAsset = static_cast<DCCAsset*>(asset);
 
@@ -353,14 +363,30 @@ namespace Fyrion
                     continue;
                 }
 
-                String bufferFile = Path::Join(Path::Parent(path), uri);
-                if (!FileSystem::GetFileStatus(bufferFile).exists)
+
+                String bufferPath = Path::Join(Path::Parent(path), uri);
+
+                if (!FileSystem::GetFileStatus(bufferPath).exists)
+                {
+                    bufferPath = Path::Join(Path::Parent(path), asset->GetName(), Path::Extension(uri));
+                }
+
+                if (!FileSystem::GetFileStatus(bufferPath).exists)
                 {
                     logger.Error("buffer file not found {}", path.CStr());
                     cgltf_free(data);
                     return;
                 }
-                //TODO add bufferFile as file dependency to Asset*
+
+                String bufferName = Path::Name(bufferPath) + Path::Extension(bufferPath);
+                if (data->buffers[i].uri)
+                {
+                    data->memory.free_func(data->memory.user_data, data->buffers[i].uri);
+                    data->buffers[i].uri = (char*)data->memory.alloc_func(data->memory.user_data, bufferName.Size() + 1);
+                    MemCopy(data->buffers[i].uri, bufferName.CStr(), bufferName.Size());
+                    data->buffers[i].uri[bufferName.Size()] = 0;
+                }
+                asset->AddRelatedFile(bufferName);
             }
 
             if (cgltf_load_buffers(&options, data, path.CStr()) != cgltf_result_success)

@@ -6,19 +6,16 @@
 
 namespace Fyrion
 {
-    class AssetDirectory;
-}
-
-namespace Fyrion
-{
     class Asset;
+    class AssetInfo;
+    class DirectoryInfo;
 
     class RenameAssetAction : public EditorAction
     {
     public:
         FY_BASE_TYPES(EditorAction);
 
-        RenameAssetAction(Asset* asset, const StringView& newName);
+        RenameAssetAction(AssetInfo* assetInfo, const StringView& newName);
 
         void Commit() override;
         void Rollback() override;
@@ -26,9 +23,9 @@ namespace Fyrion
         static void RegisterType(NativeTypeHandler<RenameAssetAction>& type);
 
     private:
-        Asset* asset;
-        String oldName;
-        String newName;
+        AssetInfo* assetInfo;
+        String     oldName;
+        String     newName;
     };
 
 
@@ -37,7 +34,7 @@ namespace Fyrion
     public:
         FY_BASE_TYPES(EditorAction);
 
-        MoveAssetAction(Asset* asset, AssetDirectory* newDirectory);
+        MoveAssetAction(AssetInfo* assetInfo, DirectoryInfo* newDirectory);
 
         void Commit() override;
         void Rollback() override;
@@ -45,11 +42,11 @@ namespace Fyrion
         static void RegisterType(NativeTypeHandler<MoveAssetAction>& type);
 
     private:
-        void MoveToFolder(Asset* directory) const;
+        void MoveToFolder(DirectoryInfo* directory) const;
 
-        Asset* asset;
-        Asset* oldDirectory;
-        Asset* newDirectory;
+        AssetInfo* assetInfo;
+        DirectoryInfo* oldDirectory;
+        DirectoryInfo* newDirectory;
     };
 
     struct UpdateAssetAction : EditorAction
@@ -60,7 +57,7 @@ namespace Fyrion
         String currentStrValue;
         String newStrValue;
 
-        UpdateAssetAction(Asset* asset, Asset* newValue);
+        UpdateAssetAction(Asset* assetInfo, Asset* newValue);
 
         void Commit() override;
         void Rollback() override;

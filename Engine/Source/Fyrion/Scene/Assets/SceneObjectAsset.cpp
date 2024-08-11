@@ -7,11 +7,6 @@
 
 namespace Fyrion
 {
-    StringView SceneObjectAsset::GetDisplayName() const
-    {
-        return "Scene Object";
-    }
-
     SceneObject* SceneObjectAsset::GetObject()
     {
         return &object;

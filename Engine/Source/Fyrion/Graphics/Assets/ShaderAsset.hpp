@@ -19,8 +19,6 @@ namespace Fyrion
     public:
         FY_BASE_TYPES(Asset);
 
-        StringView GetDisplayName() const override;
-
         StringView GetShaderSource() const
         {
             return shaderSource;

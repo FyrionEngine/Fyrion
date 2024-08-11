@@ -41,7 +41,7 @@ namespace Fyrion
     {
         Array<EditorWindowStorage> editorWindowStorages{};
         Array<OpenWindowStorage>   openWindows{};
-        Array<Asset*>              updatedItems{};
+        Array<AssetInfo*>          updatedItems{};
         String                     projectPath{};
 
         MenuItemContext menuContext{};
@@ -58,7 +58,7 @@ namespace Fyrion
         bool forceClose{};
 
         UniquePtr<SceneEditor> sceneEditor{};
-        Array<AssetDirectory*> directories{};
+        Array<DirectoryInfo*> directories{};
 
         Array<SharedPtr<EditorTransaction>> undoActions{};
         Array<SharedPtr<EditorTransaction>> redoActions{};
@@ -121,7 +121,7 @@ namespace Fyrion
             }
 
             //TODO: Create a setting for that.
-            Editor::OpenDirectory(AssetManager::FindByPath<AssetDirectory>("Fyrion:/"));
+            //Editor::OpenDirectory(AssetManager::FindByPath<DirectoryInfo>("Fyrion:/"));
             Editor::OpenDirectory(AssetManager::LoadFromDirectory(Path::Name(projectPath), Path::Join(projectPath, "Assets")));
         }
 
@@ -306,16 +306,16 @@ namespace Fyrion
                                 ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_None, 200.f * style.ScaleFactor);
                                 ImGui::TableHeadersRow();
 
-                                for (const Asset* asset : updatedItems)
+                                for (const AssetInfo* assetInfo : updatedItems)
                                 {
                                     ImGui::TableNextRow();
 
                                     ImGui::TableSetColumnIndex(0);
-                                    ImGui::Text("%s", asset->GetName().CStr());
+                                    ImGui::Text("%s", assetInfo->GetName().CStr());
                                     ImGui::TableSetColumnIndex(1);
-                                    ImGui::Text("%s", asset->GetPath().CStr());
+                                    ImGui::Text("%s", assetInfo->GetPath().CStr());
                                     ImGui::TableSetColumnIndex(2);
-                                    ImGui::Text("%s", asset->GetDisplayName().CStr());
+                                    ImGui::Text("%s", assetInfo->GetDisplayName().CStr());
                                 }
                                 ImGui::EndTable();
                             }
@@ -358,7 +358,7 @@ namespace Fyrion
 
         void SaveAll()
         {
-            for (AssetDirectory* directory : directories)
+            for (DirectoryInfo* directory : directories)
             {
                 AssetManager::SaveOnDirectory(directory, directory->GetAbsolutePath());
             }
@@ -388,7 +388,7 @@ namespace Fyrion
 
             updatedItems.Clear();
 
-            for (AssetDirectory* directory : directories)
+            for (DirectoryInfo* directory : directories)
             {
                 AssetManager::GetUpdatedAssets(directory, updatedItems);
             }
@@ -413,12 +413,12 @@ namespace Fyrion
         }
     }
 
-    void Editor::OpenDirectory(AssetDirectory* directory)
+    void Editor::OpenDirectory(DirectoryInfo* directory)
     {
         directories.EmplaceBack(directory);
     }
 
-    Span<AssetDirectory*> Editor::GetOpenDirectories()
+    Span<DirectoryInfo*> Editor::GetOpenDirectories()
     {
         return directories;
     }

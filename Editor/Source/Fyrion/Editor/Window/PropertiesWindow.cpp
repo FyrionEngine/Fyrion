@@ -260,16 +260,18 @@ namespace Fyrion
         ImGui::EndPopupMenu(popupOpenSettings);
     }
 
-    void PropertiesWindow::DrawAsset(Asset* asset)
+    void PropertiesWindow::DrawAsset(AssetInfo* assetInfo)
     {
         bool readOnly = false;
+
+        Asset* asset = assetInfo->GetInstance();
 
         auto& style = ImGui::GetStyle();
         if (ImGui::BeginTable("#asset-table", 2))
         {
-            String name = asset->GetName();
-            String path = asset->GetPath();
-            UUID   uuid = asset->GetUUID();
+            String name = assetInfo->GetName();
+            String path = assetInfo->GetPath();
+            UUID   uuid = assetInfo->GetUUID();
 
             ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthStretch, 0.5f);
             ImGui::TableSetupColumn("Item", ImGuiTableColumnFlags_WidthStretch);
@@ -307,12 +309,12 @@ namespace Fyrion
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5 * style.ScaleFactor);
 
         ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
-        if (ImGui::CollapsingHeader(asset->GetDisplayName().CStr(), 0))
+        if (ImGui::CollapsingHeader(assetInfo->GetDisplayName().CStr(), 0))
         {
             ImGui::Indent();
             ImGui::DrawType(ImGui::DrawTypeDesc{
                 .itemId = reinterpret_cast<usize>(asset),
-                .typeHandler = asset->GetType(),
+                .typeHandler = assetInfo->GetType(),
                 .instance = asset,
                 .flags = readOnly ? ImGuiDrawTypeFlags_ReadOnly : 0u,
                 .userData = this,
@@ -323,7 +325,7 @@ namespace Fyrion
             });
             ImGui::Unindent();
 
-            if (AssetManager::CanReimportAsset(asset))
+            if (AssetManager::CanReimportAsset(assetInfo))
             {
                 f32  width = ImGui::GetContentRegionAvail().x;
                 auto size = ImGui::GetFontSize() + style.FramePadding.y * 2.0f;
@@ -335,7 +337,7 @@ namespace Fyrion
                 ImGui::Spring(1.f);
                 if (ImGui::BorderedButton("Reimport", ImVec2(width * 2 / 3, size)))
                 {
-                    AssetManager::ReimportAsset(asset);
+                    AssetManager::ReimportAsset(assetInfo);
                 }
                 ImGui::Spring(1.f);
 
@@ -351,11 +353,11 @@ namespace Fyrion
         selectedObject = objectAsset;
     }
 
-    void PropertiesWindow::AssetSelection(Asset* asset)
+    void PropertiesWindow::AssetSelection(AssetInfo* assetInfo)
     {
-        if (selectedAsset == nullptr && asset == nullptr) return;
+        if (selectedAsset == nullptr && assetInfo == nullptr) return;
         ClearSelection();
-        selectedAsset = asset;
+        selectedAsset = assetInfo;
     }
 
 #if FY_ASSET_REFACTOR

@@ -1108,7 +1108,7 @@ namespace ImGui
                                 ImGui::ContentItemDesc contentItem{};
                                 contentItem.ItemId = id;
                                 contentItem.ShowDetails = false;
-                                contentItem.Label = asset->GetName().CStr();
+                                contentItem.Label = asset->GetInfo()->GetName().CStr();
                                 contentItem.CanRename = false;
                                 //contentItem.DetailsDesc = asset->GetDisplayName().CStr();
 

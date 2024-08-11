@@ -52,11 +52,6 @@ namespace Fyrion
         }
     }
 
-    StringView TextureAsset::GetDisplayName() const
-    {
-        return "Texture";
-    }
-
     void TextureAsset::SetImagePath(StringView path)
     {
         Image image(path);
@@ -277,11 +272,6 @@ namespace Fyrion
     Format TextureAsset::GetFormat() const
     {
         return format;
-    }
-
-    ImportSettings* TextureAsset::GetImportSettings()
-    {
-        return &textureImportSettings;
     }
 
     void TextureAsset::RegisterType(NativeTypeHandler<TextureAsset>& type)

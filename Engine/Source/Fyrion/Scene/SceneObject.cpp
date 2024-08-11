@@ -129,7 +129,7 @@ namespace Fyrion
     {
         if (asset)
         {
-            return asset->GetName();
+            return asset->GetInfo()->GetName();
         }
 
         return name;
@@ -139,7 +139,7 @@ namespace Fyrion
     {
         if (asset)
         {
-            asset->SetName(p_name);
+            asset->GetInfo()->SetName(p_name);
         }
         else
         {
@@ -210,7 +210,7 @@ namespace Fyrion
 
         if (asset)
         {
-            return asset->GetUUID();
+            return asset->GetInfo()->GetUUID();
         }
 
         return {};

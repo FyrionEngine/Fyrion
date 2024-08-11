@@ -84,9 +84,9 @@ namespace Fyrion
             //check if that's a path
             if (StringView(includePath).FindFirstOf("://") == nPos)
             {
-                if (shader && shader->GetParent() != nullptr)
+                if (shader && shader->GetInfo()->GetParent() != nullptr)
                 {
-                    includePath = String(shader->GetParent()->GetPath()).Append("/").Append(includePath);
+                    includePath = String(shader->GetInfo()->GetParent()->GetPath()).Append("/").Append(includePath);
                 }
             }
 

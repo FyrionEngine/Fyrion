@@ -9,24 +9,24 @@ namespace Fyrion
 {
     void RenameAssetAction::RegisterType(NativeTypeHandler<RenameAssetAction>& type)
     {
-        type.Constructor<Asset*, StringView>();
+        type.Constructor<AssetInfo*, StringView>();
     }
 
-    RenameAssetAction::RenameAssetAction(Asset* asset, const StringView& newName) : asset(asset), oldName(asset->GetName()), newName(newName) {}
+    RenameAssetAction::RenameAssetAction(AssetInfo* assetInfo, const StringView& newName) : assetInfo(assetInfo), oldName(assetInfo->GetName()), newName(newName) {}
 
     void RenameAssetAction::Commit()
     {
-        asset->SetName(newName);
+        assetInfo->SetName(newName);
     }
 
     void RenameAssetAction::Rollback()
     {
-        asset->SetName(oldName);
+        assetInfo->SetName(oldName);
     }
 
-    MoveAssetAction::MoveAssetAction(Asset* asset, AssetDirectory* newDirectory)
-        : asset(asset),
-          oldDirectory(asset->GetParent()),
+    MoveAssetAction::MoveAssetAction(AssetInfo* assetInfo, DirectoryInfo* newDirectory)
+        : assetInfo(assetInfo),
+          oldDirectory(dynamic_cast<DirectoryInfo*>(assetInfo->GetParent())),
           newDirectory(newDirectory) {}
 
     void MoveAssetAction::Commit()
@@ -39,40 +39,40 @@ namespace Fyrion
         MoveToFolder(oldDirectory);
     }
 
-    void MoveAssetAction::MoveToFolder(Asset* directory) const
+    void MoveAssetAction::MoveToFolder(DirectoryInfo* directory) const
     {
-        directory->AddChild(asset);
-        asset->SetModified();
+        // directory->AddChild(asset);
+        // asset->SetModified();
     }
 
     void MoveAssetAction::RegisterType(NativeTypeHandler<MoveAssetAction>& type)
     {
-        type.Constructor<Asset*, AssetDirectory*>();
+        type.Constructor<AssetInfo*, DirectoryInfo*>();
     }
 
     UpdateAssetAction::UpdateAssetAction(Asset* asset, Asset* newValue) : asset(asset)
     {
         JsonAssetWriter writer;
-        currentStrValue = JsonAssetWriter::Stringify(Serialization::Serialize(asset->GetType(), writer, asset));
-        newStrValue = JsonAssetWriter::Stringify(Serialization::Serialize(asset->GetType(), writer, newValue));
+        currentStrValue = JsonAssetWriter::Stringify(Serialization::Serialize(asset->GetInfo()->GetType(), writer, asset));
+        newStrValue = JsonAssetWriter::Stringify(Serialization::Serialize(asset->GetInfo()->GetType(), writer, newValue));
     }
 
     void UpdateAssetAction::Commit()
     {
         JsonAssetReader reader(newStrValue);
-        Serialization::Deserialize(asset->GetType(), reader, reader.ReadObject(), asset);
+        Serialization::Deserialize(asset->GetInfo()->GetType(), reader, reader.ReadObject(), asset);
 
         ImGui::ClearDrawData(asset);
-        asset->SetModified();
+        asset->GetInfo()->SetModified();
     }
     void UpdateAssetAction::Rollback()
     {
         JsonAssetReader reader(currentStrValue);
-        Serialization::Deserialize(asset->GetType(), reader, reader.ReadObject(), asset);
+        Serialization::Deserialize(asset->GetInfo()->GetType(), reader, reader.ReadObject(), asset);
 
         ImGui::ClearDrawData(asset);
 
-        asset->SetModified();
+        asset->GetInfo()->SetModified();
     }
 
     void UpdateAssetAction::RegisterType(NativeTypeHandler<UpdateAssetAction>& type)

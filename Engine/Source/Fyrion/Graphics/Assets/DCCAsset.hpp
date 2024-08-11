@@ -9,7 +9,6 @@
 namespace Fyrion
 {
 
-
     struct DCCAssetImportSettings : ImportSettings
     {
         FY_BASE_TYPES(ImportSettings);
@@ -38,8 +37,6 @@ namespace Fyrion
         MeshAsset*        FindMeshByName(const StringView& meshName);
         TextureAsset*     FindTextureByName(const StringView& textureName);
         SceneObjectAsset* GetSceneObjectAsset() override;
-
-        ImportSettings* GetImportSettings() override;
 
     private:
         DCCAssetImportSettings importSettings;

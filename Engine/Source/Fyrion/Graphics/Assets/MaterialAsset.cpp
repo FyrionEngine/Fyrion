@@ -70,11 +70,6 @@ namespace Fyrion
         }
     }
 
-    StringView MaterialAsset::GetDisplayName() const
-    {
-        return "Material";
-    }
-
     Color MaterialAsset::GetBaseColor() const
     {
         return baseColor;

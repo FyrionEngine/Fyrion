@@ -14,7 +14,6 @@ namespace Fyrion
     public:
         FY_BASE_TYPES(Asset, SceneObjectAssetProvider);
 
-        StringView        GetDisplayName() const override;
         SceneObject*      GetObject();
         SceneObjectAsset* GetSceneObjectAsset() override;
 

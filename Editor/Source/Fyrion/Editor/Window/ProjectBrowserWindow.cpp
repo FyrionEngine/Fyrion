@@ -42,7 +42,7 @@ namespace Fyrion
         }
     }
 
-    void ProjectBrowserWindow::SetOpenDirectory(AssetDirectory* directory)
+    void ProjectBrowserWindow::SetOpenDirectory(DirectoryInfo* directory)
     {
         openDirectory = directory;
         selectedItem = {};
@@ -55,29 +55,29 @@ namespace Fyrion
         lastOpenedDirectory = openDirectory;
     }
 
-    void ProjectBrowserWindow::SetSelectedAsset(Asset* selectedItem)
+    void ProjectBrowserWindow::SetSelectedAsset(AssetInfo* selectedItem)
     {
         this->selectedItem = selectedItem;
         onAssetSelectionHandler.Invoke(this->selectedItem);
 
     }
 
-    void ProjectBrowserWindow::DrawTreeNode(Asset* asset)
+    void ProjectBrowserWindow::DrawTreeNode(AssetInfo* assetInfo)
     {
-        if (asset == nullptr) return;
+        if (assetInfo == nullptr) return;
 
-        AssetDirectory* directory = asset->GetType()->Cast<AssetDirectory>(asset);
+        DirectoryInfo* directory =  dynamic_cast<DirectoryInfo*>(assetInfo);
 
         ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_None;
 
-        bool openDir = openTreeFolders[reinterpret_cast<usize>(asset)];
+        bool openDir = openTreeFolders[reinterpret_cast<usize>(assetInfo)];
 
         if (openDir)
         {
             ImGui::SetNextItemOpen(true);
         }
 
-        if (openDirectory == asset)
+        if (openDirectory == assetInfo)
         {
             flags |= ImGuiTreeNodeFlags_Selected;
         }
@@ -92,9 +92,9 @@ namespace Fyrion
             stringCache = ICON_FA_FOLDER;
         }
 
-        stringCache.Append(" ").Append(asset->GetName());
+        stringCache.Append(" ").Append(assetInfo->GetName());
 
-        bool isNodeOpen = ImGui::TreeNode(HashValue(reinterpret_cast<usize>(asset)), stringCache.CStr(), flags);
+        bool isNodeOpen = ImGui::TreeNode(HashValue(reinterpret_cast<usize>(assetInfo)), stringCache.CStr(), flags);
 
         if (ImGui::BeginDragDropTarget())
         {
@@ -105,11 +105,11 @@ namespace Fyrion
             ImGui::EndDragDropTarget();
         }
 
-        if (asset->GetParent() != nullptr && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoDisableHover | ImGuiDragDropFlags_SourceNoHoldToOpenOthers))
+        if (assetInfo->GetParent() != nullptr && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoDisableHover | ImGuiDragDropFlags_SourceNoHoldToOpenOthers))
         {
-            assetPayload.asset = asset;
+            assetPayload.asset = assetInfo;
             ImGui::SetDragDropPayload(AssetDragDropType, &assetPayload, sizeof(AssetPayload));
-            ImGui::Text("%s", asset->GetName().CStr());
+            ImGui::Text("%s", assetInfo->GetName().CStr());
             ImGui::EndDragDropSource();
         }
 
@@ -122,9 +122,9 @@ namespace Fyrion
 
         if (isNodeOpen)
         {
-            for (Asset* child : directory->GetChildren())
+            for (AssetInfo* child : directory->GetChildren())
             {
-                if (AssetDirectory* childDirectory = child->GetType()->Cast<AssetDirectory>(child))
+                if (DirectoryInfo* childDirectory = dynamic_cast<DirectoryInfo*>(child))
                 {
                     DrawTreeNode(childDirectory);
                 }
@@ -139,19 +139,19 @@ namespace Fyrion
         directoryCache.Clear();
 
         {
-            AssetDirectory* item = openDirectory;
+            DirectoryInfo* item = openDirectory;
             while (item != nullptr)
             {
                 directoryCache.EmplaceBack(item);
-                item = dynamic_cast<AssetDirectory*>(item->GetParent());
+                item = dynamic_cast<DirectoryInfo*>(item->GetParent());
             }
         }
 
-        AssetDirectory* nextDirectory = nullptr;
+        DirectoryInfo* nextDirectory = nullptr;
 
         for (usize i = directoryCache.Size(); i > 0; --i)
         {
-            AssetDirectory* drawItem = directoryCache[i - 1];
+            DirectoryInfo* drawItem = directoryCache[i - 1];
 
             if (ImGui::Button(drawItem->GetName().CStr()))
             {
@@ -184,9 +184,9 @@ namespace Fyrion
         auto popupRes = ImGui::BeginPopupMenu("select-folder-browser-popup");
         if (popupRes && popupFolder)
         {
-            for (Asset* node : popupFolder->GetChildren())
+            for (AssetInfo* node : popupFolder->GetChildren())
             {
-                if (AssetDirectory* assetDirectory = dynamic_cast<AssetDirectory*>(node))
+                if (DirectoryInfo* assetDirectory = dynamic_cast<DirectoryInfo*>(node))
                 {
                     if (ImGui::MenuItem(assetDirectory->GetName().CStr()))
                     {
@@ -286,7 +286,7 @@ namespace Fyrion
 
                 ImGui::BeginTreeNode();
 
-                for (AssetDirectory* directory : Editor::GetOpenDirectories())
+                for (DirectoryInfo* directory : Editor::GetOpenDirectories())
                 {
                     DrawTreeNode(directory);
                 }
@@ -295,7 +295,7 @@ namespace Fyrion
                 ImGui::EndChild();
             }
 
-            Asset* newItemSelected = nullptr;
+            AssetInfo* newItemSelected = nullptr;
 
             ImGui::TableNextColumn();
             {
@@ -308,15 +308,15 @@ namespace Fyrion
 
                 ImGui::SetWindowFontScale(contentBrowserZoom);
 
-                AssetDirectory* selectedDiretory = nullptr;
+                DirectoryInfo* selectedDiretory = nullptr;
 
                 if (ImGui::BeginContentTable(id + CONTENT_TABLE_ID, contentBrowserZoom * 112 * ImGui::GetStyle().ScaleFactor))
                 {
                     if (openDirectory)
                     {
-                        for (Asset* asset : openDirectory->GetChildren())
+                        for (AssetInfo* asset : openDirectory->GetChildren())
                         {
-                            if (asset->GetAssetTypeId() == GetTypeID<AssetDirectory>())
+                            if (DirectoryInfo* directoryInfo = dynamic_cast<DirectoryInfo*>(asset))
                             {
                                 ImGui::ContentItemDesc contentItem{};
                                 contentItem.ItemId = reinterpret_cast<usize>(asset);
@@ -335,7 +335,7 @@ namespace Fyrion
                                 if (ImGui::DrawContentItem(contentItem))
                                 {
                                     ImGui::ContentItemSelected(U32_MAX);
-                                    selectedDiretory = asset->GetType()->Cast<AssetDirectory>(asset);
+                                    selectedDiretory = directoryInfo;
                                 }
 
                                 if (ImGui::ContentItemSelected(contentItem.ItemId))
@@ -353,7 +353,7 @@ namespace Fyrion
 
                                 if (!asset->IsChildOf(assetPayload.asset) && ImGui::ContentItemAcceptPayload(contentItem.ItemId))
                                 {
-                                    Editor::CreateTransaction()->CreateAction<MoveAssetAction>(assetPayload.asset, dynamic_cast<AssetDirectory*>(asset))->Commit();
+                                    Editor::CreateTransaction()->CreateAction<MoveAssetAction>(assetPayload.asset, dynamic_cast<DirectoryInfo*>(asset))->Commit();
                                 }
 
                                 if (ImGui::ContentItemBeginPayload(contentItem.ItemId))
@@ -363,9 +363,9 @@ namespace Fyrion
                             }
                         }
 
-                        for (Asset* asset : openDirectory->GetChildren())
+                        for (AssetInfo* asset : openDirectory->GetChildren())
                         {
-                            if (asset->GetAssetTypeId() != GetTypeID<AssetDirectory>())
+                            if (asset->GetType()->GetTypeInfo().typeId != GetTypeID<DirectoryInfo>())
                             {
                                 ImGui::ContentItemDesc contentItem{};
                                 contentItem.ItemId = reinterpret_cast<usize>(asset);
@@ -421,7 +421,7 @@ namespace Fyrion
                     {
                         if (ImGui::IsKeyPressed(ImGuiKey_Backspace) && openDirectory)
                         {
-                            selectedDiretory = dynamic_cast<AssetDirectory*>(openDirectory->GetParent());
+                            selectedDiretory = dynamic_cast<DirectoryInfo*>(openDirectory->GetParent());
                         }
                     }
                 }
@@ -488,7 +488,7 @@ namespace Fyrion
 
     void ProjectBrowserWindow::AssetNewFolder(const MenuItemEventData& eventData)
     {
-        static_cast<ProjectBrowserWindow*>(eventData.drawData)->NewAsset(GetTypeID<AssetDirectory>());
+        static_cast<ProjectBrowserWindow*>(eventData.drawData)->NewAsset(GetTypeID<DirectoryInfo>());
     }
 
     void ProjectBrowserWindow::AssetNewScene(const MenuItemEventData& eventData)
@@ -504,7 +504,7 @@ namespace Fyrion
     void ProjectBrowserWindow::AssetDelete(const MenuItemEventData& eventData)
     {
         ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
-        projectBrowserWindow->selectedItem->Destroy();
+      //  projectBrowserWindow->selectedItem->Destroy();
         projectBrowserWindow->SetSelectedAsset(nullptr);
     }
 
@@ -523,7 +523,8 @@ namespace Fyrion
     void ProjectBrowserWindow::AssetShowInExplorer(const MenuItemEventData& eventData)
     {
         ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
-        Asset*                itemToShow = projectBrowserWindow->selectedItem ? projectBrowserWindow->selectedItem : projectBrowserWindow->openDirectory;
+        AssetInfo*            itemToShow = projectBrowserWindow->selectedItem ? projectBrowserWindow->selectedItem : projectBrowserWindow->openDirectory;
+
         if (itemToShow != nullptr)
         {
             Platform::ShowInExplorer(itemToShow->GetAbsolutePath());
@@ -533,7 +534,9 @@ namespace Fyrion
     void ProjectBrowserWindow::AssetCopyPathToClipboard(const MenuItemEventData& eventData)
     {
         ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
-        Asset*                item = projectBrowserWindow->selectedItem ? projectBrowserWindow->selectedItem : projectBrowserWindow->openDirectory;
+
+        AssetInfo* item = projectBrowserWindow->selectedItem ? projectBrowserWindow->selectedItem : projectBrowserWindow->openDirectory;
+
         if (item != nullptr)
         {
             Platform::SetClipboardString(Engine::GetActiveWindow(), item->GetPath());
@@ -566,13 +569,13 @@ namespace Fyrion
 
     void ProjectBrowserWindow::NewAsset(TypeID typeId)
     {
-        Asset* asset = AssetManager::Create(Registry::FindTypeById(typeId), {
-            .parent = openDirectory,
-            .generateName = true,
-        });
-
-        ImGui::SelectContentItem(reinterpret_cast<usize>(asset), CONTENT_TABLE_ID + windowId);
-        ImGui::RenameContentSelected(CONTENT_TABLE_ID + windowId);
+        // Asset* asset = AssetManager::Create(Registry::FindTypeById(typeId), {
+        //     .parent = openDirectory,
+        //     .generateName = true,
+        // });
+        //
+        // ImGui::SelectContentItem(reinterpret_cast<usize>(asset), CONTENT_TABLE_ID + windowId);
+        // ImGui::RenameContentSelected(CONTENT_TABLE_ID + windowId);
     }
 
     void ProjectBrowserWindow::AddMenuItem(const MenuItemCreation& menuItem)

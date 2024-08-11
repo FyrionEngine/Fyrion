@@ -28,7 +28,7 @@ namespace Fyrion
         String                   searchText{};
         String                   appFolder{};
         String                   settingsFolder{};
-        AssetDirectory*          settingsDir = nullptr;
+        DirectoryInfo*          settingsDir = nullptr;
         ProjectLauncherSettings* projectLauncherSettings = nullptr;
 
         String newProjectPath{};
@@ -136,7 +136,7 @@ namespace Fyrion
                     {
                         if (FileSystem::GetFileStatus(path).exists)
                         {
-                            projectLauncherSettings->SetModified();
+                            projectLauncherSettings->GetInfo()->SetModified();
                             projectLauncherSettings->recentProjects.EmplaceBack(path);
                             projectFilePath = path;
                             Engine::Shutdown();
@@ -173,7 +173,7 @@ namespace Fyrion
 
                         if (!FileSystem::GetFileStatus(recentProject).exists)
                         {
-                            projectLauncherSettings->SetModified();
+                            projectLauncherSettings->GetInfo()->SetModified();
                             it = projectLauncherSettings->recentProjects.Erase(it);
                             continue;
                         }
@@ -356,7 +356,7 @@ namespace Fyrion
                         {
                             projectLauncherSettings->defaultPath = newProjectPath;
                             projectLauncherSettings->recentProjects.EmplaceBack(projectFilePath);
-                            projectLauncherSettings->SetModified();
+                            projectLauncherSettings->GetInfo()->SetModified();
                             Engine::Shutdown();
                         }
                     }
@@ -397,7 +397,7 @@ namespace Fyrion
                 if (auto it = FindFirst(projectLauncherSettings->recentProjects.begin(), projectLauncherSettings->recentProjects.end(), selectedProject))
                 {
                     projectLauncherSettings->recentProjects.Erase(it);
-                    projectLauncherSettings->SetModified();
+                    projectLauncherSettings->GetInfo()->SetModified();
                 }
             }
         }
@@ -447,10 +447,10 @@ namespace Fyrion
         projectLauncherSettings = AssetManager::FindByPath<ProjectLauncherSettings>("Settings://ProjectLauncherSettings.fy_asset");
         if (projectLauncherSettings == nullptr)
         {
-            projectLauncherSettings = AssetManager::Create<ProjectLauncherSettings>({
-                .name = "ProjectLauncherSettings",
-                .parent = settingsDir,
-            });
+            // projectLauncherSettings = AssetManager::Create<ProjectLauncherSettings>({
+            //     .name = "ProjectLauncherSettings",
+            //     .parent = settingsDir,
+            // });
         }
 
         Event::Bind<OnInit, &LauncherInit>();

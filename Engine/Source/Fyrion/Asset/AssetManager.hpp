@@ -7,9 +7,10 @@
 
 namespace Fyrion
 {
+    class AssetInfo;
     struct AssetIO;
     class Asset;
-    class AssetDirectory;
+    class DirectoryInfo;
 
     struct AssetCreation
     {
@@ -39,22 +40,22 @@ namespace Fyrion
     class FY_API AssetManager
     {
     public:
-        static AssetDirectory* LoadFromDirectory(const StringView& name, const StringView& directory);
-        static void            SaveOnDirectory(AssetDirectory* directoryAsset, const StringView& directoryPath);
-        static void            SetCacheDirectory(const StringView& directory);
-        static StringView      GetCacheDirectory();
-        static void            GetUpdatedAssets(AssetDirectory* directoryAsset, Array<Asset*>& updatedAssets);
-        static AssetDirectory* LoadFromPackage(const StringView& name, const StringView& pakFile, const StringView& binFile);
-        static void            ImportAsset(AssetDirectory* directory, const StringView& path);
-        static bool            CanReimportAsset(Asset* asset);
-        static void            ReimportAsset(Asset* asset);
-        static Asset*          FindById(const UUID& assetId);
-        static Asset*          FindByPath(const StringView& path);
-        static Span<Asset*>    FindAssetsByType(TypeID typeId);
-        static Asset*          Create(TypeHandler* typeHandler, const AssetCreation& assetCreation);
-        static void            DestroyAssets();
-        static void            EnableHotReload(bool enable);
-        static void            WatchAsset(Asset* asset);
+        static DirectoryInfo* LoadFromDirectory(const StringView& name, const StringView& directory);
+        static void           SaveOnDirectory(DirectoryInfo* directoryInfo, const StringView& directoryPath);
+        static void           SetCacheDirectory(const StringView& directory);
+        static StringView     GetCacheDirectory();
+        static void           GetUpdatedAssets(DirectoryInfo* directoryInfo, Array<AssetInfo*>& updatedAssets);
+        static DirectoryInfo* LoadFromPackage(const StringView& name, const StringView& pakFile, const StringView& binFile);
+        static void           ImportAsset(DirectoryInfo* directory, const StringView& path);
+        static bool           CanReimportAsset(AssetInfo* assetInfo);
+        static void           ReimportAsset(AssetInfo* asset);
+        static Asset*         FindById(const UUID& assetId);
+        static Asset*         FindByPath(const StringView& path);
+        static Span<Asset*>   FindAssetsByType(TypeID typeId);
+        static Asset*         Create(TypeHandler* typeHandler, const AssetCreation& assetCreation);
+        static void           DestroyAssets();
+        static void           EnableHotReload(bool enable);
+        static void           WatchAsset(Asset* asset);
 
         template <typename T>
         static T* Create(const AssetCreation& assetCreation = {})
@@ -77,7 +78,7 @@ namespace Fyrion
         static void OnUpdate(f64 deltaTime);
 
     private:
-        static void          LoadAssetFile(AssetDirectory* directory, const StringView& filePath);
+        static void          LoadAssetFile(DirectoryInfo* directory, const StringView& filePath);
         static void          SaveInfoJson(StringView file, Asset* asset);
         static ArchiveObject SaveInfo(ArchiveWriter& writer, Asset* asset, bool isChild = false);
         static void          SaveAssetJson(StringView file, Asset* asset);

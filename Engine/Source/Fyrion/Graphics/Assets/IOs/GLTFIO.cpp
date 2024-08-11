@@ -59,9 +59,10 @@ namespace Fyrion
             MeshAsset* meshAsset = dccAsset->FindMeshByName(name);
             if (meshAsset == nullptr)
             {
-                meshAsset = AssetManager::Create<MeshAsset>();
-                meshAsset->SetName(name);
-                dccAsset->AddChild(meshAsset);
+                meshAsset = AssetManager::Create<MeshAsset>(AssetCreation{
+                    .name = name,
+                    .parent = dccAsset
+                });
             }
 
             for (u32 p = 0; p < gltfMesh.primitives_count; ++p)
@@ -310,7 +311,7 @@ namespace Fyrion
         {
             if (texture->image->uri != nullptr)
             {
-                String texturePath = String(dccAsset->GetParent()->GetPath()).Append("/").Append(StringView{texture->image->uri});
+                String texturePath = String(dccAsset->GetInfo()->GetParent()->GetPath()).Append("/").Append(StringView{texture->image->uri});
 
                 TextureAsset* textureAsset = AssetManager::FindByPath<TextureAsset>(texturePath);
                 if (textureAsset == nullptr)
@@ -368,7 +369,7 @@ namespace Fyrion
 
                 if (!FileSystem::GetFileStatus(bufferPath).exists)
                 {
-                    bufferPath = Path::Join(Path::Parent(path), asset->GetName(), Path::Extension(uri));
+                    bufferPath = Path::Join(Path::Parent(path), asset->GetInfo()->GetName(), Path::Extension(uri));
                 }
 
                 if (!FileSystem::GetFileStatus(bufferPath).exists)
@@ -386,7 +387,7 @@ namespace Fyrion
                     MemCopy(data->buffers[i].uri, bufferName.CStr(), bufferName.Size());
                     data->buffers[i].uri[bufferName.Size()] = 0;
                 }
-                asset->AddRelatedFile(bufferName);
+                asset->GetInfo()->AddRelatedFile(bufferName);
             }
 
             if (cgltf_load_buffers(&options, data, path.CStr()) != cgltf_result_success)
@@ -417,9 +418,10 @@ namespace Fyrion
                     TextureAsset* textureAsset = dccAsset->FindTextureByName(textureName);
                     if (textureAsset == nullptr)
                     {
-                        textureAsset = AssetManager::Create<TextureAsset>();
-                        textureAsset->SetName(textureName);
-                        dccAsset->AddChild(textureAsset);
+                        textureAsset = AssetManager::Create<TextureAsset>(AssetCreation{
+                            .name = textureName,
+                            .parent = dccAsset,
+                        });
                     }
 
                     Span<const u8> imageBuffer{
@@ -442,9 +444,10 @@ namespace Fyrion
                 MaterialAsset* materialAsset = dccAsset->FindMaterialByName(materialName);
                 if (materialAsset == nullptr)
                 {
-                    materialAsset = AssetManager::Create<MaterialAsset>();
-                    materialAsset->SetName(materialName);
-                    dccAsset->AddChild(materialAsset);
+                    materialAsset = AssetManager::Create<MaterialAsset>(AssetCreation{
+                        .name = materialName,
+                        .parent = dccAsset,
+                    });
                 }
 
                 if (material.has_pbr_metallic_roughness)
@@ -498,9 +501,10 @@ namespace Fyrion
                 SceneObjectAsset* rootObjectAsset = dccAsset->GetSceneObjectAsset();
                 if (rootObjectAsset == nullptr)
                 {
-                    rootObjectAsset = AssetManager::Create<SceneObjectAsset>();
-                    rootObjectAsset->SetName(dccAsset->GetName());
-                    dccAsset->AddChild(rootObjectAsset);
+                    rootObjectAsset = AssetManager::Create<SceneObjectAsset>(AssetCreation{
+                        .name = dccAsset->GetInfo()->GetName(),
+                        .parent = dccAsset
+                    });
 
                     TransformComponent& transformComponent = rootObjectAsset->GetObject()->CreateComponent<TransformComponent>();
                     transformComponent.SetUUID(UUID::RandomUUID());

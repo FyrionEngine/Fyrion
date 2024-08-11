@@ -41,7 +41,6 @@ namespace Fyrion
 
         ~TextureAsset() override;
 
-        StringView GetDisplayName() const override;
         void       SetImagePath(StringView path);
         void       SetHDRImagePath(StringView path);
         void       SetImage(const Image& image);
@@ -51,8 +50,6 @@ namespace Fyrion
         Sampler    GetSampler();
         Image      GetImage() const;
         Format     GetFormat() const;
-
-        ImportSettings* GetImportSettings() override;
 
         void SetTextureType(TextureType textureType);
 

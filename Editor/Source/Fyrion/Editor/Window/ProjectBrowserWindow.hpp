@@ -9,9 +9,10 @@
 
 namespace Fyrion
 {
+    class AssetInfo;
     struct UUID;
     class Asset;
-    class AssetDirectory;
+    class DirectoryInfo;
 
     class FY_API ProjectBrowserWindow : public EditorWindow
     {
@@ -20,31 +21,31 @@ namespace Fyrion
 
         void Init(u32 id, VoidPtr userData) override;
         void Draw(u32 id, bool& open) override;
-        void SetOpenDirectory(AssetDirectory* directory);
-        void SetSelectedAsset(Asset* selectedItem);
+        void SetOpenDirectory(DirectoryInfo* directory);
+        void SetSelectedAsset(AssetInfo* selectedItem);
 
         static void AddMenuItem(const MenuItemCreation& menuItem);
         static void RegisterType(NativeTypeHandler<ProjectBrowserWindow>& type);
 
     private:
         u32                            windowId{};
-        AssetDirectory*                openDirectory{};
-        Asset*                         selectedItem{};
+        DirectoryInfo*                 openDirectory{};
+        AssetInfo*                     selectedItem{};
         String                         searchString{};
         String                         stringCache{};
         AssetPayload                   assetPayload{};
-        AssetDirectory*                popupFolder{};
+        DirectoryInfo*                 popupFolder{};
         HashMap<usize, bool>           openTreeFolders{};
         f32                            contentBrowserZoom = 0.8;
-        Array<AssetDirectory*>         directoryCache;
+        Array<DirectoryInfo*>          directoryCache;
         EventHandler<OnAssetSelection> onAssetSelectionHandler{};
 
-        inline static AssetDirectory* lastOpenedDirectory = nullptr;
+        inline static DirectoryInfo* lastOpenedDirectory = nullptr;
 
         Texture folderTexture;
         Texture fileTexture;
 
-        void DrawTreeNode(Asset* asset);
+        void DrawTreeNode(AssetInfo* assetInfo);
         void DrawPathItems();
 
         static MenuItemContext menuItemContext;

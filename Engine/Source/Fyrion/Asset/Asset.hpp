@@ -6,7 +6,7 @@
 namespace Fyrion
 {
     class Asset;
-    class AssetDirectory;
+    class DirectoryInfo;
     struct ImportSettings;
 
     struct CacheRef
@@ -31,42 +31,63 @@ namespace Fyrion
         }
     };
 
+    class FY_API AssetInfo
+    {
+    public:
+        virtual ~AssetInfo() = default;
+
+        Asset*             GetInstance() const;
+        UUID               GetUUID() const;
+        void               SetUUID();
+        TypeHandler*       GetType() const;
+        StringView         GetName() const;
+        void               SetName(StringView newName);
+        StringView         GetPath() const;
+        StringView         GetAbsolutePath() const;
+        StringView         GetExtension() const;
+        virtual StringView GetDisplayName() const;
+        AssetInfo*         GetParent() const;
+        bool               IsChildOf(AssetInfo* parent) const;
+        bool               IsModified() const;
+        void                    SetModified();
+        virtual void       UpdatePath();
+        void               AddRelatedFile(StringView fileAbsolutePath);
+        void               Destroy();
+        String             GetCacheDirectory() const;
+
+        friend class AssetManager;
+
+    private:
+        Asset*            instance{};
+        AssetInfo*        prototype{};
+        UUID              uuid{};
+        String            path{};
+        String            name{};
+        TypeHandler*      assetType{};
+        u64               lastModifiedTime{};
+        u64               currentVersion{};
+        u64               loadedVersion{};
+        String            absolutePath{};
+        AssetInfo*        parent{};
+        Array<AssetInfo*> children{};
+        Array<String>     relatedFiles{};
+        bool              imported = false;
+
+        void ValidateName();
+    };
+
     class FY_API Asset
     {
     public:
         virtual ~Asset() = default;
 
-        UUID                    GetUUID() const;
-        void                    SetUUID(const UUID& uuid);
-        TypeHandler*            GetType() const;
-        TypeID                  GetAssetTypeId() const;
-        Asset*                  GetParent() const;
-        Asset*                  GetPrototype() const;
-        virtual StringView      GetName() const;
-        virtual StringView      GetDisplayName() const;
-        StringView              GetPath() const;
-        StringView              GetAbsolutePath() const;
-        virtual void            SetName(StringView newName);
-        void                    AddRelatedFile(StringView fileAbsolutePath);
-        StringView              GetExtension() const;
-        virtual void            BuildPath();
-        virtual void            OnCreated() {}
-        virtual void            OnDestroyed() {}
-        virtual void            OnModified() {}
-        virtual ImportSettings* GetImportSettings();
-        void                    SetModified();
-        virtual bool            IsModified() const;
-        void                    SaveCache(CacheRef& cache, ConstPtr data, usize dataSize);
-        usize                   GetCacheSize(CacheRef cache) const;
-        void                    LoadCache(CacheRef cache, VoidPtr, usize dataSize) const;
-        bool                    IsChildOf(Asset* parent) const;
-        Span<Asset*>            GetChildren() const;
-        void                    RemoveChild(Asset* child);
-        void                    RemoveFromParent();
-        void                    AddChild(Asset* child);
-        Asset*                  FindChildByAbsolutePath(StringView absolutePath) const;
-        virtual String          GetCacheDirectory() const;
-        void                    Destroy();
+        AssetInfo* GetInfo() const;
+
+        virtual void OnModified() {}
+
+        void  SaveCache(CacheRef& cache, ConstPtr data, usize dataSize);
+        usize GetCacheSize(CacheRef cache) const;
+        void  LoadCache(CacheRef cache, VoidPtr, usize dataSize) const;
 
         template <typename T, Traits::EnableIf<Traits::IsBaseOf<Asset, T>>* = nullptr>
         T* Cast()
@@ -77,22 +98,8 @@ namespace Fyrion
         friend class AssetManager;
 
     private:
-        UUID          uuid{};
-        String        path{};
-        Asset*        prototype{};
-        Asset*        parent{};
-        Array<Asset*> children{};
-        Array<String> relatedFiles{};
-        TypeHandler*  assetType{};
-        u64           currentVersion{};
-        u64           loadedVersion{};
-        u64           lastModifiedTime{};
-        String        name{};
-        String        absolutePath{};
-        bool          imported = false;
+        AssetInfo*    info{};
 
-
-        void ValidateName();
 
     public:
         static void RegisterType(NativeTypeHandler<Asset>& type);
@@ -135,22 +142,26 @@ namespace Fyrion
 
         static ArchiveObject GetObjectFromAsset(ArchiveWriter& writer, const T* asset)
         {
-            ArchiveObject object = writer.CreateObject();
+            // AssetInfo* info = asset->GetInfo();
+            //
+            // ArchiveObject object = writer.CreateObject();
+            //
+            // if (asset->GetInfo()->GetUUID())
+            // {
+            //     writer.WriteString(object, "uuid", ToString(info->GetUUID()));
+            // }
+            // else if (!info->GetPath().Empty())
+            // {
+            //     writer.WriteString(object, "path", info->GetPath());
+            // }
+            //
+            // if (info->GetType()->GetTypeInfo().typeId != GetTypeID<T>())
+            // {
+            //     writer.WriteString(object, "type", info->GetType()->GetName());
+            // }
+            // return object;
 
-            if (asset->GetUUID())
-            {
-                writer.WriteString(object, "uuid", ToString(asset->GetUUID()));
-            }
-            else if (!asset->GetPath().Empty())
-            {
-                writer.WriteString(object, "path", asset->GetPath());
-            }
-
-            if (asset->GetAssetTypeId() != GetTypeID<T>())
-            {
-                writer.WriteString(object, "type", asset->GetType()->GetName());
-            }
-            return object;
+            return {};
         }
 
         static void Write(ArchiveWriter& writer, ArchiveObject object, StringView name, T* const* value)
@@ -163,38 +174,38 @@ namespace Fyrion
 
         static T* GetAssetFromObject(ArchiveReader& reader, ArchiveObject asserRef)
         {
-            UUID uuid = UUID::FromString(reader.ReadString(asserRef, "uuid"));
-            if (uuid)
-            {
-                if (T* asset = AssetManager::FindById<T>(uuid))
-                {
-                    return asset;
-                }
-            }
-            String path = reader.ReadString(asserRef, "path");
-            if (!path.Empty())
-            {
-                if (T* asset = AssetManager::FindByPath<T>(path))
-                {
-                    return asset;
-                }
-            }
-
-            if (!path.Empty() || uuid)
-            {
-                TypeHandler* typeHandler = nullptr;
-                if (StringView type = reader.ReadString(asserRef, "type"); !type.Empty())
-                {
-                    typeHandler = Registry::FindTypeByName(type);
-                }
-
-                if (!typeHandler)
-                {
-                    typeHandler = Registry::FindType<T>();
-                }
-
-                return static_cast<T*>(AssetManager::Create(typeHandler, {.uuid = uuid, .desiredPath = path}));
-            }
+            // UUID uuid = UUID::FromString(reader.ReadString(asserRef, "uuid"));
+            // if (uuid)
+            // {
+            //     if (T* asset = AssetManager::FindById<T>(uuid))
+            //     {
+            //         return asset;
+            //     }
+            // }
+            // String path = reader.ReadString(asserRef, "path");
+            // if (!path.Empty())
+            // {
+            //     if (T* asset = AssetManager::FindByPath<T>(path))
+            //     {
+            //         return asset;
+            //     }
+            // }
+            //
+            // if (!path.Empty() || uuid)
+            // {
+            //     TypeHandler* typeHandler = nullptr;
+            //     if (StringView type = reader.ReadString(asserRef, "type"); !type.Empty())
+            //     {
+            //         typeHandler = Registry::FindTypeByName(type);
+            //     }
+            //
+            //     if (!typeHandler)
+            //     {
+            //         typeHandler = Registry::FindType<T>();
+            //     }
+            //
+            //     return static_cast<T*>(AssetManager::Create(typeHandler, {.uuid = uuid, .desiredPath = path}));
+            // }
 
             return nullptr;
         }

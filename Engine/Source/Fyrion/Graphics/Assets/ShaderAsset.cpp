@@ -124,7 +124,7 @@ namespace Fyrion
             it.first->Reload();
         }
 
-        logger.Debug("Shader {} compiled sucessfully", GetPath());
+       // logger.Debug("Shader {} compiled sucessfully", GetPath());
     }
 
     void ShaderAsset::AddPipelineDependency(PipelineState pipelineState)
@@ -147,29 +147,29 @@ namespace Fyrion
         bindingSetDependencies.Erase(bindingSet);
     }
 
-    StringView ShaderAsset::GetDisplayName() const
-    {
-        if (shaderType == ShaderAssetType::Include)
-        {
-            return "Include Shader";
-        }
-
-        if (shaderType == ShaderAssetType::Graphics)
-        {
-            return "Graphics Shader";
-        }
-
-        if (shaderType == ShaderAssetType::Compute)
-        {
-            return "Compute Shader";
-        }
-
-        if (shaderType == ShaderAssetType::Raytrace)
-        {
-            return "Raytrace Shader";
-        }
-        return "Shader";
-    }
+    // StringView ShaderAsset::GetDisplayName() const
+    // {
+    //     if (shaderType == ShaderAssetType::Include)
+    //     {
+    //         return "Include Shader";
+    //     }
+    //
+    //     if (shaderType == ShaderAssetType::Graphics)
+    //     {
+    //         return "Graphics Shader";
+    //     }
+    //
+    //     if (shaderType == ShaderAssetType::Compute)
+    //     {
+    //         return "Compute Shader";
+    //     }
+    //
+    //     if (shaderType == ShaderAssetType::Raytrace)
+    //     {
+    //         return "Raytrace Shader";
+    //     }
+    //     return "Shader";
+    // }
 
     Span<ShaderStageInfo> ShaderAsset::GetStages() const
     {

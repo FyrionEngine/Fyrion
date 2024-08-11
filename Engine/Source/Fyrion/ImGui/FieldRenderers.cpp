@@ -202,7 +202,7 @@ namespace Fyrion
 
         //TODO check if that's a pointer
         Asset* asset = assetApi.castAsset(value);
-        String name = asset ? asset->GetName() : "";
+        String name = asset ? asset->GetInfo()->GetName() : "";
 
         ImGui::SetNextItemWidth(-22 * ImGui::GetStyle().ScaleFactor);
 

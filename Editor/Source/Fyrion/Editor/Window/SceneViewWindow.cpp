@@ -175,7 +175,7 @@ namespace Fyrion
 
             if (!renderGraph)
             {
-                renderGraph = MakeShared<RenderGraph>(extent, AssetDatabase::FindByPath<RenderGraphAsset>("Fyrion://DefaultRenderGraph.fy_asset"));
+                renderGraph = MakeShared<RenderGraph>(extent, AssetManager::FindByPath<RenderGraphAsset>("Fyrion://DefaultRenderGraph.fy_asset"));
             }
 
             if (extent != renderGraph->GetViewportExtent())

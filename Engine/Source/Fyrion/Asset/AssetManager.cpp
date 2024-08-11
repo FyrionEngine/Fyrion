@@ -1,4 +1,4 @@
-#include "AssetDatabase.hpp"
+#include "AssetManager.hpp"
 
 #include <functional>
 #include <memory>
@@ -96,7 +96,7 @@ namespace Fyrion
     }
 
 
-    Asset* AssetDatabase::FindById(const UUID& assetId)
+    Asset* AssetManager::FindById(const UUID& assetId)
     {
         if (!assetId) return nullptr;
 
@@ -108,7 +108,7 @@ namespace Fyrion
         return nullptr;
     }
 
-    Asset* AssetDatabase::FindByPath(const StringView& path)
+    Asset* AssetManager::FindByPath(const StringView& path)
     {
         if (auto it = assetsByPath.Find(path))
         {
@@ -118,7 +118,7 @@ namespace Fyrion
         return nullptr;
     }
 
-    Span<Asset*> AssetDatabase::FindAssetsByType(TypeID typeId)
+    Span<Asset*> AssetManager::FindAssetsByType(TypeID typeId)
     {
         if (auto it = assetsByType.Find(typeId))
         {
@@ -127,7 +127,7 @@ namespace Fyrion
         return {};
     }
 
-    Asset* AssetDatabase::Create(TypeHandler* typeHandler, const AssetCreation& assetCreation)
+    Asset* AssetManager::Create(TypeHandler* typeHandler, const AssetCreation& assetCreation)
     {
         FY_ASSERT(typeHandler, "type not found");
         if (!typeHandler) return nullptr;
@@ -204,7 +204,7 @@ namespace Fyrion
         return asset;
     }
 
-    AssetDirectory* AssetDatabase::LoadFromDirectory(const StringView& name, const StringView& directory)
+    AssetDirectory* AssetManager::LoadFromDirectory(const StringView& name, const StringView& directory)
     {
         if (!FileSystem::GetFileStatus(directory).exists)
         {
@@ -230,7 +230,7 @@ namespace Fyrion
         return assetDirectory;
     }
 
-    void AssetDatabase::LoadAssetFile(AssetDirectory* parentDirectory, const StringView& filePath)
+    void AssetManager::LoadAssetFile(AssetDirectory* parentDirectory, const StringView& filePath)
     {
         String extension = Path::Extension(filePath);
         if (FileSystem::GetFileStatus(filePath).isDirectory)
@@ -370,7 +370,7 @@ namespace Fyrion
     }
 
 
-    void AssetDatabase::QueueAssetImport(AssetIO* io, Asset* asset)
+    void AssetManager::QueueAssetImport(AssetIO* io, Asset* asset)
     {
         //TODO enqueue to a thread pool
         if (io->importAsset)
@@ -384,13 +384,13 @@ namespace Fyrion
         }
     }
 
-    void AssetDatabase::SaveInfoJson(StringView file, Asset* asset)
+    void AssetManager::SaveInfoJson(StringView file, Asset* asset)
     {
         JsonAssetWriter jsonAssetWriter;
         FileSystem::SaveFileAsString(file, JsonAssetWriter::Stringify(SaveInfo(jsonAssetWriter, asset)));
     }
 
-    ArchiveObject AssetDatabase::SaveInfo(ArchiveWriter& writer, Asset* asset, bool isChild)
+    ArchiveObject AssetManager::SaveInfo(ArchiveWriter& writer, Asset* asset, bool isChild)
     {
         ArchiveObject object = writer.CreateObject();
         writer.WriteString(object, "uuid", ToString(asset->GetUUID()));
@@ -419,7 +419,7 @@ namespace Fyrion
         return object;
     }
 
-    void AssetDatabase::SaveAssetJson(StringView file, Asset* root)
+    void AssetManager::SaveAssetJson(StringView file, Asset* root)
     {
         JsonAssetWriter writer;
         std::function<ArchiveObject(ArchiveWriter& writer, Asset* asset)> serialize;
@@ -447,13 +447,13 @@ namespace Fyrion
         FileSystem::SaveFileAsString(file, JsonAssetWriter::Stringify(serialize(writer, root)));
     }
 
-    void AssetDatabase::LoadInfoJson(StringView file, Asset* asset)
+    void AssetManager::LoadInfoJson(StringView file, Asset* asset)
     {
         JsonAssetReader reader(FileSystem::ReadFileAsString(file));
         LoadInfo(reader, reader.ReadObject(), asset);
     }
 
-    void AssetDatabase::LoadInfo(ArchiveReader& reader, ArchiveObject object, Asset* asset)
+    void AssetManager::LoadInfo(ArchiveReader& reader, ArchiveObject object, Asset* asset)
     {
         asset->lastModifiedTime = reader.ReadUInt(object, "lastModifiedTime");
         asset->SetUUID(UUID::FromString(reader.ReadString(object, "uuid")));
@@ -489,7 +489,7 @@ namespace Fyrion
         }
     }
 
-    void AssetDatabase::LoadAssetJson(StringView file, Asset* asset)
+    void AssetManager::LoadAssetJson(StringView file, Asset* asset)
     {
         String content = FileSystem::ReadFileAsString(file);
         if (!content.Empty())
@@ -499,7 +499,7 @@ namespace Fyrion
         }
     }
 
-    void AssetDatabase::LoadAsset(ArchiveReader& reader, ArchiveObject object, Asset* asset)
+    void AssetManager::LoadAsset(ArchiveReader& reader, ArchiveObject object, Asset* asset)
     {
         Serialization::Deserialize(asset->GetType(), reader, object, asset);
         ArchiveObject arr = reader.ReadObject(object, "_children");
@@ -522,7 +522,7 @@ namespace Fyrion
         }
     }
 
-    void AssetDatabase::SaveOnDirectory(AssetDirectory* directoryAsset, const StringView& directoryPath)
+    void AssetManager::SaveOnDirectory(AssetDirectory* directoryAsset, const StringView& directoryPath)
     {
         if (!FileSystem::GetFileStatus(directoryPath).exists)
         {
@@ -551,7 +551,7 @@ namespace Fyrion
         }
     }
 
-    void AssetDatabase::SetCacheDirectory(const StringView& directory)
+    void AssetManager::SetCacheDirectory(const StringView& directory)
     {
         cacheDirectory = directory;
         if (!FileSystem::GetFileStatus(cacheDirectory).exists)
@@ -560,13 +560,13 @@ namespace Fyrion
         }
     }
 
-    StringView AssetDatabase::GetCacheDirectory()
+    StringView AssetManager::GetCacheDirectory()
     {
         FY_ASSERT(!cacheDirectory.Empty(), "cache dir not set");
         return cacheDirectory;
     }
 
-    void AssetDatabase::GetUpdatedAssets(AssetDirectory* directoryAsset, Array<Asset*>& updatedAssets)
+    void AssetManager::GetUpdatedAssets(AssetDirectory* directoryAsset, Array<Asset*>& updatedAssets)
     {
         if (!directoryAsset) return;
 
@@ -585,24 +585,24 @@ namespace Fyrion
     }
 
 
-    AssetDirectory* AssetDatabase::LoadFromPackage(const StringView& name, const StringView& file, const StringView& binFile)
+    AssetDirectory* AssetManager::LoadFromPackage(const StringView& name, const StringView& file, const StringView& binFile)
     {
         FY_ASSERT(false, "not implemented");
         return nullptr;
     }
 
-    void AssetDatabase::ImportAsset(AssetDirectory* directory, const StringView& path)
+    void AssetManager::ImportAsset(AssetDirectory* directory, const StringView& path)
     {
         FileSystem::CopyFile(path, Path::Join(directory->GetAbsolutePath(), Path::Name(path), Path::Extension(path)));
         fileWatcher.Check();
     }
 
-    bool AssetDatabase::CanReimportAsset(Asset* asset)
+    bool AssetManager::CanReimportAsset(Asset* asset)
     {
         return importers.Find(asset->GetExtension()) != importers.end();
     }
 
-    void AssetDatabase::ReimportAsset(Asset* asset)
+    void AssetManager::ReimportAsset(Asset* asset)
     {
         if (auto importer = importers.Find(asset->GetExtension()))
         {
@@ -610,7 +610,7 @@ namespace Fyrion
         }
     }
 
-    void AssetDatabase::DestroyAssets()
+    void AssetManager::DestroyAssets()
     {
         if (Engine::IsRunning())
         {
@@ -630,7 +630,7 @@ namespace Fyrion
         assetsByPath.Clear();
     }
 
-    void AssetDatabase::OnUpdate(f64 deltaTime)
+    void AssetManager::OnUpdate(f64 deltaTime)
     {
         fileWatcher.CheckForUpdates([](const FileWatcherModified& modified)
         {
@@ -669,15 +669,15 @@ namespace Fyrion
         {
             fileWatcher.Start();
         }
-        Event::Bind<OnUpdate, AssetDatabase::OnUpdate>();
+        Event::Bind<OnUpdate, AssetManager::OnUpdate>();
     }
 
-    void AssetDatabase::EnableHotReload(bool enable)
+    void AssetManager::EnableHotReload(bool enable)
     {
         hotReloadEnabled = enable;
     }
 
-    void AssetDatabase::WatchAsset(Asset* asset)
+    void AssetManager::WatchAsset(Asset* asset)
     {
         if (asset && hotReloadEnabled)
         {
@@ -687,12 +687,12 @@ namespace Fyrion
 
     void AssetDatabaseShutdown()
     {
-        Event::Unbind<OnUpdate, AssetDatabase::OnUpdate>();
+        Event::Unbind<OnUpdate, AssetManager::OnUpdate>();
 
         hotReloadEnabled = false;
         fileWatcher.Stop();
 
-        AssetDatabase::DestroyAssets();
+        AssetManager::DestroyAssets();
 
         for (const auto& assetIo : assetIOs)
         {

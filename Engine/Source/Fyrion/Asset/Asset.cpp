@@ -138,6 +138,7 @@ namespace Fyrion
                 rename(FY_INFO_EXTENSION);
 
                 this->absolutePath = newAbsolutePath;
+                AssetManager::WatchAsset(this);
             }
 
             this->name = newName;
@@ -294,7 +295,7 @@ namespace Fyrion
         {
             return Path::Join(parentCacheDir, ToString(uuid));
         }
-        return Path::Join(AssetDatabase::GetCacheDirectory(), ToString(uuid));
+        return Path::Join(AssetManager::GetCacheDirectory(), ToString(uuid));
     }
 
     void Asset::Destroy()

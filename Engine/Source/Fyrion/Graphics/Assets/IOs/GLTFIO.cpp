@@ -59,7 +59,7 @@ namespace Fyrion
             MeshAsset* meshAsset = dccAsset->FindMeshByName(name);
             if (meshAsset == nullptr)
             {
-                meshAsset = AssetDatabase::Create<MeshAsset>();
+                meshAsset = AssetManager::Create<MeshAsset>();
                 meshAsset->SetName(name);
                 dccAsset->AddChild(meshAsset);
             }
@@ -312,7 +312,7 @@ namespace Fyrion
             {
                 String texturePath = String(dccAsset->GetParent()->GetPath()).Append("/").Append(StringView{texture->image->uri});
 
-                TextureAsset* textureAsset = AssetDatabase::FindByPath<TextureAsset>(texturePath);
+                TextureAsset* textureAsset = AssetManager::FindByPath<TextureAsset>(texturePath);
                 if (textureAsset == nullptr)
                 {
                     // textureAsset = AssetDatabase::Create<TextureAsset>();
@@ -417,7 +417,7 @@ namespace Fyrion
                     TextureAsset* textureAsset = dccAsset->FindTextureByName(textureName);
                     if (textureAsset == nullptr)
                     {
-                        textureAsset = AssetDatabase::Create<TextureAsset>();
+                        textureAsset = AssetManager::Create<TextureAsset>();
                         textureAsset->SetName(textureName);
                         dccAsset->AddChild(textureAsset);
                     }
@@ -442,7 +442,7 @@ namespace Fyrion
                 MaterialAsset* materialAsset = dccAsset->FindMaterialByName(materialName);
                 if (materialAsset == nullptr)
                 {
-                    materialAsset = AssetDatabase::Create<MaterialAsset>();
+                    materialAsset = AssetManager::Create<MaterialAsset>();
                     materialAsset->SetName(materialName);
                     dccAsset->AddChild(materialAsset);
                 }
@@ -498,7 +498,7 @@ namespace Fyrion
                 SceneObjectAsset* rootObjectAsset = dccAsset->GetSceneObjectAsset();
                 if (rootObjectAsset == nullptr)
                 {
-                    rootObjectAsset = AssetDatabase::Create<SceneObjectAsset>();
+                    rootObjectAsset = AssetManager::Create<SceneObjectAsset>();
                     rootObjectAsset->SetName(dccAsset->GetName());
                     dccAsset->AddChild(rootObjectAsset);
 

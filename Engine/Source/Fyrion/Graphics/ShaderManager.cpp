@@ -14,7 +14,7 @@
 #include "Assets/ShaderAsset.hpp"
 #include "Fyrion/Core/Logger.hpp"
 #include "dxc/dxcapi.h"
-#include "Fyrion/Asset/AssetDatabase.hpp"
+#include "Fyrion/Asset/AssetManager.hpp"
 #include "Fyrion/Asset/AssetTypes.hpp"
 #include "Fyrion/Core/HashMap.hpp"
 
@@ -90,7 +90,7 @@ namespace Fyrion
                 }
             }
 
-            ShaderAsset* shaderInclude = AssetDatabase::FindByPath<ShaderAsset>(includePath);
+            ShaderAsset* shaderInclude = AssetManager::FindByPath<ShaderAsset>(includePath);
             if (!shaderInclude)
             {
                 return S_FALSE;

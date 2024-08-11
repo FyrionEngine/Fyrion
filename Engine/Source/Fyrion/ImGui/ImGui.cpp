@@ -8,7 +8,7 @@
 #include "Fyrion/Graphics/Device/RenderDevice.hpp"
 #include "IconsFontAwesome6.h"
 #include "Fyrion/Engine.hpp"
-#include "Fyrion/Asset/AssetDatabase.hpp"
+#include "Fyrion/Asset/AssetManager.hpp"
 #include "Fyrion/Asset/AssetTypes.hpp"
 #include "Fyrion/Core/Attributes.hpp"
 #include "Fyrion/Core/StringUtils.hpp"
@@ -968,7 +968,7 @@ namespace ImGui
         ImGuiIO& io = ImGui::GetIO();
         io.Fonts->Clear();
 
-        if (UIFontAsset* fontAsset = AssetDatabase::FindByPath<UIFontAsset>("Fyrion://Fonts/DejaVuSans.ttf"))
+        if (UIFontAsset* fontAsset = AssetManager::FindByPath<UIFontAsset>("Fyrion://Fonts/DejaVuSans.ttf"))
         {
             auto font = ImFontConfig();
             font.SizePixels = fontSize * scaleFactor;
@@ -985,7 +985,7 @@ namespace ImGui
             io.Fonts->AddFontDefault(&config);
         }
 
-        if (UIFontAsset* fontAsset = AssetDatabase::FindByPath<UIFontAsset>("Fyrion://Fonts/fa-solid-900.otf"))
+        if (UIFontAsset* fontAsset = AssetManager::FindByPath<UIFontAsset>("Fyrion://Fonts/fa-solid-900.otf"))
         {
             static const ImWchar icon_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
 
@@ -1103,7 +1103,7 @@ namespace ImGui
                         std::function<void(TypeID typeId)> drawAssetSelection;
                         drawAssetSelection = [&](const TypeID typeId)
                         {
-                            for (Asset* asset : AssetDatabase::FindAssetsByType(typeId))
+                            for (Asset* asset : AssetManager::FindAssetsByType(typeId))
                             {
                                 ImGui::ContentItemDesc contentItem{};
                                 contentItem.ItemId = id;

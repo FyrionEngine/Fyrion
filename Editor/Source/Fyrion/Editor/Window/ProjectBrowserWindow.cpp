@@ -9,7 +9,7 @@
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Platform/Platform.hpp"
 #include "Fyrion/Engine.hpp"
-#include "Fyrion/Asset/AssetDatabase.hpp"
+#include "Fyrion/Asset/AssetManager.hpp"
 #include "Fyrion/Core/Logger.hpp"
 #include "Fyrion/Editor/Action/AssetEditorActions.hpp"
 #include "Fyrion/Editor/Action/SceneEditorAction.hpp"
@@ -31,12 +31,12 @@ namespace Fyrion
             SetOpenDirectory(Editor::GetOpenDirectories().Back());
         }
 
-        if (TextureAsset* texture = AssetDatabase::FindByPath<TextureAsset>("Fyrion://Textures/FolderIcon.png"))
+        if (TextureAsset* texture = AssetManager::FindByPath<TextureAsset>("Fyrion://Textures/FolderIcon.png"))
         {
             folderTexture = texture->GetTexture();
         }
 
-        if (TextureAsset* texture = AssetDatabase::FindByPath<TextureAsset>("Fyrion://Textures/FileIcon.png"))
+        if (TextureAsset* texture = AssetManager::FindByPath<TextureAsset>("Fyrion://Textures/FileIcon.png"))
         {
             fileTexture = texture->GetTexture();
         }
@@ -234,7 +234,7 @@ namespace Fyrion
                     {
                         for (const String& path : paths)
                         {
-                            AssetDatabase::ImportAsset(openDirectory, path);
+                            AssetManager::ImportAsset(openDirectory, path);
                         }
                     }
                 }
@@ -550,13 +550,13 @@ namespace Fyrion
     bool ProjectBrowserWindow::CheckCanReimport(const MenuItemEventData& eventData)
     {
         ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
-        return CheckSelectedAsset(eventData) && AssetDatabase::CanReimportAsset(projectBrowserWindow->selectedItem);
+        return CheckSelectedAsset(eventData) && AssetManager::CanReimportAsset(projectBrowserWindow->selectedItem);
     }
 
     void ProjectBrowserWindow::AssetReimport(const MenuItemEventData& eventData)
     {
         ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
-        AssetDatabase::ReimportAsset(projectBrowserWindow->selectedItem);
+        AssetManager::ReimportAsset(projectBrowserWindow->selectedItem);
     }
 
     void ProjectBrowserWindow::AssetNew(const MenuItemEventData& eventData)
@@ -566,7 +566,7 @@ namespace Fyrion
 
     void ProjectBrowserWindow::NewAsset(TypeID typeId)
     {
-        Asset* asset = AssetDatabase::Create(Registry::FindTypeById(typeId), {
+        Asset* asset = AssetManager::Create(Registry::FindTypeById(typeId), {
             .parent = openDirectory,
             .generateName = true,
         });
@@ -589,7 +589,7 @@ namespace Fyrion
     {
         if (lastOpenedDirectory)
         {
-            AssetDatabase::ImportAsset(lastOpenedDirectory, path);
+            AssetManager::ImportAsset(lastOpenedDirectory, path);
         }
     }
 

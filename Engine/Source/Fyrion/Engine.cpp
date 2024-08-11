@@ -8,7 +8,7 @@
 #include "Fyrion/Graphics/GraphicsTypes.hpp"
 #include "Fyrion/Graphics/Graphics.hpp"
 #include "TypeRegister.hpp"
-#include "Asset/AssetDatabase.hpp"
+#include "Asset/AssetManager.hpp"
 #include "Fyrion/ImGui/ImGui.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
 #include "Fyrion/IO/Path.hpp"
@@ -78,7 +78,7 @@ namespace Fyrion
 
     void Engine::CreateContext(const EngineContextCreation& contextCreation)
     {
-        AssetDatabase::LoadFromDirectory("Fyrion", Path::Join(FileSystem::AssetFolder(), "Fyrion"));
+        AssetManager::LoadFromDirectory("Fyrion", Path::Join(FileSystem::AssetFolder(), "Fyrion"));
 
         PlatformInit();
 
@@ -98,7 +98,7 @@ namespace Fyrion
 
         window = Platform::CreateWindow(contextCreation.title, contextCreation.resolution, windowFlags);
 
-        if (TextureAsset* textureAsset = AssetDatabase::FindByPath<TextureAsset>("Fyrion://Textures/Logo.jpeg"))
+        if (TextureAsset* textureAsset = AssetManager::FindByPath<TextureAsset>("Fyrion://Textures/Logo.jpeg"))
         {
             Platform::SetWindowIcon(window, textureAsset->GetImage());
         }
@@ -195,7 +195,7 @@ namespace Fyrion
 
         onShutdownHandler.Invoke();
 
-        AssetDatabase::DestroyAssets();
+        AssetManager::DestroyAssets();
 
         Graphics::DestroySwapchain(swapchain);
         Platform::DestroyWindow(window);

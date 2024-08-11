@@ -323,7 +323,7 @@ namespace Fyrion
             });
             ImGui::Unindent();
 
-            if (AssetDatabase::CanReimportAsset(asset))
+            if (AssetManager::CanReimportAsset(asset))
             {
                 f32  width = ImGui::GetContentRegionAvail().x;
                 auto size = ImGui::GetFontSize() + style.FramePadding.y * 2.0f;
@@ -335,7 +335,7 @@ namespace Fyrion
                 ImGui::Spring(1.f);
                 if (ImGui::BorderedButton("Reimport", ImVec2(width * 2 / 3, size)))
                 {
-                    AssetDatabase::ReimportAsset(asset);
+                    AssetManager::ReimportAsset(asset);
                 }
                 ImGui::Spring(1.f);
 

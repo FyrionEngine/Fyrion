@@ -4,7 +4,7 @@
 #include <mikktspace.h>
 
 #include "Graphics.hpp"
-#include "Fyrion/Asset/AssetDatabase.hpp"
+#include "Fyrion/Asset/AssetManager.hpp"
 #include "Fyrion/Core/Logger.hpp"
 #include "Fyrion/Graphics/Assets/ShaderAsset.hpp"
 
@@ -205,7 +205,7 @@ namespace Fyrion
             .layerCount = 6,
         });
 
-        ShaderAsset* shaderAsset = AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Shaders/Utils/EquirectToCube.comp");
+        ShaderAsset* shaderAsset = AssetManager::FindByPath<ShaderAsset>("Fyrion://Shaders/Utils/EquirectToCube.comp");
 
         pipelineState = Graphics::CreateComputePipelineState({
             .shader = shaderAsset
@@ -274,7 +274,7 @@ namespace Fyrion
             .layerCount = 6,
         });
 
-        ShaderAsset* shaderAsset = AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Shaders/Utils/IRMap.comp");
+        ShaderAsset* shaderAsset = AssetManager::FindByPath<ShaderAsset>("Fyrion://Shaders/Utils/IRMap.comp");
 
         pipelineState = Graphics::CreateComputePipelineState({
             .shader = shaderAsset
@@ -329,7 +329,7 @@ namespace Fyrion
             .addressMode = TextureAddressMode::ClampToEdge,
         });
 
-        ShaderAsset* shader = AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Shaders/Utils/GenBRDFLUT.comp");
+        ShaderAsset* shader = AssetManager::FindByPath<ShaderAsset>("Fyrion://Shaders/Utils/GenBRDFLUT.comp");
 
         PipelineState pipelineState = Graphics::CreateComputePipelineState({
             .shader = shader
@@ -397,7 +397,7 @@ namespace Fyrion
 
         Graphics::UpdateTextureLayout(texture, ResourceLayout::Undefined, ResourceLayout::ShaderReadOnly);
 
-        ShaderAsset* shaderAsset = AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Shaders/Utils/SpecularMap.comp");
+        ShaderAsset* shaderAsset = AssetManager::FindByPath<ShaderAsset>("Fyrion://Shaders/Utils/SpecularMap.comp");
 
         pipelineState = Graphics::CreateComputePipelineState({
             .shader = shaderAsset

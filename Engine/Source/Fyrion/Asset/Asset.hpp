@@ -1,5 +1,5 @@
 #pragma once
-#include "AssetDatabase.hpp"
+#include "AssetManager.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Core/UUID.hpp"
 
@@ -74,7 +74,7 @@ namespace Fyrion
             return dynamic_cast<T*>(this);
         }
 
-        friend class AssetDatabase;
+        friend class AssetManager;
 
     private:
         UUID          uuid{};
@@ -166,7 +166,7 @@ namespace Fyrion
             UUID uuid = UUID::FromString(reader.ReadString(asserRef, "uuid"));
             if (uuid)
             {
-                if (T* asset = AssetDatabase::FindById<T>(uuid))
+                if (T* asset = AssetManager::FindById<T>(uuid))
                 {
                     return asset;
                 }
@@ -174,7 +174,7 @@ namespace Fyrion
             String path = reader.ReadString(asserRef, "path");
             if (!path.Empty())
             {
-                if (T* asset = AssetDatabase::FindByPath<T>(path))
+                if (T* asset = AssetManager::FindByPath<T>(path))
                 {
                     return asset;
                 }
@@ -193,7 +193,7 @@ namespace Fyrion
                     typeHandler = Registry::FindType<T>();
                 }
 
-                return static_cast<T*>(AssetDatabase::Create(typeHandler, {.uuid = uuid, .desiredPath = path}));
+                return static_cast<T*>(AssetManager::Create(typeHandler, {.uuid = uuid, .desiredPath = path}));
             }
 
             return nullptr;

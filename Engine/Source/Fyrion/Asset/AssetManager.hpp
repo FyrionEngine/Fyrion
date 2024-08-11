@@ -36,7 +36,7 @@ namespace Fyrion
         bool loading = false;
     };
 
-    class FY_API AssetDatabase
+    class FY_API AssetManager
     {
     public:
         static AssetDirectory* LoadFromDirectory(const StringView& name, const StringView& directory);

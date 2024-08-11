@@ -3,7 +3,7 @@
 #include "EditorTypes.hpp"
 #include "Action/EditorAction.hpp"
 #include "Fyrion/Engine.hpp"
-#include "Fyrion/Asset/AssetDatabase.hpp"
+#include "Fyrion/Asset/AssetManager.hpp"
 #include "Fyrion/Asset/AssetSerialization.hpp"
 #include "Fyrion/Core/Event.hpp"
 #include "Fyrion/Core/Registry.hpp"
@@ -121,8 +121,8 @@ namespace Fyrion
             }
 
             //TODO: Create a setting for that.
-            Editor::OpenDirectory(AssetDatabase::FindByPath<AssetDirectory>("Fyrion:/"));
-            Editor::OpenDirectory(AssetDatabase::LoadFromDirectory(Path::Name(projectPath), Path::Join(projectPath, "Assets")));
+            Editor::OpenDirectory(AssetManager::FindByPath<AssetDirectory>("Fyrion:/"));
+            Editor::OpenDirectory(AssetManager::LoadFromDirectory(Path::Name(projectPath), Path::Join(projectPath, "Assets")));
         }
 
         void CloseEngine(const MenuItemEventData& eventData)
@@ -360,7 +360,7 @@ namespace Fyrion
         {
             for (AssetDirectory* directory : directories)
             {
-                AssetDatabase::SaveOnDirectory(directory, directory->GetAbsolutePath());
+                AssetManager::SaveOnDirectory(directory, directory->GetAbsolutePath());
             }
         }
 
@@ -390,7 +390,7 @@ namespace Fyrion
 
             for (AssetDirectory* directory : directories)
             {
-                AssetDatabase::GetUpdatedAssets(directory, updatedItems);
+                AssetManager::GetUpdatedAssets(directory, updatedItems);
             }
 
             if (!updatedItems.Empty())
@@ -487,6 +487,6 @@ namespace Fyrion
 
         CreateMenuItems();
 
-        AssetDatabase::SetCacheDirectory(Path::Join(projectPath, "Cache"));
+        AssetManager::SetCacheDirectory(Path::Join(projectPath, "Cache"));
     }
 }

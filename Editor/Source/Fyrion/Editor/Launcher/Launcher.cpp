@@ -1,7 +1,7 @@
 #include "Launcher.hpp"
 
 #include "Fyrion/Engine.hpp"
-#include "Fyrion/Asset/AssetDatabase.hpp"
+#include "Fyrion/Asset/AssetManager.hpp"
 #include "Fyrion/Asset/AssetTypes.hpp"
 #include "Fyrion/Graphics/Assets/TextureAsset.hpp"
 #include "Fyrion/ImGui/IconsFontAwesome6.h"
@@ -46,7 +46,7 @@ namespace Fyrion
 
     void LauncherInit()
     {
-        if (TextureAsset* textureAsset = AssetDatabase::FindByPath<TextureAsset>("Fyrion://Textures/LogoSmall.jpeg"))
+        if (TextureAsset* textureAsset = AssetManager::FindByPath<TextureAsset>("Fyrion://Textures/LogoSmall.jpeg"))
         {
             iconTexture = textureAsset->GetTexture();
         }
@@ -414,7 +414,7 @@ namespace Fyrion
 
     void OnLauncherShutdown()
     {
-        AssetDatabase::SaveOnDirectory(settingsDir, settingsFolder);
+        AssetManager::SaveOnDirectory(settingsDir, settingsFolder);
     }
 
     void Launcher::Shutdown()
@@ -433,7 +433,7 @@ namespace Fyrion
         {
             FileSystem::CreateDirectory(appFolder);
         }
-        AssetDatabase::SetCacheDirectory(Path::Join(appFolder, "Cache"));
+        AssetManager::SetCacheDirectory(Path::Join(appFolder, "Cache"));
 
         settingsFolder = Path::Join(appFolder, "Settings");
 
@@ -442,12 +442,12 @@ namespace Fyrion
             FileSystem::CreateDirectory(settingsFolder);
         }
 
-        settingsDir = AssetDatabase::LoadFromDirectory("Settings", settingsFolder);
+        settingsDir = AssetManager::LoadFromDirectory("Settings", settingsFolder);
 
-        projectLauncherSettings = AssetDatabase::FindByPath<ProjectLauncherSettings>("Settings://ProjectLauncherSettings.fy_asset");
+        projectLauncherSettings = AssetManager::FindByPath<ProjectLauncherSettings>("Settings://ProjectLauncherSettings.fy_asset");
         if (projectLauncherSettings == nullptr)
         {
-            projectLauncherSettings = AssetDatabase::Create<ProjectLauncherSettings>({
+            projectLauncherSettings = AssetManager::Create<ProjectLauncherSettings>({
                 .name = "ProjectLauncherSettings",
                 .parent = settingsDir,
             });

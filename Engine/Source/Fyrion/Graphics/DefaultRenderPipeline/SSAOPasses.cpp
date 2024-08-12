@@ -35,7 +35,7 @@ namespace Fyrion
 
         void Init() override
         {
-            ShaderAsset* shaderAsset = AssetManager::FindByPath<ShaderAsset>("Fyrion://Shaders/Passes/SSAO.comp");
+            ShaderAsset* shaderAsset = AssetManager::LoadByPath<ShaderAsset>("Fyrion://Shaders/Passes/SSAO.comp");
 
             pipelineState = Graphics::CreateComputePipelineState({
                 .shader = shaderAsset

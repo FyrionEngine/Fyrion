@@ -46,7 +46,7 @@ namespace Fyrion
 
     void LauncherInit()
     {
-        if (TextureAsset* textureAsset = AssetManager::FindByPath<TextureAsset>("Fyrion://Textures/LogoSmall.jpeg"))
+        if (TextureAsset* textureAsset = AssetManager::LoadByPath<TextureAsset>("Fyrion://Textures/LogoSmall.jpeg"))
         {
             iconTexture = textureAsset->GetTexture();
         }
@@ -444,7 +444,7 @@ namespace Fyrion
 
         settingsDir = AssetManager::LoadFromDirectory("Settings", settingsFolder);
 
-        projectLauncherSettings = AssetManager::FindByPath<ProjectLauncherSettings>("Settings://ProjectLauncherSettings.fy_asset");
+        projectLauncherSettings = AssetManager::LoadByPath<ProjectLauncherSettings>("Settings://ProjectLauncherSettings.fy_asset");
         if (projectLauncherSettings == nullptr)
         {
             // projectLauncherSettings = AssetManager::Create<ProjectLauncherSettings>({

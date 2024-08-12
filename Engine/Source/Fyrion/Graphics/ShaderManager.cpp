@@ -90,7 +90,7 @@ namespace Fyrion
                 }
             }
 
-            ShaderAsset* shaderInclude = AssetManager::FindByPath<ShaderAsset>(includePath);
+            ShaderAsset* shaderInclude = AssetManager::LoadByPath<ShaderAsset>(includePath);
             if (!shaderInclude)
             {
                 return S_FALSE;

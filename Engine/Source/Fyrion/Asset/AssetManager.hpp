@@ -49,8 +49,10 @@ namespace Fyrion
         static void           ImportAsset(DirectoryInfo* directory, const StringView& path);
         static bool           CanReimportAsset(AssetInfo* assetInfo);
         static void           ReimportAsset(AssetInfo* asset);
-        static Asset*         FindById(const UUID& assetId);
-        static Asset*         FindByPath(const StringView& path);
+        static Asset*         LoadAsset(AssetInfo* assetInfo);
+        static void           UnloadAsset(AssetInfo* assetInfo);
+        static Asset*         LoadById(const UUID& assetId);
+        static Asset*         LoadByPath(const StringView& path);
         static AssetInfo*     FindInfoByPath(const StringView& path);
         static Span<Asset*>   FindAssetsByType(TypeID typeId);
         static Asset*         Create(TypeHandler* typeHandler, const AssetCreation& assetCreation);
@@ -65,15 +67,15 @@ namespace Fyrion
         }
 
         template <typename T>
-        static T* FindById(const UUID& assetId)
+        static T* LoadById(const UUID& assetId)
         {
-            return static_cast<T*>(FindById(assetId));
+            return static_cast<T*>(LoadById(assetId));
         }
 
         template <typename T>
-        static T* FindByPath(const StringView& path)
+        static T* LoadByPath(const StringView& path)
         {
-            return static_cast<T*>(FindByPath(path));
+            return static_cast<T*>(LoadByPath(path));
         }
 
         template <typename T>
@@ -85,14 +87,15 @@ namespace Fyrion
         static void OnUpdate(f64 deltaTime);
 
     private:
+        static AssetInfo*    CreateAssetInfo();
         static void          LoadAssetFile(DirectoryInfo* directory, const StringView& filePath);
-        static void          SaveInfoJson(StringView file, Asset* asset);
-        static ArchiveObject SaveInfo(ArchiveWriter& writer, Asset* asset, bool isChild = false);
+        static void          SaveInfoJson(StringView file, AssetInfo* assetInfo);
+        static ArchiveObject SaveInfo(ArchiveWriter& writer, AssetInfo* assetInfo, bool isChild = false);
         static void          SaveAssetJson(StringView file, Asset* asset);
-        static void          LoadInfoJson(StringView file, Asset* asset);
-        static void          LoadInfo(ArchiveReader& reader, ArchiveObject object, Asset* asset);
+        static bool          LoadInfoJson(StringView file, AssetInfo* asset);
+        static void          LoadInfo(ArchiveReader& reader, ArchiveObject object, AssetInfo* assetItem);
         static void          LoadAssetJson(StringView file, Asset* asset);
         static void          LoadAsset(ArchiveReader& reader, ArchiveObject object, Asset* asset);
-        static void          QueueAssetImport(AssetIO* io, Asset* asset);
+        static void          QueueAssetImport(AssetIO* io, AssetInfo* assetInfo);
     };
 }

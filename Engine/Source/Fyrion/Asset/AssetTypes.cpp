@@ -51,6 +51,11 @@ namespace Fyrion
         return nullptr;
     }
 
+    String DirectoryInfo::GetCacheDirectory() const
+    {
+        return {};
+    }
+
     Array<u8> UIFontAsset::GetFont() const
     {
         if (usize size = GetCacheSize(fontBytes))

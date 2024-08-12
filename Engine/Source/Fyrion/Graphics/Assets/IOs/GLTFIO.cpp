@@ -313,7 +313,7 @@ namespace Fyrion
             {
                 String texturePath = String(dccAsset->GetInfo()->GetParent()->GetPath()).Append("/").Append(StringView{texture->image->uri});
 
-                TextureAsset* textureAsset = AssetManager::FindByPath<TextureAsset>(texturePath);
+                TextureAsset* textureAsset = AssetManager::LoadByPath<TextureAsset>(texturePath);
                 if (textureAsset == nullptr)
                 {
                     // textureAsset = AssetDatabase::Create<TextureAsset>();

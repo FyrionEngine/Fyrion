@@ -31,12 +31,12 @@ namespace Fyrion
             SetOpenDirectory(Editor::GetOpenDirectories().Back());
         }
 
-        if (TextureAsset* texture = AssetManager::FindByPath<TextureAsset>("Fyrion://Textures/FolderIcon.png"))
+        if (TextureAsset* texture = AssetManager::LoadByPath<TextureAsset>("Fyrion://Textures/FolderIcon.png"))
         {
             folderTexture = texture->GetTexture();
         }
 
-        if (TextureAsset* texture = AssetManager::FindByPath<TextureAsset>("Fyrion://Textures/FileIcon.png"))
+        if (TextureAsset* texture = AssetManager::LoadByPath<TextureAsset>("Fyrion://Textures/FileIcon.png"))
         {
             fileTexture = texture->GetTexture();
         }

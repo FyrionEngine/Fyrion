@@ -393,7 +393,7 @@ namespace Fyrion
         }
 
         prototypeUUID = UUID::FromString(reader.ReadString(object, "prototype"));
-        if (SceneObjectAsset* asset = AssetManager::FindById<SceneObjectAsset>(prototypeUUID))
+        if (SceneObjectAsset* asset = AssetManager::LoadById<SceneObjectAsset>(prototypeUUID))
         {
             SetPrototype(asset->GetObject());
         }

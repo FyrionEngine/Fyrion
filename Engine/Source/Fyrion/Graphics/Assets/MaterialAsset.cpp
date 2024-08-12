@@ -27,7 +27,7 @@ namespace Fyrion
                 .textureProps = {0.0, 0.0, 0.0, 0.0},
             };
 
-            bindingSet = Graphics::CreateBindingSet(AssetManager::FindByPath<ShaderAsset>("Fyrion://Shaders/Passes/GBufferRender.raster"));
+            bindingSet = Graphics::CreateBindingSet(AssetManager::LoadByPath<ShaderAsset>("Fyrion://Shaders/Passes/GBufferRender.raster"));
             bindingSet->GetVar("baseColorTexture")->SetTexture(baseColorTexture ? baseColorTexture->GetTexture() : Graphics::GetDefaultTexture());
             //bindingSet->GetVar("defaultSampler")->SetSampler(baseColorTexture ? baseColorTexture->GetSampler() : Graphics::GetDefaultSampler());
 

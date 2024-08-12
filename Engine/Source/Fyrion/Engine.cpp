@@ -98,7 +98,7 @@ namespace Fyrion
 
         window = Platform::CreateWindow(contextCreation.title, contextCreation.resolution, windowFlags);
 
-        if (TextureAsset* textureAsset = AssetManager::FindByPath<TextureAsset>("Fyrion://Textures/Logo.jpeg"))
+        if (TextureAsset* textureAsset = AssetManager::LoadByPath<TextureAsset>("Fyrion://Textures/Logo.jpeg"))
         {
             Platform::SetWindowIcon(window, textureAsset->GetImage());
         }

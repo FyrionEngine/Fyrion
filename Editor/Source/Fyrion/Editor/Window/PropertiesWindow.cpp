@@ -264,7 +264,7 @@ namespace Fyrion
     {
         bool readOnly = false;
 
-        Asset* asset = assetInfo->GetInstance();
+        Asset* asset = AssetManager::LoadById(assetInfo->GetUUID());
 
         auto& style = ImGui::GetStyle();
         if (ImGui::BeginTable("#asset-table", 2))

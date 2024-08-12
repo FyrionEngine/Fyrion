@@ -35,24 +35,11 @@ namespace Fyrion
         StringView       GetDisplayName() const override;
         void             UpdatePath() override;
         AssetInfo*       FindChildByAbsolutePath(StringView absolutePath) const;
+        String           GetCacheDirectory() const override;
 
     private:
         Array<AssetInfo*> children;
     };
-
-
-    // class FY_API AssetDirectory final : public Asset
-    // {
-    // public:
-    //     FY_BASE_TYPES(Asset);
-    //
-    //     void        BuildPath() override;
-    //     StringView  GetDisplayName() const override;
-    //     bool        IsModified() const override;
-    //     void        OnCreated() override;
-    //     String      GetCacheDirectory() const override;
-    //     static void RegisterType(NativeTypeHandler<AssetDirectory>& type);
-    // };
 
     struct UIFontAsset final : Asset
     {

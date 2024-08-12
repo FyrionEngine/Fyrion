@@ -22,7 +22,7 @@ namespace Fyrion
 
         void Init() override
         {
-            ShaderAsset* shaderAsset = AssetManager::FindByPath<ShaderAsset>("Fyrion://Shaders/Passes/SkyboxRender.comp");
+            ShaderAsset* shaderAsset = AssetManager::LoadByPath<ShaderAsset>("Fyrion://Shaders/Passes/SkyboxRender.comp");
 
             pipelineState = Graphics::CreateComputePipelineState({
                 .shader = shaderAsset

@@ -2,7 +2,6 @@
 
 #include "AssetSerialization.hpp"
 #include "AssetTypes.hpp"
-#include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
 #include "Fyrion/IO/Path.hpp"
 
@@ -12,17 +11,12 @@ namespace Fyrion
     void AssetDatabaseUpdateUUID(AssetInfo* assetInfo, const UUID& newUUID);
     void AssetDatabaseCleanRefs(AssetInfo* assetInfo);
 
-    Asset* AssetInfo::GetInstance() const
-    {
-        return instance;
-    }
-
     UUID AssetInfo::GetUUID() const
     {
         return uuid;
     }
 
-    void AssetInfo::SetUUID()
+    void AssetInfo::SetUUID(UUID uuid)
     {
         FY_ASSERT(!this->uuid, "UUID cannot be changed");
         FY_ASSERT(uuid, "UUID cannot be zero");
@@ -35,7 +29,7 @@ namespace Fyrion
 
     TypeHandler* AssetInfo::GetType() const
     {
-        return assetType;
+        return type;
     }
 
     StringView AssetInfo::GetName() const
@@ -45,12 +39,12 @@ namespace Fyrion
 
     void AssetInfo::SetName(StringView newName)
     {
-
+        FY_ASSERT(false, "not implemented");
     }
 
     StringView AssetInfo::GetPath() const
     {
-        return path;
+        return relativePath;
     }
 
     StringView AssetInfo::GetAbsolutePath() const
@@ -89,6 +83,11 @@ namespace Fyrion
         return false;
     }
 
+    Span<AssetInfo*> AssetInfo::GetChildren() const
+    {
+        return children;
+    }
+
     bool AssetInfo::IsModified() const
     {
         return false;
@@ -106,15 +105,15 @@ namespace Fyrion
             ValidateName();
 
             String newPath = String().Append(parent->GetPath()).Append("/").Append(name).Append(GetExtension());
-            if (path != newPath)
+            if (relativePath != newPath)
             {
-                AssetDatabaseUpdatePath(this, path, newPath);
+                AssetDatabaseUpdatePath(this, relativePath, newPath);
             }
-            path = newPath;
+            relativePath = newPath;
         }
-        else if (!path.Empty())
+        else if (!relativePath.Empty())
         {
-            AssetDatabaseUpdatePath(this, path, path);
+            AssetDatabaseUpdatePath(this, relativePath, relativePath);
         }
     }
 
@@ -123,11 +122,12 @@ namespace Fyrion
         relatedFiles.EmplaceBack(fileAbsolutePath);
     }
 
-    void AssetInfo::Destroy()
+    void AssetInfo::Delete()
     {
         if (instance)
         {
-          //  instance->OnDestroyed();
+            instance->OnDestroyed();
+            AssetManager::UnloadAsset(this);
         }
 
         if (FileSystem::GetFileStatus(GetCacheDirectory()).exists)
@@ -159,7 +159,7 @@ namespace Fyrion
 
         if (parent)
         {
-         //   parent->RemoveChild(this);
+           //parent->RemoveChild(this);
         }
 
         AssetDatabaseCleanRefs(this);

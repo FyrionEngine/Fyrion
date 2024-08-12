@@ -36,9 +36,8 @@ namespace Fyrion
     public:
         virtual ~AssetInfo() = default;
 
-        Asset*             GetInstance() const;
         UUID               GetUUID() const;
-        void               SetUUID();
+        void               SetUUID(UUID uuid);
         TypeHandler*       GetType() const;
         StringView         GetName() const;
         void               SetName(StringView newName);
@@ -48,12 +47,13 @@ namespace Fyrion
         virtual StringView GetDisplayName() const;
         AssetInfo*         GetParent() const;
         bool               IsChildOf(AssetInfo* parent) const;
+        Span<AssetInfo*>   GetChildren() const;
         bool               IsModified() const;
-        void                    SetModified();
+        void               SetModified();
         virtual void       UpdatePath();
         void               AddRelatedFile(StringView fileAbsolutePath);
-        void               Destroy();
-        String             GetCacheDirectory() const;
+        void               Delete();
+        virtual String     GetCacheDirectory() const;
 
         friend class AssetManager;
 
@@ -61,13 +61,15 @@ namespace Fyrion
         Asset*            instance{};
         AssetInfo*        prototype{};
         UUID              uuid{};
-        String            path{};
+        String            relativePath{};
         String            name{};
-        TypeHandler*      assetType{};
+        TypeHandler*      type{};
         u64               lastModifiedTime{};
         u64               currentVersion{};
         u64               loadedVersion{};
         String            absolutePath{};
+        String            infoPath{};
+        String            payloadPath{};
         AssetInfo*        parent{};
         Array<AssetInfo*> children{};
         Array<String>     relatedFiles{};
@@ -84,6 +86,7 @@ namespace Fyrion
         AssetInfo* GetInfo() const;
 
         virtual void OnModified() {}
+        virtual void OnDestroyed() {}
 
         void  SaveCache(CacheRef& cache, ConstPtr data, usize dataSize);
         usize GetCacheSize(CacheRef cache) const;
@@ -98,8 +101,7 @@ namespace Fyrion
         friend class AssetManager;
 
     private:
-        AssetInfo*    info{};
-
+        AssetInfo* info{};
 
     public:
         static void RegisterType(NativeTypeHandler<Asset>& type);

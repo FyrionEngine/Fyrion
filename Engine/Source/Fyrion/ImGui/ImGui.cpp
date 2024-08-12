@@ -968,7 +968,7 @@ namespace ImGui
         ImGuiIO& io = ImGui::GetIO();
         io.Fonts->Clear();
 
-        if (UIFontAsset* fontAsset = AssetManager::FindByPath<UIFontAsset>("Fyrion://Fonts/DejaVuSans.ttf"))
+        if (UIFontAsset* fontAsset = AssetManager::LoadByPath<UIFontAsset>("Fyrion://Fonts/DejaVuSans.ttf"))
         {
             auto font = ImFontConfig();
             font.SizePixels = fontSize * scaleFactor;
@@ -985,7 +985,7 @@ namespace ImGui
             io.Fonts->AddFontDefault(&config);
         }
 
-        if (UIFontAsset* fontAsset = AssetManager::FindByPath<UIFontAsset>("Fyrion://Fonts/fa-solid-900.otf"))
+        if (UIFontAsset* fontAsset = AssetManager::LoadByPath<UIFontAsset>("Fyrion://Fonts/fa-solid-900.otf"))
         {
             static const ImWchar icon_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
 

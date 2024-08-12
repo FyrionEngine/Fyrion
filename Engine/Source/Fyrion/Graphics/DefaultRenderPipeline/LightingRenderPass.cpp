@@ -43,7 +43,7 @@ namespace Fyrion
         void Init() override
         {
             ComputePipelineCreation creation{
-                .shader = AssetManager::FindByPath<ShaderAsset>("Fyrion://Shaders/Passes/LightingPass.comp")
+                .shader = AssetManager::LoadByPath<ShaderAsset>("Fyrion://Shaders/Passes/LightingPass.comp")
             };
 
             lightingPSO = Graphics::CreateComputePipelineState(creation);

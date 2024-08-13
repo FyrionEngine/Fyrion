@@ -75,6 +75,7 @@ inline void operator delete(void*, Fyrion::PlaceHolder, Fyrion::VoidPtr) noexcep
 #define FY_INFO_EXTENSION ".fy_info"
 #define FY_IMPORT_EXTENSION ".fy_import"
 #define FY_ASSET_EXTENSION ".fy_asset"
+#define FY_DATA_EXTENSION ".fy_data"
 #define FY_PROJECT_EXTENSION ".fy_project"
 
 //---platform defines

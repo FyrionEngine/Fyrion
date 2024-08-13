@@ -2,6 +2,7 @@
 
 #include "AssetSerialization.hpp"
 #include "AssetTypes.hpp"
+#include "Fyrion/Core/StringUtils.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
 #include "Fyrion/IO/Path.hpp"
 
@@ -10,6 +11,11 @@ namespace Fyrion
     void AssetDatabaseUpdatePath(AssetInfo* assetInfo, const StringView& oldPath, const StringView& newPath);
     void AssetDatabaseUpdateUUID(AssetInfo* assetInfo, const UUID& newUUID);
     void AssetDatabaseCleanRefs(AssetInfo* assetInfo);
+
+    Asset* AssetInfo::GetInstance() const
+    {
+        return instance;
+    }
 
     UUID AssetInfo::GetUUID() const
     {
@@ -37,9 +43,47 @@ namespace Fyrion
         return name;
     }
 
-    void AssetInfo::SetName(StringView newName)
+    void AssetInfo::SetName(StringView desiredNewName)
     {
-        FY_ASSERT(false, "not implemented");
+        if (this->name != desiredNewName)
+        {
+            String newName = ValidateName(desiredNewName);
+
+            if (!absolutePath.Empty())
+            {
+                auto rename = [this, newName](StringView extension)
+                {
+                    String oldPath = Path::Join(Path::Parent(absolutePath), this->name, extension);
+                    String newPath = Path::Join(Path::Parent(absolutePath), newName, extension);
+
+                    if (FileSystem::GetFileStatus(oldPath).exists)
+                    {
+                        FileSystem::Rename(oldPath, newPath);
+                    }
+                    return newPath;
+                };
+
+                String newAbsolutePath = rename(Path::Extension(absolutePath));
+                rename(FY_IMPORT_EXTENSION);
+                rename(FY_INFO_EXTENSION);
+
+                if (imported)
+                {
+                    String oldPath = Path::Join(Path::Parent(absolutePath), this->name, FY_ASSET_EXTENSION);
+                    String newPath = Path::Join(Path::Parent(absolutePath), newName, FY_ASSET_EXTENSION);
+                    if (FileSystem::GetFileStatus(oldPath).exists)
+                    {
+                        FileSystem::Rename(oldPath, newPath);
+                    }
+                }
+
+                this->absolutePath = newAbsolutePath;
+                AssetManager::WatchAsset(this);
+            }
+
+            this->name = newName;
+            UpdatePath();
+        }
     }
 
     StringView AssetInfo::GetPath() const
@@ -57,9 +101,17 @@ namespace Fyrion
         return Path::Extension(absolutePath);
     }
 
-    StringView AssetInfo::GetDisplayName() const
+    StringView AssetInfo::GetDisplayName()
     {
-        return "Asset";
+        if (displayName.Empty() && type)
+        {
+            displayName = FormatName(type->GetSimpleName());
+            if (usize pos = std::string_view{displayName.CStr(), displayName.Size()}.find("Asset"); pos != nPos)
+            {
+                displayName.Erase(displayName.begin() + pos, displayName.begin() + pos + 5);
+            }
+        }
+        return displayName;
     }
 
     AssetInfo* AssetInfo::GetParent() const
@@ -67,42 +119,31 @@ namespace Fyrion
         return parent;
     }
 
-    bool AssetInfo::IsChildOf(AssetInfo* parent) const
-    {
-        if (parent == this) return true;
-
-        if (this->parent != nullptr)
-        {
-            if (this->parent == parent)
-            {
-                return true;
-            }
-
-            return this->parent->IsChildOf(parent);
-        }
-        return false;
-    }
-
-    Span<AssetInfo*> AssetInfo::GetChildren() const
-    {
-        return children;
-    }
-
     bool AssetInfo::IsModified() const
     {
-        return false;
+        if (imported) return false;
+        return currentVersion != persistedVersion;
+    }
+
+    void AssetInfo::SetNotModified()
+    {
+        persistedVersion = currentVersion;
     }
 
     void AssetInfo::SetModified()
     {
-
+        currentVersion += 1;
+        if(instance)
+        {
+            instance->OnModified();
+        }
     }
 
     void AssetInfo::UpdatePath()
     {
         if (parent != nullptr && !name.Empty())
         {
-            ValidateName();
+            name = ValidateName(name);
 
             String newPath = String().Append(parent->GetPath()).Append("/").Append(name).Append(GetExtension());
             if (relativePath != newPath)
@@ -115,6 +156,11 @@ namespace Fyrion
         {
             AssetDatabaseUpdatePath(this, relativePath, relativePath);
         }
+
+        if (instance)
+        {
+            instance->OnPathUpdated();
+        }
     }
 
     void AssetInfo::AddRelatedFile(StringView fileAbsolutePath)
@@ -124,15 +170,20 @@ namespace Fyrion
 
     void AssetInfo::Delete()
     {
+        if (!active) return;
+
+        active = false;
+
         if (instance)
         {
             instance->OnDestroyed();
-            AssetManager::UnloadAsset(this);
+            //TODO - dependencies are not tracked, so destroying any instance could cause an error.
+            //AssetManager::UnloadAsset(this);
         }
 
-        if (FileSystem::GetFileStatus(GetCacheDirectory()).exists)
+        if (FileSystem::GetFileStatus(Path::Join(AssetManager::GetCacheDirectory(), ToString(uuid))).exists)
         {
-            FileSystem::Remove(GetCacheDirectory());
+            FileSystem::Remove(AssetManager::GetCacheDirectory());
         }
 
         auto deleteFile = [this](StringView extension)
@@ -159,28 +210,21 @@ namespace Fyrion
 
         if (parent)
         {
-           //parent->RemoveChild(this);
+           parent->RemoveChild(this);
         }
 
         AssetDatabaseCleanRefs(this);
     }
 
-    String AssetInfo::GetCacheDirectory() const
+    Span<AssetInfo*> AssetInfo::GetChildren() const
     {
-        String parentCacheDir = parent != nullptr ? parent->GetCacheDirectory() : "";
-        if (!parentCacheDir.Empty())
-        {
-            return Path::Join(parentCacheDir, ToString(uuid));
-        }
-        return Path::Join(AssetManager::GetCacheDirectory(), ToString(uuid));
+        return children;
     }
 
-    void AssetInfo::ValidateName()
+    String AssetInfo::ValidateName(StringView newName)
     {
-        DirectoryInfo* parent = dynamic_cast<DirectoryInfo*>(this->parent);
-
         u32    count{};
-        String finalName = name;
+        String finalName = newName;
         bool   nameFound;
         do
         {
@@ -191,7 +235,7 @@ namespace Fyrion
 
                 if (finalName == child->name)
                 {
-                    finalName = name;
+                    finalName = newName;
                     finalName += " (";
                     finalName.Append(++count);
                     finalName += ")";
@@ -202,10 +246,7 @@ namespace Fyrion
         }
         while (!nameFound);
 
-        if (name != finalName)
-        {
-            name = finalName;
-        }
+        return finalName;
     }
 
     AssetInfo* Asset::GetInfo() const
@@ -213,55 +254,10 @@ namespace Fyrion
         return info;
     }
 
-#if 0
-    void Asset::SetName(StringView newName)
+    void Asset::SetModified()
     {
-
-        if (this->name != newName)
-        {
-            if (!absolutePath.Empty())
-            {
-                auto rename = [this, newName](StringView extension)
-                {
-                    String oldPath = Path::Join(Path::Parent(absolutePath), this->name, extension);
-                    String newPath = Path::Join(Path::Parent(absolutePath), newName, extension);
-
-                    if (FileSystem::GetFileStatus(oldPath).exists)
-                    {
-                        FileSystem::Rename(oldPath, newPath);
-                    }
-                    return newPath;
-                };
-
-                String newAbsolutePath = rename(Path::Extension(absolutePath));
-                rename(FY_IMPORT_EXTENSION);
-                rename(FY_INFO_EXTENSION);
-
-                this->absolutePath = newAbsolutePath;
-                AssetManager::WatchAsset(this);
-            }
-
-            this->name = newName;
-            BuildPath();
-            SetModified();
-        }
+        info->SetModified();
     }
-#endif
-
-
-    // void Asset::SetModified()
-    // {
-    //     currentVersion += 1;
-    //     OnModified();
-    // }
-    //
-    // bool Asset::IsModified() const
-    // {
-    //     if (imported) return false;
-    //
-    //     return currentVersion != loadedVersion;
-    // }
-
 
     void Asset::SaveCache(CacheRef& cache, ConstPtr data, usize dataSize)
     {
@@ -270,15 +266,14 @@ namespace Fyrion
             cache.id = Random::Xorshift64star();
         }
 
-        String cacheDirectory = info->GetCacheDirectory();
-        if (!cacheDirectory.Empty())
+        String cacheDir = Path::Join(AssetManager::GetCacheDirectory(), ToString(info->GetUUID()));
+        if (!cacheDir.Empty())
         {
-            if (!FileSystem::GetFileStatus(cacheDirectory).exists)
+            if (!FileSystem::GetFileStatus(cacheDir).exists)
             {
-                FileSystem::CreateDirectory(cacheDirectory);
+                FileSystem::CreateDirectory(cacheDir);
             }
-
-            String      streamPath = Path::Join(cacheDirectory, cache.ToString());
+            String      streamPath = Path::Join(cacheDir, cache.ToString());
             FileHandler file = FileSystem::OpenFile(streamPath, AccessMode::WriteOnly);
             FileSystem::WriteFile(file, data, dataSize);
             FileSystem::CloseFile(file);
@@ -287,10 +282,10 @@ namespace Fyrion
 
     usize Asset::GetCacheSize(CacheRef cache) const
     {
-        String cacheDirectory = info->GetCacheDirectory();
-        if (!cacheDirectory.Empty())
+        String cacheDir = Path::Join(AssetManager::GetCacheDirectory(), ToString(info->GetUUID()));
+        if (!cacheDir.Empty())
         {
-            String streamPath = Path::Join(cacheDirectory, cache.ToString());
+            String streamPath = Path::Join(cacheDir, cache.ToString());
             return FileSystem::GetFileStatus(streamPath).fileSize;
         }
         return 0;
@@ -298,40 +293,77 @@ namespace Fyrion
 
     void Asset::LoadCache(CacheRef cache, VoidPtr data, usize dataSize) const
     {
-        String cacheDirectory = info->GetCacheDirectory();
-        if (!cacheDirectory.Empty())
+        String cacheDir = Path::Join(AssetManager::GetCacheDirectory(), ToString(info->GetUUID()));
+        if (!cacheDir.Empty())
         {
-            String streamPath = Path::Join(cacheDirectory, cache.ToString());
+            String streamPath = Path::Join(cacheDir, cache.ToString());
             FileHandler file = FileSystem::OpenFile(streamPath, AccessMode::ReadOnly);
             FileSystem::ReadFile(file, data, dataSize);
             FileSystem::CloseFile(file);
         }
     }
 
-    // void Asset::RemoveChild(Asset* child)
-    // {
-    //     if (Asset** it = FindFirst(children.begin(), children.end(), child))
-    //     {
-    //         children.Erase(it);
-    //     }
-    // }
-    //
-    // void Asset::RemoveFromParent()
-    // {
-    //     if (parent != nullptr)
-    //     {
-    //         parent->RemoveChild(this);
-    //     }
-    //     parent = nullptr;
-    // }
+    Asset* Asset::GetParent() const
+    {
+        if (info->GetParent() != nullptr)
+        {
+            return AssetManager::LoadAsset(info->GetParent());
+        }
+        return nullptr;
+    }
 
-    // void Asset::AddChild(Asset* child)
-    // {
-    //     child->RemoveFromParent();
-    //     child->parent = this;
-    //     child->BuildPath();
-    //     children.EmplaceBack(child);
-    // }
+    void AssetInfo::RemoveChild(AssetInfo* child)
+    {
+        if (AssetInfo** it = FindFirst(children.begin(), children.end(), child))
+        {
+            children.Erase(it);
+        }
+    }
+
+    void AssetInfo::RemoveFromParent()
+    {
+        if (parent != nullptr)
+        {
+            parent->RemoveChild(this);
+        }
+        parent = nullptr;
+    }
+
+    bool AssetInfo::IsChildOf(AssetInfo* parent) const
+    {
+        if (parent == this) return true;
+
+        if (this->parent != nullptr)
+        {
+            if (this->parent == parent)
+            {
+                return true;
+            }
+
+            return this->parent->IsChildOf(parent);
+        }
+        return false;
+    }
+
+    void AssetInfo::AddChild(AssetInfo* child)
+    {
+        child->RemoveFromParent();
+        child->parent = this;
+        child->UpdatePath();
+        children.EmplaceBack(child);
+    }
+
+    AssetInfo* AssetInfo::FindChildByAbsolutePath(StringView absolutePath) const
+    {
+        for (AssetInfo* child : children)
+        {
+            if (child->absolutePath == absolutePath)
+            {
+                return child;
+            }
+        }
+        return nullptr;
+    }
 
     void Asset::RegisterType(NativeTypeHandler<Asset>& type)
     {

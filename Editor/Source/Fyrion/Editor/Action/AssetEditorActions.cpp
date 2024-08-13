@@ -24,9 +24,9 @@ namespace Fyrion
         assetInfo->SetName(oldName);
     }
 
-    MoveAssetAction::MoveAssetAction(AssetInfo* assetInfo, DirectoryInfo* newDirectory)
+    MoveAssetAction::MoveAssetAction(AssetInfo* assetInfo, AssetInfo* newDirectory)
         : assetInfo(assetInfo),
-          oldDirectory(dynamic_cast<DirectoryInfo*>(assetInfo->GetParent())),
+          oldDirectory(assetInfo->GetParent()),
           newDirectory(newDirectory) {}
 
     void MoveAssetAction::Commit()
@@ -39,15 +39,15 @@ namespace Fyrion
         MoveToFolder(oldDirectory);
     }
 
-    void MoveAssetAction::MoveToFolder(DirectoryInfo* directory) const
+    void MoveAssetAction::MoveToFolder(AssetInfo* directory) const
     {
-        // directory->AddChild(asset);
-        // asset->SetModified();
+         directory->AddChild(assetInfo);
+         assetInfo->SetModified();
     }
 
     void MoveAssetAction::RegisterType(NativeTypeHandler<MoveAssetAction>& type)
     {
-        type.Constructor<AssetInfo*, DirectoryInfo*>();
+        type.Constructor<AssetInfo*, AssetInfo*>();
     }
 
     UpdateAssetAction::UpdateAssetAction(Asset* asset, Asset* newValue) : asset(asset)
@@ -63,7 +63,7 @@ namespace Fyrion
         Serialization::Deserialize(asset->GetInfo()->GetType(), reader, reader.ReadObject(), asset);
 
         ImGui::ClearDrawData(asset);
-        asset->GetInfo()->SetModified();
+        asset->SetModified();
     }
     void UpdateAssetAction::Rollback()
     {
@@ -72,7 +72,7 @@ namespace Fyrion
 
         ImGui::ClearDrawData(asset);
 
-        asset->GetInfo()->SetModified();
+        asset->SetModified();
     }
 
     void UpdateAssetAction::RegisterType(NativeTypeHandler<UpdateAssetAction>& type)

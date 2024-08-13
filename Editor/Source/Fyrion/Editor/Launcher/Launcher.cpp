@@ -28,7 +28,7 @@ namespace Fyrion
         String                   searchText{};
         String                   appFolder{};
         String                   settingsFolder{};
-        DirectoryInfo*          settingsDir = nullptr;
+        DirectoryAsset*          settingsDir = nullptr;
         ProjectLauncherSettings* projectLauncherSettings = nullptr;
 
         String newProjectPath{};
@@ -136,7 +136,7 @@ namespace Fyrion
                     {
                         if (FileSystem::GetFileStatus(path).exists)
                         {
-                            projectLauncherSettings->GetInfo()->SetModified();
+                            projectLauncherSettings->SetModified();
                             projectLauncherSettings->recentProjects.EmplaceBack(path);
                             projectFilePath = path;
                             Engine::Shutdown();
@@ -173,7 +173,7 @@ namespace Fyrion
 
                         if (!FileSystem::GetFileStatus(recentProject).exists)
                         {
-                            projectLauncherSettings->GetInfo()->SetModified();
+                            projectLauncherSettings->SetModified();
                             it = projectLauncherSettings->recentProjects.Erase(it);
                             continue;
                         }
@@ -356,7 +356,7 @@ namespace Fyrion
                         {
                             projectLauncherSettings->defaultPath = newProjectPath;
                             projectLauncherSettings->recentProjects.EmplaceBack(projectFilePath);
-                            projectLauncherSettings->GetInfo()->SetModified();
+                            projectLauncherSettings->SetModified();
                             Engine::Shutdown();
                         }
                     }
@@ -397,7 +397,7 @@ namespace Fyrion
                 if (auto it = FindFirst(projectLauncherSettings->recentProjects.begin(), projectLauncherSettings->recentProjects.end(), selectedProject))
                 {
                     projectLauncherSettings->recentProjects.Erase(it);
-                    projectLauncherSettings->GetInfo()->SetModified();
+                    projectLauncherSettings->SetModified();
                 }
             }
         }

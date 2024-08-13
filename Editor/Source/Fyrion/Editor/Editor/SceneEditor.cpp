@@ -21,7 +21,7 @@ namespace Fyrion
     {
         if (scene)
         {
-            scene->GetInfo()->SetModified();
+            scene->SetModified();
         }
     }
 
@@ -72,7 +72,7 @@ namespace Fyrion
         selectedObjects.Clear();
         onSceneObjectAssetSelection.Invoke(nullptr);
 
-        scene->GetInfo()->SetModified();
+        scene->SetModified();
     }
 
     void SceneEditor::ClearSelectionStatic(VoidPtr userData)
@@ -108,7 +108,7 @@ namespace Fyrion
             transaction->Commit();
         }
 
-        scene->GetInfo()->SetModified();
+        scene->SetModified();
     }
 
     bool SceneEditor::IsSimulating()

@@ -7,10 +7,10 @@
 
 namespace Fyrion
 {
+    class DirectoryAsset;
     class AssetInfo;
     struct AssetIO;
     class Asset;
-    class DirectoryInfo;
 
     struct AssetCreation
     {
@@ -25,40 +25,33 @@ namespace Fyrion
         //desired path can be used to lookup the asset.
         StringView desiredPath{};
 
-        Asset*     prototype{};
+        //AssetInfo* prototype{};
         StringView absolutePath{};
 
-        //generate a random UUID if field uuid is not provided
         bool generateUUID = true;
-
-        //generate name using new + DisplayName.
-        bool generateName = false;
-
-        bool loading = false;
     };
 
     class FY_API AssetManager
     {
     public:
-        static DirectoryInfo* LoadFromDirectory(const StringView& name, const StringView& directory);
-        static void           SaveOnDirectory(DirectoryInfo* directoryInfo, const StringView& directoryPath);
-        static void           SetCacheDirectory(const StringView& directory);
-        static StringView     GetCacheDirectory();
-        static void           GetUpdatedAssets(DirectoryInfo* directoryInfo, Array<AssetInfo*>& updatedAssets);
-        static DirectoryInfo* LoadFromPackage(const StringView& name, const StringView& pakFile, const StringView& binFile);
-        static void           ImportAsset(DirectoryInfo* directory, const StringView& path);
-        static bool           CanReimportAsset(AssetInfo* assetInfo);
-        static void           ReimportAsset(AssetInfo* asset);
-        static Asset*         LoadAsset(AssetInfo* assetInfo);
-        static void           UnloadAsset(AssetInfo* assetInfo);
-        static Asset*         LoadById(const UUID& assetId);
-        static Asset*         LoadByPath(const StringView& path);
-        static AssetInfo*     FindInfoByPath(const StringView& path);
-        static Span<Asset*>   FindAssetsByType(TypeID typeId);
-        static Asset*         Create(TypeHandler* typeHandler, const AssetCreation& assetCreation);
-        static void           DestroyAssets();
-        static void           EnableHotReload(bool enable);
-        static void           WatchAsset(Asset* asset);
+        static DirectoryAsset* LoadFromDirectory(const StringView& name, const StringView& directory);
+        static void            SaveOnDirectory(DirectoryAsset* directoryAsset, const StringView& directoryPath);
+        static void            SetCacheDirectory(const StringView& directory);
+        static StringView      GetCacheDirectory();
+        static void            GetUpdatedAssets(DirectoryAsset* directoryAsset, Array<AssetInfo*>& updatedAssets);
+        static DirectoryAsset* LoadFromPackage(const StringView& name, const StringView& pakFile, const StringView& binFile);
+        static void            ImportAsset(DirectoryAsset* directory, const StringView& path);
+        static bool            CanReimportAsset(AssetInfo* assetInfo);
+        static void            ReimportAsset(AssetInfo* asset);
+        static Asset*          LoadAsset(AssetInfo* assetInfo);
+        static void            UnloadAsset(AssetInfo* assetInfo);
+        static Asset*          LoadById(const UUID& assetId);
+        static Asset*          LoadByPath(const StringView& path);
+        static Span<Asset*>    FindAssetsByType(TypeID typeId);
+        static Asset*          Create(TypeHandler* typeHandler, const AssetCreation& assetCreation);
+        static void            DestroyAssets();
+        static void            EnableHotReload(bool enable);
+        static void            WatchAsset(AssetInfo* assetInfo);
 
         template <typename T>
         static T* Create(const AssetCreation& assetCreation = {})
@@ -78,17 +71,11 @@ namespace Fyrion
             return static_cast<T*>(LoadByPath(path));
         }
 
-        template <typename T>
-        static T* FindInfoByPath(const StringView& path)
-        {
-            return static_cast<T*>(FindInfoByPath(path));
-        }
-
         static void OnUpdate(f64 deltaTime);
 
     private:
         static AssetInfo*    CreateAssetInfo();
-        static void          LoadAssetFile(DirectoryInfo* directory, const StringView& filePath);
+        static void          LoadAssetFile(DirectoryAsset* directory, const StringView& filePath);
         static void          SaveInfoJson(StringView file, AssetInfo* assetInfo);
         static ArchiveObject SaveInfo(ArchiveWriter& writer, AssetInfo* assetInfo, bool isChild = false);
         static void          SaveAssetJson(StringView file, Asset* asset);

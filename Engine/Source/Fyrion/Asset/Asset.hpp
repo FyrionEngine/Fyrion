@@ -6,7 +6,6 @@
 namespace Fyrion
 {
     class Asset;
-    class DirectoryInfo;
     struct ImportSettings;
 
     struct CacheRef
@@ -31,31 +30,36 @@ namespace Fyrion
         }
     };
 
-    class FY_API AssetInfo
+    class FY_API AssetInfo final
     {
     public:
         virtual ~AssetInfo() = default;
 
-        UUID               GetUUID() const;
-        void               SetUUID(UUID uuid);
-        TypeHandler*       GetType() const;
-        StringView         GetName() const;
-        void               SetName(StringView newName);
-        StringView         GetPath() const;
-        StringView         GetAbsolutePath() const;
-        StringView         GetExtension() const;
-        virtual StringView GetDisplayName() const;
-        AssetInfo*         GetParent() const;
-        bool               IsChildOf(AssetInfo* parent) const;
-        Span<AssetInfo*>   GetChildren() const;
-        bool               IsModified() const;
-        void               SetModified();
-        virtual void       UpdatePath();
-        void               AddRelatedFile(StringView fileAbsolutePath);
-        void               Delete();
-        virtual String     GetCacheDirectory() const;
+        Asset*           GetInstance() const;
+        UUID             GetUUID() const;
+        void             SetUUID(UUID uuid);
+        TypeHandler*     GetType() const;
+        StringView       GetName() const;
+        void             SetName(StringView newName);
+        StringView       GetPath() const;
+        StringView       GetAbsolutePath() const;
+        StringView       GetExtension() const;
+        StringView       GetDisplayName();
+        AssetInfo*       GetParent() const;
+        bool             IsModified() const;
+        void             SetNotModified();
+        void             SetModified();
+        void             UpdatePath();
+        void             AddRelatedFile(StringView fileAbsolutePath);
+        void             Delete();
+        bool             IsChildOf(AssetInfo* parent) const;
+        Span<AssetInfo*> GetChildren() const;
+        void             RemoveChild(AssetInfo* child);
+        void             RemoveFromParent();
+        void             AddChild(AssetInfo* child);
+        AssetInfo*       FindChildByAbsolutePath(StringView absolutePath) const;
 
-        friend class AssetManager;
+        friend class     AssetManager;
 
     private:
         Asset*            instance{};
@@ -66,7 +70,7 @@ namespace Fyrion
         TypeHandler*      type{};
         u64               lastModifiedTime{};
         u64               currentVersion{};
-        u64               loadedVersion{};
+        u64               persistedVersion{};
         String            absolutePath{};
         String            infoPath{};
         String            payloadPath{};
@@ -74,8 +78,10 @@ namespace Fyrion
         Array<AssetInfo*> children{};
         Array<String>     relatedFiles{};
         bool              imported = false;
+        bool              active = true;
+        String            displayName{};
 
-        void ValidateName();
+        String ValidateName(StringView newName);
     };
 
     class FY_API Asset
@@ -85,12 +91,18 @@ namespace Fyrion
 
         AssetInfo* GetInfo() const;
 
+        virtual void OnPathUpdated() {}
+        virtual void OnCreated() {}
         virtual void OnModified() {}
         virtual void OnDestroyed() {}
+
+        void SetModified();
 
         void  SaveCache(CacheRef& cache, ConstPtr data, usize dataSize);
         usize GetCacheSize(CacheRef cache) const;
         void  LoadCache(CacheRef cache, VoidPtr, usize dataSize) const;
+
+        Asset* GetParent() const;
 
         template <typename T, Traits::EnableIf<Traits::IsBaseOf<Asset, T>>* = nullptr>
         T* Cast()
@@ -98,19 +110,24 @@ namespace Fyrion
             return dynamic_cast<T*>(this);
         }
 
+        template <typename T, Traits::EnableIf<Traits::IsBaseOf<Asset, T>>* = nullptr>
+        T* GetParent()
+        {
+            return dynamic_cast<T*>(GetParent());
+        }
+
         friend class AssetManager;
 
-    private:
+    protected:
         AssetInfo* info{};
-
     public:
         static void RegisterType(NativeTypeHandler<Asset>& type);
     };
 
     struct AssetApi
     {
-        Asset* (*            castAsset)(VoidPtr ptr);
-        void (*              setAsset)(VoidPtr ptr, Asset* asset);
+        Asset* (*castAsset)(VoidPtr ptr);
+        void (*setAsset)(VoidPtr ptr, Asset* asset);
         const TypeHandler* (*getTypeHandler)();
     };
 

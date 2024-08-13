@@ -58,7 +58,7 @@ namespace Fyrion
         bool forceClose{};
 
         UniquePtr<SceneEditor> sceneEditor{};
-        Array<DirectoryInfo*> directories{};
+        Array<DirectoryAsset*> directories{};
 
         Array<SharedPtr<EditorTransaction>> undoActions{};
         Array<SharedPtr<EditorTransaction>> redoActions{};
@@ -121,7 +121,7 @@ namespace Fyrion
             }
 
             //TODO: Create a setting for that.
-            Editor::OpenDirectory(AssetManager::FindInfoByPath<DirectoryInfo>("Fyrion:/"));
+            Editor::OpenDirectory(AssetManager::LoadByPath<DirectoryAsset>("Fyrion:/"));
             Editor::OpenDirectory(AssetManager::LoadFromDirectory(Path::Name(projectPath), Path::Join(projectPath, "Assets")));
         }
 
@@ -306,7 +306,7 @@ namespace Fyrion
                                 ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_None, 200.f * style.ScaleFactor);
                                 ImGui::TableHeadersRow();
 
-                                for (const AssetInfo* assetInfo : updatedItems)
+                                for (AssetInfo* assetInfo : updatedItems)
                                 {
                                     ImGui::TableNextRow();
 
@@ -358,9 +358,9 @@ namespace Fyrion
 
         void SaveAll()
         {
-            for (DirectoryInfo* directory : directories)
+            for (DirectoryAsset* directory : directories)
             {
-                AssetManager::SaveOnDirectory(directory, directory->GetAbsolutePath());
+                AssetManager::SaveOnDirectory(directory, directory->GetInfo()->GetAbsolutePath());
             }
         }
 
@@ -388,7 +388,7 @@ namespace Fyrion
 
             updatedItems.Clear();
 
-            for (DirectoryInfo* directory : directories)
+            for (DirectoryAsset* directory : directories)
             {
                 AssetManager::GetUpdatedAssets(directory, updatedItems);
             }
@@ -413,12 +413,12 @@ namespace Fyrion
         }
     }
 
-    void Editor::OpenDirectory(DirectoryInfo* directory)
+    void Editor::OpenDirectory(DirectoryAsset* directory)
     {
         directories.EmplaceBack(directory);
     }
 
-    Span<DirectoryInfo*> Editor::GetOpenDirectories()
+    Span<DirectoryAsset*> Editor::GetOpenDirectories()
     {
         return directories;
     }

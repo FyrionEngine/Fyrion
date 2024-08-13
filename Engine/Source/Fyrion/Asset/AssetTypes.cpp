@@ -14,46 +14,22 @@ namespace Fyrion
 
     }
 
-    Span<AssetInfo*> DirectoryInfo::GetChildren() const
+    void DirectoryAsset::OnCreated()
     {
-        return children;
+        if (!FileSystem::GetFileStatus(info->GetAbsolutePath()).exists)
+        {
+            FileSystem::CreateDirectory(info->GetAbsolutePath());
+            AssetManager::WatchAsset(info);
+        }
+        info->SetNotModified();
     }
 
-    void DirectoryInfo::AddChild(AssetInfo* metaInfo)
+    void DirectoryAsset::OnPathUpdated()
     {
-        children.EmplaceBack(metaInfo);
-        //TODO - sort
-    }
-
-    StringView DirectoryInfo::GetDisplayName() const
-    {
-        return "Folder";
-    }
-
-    void DirectoryInfo::UpdatePath()
-    {
-        AssetInfo::UpdatePath();
-        for (AssetInfo* child : children)
+        for (AssetInfo* child : info->GetChildren())
         {
             child->UpdatePath();
         }
-    }
-
-    AssetInfo* DirectoryInfo::FindChildByAbsolutePath(StringView absolutePath) const
-    {
-        for (AssetInfo* child : children)
-        {
-            if (child->GetAbsolutePath() == absolutePath)
-            {
-                return child;
-            }
-        }
-        return nullptr;
-    }
-
-    String DirectoryInfo::GetCacheDirectory() const
-    {
-        return {};
     }
 
     Array<u8> UIFontAsset::GetFont() const
@@ -101,9 +77,10 @@ namespace Fyrion
     {
         Registry::Type<AssetIO>();
         Registry::Type<Asset>();
-        Registry::Type<DirectoryInfo>();
+        Registry::Type<DirectoryAsset>();
         Registry::Type<UIFontAsset>();
         Registry::Type<UIFontAssetIO>();
         Registry::Type<ImportSettings>();
+        Registry::Type<AssetMeta>();
     }
 }

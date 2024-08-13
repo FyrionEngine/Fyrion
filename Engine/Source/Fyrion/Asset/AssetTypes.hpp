@@ -9,6 +9,11 @@ namespace Fyrion
     typedef void(*FnImportAsset)(StringView path, Asset* asset);
     typedef void(*FnRenameAsset)(Asset* asset, StringView newName);
 
+    struct AssetMeta
+    {
+        TypeID importSettings;
+    };
+
     struct AssetIO
     {
         virtual ~AssetIO() = default;
@@ -27,18 +32,22 @@ namespace Fyrion
         virtual TypeHandler* GetTypeHandler() = 0;
     };
 
-    class FY_API DirectoryInfo : public AssetInfo
+
+    class FY_API DirectoryAsset : public Asset
     {
     public:
-        Span<AssetInfo*> GetChildren() const;
-        void             AddChild(AssetInfo* metaInfo);
-        StringView       GetDisplayName() const override;
-        void             UpdatePath() override;
-        AssetInfo*       FindChildByAbsolutePath(StringView absolutePath) const;
-        String           GetCacheDirectory() const override;
+        FY_BASE_TYPES(Asset);
 
+        Span<AssetInfo*> GetChildrenSorted() const
+        {
+            //return sorted
+            return info->GetChildren();
+        }
+
+        void OnCreated() override;
+
+        void OnPathUpdated() override;
     private:
-        Array<AssetInfo*> children;
     };
 
     struct UIFontAsset final : Asset

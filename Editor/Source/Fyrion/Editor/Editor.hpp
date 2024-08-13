@@ -11,8 +11,8 @@ namespace Fyrion::Editor
     FY_API void                  Init(StringView projectFile);
     FY_API void                  AddMenuItem(const MenuItemCreation& menuItem);
     FY_API void                  OpenWindow(TypeID windowType, VoidPtr initUserData = nullptr);
-    FY_API void                  OpenDirectory(DirectoryInfo* directory);
-    FY_API Span<DirectoryInfo*> GetOpenDirectories();
+    FY_API void                  OpenDirectory(DirectoryAsset* directory);
+    FY_API Span<DirectoryAsset*> GetOpenDirectories();
     FY_API SceneEditor&          GetSceneEditor();
     FY_API EditorTransaction*    CreateTransaction();
     FY_API String                CreateProject(StringView newProjectPath, StringView projectName);

@@ -11,7 +11,6 @@ namespace Fyrion
 {
     void AssetIO::RegisterType(NativeTypeHandler<AssetIO>& type)
     {
-
     }
 
     void DirectoryAsset::OnCreated()
@@ -21,7 +20,6 @@ namespace Fyrion
             FileSystem::CreateDirectory(info->GetAbsolutePath());
             AssetManager::WatchAsset(info);
         }
-        info->SetNotModified();
     }
 
     void DirectoryAsset::OnPathUpdated()

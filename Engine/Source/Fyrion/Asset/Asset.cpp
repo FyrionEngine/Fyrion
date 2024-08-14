@@ -45,45 +45,7 @@ namespace Fyrion
 
     void AssetInfo::SetName(StringView desiredNewName)
     {
-        if (this->name != desiredNewName)
-        {
-            String newName = ValidateName(desiredNewName);
-
-            if (!absolutePath.Empty())
-            {
-                auto rename = [this, newName](StringView extension)
-                {
-                    String oldPath = Path::Join(Path::Parent(absolutePath), this->name, extension);
-                    String newPath = Path::Join(Path::Parent(absolutePath), newName, extension);
-
-                    if (FileSystem::GetFileStatus(oldPath).exists)
-                    {
-                        FileSystem::Rename(oldPath, newPath);
-                    }
-                    return newPath;
-                };
-
-                String newAbsolutePath = rename(Path::Extension(absolutePath));
-                rename(FY_IMPORT_EXTENSION);
-                rename(FY_INFO_EXTENSION);
-
-                if (imported)
-                {
-                    String oldPath = Path::Join(Path::Parent(absolutePath), this->name, FY_ASSET_EXTENSION);
-                    String newPath = Path::Join(Path::Parent(absolutePath), newName, FY_ASSET_EXTENSION);
-                    if (FileSystem::GetFileStatus(oldPath).exists)
-                    {
-                        FileSystem::Rename(oldPath, newPath);
-                    }
-                }
-
-                this->absolutePath = newAbsolutePath;
-                AssetManager::WatchAsset(this);
-            }
-
-            this->name = newName;
-            UpdatePath();
-        }
+        name = desiredNewName;
     }
 
     StringView AssetInfo::GetPath() const
@@ -98,7 +60,7 @@ namespace Fyrion
 
     StringView AssetInfo::GetExtension() const
     {
-        return Path::Extension(absolutePath);
+        return Path::Extension(GetAbsolutePath());
     }
 
     StringView AssetInfo::GetDisplayName()
@@ -123,22 +85,12 @@ namespace Fyrion
 
     bool AssetInfo::IsModified() const
     {
-        if (imported) return false;
-        return currentVersion != persistedVersion;
-    }
-
-    void AssetInfo::SetNotModified()
-    {
-        persistedVersion = currentVersion;
+        return false;
     }
 
     void AssetInfo::SetModified()
     {
-        currentVersion += 1;
-        if(instance)
-        {
-            instance->OnModified();
-        }
+        //do nothing
     }
 
     void AssetInfo::UpdatePath()
@@ -167,55 +119,35 @@ namespace Fyrion
 
     void AssetInfo::AddRelatedFile(StringView fileAbsolutePath)
     {
-        relatedFiles.EmplaceBack(fileAbsolutePath);
+        //relatedFiles.EmplaceBack(fileAbsolutePath);
+    }
+
+    void AssetInfo::Save()
+    {
+
     }
 
     void AssetInfo::Delete()
     {
-        if (!active) return;
+      }
 
-        active = false;
-
-        if (instance)
+    Asset* AssetInfo::LoadInstance()
+    {
+        if (instance == nullptr && type != nullptr)
         {
-            instance->OnDestroyed();
-            //TODO - dependencies are not tracked, so destroying any instance could cause an error.
-            //AssetManager::UnloadAsset(this);
+            instance = type->Cast<Asset>(type->NewInstance());
+            instance->info = this;
         }
+        return instance;
+    }
 
-        if (FileSystem::GetFileStatus(Path::Join(AssetManager::GetCacheDirectory(), ToString(uuid))).exists)
+    void AssetInfo::UnloadInstance()
+    {
+        if (instance != nullptr && type != nullptr)
         {
-            FileSystem::Remove(AssetManager::GetCacheDirectory());
+            type->Destroy(instance);
+            instance = nullptr;
         }
-
-        auto deleteFile = [this](StringView extension)
-        {
-            String path = Path::Join(Path::Parent(GetAbsolutePath()), GetName(), extension);
-            if (FileSystem::GetFileStatus(path).exists)
-            {
-                FileSystem::Remove(path);
-            }
-        };
-
-        deleteFile(FY_INFO_EXTENSION);
-        deleteFile(FY_IMPORT_EXTENSION);
-
-        if (!absolutePath.Empty())
-        {
-            FileSystem::Remove(absolutePath);
-        }
-
-        for (const String& relatedFile : relatedFiles)
-        {
-            FileSystem::Remove(relatedFile);
-        }
-
-        if (parent)
-        {
-           parent->RemoveChild(this);
-        }
-
-        AssetDatabaseCleanRefs(this);
     }
 
     Span<AssetInfo*> AssetInfo::GetChildren() const
@@ -251,6 +183,141 @@ namespace Fyrion
         return finalName;
     }
 
+    void AssetInfoJson::SetName(StringView desiredNewName)
+    {
+        if (this->GetName() != desiredNewName)
+        {
+            String newName = ValidateName(desiredNewName);
+
+            if (!assetPath.Empty())
+            {
+                auto rename = [this, newName](StringView extension)
+                {
+                    String oldPath = Path::Join(Path::Parent(assetPath), this->GetName(), extension);
+                    String newPath = Path::Join(Path::Parent(assetPath), newName, extension);
+
+                    if (FileSystem::GetFileStatus(oldPath).exists)
+                    {
+                        FileSystem::Rename(oldPath, newPath);
+                    }
+                    return newPath;
+                };
+
+                String newAbsolutePath = rename(Path::Extension(assetPath));
+                rename(FY_IMPORT_EXTENSION);
+                rename(FY_INFO_EXTENSION);
+
+                if (imported)
+                {
+                    String oldPath = Path::Join(Path::Parent(assetPath), this->GetName(), FY_ASSET_EXTENSION);
+                    String newPath = Path::Join(Path::Parent(assetPath), newName, FY_ASSET_EXTENSION);
+                    if (FileSystem::GetFileStatus(oldPath).exists)
+                    {
+                        FileSystem::Rename(oldPath, newPath);
+                    }
+                }
+
+                this->assetPath = newAbsolutePath;
+                AssetManager::WatchAsset(this);
+            }
+
+            AssetInfo::SetName(newName);
+            UpdatePath();
+        }
+    }
+
+    void AssetInfoJson::Save()
+    {
+        //TODO
+        // String infoPath = Path::Join(Path::Parent(assetInfo->absolutePath), Path::Name(assetInfo->absolutePath), FY_IMPORT_EXTENSION);
+        // JsonAssetWriter writer;
+        // FileSystem::SaveFileAsString(infoPath, JsonAssetWriter::Stringify(assetInfo->Serialize(writer)));
+        // assetInfo->persistedVersion = assetInfo->currentVersion;
+    }
+
+    bool AssetInfoJson::IsModified() const
+    {
+        if (imported) return false;
+        return currentVersion != persistedVersion;
+    }
+
+    void AssetInfoJson::SetModified()
+    {
+        currentVersion += 1;
+        if (GetInstance())
+        {
+            GetInstance()->OnModified();
+        }
+    }
+
+    void AssetInfoJson::AddRelatedFile(StringView fileAbsolutePath)
+    {
+        relatedFiles.EmplaceBack(fileAbsolutePath);
+    }
+
+    void AssetInfoJson::Delete()
+    {
+        // if (!active) return;
+        //
+        // active = false;
+        //
+        // if (instance)
+        // {
+        //     instance->OnDestroyed();
+        //     //TODO - dependencies are not tracked, so destroying any instance could cause an error.
+        //     //AssetManager::UnloadAsset(this);
+        // }
+        //
+        // if (FileSystem::GetFileStatus(Path::Join(AssetManager::GetCacheDirectory(), ToString(uuid))).exists)
+        // {
+        //     FileSystem::Remove(AssetManager::GetCacheDirectory());
+        // }
+        //
+        // auto deleteFile = [this](StringView extension)
+        // {
+        //     String path = Path::Join(Path::Parent(GetAbsolutePath()), GetName(), extension);
+        //     if (FileSystem::GetFileStatus(path).exists)
+        //     {
+        //         FileSystem::Remove(path);
+        //     }
+        // };
+        //
+        // deleteFile(FY_INFO_EXTENSION);
+        // deleteFile(FY_IMPORT_EXTENSION);
+        //
+        // if (!absolutePath.Empty())
+        // {
+        //     FileSystem::Remove(absolutePath);
+        // }
+        //
+        // for (const String& relatedFile : relatedFiles)
+        // {
+        //     FileSystem::Remove(relatedFile);
+        // }
+        //
+        // if (parent)
+        // {
+        //    parent->RemoveChild(this);
+        // }
+        //
+        // AssetDatabaseCleanRefs(this);
+    }
+
+    Asset* AssetInfoJson::LoadInstance()
+    {
+        if (GetInstance() == nullptr)
+        {
+            Asset* instance = AssetInfo::LoadInstance();
+
+            if (String content = FileSystem::ReadFileAsString(assetPath); !content.Empty())
+            {
+                JsonAssetReader reader(content);
+                instance->Deserialize(reader, reader.ReadObject());
+            }
+        }
+        return GetInstance();
+    }
+
     AssetInfo* Asset::GetInfo() const
     {
         return info;
@@ -259,6 +326,16 @@ namespace Fyrion
     void Asset::SetModified()
     {
         info->SetModified();
+    }
+
+    ArchiveObject Asset::Serialize(ArchiveWriter& writer) const
+    {
+        return Serialization::Serialize(info->GetType(), writer, this);
+    }
+
+    void Asset::Deserialize(ArchiveReader& reader, ArchiveObject object)
+    {
+        Serialization::Deserialize(info->GetType(), reader, object, this);
     }
 
     void Asset::SaveCache(CacheRef& cache, ConstPtr data, usize dataSize)
@@ -309,7 +386,7 @@ namespace Fyrion
     {
         if (info->GetParent() != nullptr)
         {
-            return AssetManager::LoadAsset(info->GetParent());
+            return info->GetParent()->LoadInstance();
         }
         return nullptr;
     }
@@ -359,12 +436,62 @@ namespace Fyrion
     {
         for (AssetInfo* child : children)
         {
-            if (child->absolutePath == absolutePath)
+            if (child->GetAbsolutePath() == absolutePath)
             {
                 return child;
             }
         }
         return nullptr;
+    }
+
+    ArchiveObject AssetInfo::Serialize(ArchiveWriter& writer) const
+    {
+        ArchiveObject object = writer.CreateObject();
+        writer.WriteString(object, "uuid", ToString(GetUUID()));
+        writer.WriteString(object, "type", GetType()->GetName());
+
+        if (lastModifiedTime != 0)
+        {
+            writer.WriteUInt(object, "lastModifiedTime", lastModifiedTime);
+        }
+
+        if (!children.Empty())
+        {
+            ArchiveObject arr = writer.CreateArray();
+            for(AssetInfo* child: children)
+            {
+                writer.AddValue(arr, child->Serialize(writer));
+            }
+            writer.WriteValue(object, "children", arr);
+        }
+        return object;
+    }
+
+    void AssetInfo::Deserialize(ArchiveReader& reader, ArchiveObject object)
+    {
+        lastModifiedTime = reader.ReadUInt(object, "lastModifiedTime");
+        type = Registry::FindTypeByName(reader.ReadString(object, "type"));
+        SetUUID(UUID::FromString(reader.ReadString(object, "uuid")));
+
+        if (ArchiveObject arr = reader.ReadObject(object, "children"))
+        {
+            auto size = reader.ArrSize(arr);
+
+            ArchiveObject item{};
+            for (usize i = 0; i < size; ++i)
+            {
+                item = reader.Next(arr, item);
+                if (item)
+                {
+                    AssetInfo* child = AssetManager::CreateAssetInfo();
+                    child->name = reader.ReadString(item, "name");
+                    child->parent = this;
+                    //child->imported = imported;
+                    children.EmplaceBack(child);
+                    child->Deserialize(reader, item);
+                }
+            }
+        }
     }
 
     void Asset::RegisterType(NativeTypeHandler<Asset>& type)

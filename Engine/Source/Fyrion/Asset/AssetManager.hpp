@@ -7,6 +7,7 @@
 
 namespace Fyrion
 {
+    class AssetInfoJson;
     class DirectoryAsset;
     class AssetInfo;
     struct AssetIO;
@@ -43,8 +44,6 @@ namespace Fyrion
         static void            ImportAsset(DirectoryAsset* directory, const StringView& path);
         static bool            CanReimportAsset(AssetInfo* assetInfo);
         static void            ReimportAsset(AssetInfo* asset);
-        static Asset*          LoadAsset(AssetInfo* assetInfo);
-        static void            UnloadAsset(AssetInfo* assetInfo);
         static Asset*          LoadById(const UUID& assetId);
         static Asset*          LoadByPath(const StringView& path);
         static Span<Asset*>    FindAssetsByType(TypeID typeId);
@@ -73,18 +72,12 @@ namespace Fyrion
 
         static void OnUpdate(f64 deltaTime);
 
-    private:
-        static AssetInfo*    CreateAssetInfo();
-        static void          LoadAssetFile(DirectoryAsset* directory, const StringView& filePath);
-        static void          SaveInfoJson(AssetInfo* assetInfo);
-        static ArchiveObject SaveInfo(ArchiveWriter& writer, AssetInfo* assetInfo, bool isChild = false);
-        static void          SaveAssetsJson(AssetInfo* assetInfo);
+        friend class AssetInfo;
 
-        //static void          SaveAssetJson(StringView file, Asset* asset);
-        static bool          LoadInfoJson(StringView file, AssetInfo* asset);
-        static void          LoadInfo(ArchiveReader& reader, ArchiveObject object, AssetInfo* assetItem);
-        static void          LoadAssetJson(StringView file, Asset* asset);
-        static void          LoadAsset(ArchiveReader& reader, ArchiveObject object, Asset* asset);
-        static void          QueueAssetImport(AssetIO* io, AssetInfo* assetInfo);
+    private:
+        static AssetInfo*     CreateAssetInfo();
+        static AssetInfoJson* CreateAssetInfoJson(AssetInfo* parent, StringView infoPath);
+        static void           QueueAssetImport(AssetIO* io, AssetInfo* assetInfo);
+        static void           LoadAssetFile(DirectoryAsset* directory, const StringView& filePath);
     };
 }

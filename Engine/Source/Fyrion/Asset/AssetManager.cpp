@@ -1,12 +1,10 @@
 #include "AssetManager.hpp"
-
-#include <functional>
 #include <memory>
 
 #include "AssetSerialization.hpp"
 #include "AssetTypes.hpp"
 #include "Fyrion/Engine.hpp"
-#include "../IO/FileWatcher.hpp"
+#include "Fyrion/IO/FileWatcher.hpp"
 #include "Fyrion/Core/HashMap.hpp"
 #include "Fyrion/Core/Logger.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
@@ -101,7 +99,7 @@ namespace Fyrion
     {
         if (auto it = assetsById.Find(assetId))
         {
-            return LoadAsset(it->second);
+            return it->second->LoadInstance();
         }
         return nullptr;
     }
@@ -110,7 +108,7 @@ namespace Fyrion
     {
         if (auto it = assetsByPath.Find(path))
         {
-            return LoadAsset(it->second);
+            return it->second->LoadInstance();
         }
         return nullptr;
     }
@@ -131,10 +129,8 @@ namespace Fyrion
 
         AssetInfo* assetInfo = CreateAssetInfo();
         assetInfo->name = !assetCreation.name.Empty() ? String(assetCreation.name) : String("New").Append(" ").Append(assetInfo->GetDisplayName());
-        assetInfo->absolutePath = assetCreation.absolutePath;
+   //     assetInfo->absolutePath = assetCreation.absolutePath;
         assetInfo->type = typeHandler;
-        assetInfo->persistedVersion = 0;
-        assetInfo->currentVersion = 1;
         assetInfo->relativePath = assetCreation.desiredPath;
 
         if (UUID newUUID = assetCreation.uuid ? assetCreation.uuid : assetCreation.generateUUID ? UUID::RandomUUID() : UUID{})
@@ -149,13 +145,7 @@ namespace Fyrion
 
         if (assetCreation.absolutePath.Empty() && assetInfo->parent != nullptr && !assetInfo->name.Empty())
         {
-            assetInfo->absolutePath = Path::Join(assetInfo->parent->GetAbsolutePath(), assetInfo->name, typeId != GetTypeID<DirectoryAsset>() ? FY_ASSET_EXTENSION : "");
-        }
-
-        if (typeId != GetTypeID<DirectoryAsset>())
-        {
-            assetInfo->infoPath = Path::Join(assetInfo->parent->GetAbsolutePath(), assetInfo->name, FY_INFO_EXTENSION);
-            assetInfo->payloadPath = assetInfo->absolutePath; //not sure?
+           // assetInfo->absolutePath = Path::Join(assetInfo->parent->GetAbsolutePath(), assetInfo->name, typeId != GetTypeID<DirectoryAsset>() ? FY_ASSET_EXTENSION : "");
         }
 
         FileStatus status = FileSystem::GetFileStatus(assetCreation.absolutePath);
@@ -176,7 +166,7 @@ namespace Fyrion
             assetsById.Insert(assetInfo->uuid, assetInfo);
         }
 
-        Asset* asset = LoadAsset(assetInfo);
+        Asset* asset = assetInfo->LoadInstance();
         assetInfo->UpdatePath();
 
         if (!status.exists)
@@ -199,8 +189,6 @@ namespace Fyrion
             .desiredPath = String(name) + ":/",
             .absolutePath = directory
         });
-
-        directoryAsset->info->persistedVersion = directoryAsset->info->currentVersion;
 
         for (const auto& entry : DirectoryEntries{directory})
         {
@@ -225,8 +213,6 @@ namespace Fyrion
                 .absolutePath = filePath,
             });
 
-            directoryAsset->info->persistedVersion = directoryAsset->info->currentVersion;
-
             for (const auto& entry : DirectoryEntries{filePath})
             {
                 LoadAssetFile(directoryAsset, entry);
@@ -236,52 +222,35 @@ namespace Fyrion
         }
         else if (extension == FY_INFO_EXTENSION)
         {
-            AssetInfo* assetInfo = CreateAssetInfo();
-            assetInfo->name = Path::Name(filePath);
-            assetInfo->parent = parentDirectory->info;
-            assetInfo->infoPath = filePath;
-            assetInfo->absolutePath = Path::Join(Path::Parent(filePath), Path::Name(filePath), FY_ASSET_EXTENSION);
-            assetInfo->payloadPath = assetInfo->absolutePath;
+            AssetInfoJson* assetInfo = CreateAssetInfoJson(parentDirectory->info, filePath);
+            assetInfo->assetPath = Path::Join(Path::Parent(filePath), Path::Name(filePath), FY_ASSET_EXTENSION);
+            assetInfo->absolutePath = assetInfo->assetPath;
+            assetInfo->persistedVersion = assetInfo->currentVersion;
             assetInfo->imported = false;
-            parentDirectory->info->AddChild(assetInfo);
-            assetInfo->UpdatePath();
 
-            LoadInfoJson(assetInfo->infoPath, assetInfo);
+            assetInfo->UpdatePath();
         }
         else if (auto importer = importers.Find(extension))
         {
             AssetIO* io = importer->second;
 
-            AssetInfo* assetInfo = CreateAssetInfo();
-            assetInfo->name = Path::Name(filePath);
-            assetInfo->parent = parentDirectory->info;
+            AssetInfoJson* assetInfo = CreateAssetInfoJson(parentDirectory->info, Path::Join(Path::Parent(filePath), Path::Name(filePath), FY_IMPORT_EXTENSION));
+            assetInfo->assetPath = Path::Join(GetCacheDirectory(), ToString(assetInfo->uuid), ToString(assetInfo->name), FY_ASSET_EXTENSION);
+            assetInfo->importedFilePath = filePath;
             assetInfo->absolutePath = filePath;
-            assetInfo->type = Registry::FindTypeById(io->getAssetTypeId(filePath));
             assetInfo->imported = true;
-            parentDirectory->info->AddChild(assetInfo);
+            assetInfo->type = Registry::FindTypeById(io->getAssetTypeId(filePath));
+            assetInfo->persistedVersion = assetInfo->currentVersion;
+
             assetInfo->UpdatePath();
-
-            assetInfo->infoPath = Path::Join(Path::Parent(filePath), Path::Name(filePath), FY_IMPORT_EXTENSION);
-            bool infoLoaded = LoadInfoJson(assetInfo->infoPath, assetInfo);
-
-            if (!assetInfo->GetUUID())
-            {
-                assetInfo->SetUUID(UUID::RandomUUID());
-            }
-
-            String cacheDir = Path::Join(cacheDirectory, ToString(assetInfo->uuid));
-            assetInfo->payloadPath = Path::Join(cacheDir, Path::Name(filePath), FY_ASSET_EXTENSION);
-
-            bool payloadFound = FileSystem::GetFileStatus(assetInfo->payloadPath).exists;
 
             u64 lastModifiedTime = FileSystem::GetFileStatus(filePath).lastModifiedTime;
 
-            if (!infoLoaded || !payloadFound || assetInfo->lastModifiedTime != lastModifiedTime)
+            if (!assetInfo->infoLoaded || assetInfo->lastModifiedTime != lastModifiedTime || !FileSystem::GetFileStatus(assetInfo->assetPath).exists)
             {
                 assetInfo->lastModifiedTime = lastModifiedTime;
                 QueueAssetImport(io, assetInfo);
             }
-
             fileWatcher.Watch(assetInfo, filePath);
         }
     }
@@ -292,183 +261,9 @@ namespace Fyrion
         //TODO enqueue to a thread pool
         if (io->importAsset)
         {
-            Asset* asset = LoadAsset(assetInfo);
-            io->importAsset(assetInfo->absolutePath, asset);
-            SaveInfoJson(assetInfo);
-            SaveAssetsJson(assetInfo);
+            io->importAsset(assetInfo->GetAbsolutePath(), assetInfo->LoadInstance());
+            assetInfo->Save();
         }
-    }
-
-    void AssetManager::SaveInfoJson(AssetInfo* assetInfo)
-    {
-        logger.Debug("saving info {} on {} ", assetInfo->relativePath, assetInfo->infoPath);
-
-        FY_ASSERT(!assetInfo->infoPath.Empty(), "infoPath path must be provided");
-        JsonAssetWriter jsonAssetWriter;
-        FileSystem::SaveFileAsString(assetInfo->infoPath, JsonAssetWriter::Stringify(SaveInfo(jsonAssetWriter, assetInfo)));
-    }
-
-    ArchiveObject AssetManager::SaveInfo(ArchiveWriter& writer, AssetInfo* assetInfo, bool isChild)
-    {
-        ArchiveObject object = writer.CreateObject();
-        writer.WriteString(object, "uuid", ToString(assetInfo->GetUUID()));
-
-        if (assetInfo->lastModifiedTime != 0)
-        {
-            writer.WriteUInt(object, "lastModifiedTime", assetInfo->lastModifiedTime);
-        }
-
-        writer.WriteString(object, "type", assetInfo->GetType()->GetName());
-
-        if (isChild)
-        {
-            writer.WriteString(object, "name", assetInfo->GetName());
-        }
-
-        // if (ImportSettings* importSettings = asset->GetImportSettings(); importSettings != nullptr && importSettings->GetTypeHandler() != nullptr)
-        // {
-        //     writer.WriteValue(object, "importSettings", Serialization::Serialize(importSettings->GetTypeHandler(), writer, importSettings));
-        // }
-
-        if (!assetInfo->GetChildren().Empty())
-        {
-            ArchiveObject arr = writer.CreateArray();
-            for (AssetInfo* subAsset : assetInfo->GetChildren())
-            {
-                writer.AddValue(arr, SaveInfo(writer, subAsset, true));
-            }
-            writer.WriteValue(object, "subAssets", arr);
-        }
-        return object;
-    }
-
-    void AssetManager::SaveAssetsJson(AssetInfo* assetInfo)
-    {
-        FY_ASSERT(!assetInfo->payloadPath.Empty(), "payload path must be provided");
-
-        logger.Debug("saving asset {} on {} ", assetInfo->relativePath, assetInfo->payloadPath);
-
-        JsonAssetWriter writer;
-        Asset* asset = LoadAsset(assetInfo);
-        ArchiveObject object = Serialization::Serialize(asset->GetInfo()->GetType(), writer, asset);
-        FileSystem::SaveFileAsString(assetInfo->payloadPath, JsonAssetWriter::Stringify(object));
-
-        for(AssetInfo* child: assetInfo->GetChildren())
-        {
-            SaveAssetsJson(child);
-        }
-    }
-
-    // ArchiveObject AssetManager::SaveAsset(ArchiveWriter& writer, Asset* asset)
-    // {
-    //     ArchiveObject object = Serialization::Serialize(asset->GetInfo()->GetType(), writer, asset);
-    //
-    //     // if (root != asset)
-    //     // {
-    //     //     FY_ASSERT(asset->GetUUID(), "assets without uuid cannot be serialized");
-    //     //     writer.WriteString(object, "_uuid", ToString(asset->GetUUID()));
-    //     // }
-    //
-    //     // if (!asset->GetChildren().Empty())
-    //     // {
-    //     //     ArchiveObject arr = writer.CreateArray();
-    //     //     for (Asset* child : asset->GetChildren())
-    //     //     {
-    //     //         ArchiveObject assetObj = serialize(writer, child);
-    //     //         writer.AddValue(arr, assetObj);
-    //     //     }
-    //     //     writer.WriteValue(object, "_children", arr);
-    //     // }
-    //     return object;
-    // }
-    //
-    // void AssetManager::SaveAssetJson(StringView file, Asset* asset)
-    // {
-    //     JsonAssetWriter writer;
-    //     FileSystem::SaveFileAsString(file, JsonAssetWriter::Stringify(SaveAsset(writer, asset)));
-    // }
-
-    bool AssetManager::LoadInfoJson(StringView file, AssetInfo* assetInfo)
-    {
-        if (String str = FileSystem::ReadFileAsString(file); !str.Empty())
-        {
-            JsonAssetReader reader(str);
-            LoadInfo(reader, reader.ReadObject(), assetInfo);
-            return true;
-        }
-        return false;
-    }
-
-    void AssetManager::LoadInfo(ArchiveReader& reader, ArchiveObject object, AssetInfo* assetItem)
-    {
-        assetItem->lastModifiedTime = reader.ReadUInt(object, "lastModifiedTime");
-        assetItem->type = Registry::FindTypeByName(reader.ReadString(object, "type"));
-        assetItem->SetUUID(UUID::FromString(reader.ReadString(object, "uuid")));
-
-        // if (ImportSettings* importSettings = asset->GetImportSettings())
-        // {
-        //     if (ArchiveObject settingsObj = reader.ReadObject(object, "importSettings"))
-        //     {
-        //         Serialization::Deserialize(importSettings->GetTypeHandler(), reader, settingsObj, importSettings);
-        //     }
-        // }
-        //
-        if (ArchiveObject arr = reader.ReadObject(object, "subAssets"))
-        {
-            auto size = reader.ArrSize(arr);
-
-            ArchiveObject item{};
-            for (usize i = 0; i < size; ++i)
-            {
-                item = reader.Next(arr, item);
-                if (item)
-                {
-                    AssetInfo* child = CreateAssetInfo();
-                    child->name = reader.ReadString(item, "name");
-                    child->parent = assetItem;
-                    child->infoPath = "";
-                    child->payloadPath = ""; //TODO
-                    child->imported = true;
-                    assetItem->children.EmplaceBack(child);
-                    LoadInfo(reader, item, child);
-                }
-            }
-        }
-    }
-
-    void AssetManager::LoadAssetJson(StringView file, Asset* asset)
-    {
-        String content = FileSystem::ReadFileAsString(file);
-        if (!content.Empty())
-        {
-            JsonAssetReader reader(FileSystem::ReadFileAsString(file));
-            LoadAsset(reader, reader.ReadObject(), asset);
-        }
-    }
-
-    void AssetManager::LoadAsset(ArchiveReader& reader, ArchiveObject object, Asset* asset)
-    {
-        Serialization::Deserialize(asset->GetInfo()->GetType(), reader, object, asset);
-
-        // ArchiveObject arr = reader.ReadObject(object, "_children");
-        // auto          size = reader.ArrSize(arr);
-        // ArchiveObject item{};
-        // for (usize i = 0; i < size; ++i)
-        // {
-        //     item = reader.Next(arr, item);
-        //     if (item)
-        //     {
-        //         StringView uuidStr = reader.ReadString(item, "_uuid");
-        //         if (Asset* childAsset = FindById(UUID::FromString(uuidStr)))
-        //         {
-        //             LoadAsset(reader, item, childAsset);
-        //         }
-        //         else
-        //         {
-        //             logger.Warn("child asset {} from {} not found", uuidStr, asset->GetPath());
-        //         }
-        //     }
-        // }
     }
 
     void AssetManager::SaveOnDirectory(DirectoryAsset* directoryAsset, const StringView& directoryPath)
@@ -478,19 +273,28 @@ namespace Fyrion
             FileSystem::CreateDirectory(directoryPath);
         }
 
-        for (AssetInfo* asset : directoryAsset->info->GetChildren())
+        for (AssetInfo* assetInfo : directoryAsset->info->GetChildren())
         {
-            if (asset->IsModified())
+            if (assetInfo->IsModified())
             {
-                SaveInfoJson(asset);
-                SaveAssetsJson(asset);
+                String infoPath = Path::Join(Path::Parent(directoryPath), assetInfo->name, FY_INFO_EXTENSION);
+                String assetPath = Path::Join(Path::Parent(directoryPath), assetInfo->name, FY_ASSET_EXTENSION);
 
-                asset->persistedVersion = asset->currentVersion;
+                JsonAssetWriter writer;
+                FileSystem::SaveFileAsString(infoPath, JsonAssetWriter::Stringify(assetInfo->Serialize(writer)));
+
+              //  assetInfo->persistedVersion = assetInfo->currentVersion;
+
+                Asset* asset = assetInfo->LoadInstance();
+
+                //asset->Seria
+
+                //TODO save asset children on .fy_data
             }
 
-            if (DirectoryAsset* childDirectory = dynamic_cast<DirectoryAsset*>(asset->GetInstance()))
+            if (DirectoryAsset* childDirectory = dynamic_cast<DirectoryAsset*>(assetInfo->GetInstance()))
             {
-                SaveOnDirectory(childDirectory, asset->absolutePath);
+                SaveOnDirectory(childDirectory, assetInfo->GetAbsolutePath());
             }
         }
     }
@@ -564,7 +368,7 @@ namespace Fyrion
 
         for (AssetInfo* assetInfo : assets)
         {
-            UnloadAsset(assetInfo);
+            assetInfo->UnloadInstance();
             MemoryGlobals::GetDefaultAllocator().DestroyAndFree(assetInfo);
         }
 
@@ -620,24 +424,34 @@ namespace Fyrion
         return assetInfo;
     }
 
-    Asset* AssetManager::LoadAsset(AssetInfo* assetInfo)
+    AssetInfoJson* AssetManager::CreateAssetInfoJson(AssetInfo* parent, StringView infoPath)
     {
-        if (assetInfo->instance == nullptr && assetInfo->type != nullptr)
-        {
-            assetInfo->instance = assetInfo->type->Cast<Asset>(assetInfo->type->NewInstance());
-            assetInfo->instance->info = assetInfo;
-            LoadAssetJson(assetInfo->payloadPath, assetInfo->instance);
-        }
-        return assetInfo->instance;
-    }
+        AssetInfoJson* assetInfoJson = MemoryGlobals::GetDefaultAllocator().Alloc<AssetInfoJson>();
+        assetInfoJson->name = Path::Name(infoPath);
+        assetInfoJson->parent = parent;
+        assetInfoJson->infoPath = infoPath;
+        assetInfoJson->currentVersion = 1;
 
-    void AssetManager::UnloadAsset(AssetInfo* assetInfo)
-    {
-        if (assetInfo->instance != nullptr && assetInfo->type != nullptr)
+        if (parent)
         {
-            assetInfo->type->Destroy(assetInfo->instance);
-            assetInfo->instance = nullptr;
+            parent->AddChild(assetInfoJson);
         }
+
+        assets.EmplaceBack(assetInfoJson);
+
+        if (const String str = FileSystem::ReadFileAsString(infoPath); !str.Empty())
+        {
+            JsonAssetReader reader(str);
+            assetInfoJson->Deserialize(reader, reader.ReadObject());
+            assetInfoJson->infoLoaded = true;
+        }
+
+        if (!assetInfoJson->GetUUID())
+        {
+            assetInfoJson->SetUUID(UUID::RandomUUID());
+        }
+
+        return assetInfoJson;
     }
 
     void AssetDatabaseInit()

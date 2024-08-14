@@ -393,7 +393,7 @@ namespace Fyrion
 
                                 if (ImGui::DrawContentItem(contentItem))
                                 {
-                                    if (SceneObjectAsset* sceneObjectAsset = dynamic_cast<SceneObjectAsset*>(AssetManager::LoadAsset(assetInfo)))
+                                    if (SceneObjectAsset* sceneObjectAsset = dynamic_cast<SceneObjectAsset*>(assetInfo->LoadInstance()))
                                     {
                                         Editor::CreateTransaction()->CreateAction<OpenSceneAction>(Editor::GetSceneEditor(), sceneObjectAsset)->Commit();
                                     }

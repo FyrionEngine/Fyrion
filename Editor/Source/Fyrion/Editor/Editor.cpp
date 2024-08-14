@@ -41,7 +41,7 @@ namespace Fyrion
     {
         Array<EditorWindowStorage> editorWindowStorages{};
         Array<OpenWindowStorage>   openWindows{};
-        Array<AssetInfo*>          updatedItems{};
+        Array<AssetHandler*>          updatedItems{};
         String                     projectPath{};
 
         MenuItemContext menuContext{};
@@ -306,7 +306,7 @@ namespace Fyrion
                                 ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_None, 200.f * style.ScaleFactor);
                                 ImGui::TableHeadersRow();
 
-                                for (AssetInfo* assetInfo : updatedItems)
+                                for (AssetHandler* assetInfo : updatedItems)
                                 {
                                     ImGui::TableNextRow();
 

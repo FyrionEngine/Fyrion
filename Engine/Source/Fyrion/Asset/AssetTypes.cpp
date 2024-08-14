@@ -13,22 +13,7 @@ namespace Fyrion
     {
     }
 
-    void DirectoryAsset::OnCreated()
-    {
-        if (!FileSystem::GetFileStatus(info->GetAbsolutePath()).exists)
-        {
-            FileSystem::CreateDirectory(info->GetAbsolutePath());
-            AssetManager::WatchAsset(info);
-        }
-    }
 
-    void DirectoryAsset::OnPathUpdated()
-    {
-        for (AssetInfo* child : info->GetChildren())
-        {
-            child->UpdatePath();
-        }
-    }
 
     Array<u8> UIFontAsset::GetFont() const
     {
@@ -75,7 +60,6 @@ namespace Fyrion
     {
         Registry::Type<AssetIO>();
         Registry::Type<Asset>();
-        Registry::Type<DirectoryAsset>();
         Registry::Type<UIFontAsset>();
         Registry::Type<UIFontAssetIO>();
         Registry::Type<ImportSettings>();

@@ -84,6 +84,11 @@ namespace Fyrion
 
     void FileSystem::SaveFileAsString(const StringView& path, const StringView& string)
     {
+        if (!GetFileStatus(Path::Parent(path)).exists)
+        {
+            CreateDirectory(Path::Parent(path));
+        }
+
         if (FileHandler fileHandler = OpenFile(path, AccessMode::WriteOnly))
         {
             WriteFile(fileHandler, string.Data(), string.Size());

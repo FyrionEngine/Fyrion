@@ -32,24 +32,6 @@ namespace Fyrion
         virtual TypeHandler* GetTypeHandler() = 0;
     };
 
-
-    class FY_API DirectoryAsset : public Asset
-    {
-    public:
-        FY_BASE_TYPES(Asset);
-
-        Span<AssetInfo*> GetChildrenSorted() const
-        {
-            //return sorted
-            return info->GetChildren();
-        }
-
-        void OnCreated() override;
-
-        void OnPathUpdated() override;
-    private:
-    };
-
     struct UIFontAsset final : Asset
     {
         FY_BASE_TYPES(Asset);

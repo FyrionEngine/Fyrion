@@ -1,5 +1,5 @@
 {
     "uuid": "9d6ec078-f0b1-a903-7778-171f8ae8532d",
-    "lastModifiedTime": 133679397049998675,
-    "type": "Fyrion::ShaderAsset"
+    "type": "Fyrion::ShaderAsset",
+    "lastModifiedTime": 133679397049998675
 }

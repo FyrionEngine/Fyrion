@@ -6,11 +6,11 @@
 
 namespace Fyrion
 {
-    class AssetInfo;
+    class AssetHandler;
     class SceneObject;
 
     using OnSceneObjectSelection = EventType<"Fyrion::Editor::OnSceneObjectSelection"_h, void(SceneObject*)>;
-    using OnAssetSelection = EventType<"Fyrion::Editor::OnAssetSelection"_h, void(AssetInfo*)>;
+    using OnAssetSelection = EventType<"Fyrion::Editor::OnAssetSelection"_h, void(AssetHandler*)>;
 
     enum class DockPosition
     {
@@ -37,7 +37,7 @@ namespace Fyrion
 
     struct AssetPayload
     {
-        AssetInfo* asset;
+        AssetHandler* asset;
     };
 
 

@@ -1,5 +1,6 @@
 #include <cgltf.h>
 
+#include "Fyrion/Asset/AssetHandler.hpp"
 #include "Fyrion/Asset/AssetTypes.hpp"
 #include "Fyrion/Core/Image.hpp"
 #include "Fyrion/Core/Logger.hpp"

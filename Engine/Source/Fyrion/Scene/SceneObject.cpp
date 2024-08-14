@@ -4,6 +4,7 @@
 #include "Assets/SceneObjectAsset.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "SceneTypes.hpp"
+#include "Fyrion/Asset/AssetHandler.hpp"
 
 namespace Fyrion
 {

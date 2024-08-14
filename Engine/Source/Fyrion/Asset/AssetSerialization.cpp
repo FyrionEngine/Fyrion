@@ -111,6 +111,8 @@ namespace Fyrion
 
     String JsonAssetWriter::Stringify(ArchiveObject object)
     {
+        if (!object) return {};
+
         const yyjson_write_flag flg = YYJSON_WRITE_PRETTY | YYJSON_WRITE_ESCAPE_UNICODE;
         usize                   len = 0;
         yyjson_write_err        err;

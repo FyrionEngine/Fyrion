@@ -5,7 +5,6 @@
 
 namespace Fyrion
 {
-    class Asset;
     struct ImportSettings;
     class AssetBufferManager;
 
@@ -31,91 +30,12 @@ namespace Fyrion
         }
     };
 
-    class FY_API AssetInfo
-    {
-    public:
-        virtual ~AssetInfo() = default;
-
-        Asset*             GetInstance() const;
-        UUID               GetUUID() const;
-        void               SetUUID(UUID uuid);
-        TypeHandler*       GetType() const;
-        StringView         GetName() const;
-        virtual void       SetName(StringView desiredNewName);
-        StringView         GetPath() const;
-        StringView         GetAbsolutePath() const;
-        StringView         GetExtension() const;
-        StringView         GetDisplayName();
-        AssetInfo*         GetParent() const;
-        virtual bool       IsModified() const;
-        virtual void       SetModified();
-        void               UpdatePath();
-        bool               IsChildOf(AssetInfo* parent) const;
-        Span<AssetInfo*>   GetChildren() const;
-        void               RemoveChild(AssetInfo* child);
-        void               RemoveFromParent();
-        void               AddChild(AssetInfo* child);
-        AssetInfo*         FindChildByAbsolutePath(StringView absolutePath) const;
-        ArchiveObject      Serialize(ArchiveWriter& writer) const;
-        void               Deserialize(ArchiveReader& reader, ArchiveObject object);
-
-        virtual void AddRelatedFile(StringView fileAbsolutePath);
-        virtual void Save();
-        virtual void Delete();
-        virtual Asset* LoadInstance();
-        virtual void UnloadInstance();
-
-        friend class     AssetManager;
-
-    protected:
-        String  ValidateName(StringView newName);
-
-    private:
-        Asset*            instance{};
-        AssetInfo*        prototype{};
-        UUID              uuid{};
-        String            relativePath{};
-        String            absolutePath{};
-        String            name{};
-        TypeHandler*      type{};
-        u64               lastModifiedTime{};
-        AssetInfo*        parent{};
-        Array<AssetInfo*> children{};
-        bool              active = true;
-        String            displayName{};
-    };
-
-    class AssetInfoJson : public AssetInfo
-    {
-    public:
-        friend class AssetManager;
-
-        void   SetName(StringView desiredNewName) override;
-        void   Save() override;
-        bool   IsModified() const override;
-        void   SetModified() override;
-        void   AddRelatedFile(StringView fileAbsolutePath) override;
-        void   Delete() override;
-        Asset* LoadInstance() override;
-
-    private:
-        bool          infoLoaded{};
-        String        importedFilePath{};
-        String        assetPath{};
-        String        infoPath{};
-        Array<String> relatedFiles{};
-        bool          imported = false;
-        u64           currentVersion{};
-        u64           persistedVersion{};
-    };
-
-
     class FY_API Asset
     {
     public:
         virtual ~Asset() = default;
 
-        AssetInfo* GetInfo() const;
+        AssetHandler* GetInfo() const;
 
         virtual void OnPathUpdated() {}
         virtual void OnCreated() {}
@@ -145,12 +65,12 @@ namespace Fyrion
         }
 
         friend class AssetManager;
-        friend class AssetInfo;
+        friend class AssetHandler;
 
         static void RegisterType(NativeTypeHandler<Asset>& type);
 
     protected:
-        AssetInfo* info{};
+        AssetHandler* info{};
     };
 
     struct AssetApi

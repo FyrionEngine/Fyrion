@@ -16,6 +16,7 @@
 #include "dxc/dxcapi.h"
 #include "Fyrion/Asset/AssetManager.hpp"
 #include "Fyrion/Asset/AssetTypes.hpp"
+#include "Fyrion/Asset/AssetHandler.hpp"
 #include "Fyrion/Core/HashMap.hpp"
 
 #define SHADER_MODEL "6_5"

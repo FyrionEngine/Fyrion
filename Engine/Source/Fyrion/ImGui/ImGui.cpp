@@ -8,6 +8,7 @@
 #include "Fyrion/Graphics/Device/RenderDevice.hpp"
 #include "IconsFontAwesome6.h"
 #include "Fyrion/Engine.hpp"
+#include "Fyrion/Asset/AssetHandler.hpp"
 #include "Fyrion/Asset/AssetManager.hpp"
 #include "Fyrion/Asset/AssetTypes.hpp"
 #include "Fyrion/Core/Attributes.hpp"

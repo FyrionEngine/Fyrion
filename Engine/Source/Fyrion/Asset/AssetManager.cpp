@@ -1,6 +1,7 @@
 #include "AssetManager.hpp"
 #include <memory>
 
+#include "AssetHandler.hpp"
 #include "AssetSerialization.hpp"
 #include "AssetTypes.hpp"
 #include "Fyrion/Engine.hpp"
@@ -18,12 +19,12 @@ namespace Fyrion
         bool RegisterEvents();
 
         String                             cacheDirectory;
-        Array<AssetInfo*>                  assets;
-        HashMap<UUID, AssetInfo*>          assetsById;
-        HashMap<String, AssetInfo*>        assetsByPath;
+        Array<AssetHandler*>                  assets;
+        HashMap<UUID, AssetHandler*>          assetsById;
+        HashMap<String, AssetHandler*>        assetsByPath;
         Array<Pair<TypeID, AssetIO*>>      assetIOs;
         HashMap<String, AssetIO*>          importers;
-        HashMap<TypeID, Array<AssetInfo*>> assetsByType;
+        HashMap<TypeID, Array<AssetHandler*>> assetsByType;
         FileWatcher                        fileWatcher;
         bool                               hotReloadEnabled = false;
 
@@ -57,7 +58,7 @@ namespace Fyrion
         }
     }
 
-    void AssetDatabaseCleanRefs(AssetInfo* assetInfo)
+    void AssetDatabaseCleanRefs(AssetHandler* assetInfo)
     {
         assetsById.Erase(assetInfo->GetUUID());
         assetsByPath.Erase(assetInfo->GetPath());
@@ -71,7 +72,7 @@ namespace Fyrion
         }
     }
 
-    void AssetDatabaseUpdatePath(AssetInfo* assetInfo, const StringView& oldPath, const StringView& newPath)
+    void AssetManagerUpdatePath(AssetHandler* assetInfo, const StringView& oldPath, const StringView& newPath)
     {
         if (!oldPath.Empty())
         {
@@ -81,7 +82,7 @@ namespace Fyrion
         logger.Debug("asset {} registred to path {} ", assetInfo->GetName(), newPath);
     }
 
-    void AssetDatabaseUpdateUUID(AssetInfo* assetInfo, const UUID& newUUID)
+    void AssetManagerUpdateUUID(AssetHandler* assetInfo, const UUID& newUUID)
     {
         if (assetInfo->GetUUID())
         {
@@ -125,174 +126,46 @@ namespace Fyrion
 
     Asset* AssetManager::Create(TypeHandler* typeHandler, const AssetCreation& assetCreation)
     {
-        TypeID typeId = typeHandler->GetTypeInfo().typeId;
-
-        AssetInfo* assetInfo = CreateAssetInfo();
-        assetInfo->name = !assetCreation.name.Empty() ? String(assetCreation.name) : String("New").Append(" ").Append(assetInfo->GetDisplayName());
-   //     assetInfo->absolutePath = assetCreation.absolutePath;
-        assetInfo->type = typeHandler;
-        assetInfo->relativePath = assetCreation.desiredPath;
-
-        if (UUID newUUID = assetCreation.uuid ? assetCreation.uuid : assetCreation.generateUUID ? UUID::RandomUUID() : UUID{})
-        {
-            assetInfo->SetUUID(newUUID);
-        }
-
-        if (assetCreation.parent && assetCreation.parent->info)
-        {
-            assetCreation.parent->info->AddChild(assetInfo);
-        }
-
-        if (assetCreation.absolutePath.Empty() && assetInfo->parent != nullptr && !assetInfo->name.Empty())
-        {
-           // assetInfo->absolutePath = Path::Join(assetInfo->parent->GetAbsolutePath(), assetInfo->name, typeId != GetTypeID<DirectoryAsset>() ? FY_ASSET_EXTENSION : "");
-        }
-
-        FileStatus status = FileSystem::GetFileStatus(assetCreation.absolutePath);
-        if (status.exists)
-        {
-            assetInfo->lastModifiedTime = status.lastModifiedTime;
-        }
-
-        auto itByType = assetsByType.Find(typeId);
-        if (itByType == assetsByType.end())
-        {
-            itByType = assetsByType.Emplace(typeId, {}).first;
-        }
-        itByType->second.EmplaceBack(assetInfo);
-
-        if (assetInfo->uuid)
-        {
-            assetsById.Insert(assetInfo->uuid, assetInfo);
-        }
-
-        Asset* asset = assetInfo->LoadInstance();
-        assetInfo->UpdatePath();
-
-        if (!status.exists)
-        {
-            asset->OnCreated();
-        }
-
-        return asset;
+       return nullptr;
     }
 
-    DirectoryAsset* AssetManager::LoadFromDirectory(const StringView& name, const StringView& directory)
+    DirectoryAssetHandler* AssetManager::LoadFromDirectory(const StringView& name, const StringView& directory)
     {
-        if (!FileSystem::GetFileStatus(directory).exists)
-        {
-            return nullptr;
-        }
-
-        DirectoryAsset* directoryAsset = Create<DirectoryAsset>({
-            .name = name,
-            .desiredPath = String(name) + ":/",
-            .absolutePath = directory
-        });
-
-        for (const auto& entry : DirectoryEntries{directory})
-        {
-            LoadAssetFile(directoryAsset, entry);
-        }
-
-        fileWatcher.Watch(directoryAsset->info, directory);
-
-        return directoryAsset;
+        return nullptr;
     }
 
-    void AssetManager::LoadAssetFile(DirectoryAsset* parentDirectory, const StringView& filePath)
+    void AssetManager::LoadAssetFile(DirectoryAssetHandler* parentDirectory, const StringView& filePath)
     {
-        String extension = Path::Extension(filePath);
-        if (extension == FY_DATA_EXTENSION) return;
 
-        if (FileSystem::GetFileStatus(filePath).isDirectory)
-        {
-            DirectoryAsset* directoryAsset = Create<DirectoryAsset>({
-                .name = Path::Name(filePath),
-                .parent = parentDirectory,
-                .absolutePath = filePath,
-            });
-
-            for (const auto& entry : DirectoryEntries{filePath})
-            {
-                LoadAssetFile(directoryAsset, entry);
-            }
-
-            fileWatcher.Watch(directoryAsset->info, filePath);
-        }
-        else if (extension == FY_INFO_EXTENSION)
-        {
-            AssetInfoJson* assetInfo = CreateAssetInfoJson(parentDirectory->info, filePath);
-            assetInfo->assetPath = Path::Join(Path::Parent(filePath), Path::Name(filePath), FY_ASSET_EXTENSION);
-            assetInfo->absolutePath = assetInfo->assetPath;
-            assetInfo->persistedVersion = assetInfo->currentVersion;
-            assetInfo->imported = false;
-
-            assetInfo->UpdatePath();
-        }
-        else if (auto importer = importers.Find(extension))
-        {
-            AssetIO* io = importer->second;
-
-            AssetInfoJson* assetInfo = CreateAssetInfoJson(parentDirectory->info, Path::Join(Path::Parent(filePath), Path::Name(filePath), FY_IMPORT_EXTENSION));
-            assetInfo->assetPath = Path::Join(GetCacheDirectory(), ToString(assetInfo->uuid), ToString(assetInfo->name), FY_ASSET_EXTENSION);
-            assetInfo->importedFilePath = filePath;
-            assetInfo->absolutePath = filePath;
-            assetInfo->imported = true;
-            assetInfo->type = Registry::FindTypeById(io->getAssetTypeId(filePath));
-            assetInfo->persistedVersion = assetInfo->currentVersion;
-
-            assetInfo->UpdatePath();
-
-            u64 lastModifiedTime = FileSystem::GetFileStatus(filePath).lastModifiedTime;
-
-            if (!assetInfo->infoLoaded || assetInfo->lastModifiedTime != lastModifiedTime || !FileSystem::GetFileStatus(assetInfo->assetPath).exists)
-            {
-                assetInfo->lastModifiedTime = lastModifiedTime;
-                QueueAssetImport(io, assetInfo);
-            }
-            fileWatcher.Watch(assetInfo, filePath);
-        }
     }
 
 
-    void AssetManager::QueueAssetImport(AssetIO* io, AssetInfo* assetInfo)
+    void AssetManager::QueueAssetImport(AssetIO* io, AssetHandler* assetInfo)
     {
         //TODO enqueue to a thread pool
         if (io->importAsset)
         {
+            logger.Debug("Importing file {} ", assetInfo->GetAbsolutePath());
             io->importAsset(assetInfo->GetAbsolutePath(), assetInfo->LoadInstance());
             assetInfo->Save();
         }
     }
 
-    void AssetManager::SaveOnDirectory(DirectoryAsset* directoryAsset, const StringView& directoryPath)
+    void AssetManager::SaveOnDirectory(DirectoryAssetHandler* directoryAssetHandler, const StringView& directoryPath)
     {
         if (!FileSystem::GetFileStatus(directoryPath).exists)
         {
             FileSystem::CreateDirectory(directoryPath);
         }
 
-        for (AssetInfo* assetInfo : directoryAsset->info->GetChildren())
+        for (AssetHandler* assetInfo : directoryAssetHandler->GetChildren())
         {
             if (assetInfo->IsModified())
             {
-                String infoPath = Path::Join(Path::Parent(directoryPath), assetInfo->name, FY_INFO_EXTENSION);
-                String assetPath = Path::Join(Path::Parent(directoryPath), assetInfo->name, FY_ASSET_EXTENSION);
-
-                JsonAssetWriter writer;
-                FileSystem::SaveFileAsString(infoPath, JsonAssetWriter::Stringify(assetInfo->Serialize(writer)));
-
-              //  assetInfo->persistedVersion = assetInfo->currentVersion;
-
-                Asset* asset = assetInfo->LoadInstance();
-
-                //asset->Seria
-
-                //TODO save asset children on .fy_data
+                assetInfo->Save();
             }
 
-            if (DirectoryAsset* childDirectory = dynamic_cast<DirectoryAsset*>(assetInfo->GetInstance()))
+            if (DirectoryAssetHandler* childDirectory = dynamic_cast<DirectoryAssetHandler*>(assetInfo))
             {
                 SaveOnDirectory(childDirectory, assetInfo->GetAbsolutePath());
             }
@@ -314,18 +187,18 @@ namespace Fyrion
         return cacheDirectory;
     }
 
-    void AssetManager::GetUpdatedAssets(DirectoryAsset* directoryAsset, Array<AssetInfo*>& updatedAssets)
+    void AssetManager::GetUpdatedAssets(DirectoryAssetHandler* directoryAssetHandler, Array<AssetHandler*>& updatedAssets)
     {
-        if (!directoryAsset) return;
+        if (!directoryAssetHandler) return;
 
-        for (AssetInfo* asset : directoryAsset->GetInfo()->GetChildren())
+        for (AssetHandler* child : directoryAssetHandler->GetChildren())
         {
-            if (asset->IsModified())
+            if (child->IsModified())
             {
-                updatedAssets.EmplaceBack(asset);
+                updatedAssets.EmplaceBack(child);
             }
 
-            if (DirectoryAsset* childDirectory = dynamic_cast<DirectoryAsset*>(asset->GetInstance()))
+            if (DirectoryAssetHandler* childDirectory = dynamic_cast<DirectoryAssetHandler*>(child))
             {
                 GetUpdatedAssets(childDirectory, updatedAssets);
             }
@@ -333,24 +206,24 @@ namespace Fyrion
     }
 
 
-    DirectoryAsset* AssetManager::LoadFromPackage(const StringView& name, const StringView& file, const StringView& binFile)
+    DirectoryAssetHandler* AssetManager::LoadFromPackage(const StringView& name, const StringView& file, const StringView& binFile)
     {
         FY_ASSERT(false, "not implemented");
         return nullptr;
     }
 
-    void AssetManager::ImportAsset(DirectoryAsset* directory, const StringView& path)
+    void AssetManager::ImportAsset(DirectoryAssetHandler* directory, const StringView& path)
     {
-        FileSystem::CopyFile(path, Path::Join(directory->GetInfo()->GetAbsolutePath(), Path::Name(path), Path::Extension(path)));
+        FileSystem::CopyFile(path, Path::Join(directory->GetAbsolutePath(), Path::Name(path), Path::Extension(path)));
         fileWatcher.Check();
     }
 
-    bool AssetManager::CanReimportAsset(AssetInfo* assetInfo)
+    bool AssetManager::CanReimportAsset(AssetHandler* assetInfo)
     {
         return importers.Find(assetInfo->GetExtension()) != importers.end();
     }
 
-    void AssetManager::ReimportAsset(AssetInfo* asset)
+    void AssetManager::ReimportAsset(AssetHandler* asset)
     {
         if (auto importer = importers.Find(asset->GetExtension()))
         {
@@ -366,7 +239,7 @@ namespace Fyrion
             return;
         }
 
-        for (AssetInfo* assetInfo : assets)
+        for (AssetHandler* assetInfo : assets)
         {
             assetInfo->UnloadInstance();
             MemoryGlobals::GetDefaultAllocator().DestroyAndFree(assetInfo);
@@ -388,14 +261,14 @@ namespace Fyrion
                 return;
             }
 
-            AssetInfo* assetInfo = static_cast<AssetInfo*>(modified.userData);
+            AssetHandler* assetInfo = static_cast<AssetHandler*>(modified.userData);
 
             switch (modified.event)
             {
                 case FileNotifyEvent::Added:
                 {
                     logger.Debug("FileWatcher FileNotifyEvent::Added {} ", modified.path);
-                    if (DirectoryAsset* directory = dynamic_cast<DirectoryAsset*>(assetInfo->GetInstance()); assetInfo->FindChildByAbsolutePath(modified.path) == nullptr)
+                    if (DirectoryAssetHandler* directory = dynamic_cast<DirectoryAssetHandler*>(assetInfo); assetInfo->FindChildByAbsolutePath(modified.path) == nullptr)
                     {
                         LoadAssetFile(directory, modified.path);
                     }
@@ -417,43 +290,6 @@ namespace Fyrion
         });
     }
 
-    AssetInfo* AssetManager::CreateAssetInfo()
-    {
-        AssetInfo* assetInfo = MemoryGlobals::GetDefaultAllocator().Alloc<AssetInfo>();
-        assets.EmplaceBack(assetInfo);
-        return assetInfo;
-    }
-
-    AssetInfoJson* AssetManager::CreateAssetInfoJson(AssetInfo* parent, StringView infoPath)
-    {
-        AssetInfoJson* assetInfoJson = MemoryGlobals::GetDefaultAllocator().Alloc<AssetInfoJson>();
-        assetInfoJson->name = Path::Name(infoPath);
-        assetInfoJson->parent = parent;
-        assetInfoJson->infoPath = infoPath;
-        assetInfoJson->currentVersion = 1;
-
-        if (parent)
-        {
-            parent->AddChild(assetInfoJson);
-        }
-
-        assets.EmplaceBack(assetInfoJson);
-
-        if (const String str = FileSystem::ReadFileAsString(infoPath); !str.Empty())
-        {
-            JsonAssetReader reader(str);
-            assetInfoJson->Deserialize(reader, reader.ReadObject());
-            assetInfoJson->infoLoaded = true;
-        }
-
-        if (!assetInfoJson->GetUUID())
-        {
-            assetInfoJson->SetUUID(UUID::RandomUUID());
-        }
-
-        return assetInfoJson;
-    }
-
     void AssetDatabaseInit()
     {
         if (hotReloadEnabled)
@@ -468,7 +304,7 @@ namespace Fyrion
         hotReloadEnabled = enable;
     }
 
-    void AssetManager::WatchAsset(AssetInfo* assetInfo)
+    void AssetManager::WatchAsset(AssetHandler* assetInfo)
     {
         if (assetInfo && hotReloadEnabled)
         {

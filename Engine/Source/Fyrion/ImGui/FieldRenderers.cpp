@@ -1,6 +1,7 @@
 #include "IconsFontAwesome6.h"
 #include "ImGui.hpp"
 #include "Fyrion/Asset/Asset.hpp"
+#include "Fyrion/Asset/AssetHandler.hpp"
 #include "Fyrion/Core/Attributes.hpp"
 #include "Fyrion/Core/Color.hpp"
 #include "Fyrion/Core/Registry.hpp"

@@ -55,7 +55,7 @@ namespace Fyrion
         lastOpenedDirectory = openDirectory;
     }
 
-    void ProjectBrowserWindow::SetSelectedAsset(AssetInfo* selectedItem)
+    void ProjectBrowserWindow::SetSelectedAsset(AssetHandler* selectedItem)
     {
         this->selectedItem = selectedItem;
         onAssetSelectionHandler.Invoke(this->selectedItem);
@@ -89,7 +89,7 @@ namespace Fyrion
             stringCache = ICON_FA_FOLDER;
         }
 
-        AssetInfo* assetInfo = directory->GetInfo();
+        AssetHandler* assetInfo = directory->GetInfo();
 
         stringCache.Append(" ").Append(assetInfo->GetName());
 
@@ -121,7 +121,7 @@ namespace Fyrion
 
         if (isNodeOpen)
         {
-            for (AssetInfo* child : directory->GetChildrenSorted())
+            for (AssetHandler* child : directory->GetChildrenSorted())
             {
                 if (DirectoryAsset* childDirectory = dynamic_cast<DirectoryAsset*>(child->GetInstance()))
                 {
@@ -142,7 +142,7 @@ namespace Fyrion
             while (item != nullptr)
             {
                 directoryCache.EmplaceBack(item);
-                AssetInfo* parent = item->GetInfo()->GetParent();
+                AssetHandler* parent = item->GetInfo()->GetParent();
 
                 if (parent != nullptr && parent->GetInstance() != nullptr)
                 {
@@ -191,7 +191,7 @@ namespace Fyrion
             auto popupRes = ImGui::BeginPopupMenu("select-folder-browser-popup");
             if (popupRes && popupFolder)
             {
-                for (AssetInfo* node : popupFolder->GetChildrenSorted())
+                for (AssetHandler* node : popupFolder->GetChildrenSorted())
                 {
                     if (DirectoryAsset* assetDirectory = dynamic_cast<DirectoryAsset*>(node->GetInstance()))
                     {
@@ -303,7 +303,7 @@ namespace Fyrion
                 ImGui::EndChild();
             }
 
-            AssetInfo* newItemSelected = nullptr;
+            AssetHandler* newItemSelected = nullptr;
 
             ImGui::TableNextColumn();
             {
@@ -322,7 +322,7 @@ namespace Fyrion
                 {
                     if (openDirectory)
                     {
-                        for (AssetInfo* asset : openDirectory->GetChildrenSorted())
+                        for (AssetHandler* asset : openDirectory->GetChildrenSorted())
                         {
                             if (DirectoryAsset* directoryInfo = dynamic_cast<DirectoryAsset*>(asset->GetInstance()))
                             {
@@ -371,7 +371,7 @@ namespace Fyrion
                             }
                         }
 
-                        for (AssetInfo* assetInfo : openDirectory->GetChildrenSorted())
+                        for (AssetHandler* assetInfo : openDirectory->GetChildrenSorted())
                         {
                             if (DirectoryAsset* directoryInfo = dynamic_cast<DirectoryAsset*>(assetInfo->GetInstance()); directoryInfo == nullptr)
                             {
@@ -532,7 +532,7 @@ namespace Fyrion
     void ProjectBrowserWindow::AssetShowInExplorer(const MenuItemEventData& eventData)
     {
         ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
-        AssetInfo*    itemToShow = projectBrowserWindow->selectedItem ? projectBrowserWindow->selectedItem : projectBrowserWindow->openDirectory->GetInfo();
+        AssetHandler*    itemToShow = projectBrowserWindow->selectedItem ? projectBrowserWindow->selectedItem : projectBrowserWindow->openDirectory->GetInfo();
 
         if (itemToShow != nullptr)
         {
@@ -544,7 +544,7 @@ namespace Fyrion
     {
         ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
 
-        AssetInfo* item = projectBrowserWindow->selectedItem ? projectBrowserWindow->selectedItem : projectBrowserWindow->openDirectory->GetInfo();
+        AssetHandler* item = projectBrowserWindow->selectedItem ? projectBrowserWindow->selectedItem : projectBrowserWindow->openDirectory->GetInfo();
 
         if (item != nullptr)
         {

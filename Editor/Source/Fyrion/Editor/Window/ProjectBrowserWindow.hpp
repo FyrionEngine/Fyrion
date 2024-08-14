@@ -10,7 +10,7 @@
 namespace Fyrion
 {
     class DirectoryAsset;
-    class AssetInfo;
+    class AssetHandler;
     struct UUID;
     class Asset;
 
@@ -22,7 +22,7 @@ namespace Fyrion
         void Init(u32 id, VoidPtr userData) override;
         void Draw(u32 id, bool& open) override;
         void SetOpenDirectory(DirectoryAsset* directory);
-        void SetSelectedAsset(AssetInfo* selectedItem);
+        void SetSelectedAsset(AssetHandler* selectedItem);
 
         static void AddMenuItem(const MenuItemCreation& menuItem);
         static void RegisterType(NativeTypeHandler<ProjectBrowserWindow>& type);
@@ -30,7 +30,7 @@ namespace Fyrion
     private:
         u32                            windowId{};
         DirectoryAsset*                openDirectory{};
-        AssetInfo*                     selectedItem{};
+        AssetHandler*                     selectedItem{};
         String                         searchString{};
         String                         stringCache{};
         AssetPayload                   assetPayload{};

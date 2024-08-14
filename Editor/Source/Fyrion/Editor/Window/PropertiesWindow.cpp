@@ -260,7 +260,7 @@ namespace Fyrion
         ImGui::EndPopupMenu(popupOpenSettings);
     }
 
-    void PropertiesWindow::DrawAsset(AssetInfo* assetInfo)
+    void PropertiesWindow::DrawAsset(AssetHandler* assetInfo)
     {
         bool readOnly = false;
 
@@ -353,7 +353,7 @@ namespace Fyrion
         selectedObject = objectAsset;
     }
 
-    void PropertiesWindow::AssetSelection(AssetInfo* assetInfo)
+    void PropertiesWindow::AssetSelection(AssetHandler* assetInfo)
     {
         if (selectedAsset == nullptr && assetInfo == nullptr) return;
         ClearSelection();

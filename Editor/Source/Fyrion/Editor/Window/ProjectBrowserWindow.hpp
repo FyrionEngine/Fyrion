@@ -9,7 +9,7 @@
 
 namespace Fyrion
 {
-    class DirectoryAsset;
+    class DirectoryAssetHandler;
     class AssetHandler;
     struct UUID;
     class Asset;
@@ -21,31 +21,31 @@ namespace Fyrion
 
         void Init(u32 id, VoidPtr userData) override;
         void Draw(u32 id, bool& open) override;
-        void SetOpenDirectory(DirectoryAsset* directory);
+        void SetOpenDirectory(DirectoryAssetHandler* directory);
         void SetSelectedAsset(AssetHandler* selectedItem);
 
         static void AddMenuItem(const MenuItemCreation& menuItem);
         static void RegisterType(NativeTypeHandler<ProjectBrowserWindow>& type);
 
     private:
-        u32                            windowId{};
-        DirectoryAsset*                openDirectory{};
-        AssetHandler*                     selectedItem{};
-        String                         searchString{};
-        String                         stringCache{};
-        AssetPayload                   assetPayload{};
-        DirectoryAsset*                popupFolder{};
-        HashMap<DirectoryAsset*, bool> openTreeFolders{};
-        f32                            contentBrowserZoom = 0.8;
-        Array<DirectoryAsset*>         directoryCache;
-        EventHandler<OnAssetSelection> onAssetSelectionHandler{};
+        u32                                   windowId{};
+        DirectoryAssetHandler*                openDirectory{};
+        AssetHandler*                         selectedItem{};
+        String                                searchString{};
+        String                                stringCache{};
+        AssetPayload                          assetPayload{};
+        DirectoryAssetHandler*                popupFolder{};
+        HashMap<DirectoryAssetHandler*, bool> openTreeFolders{};
+        f32                                   contentBrowserZoom = 0.8;
+        Array<DirectoryAssetHandler*>         directoryCache;
+        EventHandler<OnAssetSelection>        onAssetSelectionHandler{};
 
-        inline static DirectoryAsset* lastOpenedDirectory = nullptr;
+        inline static DirectoryAssetHandler* lastOpenedDirectory = nullptr;
 
         Texture folderTexture;
         Texture fileTexture;
 
-        void DrawDirectoryTreeNode(DirectoryAsset* directory);
+        void DrawDirectoryTreeNode(DirectoryAssetHandler* directory);
         void DrawPathItems();
 
         static MenuItemContext menuItemContext;

@@ -57,7 +57,7 @@ namespace Fyrion
     };
 
 
-    class DirectoryAssetHandler final : public AssetHandler
+    class FY_API DirectoryAssetHandler final : public AssetHandler
     {
     public:
         void       SetName(StringView desiredNewName) override;
@@ -74,7 +74,7 @@ namespace Fyrion
         String absolutePath{};
     };
 
-    class JsonAssetHandler final : public AssetHandler
+    class FY_API JsonAssetHandler final : public AssetHandler
     {
     public:
         void       SetName(StringView desiredNewName) override;
@@ -94,8 +94,7 @@ namespace Fyrion
         u64    persistedVersion{};
     };
 
-
-    class ImportedAssetHandler final : public AssetHandler
+    class FY_API ImportedAssetHandler final : public AssetHandler
     {
     public:
         void       SetName(StringView desiredNewName) override;

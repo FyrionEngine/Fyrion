@@ -62,7 +62,7 @@ namespace Fyrion
             {
                 meshAsset = AssetManager::Create<MeshAsset>(AssetCreation{
                     .name = name,
-                    .parent = dccAsset
+                    .parent = dccAsset->GetInfo()
                 });
             }
 
@@ -421,7 +421,7 @@ namespace Fyrion
                     {
                         textureAsset = AssetManager::Create<TextureAsset>(AssetCreation{
                             .name = textureName,
-                            .parent = dccAsset,
+                            .parent = dccAsset->GetInfo(),
                         });
                     }
 
@@ -447,7 +447,7 @@ namespace Fyrion
                 {
                     materialAsset = AssetManager::Create<MaterialAsset>(AssetCreation{
                         .name = materialName,
-                        .parent = dccAsset,
+                        .parent = dccAsset->GetInfo(),
                     });
                 }
 
@@ -504,7 +504,7 @@ namespace Fyrion
                 {
                     rootObjectAsset = AssetManager::Create<SceneObjectAsset>(AssetCreation{
                         .name = dccAsset->GetInfo()->GetName(),
-                        .parent = dccAsset
+                        .parent = dccAsset->GetInfo()
                     });
 
                     TransformComponent& transformComponent = rootObjectAsset->GetObject()->CreateComponent<TransformComponent>();

@@ -28,7 +28,7 @@ namespace Fyrion
         String                   searchText{};
         String                   appFolder{};
         String                   settingsFolder{};
-        DirectoryAsset*          settingsDir = nullptr;
+        DirectoryAssetHandler*   settingsDir = nullptr;
         ProjectLauncherSettings* projectLauncherSettings = nullptr;
 
         String newProjectPath{};

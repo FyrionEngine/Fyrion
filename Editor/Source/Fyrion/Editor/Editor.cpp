@@ -41,7 +41,7 @@ namespace Fyrion
     {
         Array<EditorWindowStorage> editorWindowStorages{};
         Array<OpenWindowStorage>   openWindows{};
-        Array<AssetHandler*>          updatedItems{};
+        Array<AssetHandler*>       updatedItems{};
         String                     projectPath{};
 
         MenuItemContext menuContext{};
@@ -57,8 +57,8 @@ namespace Fyrion
 
         bool forceClose{};
 
-        UniquePtr<SceneEditor> sceneEditor{};
-        Array<DirectoryAsset*> directories{};
+        UniquePtr<SceneEditor>        sceneEditor{};
+        Array<DirectoryAssetHandler*> directories{};
 
         Array<SharedPtr<EditorTransaction>> undoActions{};
         Array<SharedPtr<EditorTransaction>> redoActions{};
@@ -121,7 +121,7 @@ namespace Fyrion
             }
 
             //TODO: Create a setting for that.
-            Editor::OpenDirectory(AssetManager::LoadByPath<DirectoryAsset>("Fyrion:/"));
+            Editor::OpenDirectory(AssetManager::FindHandlerByPath<DirectoryAssetHandler>("Fyrion:/"));
             Editor::OpenDirectory(AssetManager::LoadFromDirectory(Path::Name(projectPath), Path::Join(projectPath, "Assets")));
         }
 
@@ -358,9 +358,9 @@ namespace Fyrion
 
         void SaveAll()
         {
-            for (DirectoryAsset* directory : directories)
+            for (DirectoryAssetHandler* directory : directories)
             {
-                AssetManager::SaveOnDirectory(directory, directory->GetInfo()->GetAbsolutePath());
+                AssetManager::SaveOnDirectory(directory, directory->GetAbsolutePath());
             }
         }
 
@@ -388,7 +388,7 @@ namespace Fyrion
 
             updatedItems.Clear();
 
-            for (DirectoryAsset* directory : directories)
+            for (DirectoryAssetHandler* directory : directories)
             {
                 AssetManager::GetUpdatedAssets(directory, updatedItems);
             }
@@ -413,12 +413,12 @@ namespace Fyrion
         }
     }
 
-    void Editor::OpenDirectory(DirectoryAsset* directory)
+    void Editor::OpenDirectory(DirectoryAssetHandler* directory)
     {
         directories.EmplaceBack(directory);
     }
 
-    Span<DirectoryAsset*> Editor::GetOpenDirectories()
+    Span<DirectoryAssetHandler*> Editor::GetOpenDirectories()
     {
         return directories;
     }
@@ -453,7 +453,7 @@ namespace Fyrion
         FileSystem::CreateDirectory(settingsPath);
 
         JsonAssetWriter jsonAssetWriter;
-        auto object = jsonAssetWriter.CreateObject();
+        auto            object = jsonAssetWriter.CreateObject();
         jsonAssetWriter.WriteString(object, "engineVersion", FY_VERSION);
 
         FileSystem::SaveFileAsString(projectFilePath, JsonAssetWriter::Stringify(object));

@@ -22,16 +22,15 @@ namespace Fyrion
         UUID       uuid{};
         StringView name{};
 
-        //selecting a AssetDirectory, create the asset inside the directory.
         //selecting a different asset, persist the asset data as a child.
-        Asset* parent{};
+        AssetHandler* parent{};
+
+        //selecting a AssetDirectory, create the asset inside the directory.
+        DirectoryAssetHandler* directoryAsset{};
 
         //paths are build using directory + name, but in case of missing one of these info,
         //desired path can be used to lookup the asset.
         StringView desiredPath{};
-
-
-        StringView absolutePath{};
 
         bool generateUUID = true;
     };
@@ -51,6 +50,7 @@ namespace Fyrion
         static Asset*                 LoadById(const UUID& assetId);
         static Asset*                 LoadByPath(const StringView& path);
         static Span<Asset*>           FindAssetsByType(TypeID typeId);
+        static AssetHandler*          FindHandlerByPath(const StringView& path);
         static Asset*                 Create(TypeHandler* typeHandler, const AssetCreation& assetCreation);
         static void                   DestroyAssets();
         static void                   EnableHotReload(bool enable);
@@ -72,6 +72,12 @@ namespace Fyrion
         static T* LoadByPath(const StringView& path)
         {
             return static_cast<T*>(LoadByPath(path));
+        }
+
+        template <typename T>
+        static T* FindHandlerByPath(const StringView& path)
+        {
+            return dynamic_cast<T*>(FindHandlerByPath(path));
         }
 
         static void OnUpdate(f64 deltaTime);

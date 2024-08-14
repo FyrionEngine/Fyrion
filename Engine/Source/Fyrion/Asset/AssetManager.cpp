@@ -124,6 +124,11 @@ namespace Fyrion
         return {};
     }
 
+    AssetHandler* AssetManager::FindHandlerByPath(const StringView& path)
+    {
+        return nullptr;
+    }
+
     Asset* AssetManager::Create(TypeHandler* typeHandler, const AssetCreation& assetCreation)
     {
        return nullptr;

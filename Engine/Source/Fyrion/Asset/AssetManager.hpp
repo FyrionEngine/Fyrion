@@ -25,7 +25,7 @@ namespace Fyrion
         //desired path can be used to lookup the asset.
         StringView desiredPath{};
 
-        //AssetInfo* prototype{};
+
         StringView absolutePath{};
 
         bool generateUUID = true;
@@ -76,9 +76,11 @@ namespace Fyrion
     private:
         static AssetInfo*    CreateAssetInfo();
         static void          LoadAssetFile(DirectoryAsset* directory, const StringView& filePath);
-        static void          SaveInfoJson(StringView file, AssetInfo* assetInfo);
+        static void          SaveInfoJson(AssetInfo* assetInfo);
         static ArchiveObject SaveInfo(ArchiveWriter& writer, AssetInfo* assetInfo, bool isChild = false);
-        static void          SaveAssetJson(StringView file, Asset* asset);
+        static void          SaveAssetsJson(AssetInfo* assetInfo);
+
+        //static void          SaveAssetJson(StringView file, Asset* asset);
         static bool          LoadInfoJson(StringView file, AssetInfo* asset);
         static void          LoadInfo(ArchiveReader& reader, ArchiveObject object, AssetInfo* assetItem);
         static void          LoadAssetJson(StringView file, Asset* asset);

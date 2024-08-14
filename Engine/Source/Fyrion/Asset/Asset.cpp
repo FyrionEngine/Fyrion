@@ -103,13 +103,15 @@ namespace Fyrion
 
     StringView AssetInfo::GetDisplayName()
     {
+        FY_ASSERT(type, "type cannot be null to generate display name");
         if (displayName.Empty() && type)
         {
-            displayName = FormatName(type->GetSimpleName());
+            displayName = type->GetSimpleName();
             if (usize pos = std::string_view{displayName.CStr(), displayName.Size()}.find("Asset"); pos != nPos)
             {
                 displayName.Erase(displayName.begin() + pos, displayName.begin() + pos + 5);
             }
+            displayName = FormatName(displayName);
         }
         return displayName;
     }

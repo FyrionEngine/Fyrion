@@ -46,7 +46,7 @@ namespace Fyrion
         }
 
         Span<ShaderStageInfo> GetStages() const;
-        Span<u8>              GetBytes() const;
+        Array<u8>             GetBytes() const;
 
         bool IsCompiled() const;
         void Compile();
@@ -61,7 +61,7 @@ namespace Fyrion
     private:
         String                 shaderSource;
         ShaderAssetType        shaderType = ShaderAssetType::None;
-        Array<u8>              bytes{};
+        AssetBuffer            spriv{};
         Array<ShaderStageInfo> stages{};
         ShaderInfo             shaderInfo{};
         Array<PipelineState>   pipelineDependencies{};

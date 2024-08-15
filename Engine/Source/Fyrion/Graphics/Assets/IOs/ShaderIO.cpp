@@ -46,11 +46,7 @@ namespace Fyrion
                 shaderAsset->SetShaderType(ShaderAssetType::Include);
             }
 
-            //recompile shader.
-            if (shaderAsset->IsCompiled())
-            {
-                shaderAsset->Compile();
-            }
+            shaderAsset->Compile();
         }
     };
 

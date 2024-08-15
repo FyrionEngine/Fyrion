@@ -32,8 +32,12 @@ namespace Fyrion
 
     void RegisterGraphicsTypes()
     {
+        Registry::Type<InterfaceVariable>();
+        Registry::Type<TypeDescription>();
+        Registry::Type<DescriptorBinding>();
+        Registry::Type<DescriptorLayout>();
+        Registry::Type<ShaderPushConstant>();
         Registry::Type<ShaderStageInfo>();
-        Registry::Type<Array<ShaderStageInfo>>();
         Registry::Type<ShaderInfo>();
         Registry::Type<Buffer>();
         Registry::Type<Texture>();
@@ -105,5 +109,56 @@ namespace Fyrion
         lightType.Value<LightType::Point>("Point");
         lightType.Value<LightType::Spot>("Spot");
         lightType.Value<LightType::Area>("Area");
+
+        auto shaderStage = Registry::Type<ShaderStage>();
+        shaderStage.Value<ShaderStage::Unknown>("Unknown");
+        shaderStage.Value<ShaderStage::Vertex>("Vertex");
+        shaderStage.Value<ShaderStage::Hull>("Hull");
+        shaderStage.Value<ShaderStage::Domain>("Domain");
+        shaderStage.Value<ShaderStage::Geometry>("Geometry");
+        shaderStage.Value<ShaderStage::Pixel>("Pixel");
+        shaderStage.Value<ShaderStage::Compute>("Compute");
+        shaderStage.Value<ShaderStage::Amplification>("Amplification");
+        shaderStage.Value<ShaderStage::Mesh>("Mesh");
+        shaderStage.Value<ShaderStage::RayGen>("RayGen");
+        shaderStage.Value<ShaderStage::RayMiss>("RayMiss");
+        shaderStage.Value<ShaderStage::RayClosestHit>("RayClosestHit");
+        shaderStage.Value<ShaderStage::RayAnyHit>("RayAnyHit");
+        shaderStage.Value<ShaderStage::RayIntersection>("RayIntersection");
+        shaderStage.Value<ShaderStage::Callable>("Callable");
+        shaderStage.Value<ShaderStage::All>("All");
+
+        auto descriptorType = Registry::Type<DescriptorType>();
+        descriptorType.Value<DescriptorType::SampledImage>("SampledImage");
+        descriptorType.Value<DescriptorType::Sampler>("Sampler");
+        descriptorType.Value<DescriptorType::StorageImage>("StorageImage");
+        descriptorType.Value<DescriptorType::UniformBuffer>("UniformBuffer");
+        descriptorType.Value<DescriptorType::StorageBuffer>("StorageBuffer");
+        descriptorType.Value<DescriptorType::AccelerationStructure>("AccelerationStructure");
+
+        auto renderType = Registry::Type<RenderType>();
+        renderType.Value<RenderType::None>("None");
+        renderType.Value<RenderType::Void>("Void");
+        renderType.Value<RenderType::Bool>("Bool");
+        renderType.Value<RenderType::Int>("Int");
+        renderType.Value<RenderType::Float>("Float");
+        renderType.Value<RenderType::Vector>("Vector");
+        renderType.Value<RenderType::Matrix>("Matrix");
+        renderType.Value<RenderType::Image>("Image");
+        renderType.Value<RenderType::Sampler>("Sampler");
+        renderType.Value<RenderType::SampledImage>("SampledImage");
+        renderType.Value<RenderType::Array>("Array");
+        renderType.Value<RenderType::RuntimeArray>("RuntimeArray");
+        renderType.Value<RenderType::Struct>("Struct");
+
+        auto viewType = Registry::Type<ViewType>();
+        viewType.Value<ViewType::Type1D>("Type1D");
+        viewType.Value<ViewType::Type2D>("Type2D");
+        viewType.Value<ViewType::Type3D>("Type3D");
+        viewType.Value<ViewType::TypeCube>("TypeCube");
+        viewType.Value<ViewType::Type1DArray>("Type1DArray");
+        viewType.Value<ViewType::Type2DArray>("Type2DArray");
+        viewType.Value<ViewType::TypeCubeArray>("TypeCubeArray");
+        viewType.Value<ViewType::Undefined>("Undefined");
     }
 }

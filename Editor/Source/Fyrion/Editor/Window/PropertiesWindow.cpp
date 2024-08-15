@@ -260,18 +260,18 @@ namespace Fyrion
         ImGui::EndPopupMenu(popupOpenSettings);
     }
 
-    void PropertiesWindow::DrawAsset(AssetHandler* assetInfo)
+    void PropertiesWindow::DrawAsset(AssetHandler* assetHandler)
     {
         bool readOnly = false;
 
-        Asset* asset = AssetManager::LoadById(assetInfo->GetUUID());
+        Asset* asset = AssetManager::LoadById(assetHandler->GetUUID());
 
         auto& style = ImGui::GetStyle();
         if (ImGui::BeginTable("#asset-table", 2))
         {
-            String name = assetInfo->GetName();
-            String path = assetInfo->GetPath();
-            UUID   uuid = assetInfo->GetUUID();
+            String name = assetHandler->GetName();
+            String path = assetHandler->GetPath();
+            UUID   uuid = assetHandler->GetUUID();
 
             ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthStretch, 0.5f);
             ImGui::TableSetupColumn("Item", ImGuiTableColumnFlags_WidthStretch);
@@ -309,12 +309,12 @@ namespace Fyrion
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5 * style.ScaleFactor);
 
         ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
-        if (ImGui::CollapsingHeader(assetInfo->GetDisplayName().CStr(), 0))
+        if (ImGui::CollapsingHeader(assetHandler->GetDisplayName().CStr(), 0))
         {
             ImGui::Indent();
             ImGui::DrawType(ImGui::DrawTypeDesc{
                 .itemId = reinterpret_cast<usize>(asset),
-                .typeHandler = assetInfo->GetType(),
+                .typeHandler = assetHandler->GetType(),
                 .instance = asset,
                 .flags = readOnly ? ImGuiDrawTypeFlags_ReadOnly : 0u,
                 .userData = this,
@@ -325,7 +325,7 @@ namespace Fyrion
             });
             ImGui::Unindent();
 
-            if (AssetManager::CanReimportAsset(assetInfo))
+            if (AssetManager::CanReimportAsset(assetHandler))
             {
                 f32  width = ImGui::GetContentRegionAvail().x;
                 auto size = ImGui::GetFontSize() + style.FramePadding.y * 2.0f;
@@ -337,7 +337,7 @@ namespace Fyrion
                 ImGui::Spring(1.f);
                 if (ImGui::BorderedButton("Reimport", ImVec2(width * 2 / 3, size)))
                 {
-                    AssetManager::ReimportAsset(assetInfo);
+                    AssetManager::ReimportAsset(assetHandler);
                 }
                 ImGui::Spring(1.f);
 
@@ -353,11 +353,15 @@ namespace Fyrion
         selectedObject = objectAsset;
     }
 
-    void PropertiesWindow::AssetSelection(AssetHandler* assetInfo)
+    void PropertiesWindow::AssetSelection(AssetHandler* assetHandler)
     {
-        if (selectedAsset == nullptr && assetInfo == nullptr) return;
-        ClearSelection();
-        selectedAsset = assetInfo;
+        if (selectedAsset == nullptr && assetHandler == nullptr) return;
+
+        if (assetHandler == nullptr || assetHandler->LoadInstance() != nullptr)
+        {
+            ClearSelection();
+            selectedAsset = assetHandler;
+        }
     }
 
 #if FY_ASSET_REFACTOR

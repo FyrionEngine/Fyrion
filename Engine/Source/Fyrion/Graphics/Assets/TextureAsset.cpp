@@ -116,7 +116,7 @@ namespace Fyrion
             if (mipHeight > 1) mipHeight /= 2;
         }
 
-        SaveCache(textureData, byteImages.Data(), byteImages.Size());
+        SaveBuffer(textureData, byteImages.Data(), byteImages.Size());
     }
 
     void TextureAsset::SetHDRImage(const HDRImage& image)
@@ -138,7 +138,7 @@ namespace Fyrion
                     .size = static_cast<usize>(image.GetWidth() * image.GetHeight() * image.GetChannels())
                 });
 
-                SaveCache(textureData, image.GetData().Data(), image.GetData().Size() * sizeof(f32));
+                SaveBuffer(textureData, image.GetData().Data(), image.GetData().Size() * sizeof(f32));
 
                 break;
             }
@@ -198,8 +198,8 @@ namespace Fyrion
 
     Texture TextureAsset::CreateTexture() const
     {
-        usize size = GetCacheSize(textureData);
-        if (size == 0)
+        Array<u8> textureBytes = LoadBuffer(textureData);
+        if (textureBytes.Size() == 0)
         {
             return {};
         }
@@ -210,9 +210,6 @@ namespace Fyrion
             .mipLevels = std::max(mipLevels, 1u),
             .arrayLayers = std::max(arrayLayers, 1u)
         });
-
-        Array<u8> textureBytes(size);
-        LoadCache(textureData, textureBytes.Data(), textureBytes.Size());
 
         Array<TextureDataRegion> regions{};
         regions.Reserve(images.Size());
@@ -265,7 +262,7 @@ namespace Fyrion
     Image TextureAsset::GetImage() const
     {
         Image image{images[0].extent.width, images[0].extent.height, 4};
-        LoadCache(textureData, image.GetData().begin(), image.GetData().Size());
+        image.data = Traits::Move(LoadBuffer(textureData));
         return image;
     }
 

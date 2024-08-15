@@ -8,7 +8,7 @@ namespace Fyrion
     struct ImportSettings;
     class AssetBufferManager;
 
-    struct CacheRef
+    struct AssetBuffer
     {
         u64 id;
 
@@ -24,9 +24,9 @@ namespace Fyrion
             return {strBuffer, bufSize};
         }
 
-        static CacheRef FromString(StringView str)
+        static AssetBuffer FromString(StringView str)
         {
-            return CacheRef{HexTo64(str)};
+            return AssetBuffer{HexTo64(str)};
         }
     };
 
@@ -36,21 +36,17 @@ namespace Fyrion
         virtual ~Asset() = default;
 
         AssetHandler* GetInfo() const;
-
-        virtual void OnPathUpdated() {}
-        virtual void OnCreated() {}
-        virtual void OnModified() {}
-        virtual void OnDestroyed() {}
-
+        void          SetInfo(AssetHandler* info);
         void          SetModified();
         ArchiveObject Serialize(ArchiveWriter& writer) const;
         void          Deserialize(ArchiveReader& reader, ArchiveObject object);
+        void          SaveBuffer(AssetBuffer& buffer, ConstPtr data, usize dataSize);
+        Array<u8>     LoadBuffer(AssetBuffer buffer) const;
+        bool          HasBuffer(AssetBuffer buffer) const;
+        Asset*        GetParent() const;
 
-        void  SaveCache(CacheRef& cache, ConstPtr data, usize dataSize);
-        usize GetCacheSize(CacheRef cache) const;
-        void  LoadCache(CacheRef cache, VoidPtr, usize dataSize) const;
-
-        Asset* GetParent() const;
+        virtual void OnModified() {}
+        virtual void OnDestroyed() {}
 
         template <typename T, Traits::EnableIf<Traits::IsBaseOf<Asset, T>>* = nullptr>
         T* Cast()
@@ -64,9 +60,6 @@ namespace Fyrion
             return dynamic_cast<T*>(GetParent());
         }
 
-        friend class AssetManager;
-        friend class AssetHandler;
-
         static void RegisterType(NativeTypeHandler<Asset>& type);
 
     protected:
@@ -75,8 +68,8 @@ namespace Fyrion
 
     struct AssetApi
     {
-        Asset* (*castAsset)(VoidPtr ptr);
-        void (*setAsset)(VoidPtr ptr, Asset* asset);
+        Asset* (*            castAsset)(VoidPtr ptr);
+        void (*              setAsset)(VoidPtr ptr, Asset* asset);
         const TypeHandler* (*getTypeHandler)();
     };
 
@@ -216,11 +209,11 @@ namespace Fyrion
     };
 
     template <>
-    struct ArchiveType<CacheRef>
+    struct ArchiveType<AssetBuffer>
     {
         constexpr static bool hasArchiveImpl = true;
 
-        static void Write(ArchiveWriter& writer, ArchiveObject object, StringView name, const CacheRef* value)
+        static void Write(ArchiveWriter& writer, ArchiveObject object, StringView name, const AssetBuffer* value)
         {
             if (*value)
             {
@@ -228,17 +221,17 @@ namespace Fyrion
             }
         }
 
-        static void Read(ArchiveReader& reader, ArchiveObject object, StringView name, CacheRef* value)
+        static void Read(ArchiveReader& reader, ArchiveObject object, StringView name, AssetBuffer* value)
         {
-            *value = CacheRef::FromString(reader.ReadString(object, name));
+            *value = AssetBuffer::FromString(reader.ReadString(object, name));
         }
 
-        static void Add(ArchiveWriter& writer, ArchiveObject array, const CacheRef* value)
+        static void Add(ArchiveWriter& writer, ArchiveObject array, const AssetBuffer* value)
         {
             FY_ASSERT(false, "not implemented");
         }
 
-        static void Get(ArchiveReader& reader, ArchiveObject item, CacheRef* value)
+        static void Get(ArchiveReader& reader, ArchiveObject item, AssetBuffer* value)
         {
             FY_ASSERT(false, "not implemented");
         }

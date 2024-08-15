@@ -119,11 +119,11 @@ namespace Fyrion
             return color;
         }
 
+        Array<T> data;
     private:
         u32      width = 0;
         u32      height = 0;
         u32      channels = 0;
-        Array<T> data;
     };
 
     using Image = TImage<u8>;

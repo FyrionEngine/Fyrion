@@ -13,17 +13,9 @@ namespace Fyrion
     {
     }
 
-
-
     Array<u8> UIFontAsset::GetFont() const
     {
-        if (usize size = GetCacheSize(fontBytes))
-        {
-            Array<u8> ret(size);
-            LoadCache(fontBytes, ret.Data(), ret.Size());
-            return ret;
-        }
-        return {};
+        return LoadBuffer(fontBytes);
     }
 
     void UIFontAsset::RegisterType(NativeTypeHandler<UIFontAsset>& type)
@@ -53,7 +45,7 @@ namespace Fyrion
         UIFontAsset* fontAsset = asset->Cast<UIFontAsset>();
 
         Array<u8> bytes = FileSystem::ReadFileAsByteArray(path);
-        fontAsset->SaveCache(fontAsset->fontBytes, bytes.begin(), bytes.Size());
+        fontAsset->SaveBuffer(fontAsset->fontBytes, bytes.begin(), bytes.Size());
     }
 
     void RegisterAssetTypes()

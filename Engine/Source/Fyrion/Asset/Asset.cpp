@@ -8,17 +8,14 @@
 
 namespace Fyrion
 {
-    void AssetDatabaseCleanRefs(AssetHandler* assetInfo);
-
-    namespace
-    {
-        Logger& logger = Logger::GetLogger("Fyrion::Asset", LogLevel::Debug);
-    }
-
-
     AssetHandler* Asset::GetInfo() const
     {
         return info;
+    }
+
+    void Asset::SetInfo(AssetHandler* info)
+    {
+        this->info = info;
     }
 
     void Asset::SetModified()
@@ -36,48 +33,30 @@ namespace Fyrion
         Serialization::Deserialize(info->GetType(), reader, object, this);
     }
 
-    void Asset::SaveCache(CacheRef& cache, ConstPtr data, usize dataSize)
+    void Asset::SaveBuffer(AssetBuffer& buffer, ConstPtr data, usize dataSize)
     {
-        if (!cache)
+        if (AssetBufferManager* bufferManager = info->GetBufferManager())
         {
-            cache.id = Random::Xorshift64star();
-        }
-
-        String cacheDir = Path::Join(AssetManager::GetCacheDirectory(), ToString(info->GetUUID()));
-        if (!cacheDir.Empty())
-        {
-            if (!FileSystem::GetFileStatus(cacheDir).exists)
-            {
-                FileSystem::CreateDirectory(cacheDir);
-            }
-            String      streamPath = Path::Join(cacheDir, cache.ToString());
-            FileHandler file = FileSystem::OpenFile(streamPath, AccessMode::WriteOnly);
-            FileSystem::WriteFile(file, data, dataSize);
-            FileSystem::CloseFile(file);
+            bufferManager->SaveBuffer(buffer, data, dataSize);
         }
     }
 
-    usize Asset::GetCacheSize(CacheRef cache) const
+    Array<u8> Asset::LoadBuffer(AssetBuffer buffer) const
     {
-        String cacheDir = Path::Join(AssetManager::GetCacheDirectory(), ToString(info->GetUUID()));
-        if (!cacheDir.Empty())
+        if (AssetBufferManager* bufferManager = info->GetBufferManager())
         {
-            String streamPath = Path::Join(cacheDir, cache.ToString());
-            return FileSystem::GetFileStatus(streamPath).fileSize;
+            return bufferManager->LoadBuffer(buffer);
         }
-        return 0;
+        return {};
     }
 
-    void Asset::LoadCache(CacheRef cache, VoidPtr data, usize dataSize) const
+    bool Asset::HasBuffer(AssetBuffer buffer) const
     {
-        String cacheDir = Path::Join(AssetManager::GetCacheDirectory(), ToString(info->GetUUID()));
-        if (!cacheDir.Empty())
+        if (AssetBufferManager* bufferManager = info->GetBufferManager())
         {
-            String streamPath = Path::Join(cacheDir, cache.ToString());
-            FileHandler file = FileSystem::OpenFile(streamPath, AccessMode::ReadOnly);
-            FileSystem::ReadFile(file, data, dataSize);
-            FileSystem::CloseFile(file);
+            return bufferManager->HasBuffer(buffer);
         }
+        return false;
     }
 
     Asset* Asset::GetParent() const

@@ -67,6 +67,6 @@ namespace Fyrion
         Texture texture{};
         Sampler sampler{};
 
-        CacheRef textureData{};
+        AssetBuffer textureData{};
     };
 }

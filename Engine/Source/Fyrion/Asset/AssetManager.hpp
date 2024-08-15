@@ -19,20 +19,17 @@ namespace Fyrion
 
     struct AssetCreation
     {
-        UUID       uuid{};
         StringView name{};
 
         //selecting a different asset, persist the asset data as a child.
+        //selecting a AssetDirectory, create the asset inside the directory.
         AssetHandler* parent{};
 
-        //selecting a AssetDirectory, create the asset inside the directory.
         DirectoryAssetHandler* directoryAsset{};
 
         //paths are build using directory + name, but in case of missing one of these info,
         //desired path can be used to lookup the asset.
         StringView desiredPath{};
-
-        bool generateUUID = true;
     };
 
     class FY_API AssetManager
@@ -40,13 +37,14 @@ namespace Fyrion
     public:
         static DirectoryAssetHandler* LoadFromDirectory(const StringView& name, const StringView& directory);
         static void                   SaveOnDirectory(DirectoryAssetHandler* directoryAssetHandler, const StringView& directoryPath);
-        static void                   SetCacheDirectory(const StringView& directory);
-        static StringView             GetCacheDirectory();
+        static void                   SetDataDirectory(const StringView& directory);
+        static StringView             GetDataDirectory();
         static void                   GetUpdatedAssets(DirectoryAssetHandler* directoryAssetHandler, Array<AssetHandler*>& updatedAssets);
         static DirectoryAssetHandler* LoadFromPackage(const StringView& name, const StringView& pakFile, const StringView& binFile);
         static void                   ImportAsset(DirectoryAssetHandler* directoryAssetHandler, const StringView& path);
-        static bool                   CanReimportAsset(AssetHandler* assetInfo);
+        static bool                   CanReimportAsset(AssetHandler* assetHandler);
         static void                   ReimportAsset(AssetHandler* asset);
+        static void                   QueueAssetImport(AssetIO* io, AssetHandler* assetHandler);
         static Asset*                 LoadById(const UUID& assetId);
         static Asset*                 LoadByPath(const StringView& path);
         static Span<Asset*>           FindAssetsByType(TypeID typeId);
@@ -54,7 +52,7 @@ namespace Fyrion
         static Asset*                 Create(TypeHandler* typeHandler, const AssetCreation& assetCreation);
         static void                   DestroyAssets();
         static void                   EnableHotReload(bool enable);
-        static void                   WatchAsset(AssetHandler* assetInfo);
+        static void                   WatchAsset(AssetHandler* assetHandler);
 
         template <typename T>
         static T* Create(const AssetCreation& assetCreation = {})
@@ -85,7 +83,6 @@ namespace Fyrion
         friend class AssetHandler;
 
     private:
-        static void              QueueAssetImport(AssetIO* io, AssetHandler* assetInfo);
-        static void              LoadAssetFile(DirectoryAssetHandler* directoryAssetHandler, const StringView& filePath);
+        static void LoadAssetFile(DirectoryAssetHandler* directoryAssetHandler, const StringView& filePath);
     };
 }

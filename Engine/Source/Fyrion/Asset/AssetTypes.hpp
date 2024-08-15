@@ -36,7 +36,7 @@ namespace Fyrion
     {
         FY_BASE_TYPES(Asset);
 
-        CacheRef fontBytes;
+        AssetBuffer fontBytes;
 
         Array<u8> GetFont() const;
 

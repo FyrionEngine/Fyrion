@@ -13,8 +13,7 @@ namespace Fyrion
 
     void ShaderAsset::Compile()
     {
-
-        Array<u8>              tempBytes{};
+        Array<u8>              bytes{};
         Array<ShaderStageInfo> tempStages{};
 
         RenderApiType renderApi = Graphics::GetRenderApi();
@@ -22,7 +21,7 @@ namespace Fyrion
 
         if (shaderType == ShaderAssetType::Graphics)
         {
-            if (!ShaderManager::CompileShader(ShaderCreation{.asset = this, .source = source, .entryPoint = "MainVS", .shaderStage = ShaderStage::Vertex, .renderApi = renderApi}, tempBytes))
+            if (!ShaderManager::CompileShader(ShaderCreation{.asset = this, .source = source, .entryPoint = "MainVS", .shaderStage = ShaderStage::Vertex, .renderApi = renderApi}, bytes))
             {
                 return;
             }
@@ -31,12 +30,12 @@ namespace Fyrion
                 .stage = ShaderStage::Vertex,
                 .entryPoint = "MainVS",
                 .offset = 0,
-                .size = (u32)tempBytes.Size()
+                .size = (u32)bytes.Size()
             });
 
-            u32 offset = (u32)tempBytes.Size();
+            u32 offset = (u32)bytes.Size();
 
-            if (!ShaderManager::CompileShader(ShaderCreation{.asset = this, .source = source, .entryPoint = "MainPS", .shaderStage = ShaderStage::Pixel, .renderApi = renderApi}, tempBytes))
+            if (!ShaderManager::CompileShader(ShaderCreation{.asset = this, .source = source, .entryPoint = "MainPS", .shaderStage = ShaderStage::Pixel, .renderApi = renderApi}, bytes))
             {
                 return;
             }
@@ -45,16 +44,16 @@ namespace Fyrion
                 .stage = ShaderStage::Pixel,
                 .entryPoint = "MainPS",
                 .offset = offset,
-                .size = (u32)tempBytes.Size() - offset
+                .size = (u32)bytes.Size() - offset
             });
 
-            offset = (u32)tempBytes.Size();
+            offset = (u32)bytes.Size();
 
 
             std::string_view str = {source.CStr(), source.Size()};
             if (str.find("MainGS") != std::string_view::npos)
             {
-                if (!ShaderManager::CompileShader(ShaderCreation{.asset = this, .source = source, .entryPoint = "MainGS", .shaderStage = ShaderStage::Geometry, .renderApi = renderApi}, tempBytes))
+                if (!ShaderManager::CompileShader(ShaderCreation{.asset = this, .source = source, .entryPoint = "MainGS", .shaderStage = ShaderStage::Geometry, .renderApi = renderApi}, bytes))
                 {
                     return;
                 }
@@ -63,10 +62,10 @@ namespace Fyrion
                     .stage = ShaderStage::Geometry,
                     .entryPoint = "MainGS",
                     .offset = offset,
-                    .size = (u32)tempBytes.Size() - offset
+                    .size = (u32)bytes.Size() - offset
                 });
 
-                offset = (u32)tempBytes.Size();
+                offset = (u32)bytes.Size();
             }
 
         }
@@ -78,7 +77,7 @@ namespace Fyrion
                                                  .entryPoint = "MainCS",
                                                  .shaderStage = ShaderStage::Compute,
                                                  .renderApi = renderApi
-                                             }, tempBytes))
+                                             }, bytes))
             {
                 return;
             }
@@ -86,15 +85,16 @@ namespace Fyrion
             tempStages.EmplaceBack(ShaderStageInfo{
                 .stage = ShaderStage::Compute,
                 .entryPoint = "MainCS",
-                .size = (u32)tempBytes.Size()
+                .size = (u32)bytes.Size()
             });
 
         }
 
         stages = Traits::Move(tempStages);
-        bytes = Traits::Move(tempBytes);
 
         shaderInfo = ShaderManager::ExtractShaderInfo(bytes, stages, renderApi);
+
+        SaveBuffer(spriv, bytes.Data(), bytes.Size());
 
         for (PipelineState pipelineState : pipelineDependencies)
         {
@@ -176,19 +176,22 @@ namespace Fyrion
         return stages;
     }
 
-    Span<u8> ShaderAsset::GetBytes() const
+    Array<u8> ShaderAsset::GetBytes() const
     {
-        return bytes;
+        return LoadBuffer(spriv);
     }
 
     bool ShaderAsset::IsCompiled() const
     {
-        return (!stages.Empty() && !bytes.Empty()) || shaderType == ShaderAssetType::Include;
+        return (!stages.Empty() && HasBuffer(spriv)) || shaderType == ShaderAssetType::Include;
     }
 
     void ShaderAsset::RegisterType(NativeTypeHandler<ShaderAsset>& type)
     {
         type.Constructor<ShaderAsset>();
+        type.Field<&ShaderAsset::spriv>("spriv");
+        type.Field<&ShaderAsset::stages>("stages");
+        type.Field<&ShaderAsset::shaderInfo>("shaderInfo");
         type.Field<&ShaderAsset::shaderType>("shaderType");
     }
 }

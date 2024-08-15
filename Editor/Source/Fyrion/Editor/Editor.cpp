@@ -306,16 +306,16 @@ namespace Fyrion
                                 ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_None, 200.f * style.ScaleFactor);
                                 ImGui::TableHeadersRow();
 
-                                for (AssetHandler* assetInfo : updatedItems)
+                                for (AssetHandler* assetHandler : updatedItems)
                                 {
                                     ImGui::TableNextRow();
 
                                     ImGui::TableSetColumnIndex(0);
-                                    ImGui::Text("%s", assetInfo->GetName().CStr());
+                                    ImGui::Text("%s", assetHandler->GetName().CStr());
                                     ImGui::TableSetColumnIndex(1);
-                                    ImGui::Text("%s", assetInfo->GetPath().CStr());
+                                    ImGui::Text("%s", assetHandler->GetPath().CStr());
                                     ImGui::TableSetColumnIndex(2);
-                                    ImGui::Text("%s", assetInfo->GetDisplayName().CStr());
+                                    ImGui::Text("%s", assetHandler->GetDisplayName().CStr());
                                 }
                                 ImGui::EndTable();
                             }
@@ -487,6 +487,6 @@ namespace Fyrion
 
         CreateMenuItems();
 
-        AssetManager::SetCacheDirectory(Path::Join(projectPath, "Cache"));
+        AssetManager::SetDataDirectory(Path::Join(projectPath, "Data"));
     }
 }

@@ -895,7 +895,7 @@ namespace Fyrion
             return {};
         }
 
-        Span<u8>              bytes = shader->GetBytes();
+        Array<u8>              bytes = shader->GetBytes();
         Span<ShaderStageInfo> stages = shader->GetStages();
         ShaderInfo            shaderInfo = shader->GetShaderInfo();
 
@@ -1216,7 +1216,7 @@ namespace Fyrion
             return {};
         }
 
-        Span<u8>         bytes = shader->GetBytes();
+        Array<u8>        bytes = shader->GetBytes();
         ShaderStageInfo& stage = shader->GetStages()[0];
         ShaderInfo       shaderInfo = shader->GetShaderInfo();
 

@@ -13,21 +13,21 @@ namespace Fyrion
         type.Constructor<AssetHandler*, StringView>();
     }
 
-    RenameAssetAction::RenameAssetAction(AssetHandler* assetInfo, const StringView& newName) : assetInfo(assetInfo), oldName(assetInfo->GetName()), newName(newName) {}
+    RenameAssetAction::RenameAssetAction(AssetHandler* assetHandler, const StringView& newName) : assetHandler(assetHandler), oldName(assetHandler->GetName()), newName(newName) {}
 
     void RenameAssetAction::Commit()
     {
-        assetInfo->SetName(newName);
+        assetHandler->SetName(newName);
     }
 
     void RenameAssetAction::Rollback()
     {
-        assetInfo->SetName(oldName);
+        assetHandler->SetName(oldName);
     }
 
-    MoveAssetAction::MoveAssetAction(AssetHandler* assetInfo, AssetHandler* newDirectory)
-        : assetInfo(assetInfo),
-          oldDirectory(assetInfo->GetParent()),
+    MoveAssetAction::MoveAssetAction(AssetHandler* assetHandler, AssetHandler* newDirectory)
+        : assetHandler(assetHandler),
+          oldDirectory(assetHandler->GetParent()),
           newDirectory(newDirectory) {}
 
     void MoveAssetAction::Commit()
@@ -42,8 +42,8 @@ namespace Fyrion
 
     void MoveAssetAction::MoveToFolder(AssetHandler* directory) const
     {
-         directory->AddChild(assetInfo);
-         assetInfo->SetModified();
+         directory->AddChild(assetHandler);
+         assetHandler->SetModified();
     }
 
     void MoveAssetAction::RegisterType(NativeTypeHandler<MoveAssetAction>& type)

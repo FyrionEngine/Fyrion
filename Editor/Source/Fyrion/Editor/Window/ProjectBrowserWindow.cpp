@@ -91,9 +91,9 @@ namespace Fyrion
             stringCache = ICON_FA_FOLDER;
         }
 
-        AssetHandler* assetInfo = directory;
+        AssetHandler* assetHandler = directory;
 
-        stringCache.Append(" ").Append(assetInfo->GetName());
+        stringCache.Append(" ").Append(assetHandler->GetName());
 
         bool isNodeOpen = ImGui::TreeNode(HashValue(reinterpret_cast<usize>(directory)), stringCache.CStr(), flags);
 
@@ -106,11 +106,11 @@ namespace Fyrion
             ImGui::EndDragDropTarget();
         }
 
-        if (assetInfo->GetParent() != nullptr && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoDisableHover | ImGuiDragDropFlags_SourceNoHoldToOpenOthers))
+        if (assetHandler->GetParent() != nullptr && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoDisableHover | ImGuiDragDropFlags_SourceNoHoldToOpenOthers))
         {
-            assetPayload.asset = assetInfo;
+            assetPayload.asset = assetHandler;
             ImGui::SetDragDropPayload(AssetDragDropType, &assetPayload, sizeof(AssetPayload));
-            ImGui::Text("%s", assetInfo->GetName().CStr());
+            ImGui::Text("%s", assetHandler->GetName().CStr());
             ImGui::EndDragDropSource();
         }
 
@@ -373,29 +373,29 @@ namespace Fyrion
                             }
                         }
 
-                        for (AssetHandler* assetInfo : openDirectory->GetChildren())
+                        for (AssetHandler* assetHandler : openDirectory->GetChildren())
                         {
-                            if (DirectoryAssetHandler* directoryInfo = dynamic_cast<DirectoryAssetHandler*>(assetInfo); directoryInfo == nullptr)
+                            if (DirectoryAssetHandler* directoryInfo = dynamic_cast<DirectoryAssetHandler*>(assetHandler); directoryInfo == nullptr)
                             {
                                 ImGui::ContentItemDesc contentItem{};
-                                contentItem.ItemId = reinterpret_cast<usize>(assetInfo);
+                                contentItem.ItemId = reinterpret_cast<usize>(assetHandler);
                                 contentItem.ShowDetails = true;
-                                contentItem.Label = assetInfo->GetName().CStr();
-                                contentItem.DetailsDesc = assetInfo->GetDisplayName().CStr();
+                                contentItem.Label = assetHandler->GetName().CStr();
+                                contentItem.DetailsDesc = assetHandler->GetDisplayName().CStr();
                                 contentItem.DragDropType = AssetDragDropType;
                                 contentItem.DragDropPayload = &assetPayload;
                                 contentItem.DragDropPayloadSize = sizeof(AssetPayload);
-                                contentItem.TooltipText = assetInfo->GetPath().CStr();
+                                contentItem.TooltipText = assetHandler->GetPath().CStr();
                                 contentItem.Texture = fileTexture;
 
-                                if (assetInfo->IsModified())
+                                if (assetHandler->IsModified())
                                 {
                                     contentItem.PreLabel = "*";
                                 }
 
                                 if (ImGui::DrawContentItem(contentItem))
                                 {
-                                    if (SceneObjectAsset* sceneObjectAsset = dynamic_cast<SceneObjectAsset*>(assetInfo->LoadInstance()))
+                                    if (SceneObjectAsset* sceneObjectAsset = dynamic_cast<SceneObjectAsset*>(assetHandler->LoadInstance()))
                                     {
                                         Editor::CreateTransaction()->CreateAction<OpenSceneAction>(Editor::GetSceneEditor(), sceneObjectAsset)->Commit();
                                     }
@@ -407,14 +407,14 @@ namespace Fyrion
 
                                 if (ImGui::ContentItemSelected(contentItem.ItemId))
                                 {
-                                    newItemSelected = assetInfo;
+                                    newItemSelected = assetHandler;
                                 }
 
                                 if (ImGui::ContentItemRenamed(contentItem.ItemId))
                                 {
-                                    if (ImGui::ContentRenameString() != assetInfo->GetName())
+                                    if (ImGui::ContentRenameString() != assetHandler->GetName())
                                     {
-                                        Editor::CreateTransaction()->CreateAction<RenameAssetAction>(assetInfo, ImGui::ContentRenameString())->Commit();
+                                        Editor::CreateTransaction()->CreateAction<RenameAssetAction>(assetHandler, ImGui::ContentRenameString())->Commit();
                                     }
                                 }
 

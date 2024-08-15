@@ -30,8 +30,8 @@ namespace Fyrion
         materials = p_materials;
         primitives = p_primitives;
 
-        SaveCache(vertices, p_vertices.Data(), p_vertices.Size() * sizeof(VertexStride));
-        SaveCache(indices, p_indices.Data(), p_indices.Size() * sizeof(u32));
+        SaveBuffer(vertices, p_vertices.Data(), p_vertices.Size() * sizeof(VertexStride));
+        SaveBuffer(indices, p_indices.Data(), p_indices.Size() * sizeof(u32));
     }
 
     Span<MeshPrimitive> MeshAsset::GetPrimitives() const
@@ -43,14 +43,11 @@ namespace Fyrion
     {
         if (!vertexBuffer)
         {
-            usize size = GetCacheSize(vertices);
-            Array<u8> data;
-            data.Resize(size);
-            LoadCache(vertices, data.Data(), size);
+            Array<u8> data = LoadBuffer(vertices);
 
             BufferCreation creation{
                 .usage = BufferUsage::VertexBuffer,
-                .size = size,
+                .size = data.Size(),
                 .allocation = BufferAllocation::GPUOnly
             };
 
@@ -59,7 +56,7 @@ namespace Fyrion
             Graphics::UpdateBufferData(BufferDataInfo{
                 .buffer = vertexBuffer,
                 .data = data.Data(),
-                .size = size,
+                .size = data.Size(),
             });
         }
         return vertexBuffer;
@@ -69,14 +66,11 @@ namespace Fyrion
     {
         if (!indexBuffer)
         {
-            usize size = GetCacheSize(indices);
-            Array<u8> data;
-            data.Resize(size);
-            LoadCache(indices, data.Data(), size);
+            Array<u8> data = LoadBuffer(indices);
 
             BufferCreation creation{
                 .usage = BufferUsage::IndexBuffer,
-                .size = size,
+                .size = data.Size(),
                 .allocation = BufferAllocation::GPUOnly
             };
 
@@ -85,7 +79,7 @@ namespace Fyrion
             Graphics::UpdateBufferData(BufferDataInfo{
                 .buffer = indexBuffer,
                 .data = data.Data(),
-                .size = size,
+                .size = data.Size(),
             });
         }
 

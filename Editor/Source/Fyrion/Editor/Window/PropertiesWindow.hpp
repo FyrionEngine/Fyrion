@@ -41,7 +41,7 @@ namespace Fyrion
 
         static void OpenProperties(const MenuItemEventData& eventData);
         void        DrawSceneObject(u32 id, SceneObject& object);
-        void        DrawAsset(AssetHandler* assetInfo);
+        void        DrawAsset(AssetHandler* assetHandler);
         //      void        DrawGraphNode(GraphEditor* graphEditor, RID node);
 
         void SceneObjectSelection(SceneObject* objectAsset);

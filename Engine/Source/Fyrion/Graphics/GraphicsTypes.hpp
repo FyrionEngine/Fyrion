@@ -464,6 +464,8 @@ namespace Fyrion
         String name{};
         Format format{};
         u32    size{};
+
+        static void RegisterType(NativeTypeHandler<InterfaceVariable>& type);
     };
 
     struct TypeDescription
@@ -473,6 +475,8 @@ namespace Fyrion
         u32                    size{};
         u32                    offset{};
         Array<TypeDescription> members{};
+
+        static void RegisterType(NativeTypeHandler<TypeDescription>& type);
     };
 
     struct DescriptorBinding
@@ -486,12 +490,16 @@ namespace Fyrion
         ViewType               viewType{};
         Array<TypeDescription> members{};
         u32                    size{};
+
+        static void RegisterType(NativeTypeHandler<DescriptorBinding>& type);
     };
 
     struct DescriptorLayout
     {
         u32                      set{};
         Array<DescriptorBinding> bindings{};
+
+        static void RegisterType(NativeTypeHandler<DescriptorLayout>& type);
     };
 
     struct ShaderPushConstant
@@ -500,6 +508,8 @@ namespace Fyrion
         u32         offset{};
         u32         size{};
         ShaderStage stage{};
+
+        static void RegisterType(NativeTypeHandler<ShaderPushConstant>& type);
     };
 
     struct ShaderStageInfo
@@ -508,6 +518,8 @@ namespace Fyrion
         String      entryPoint{};
         u32         offset{};
         u32         size{};
+
+        static void RegisterType(NativeTypeHandler<ShaderStageInfo>& type);
     };
 
     struct ShaderInfo
@@ -517,6 +529,8 @@ namespace Fyrion
         Array<DescriptorLayout>   descriptors{};
         Array<ShaderPushConstant> pushConstants{};
         u32                       stride{};
+
+        static void RegisterType(NativeTypeHandler<ShaderInfo>& type);
     };
 
     struct BufferDataInfo

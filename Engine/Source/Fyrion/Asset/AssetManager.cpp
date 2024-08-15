@@ -203,6 +203,8 @@ namespace Fyrion
             {
                 LoadAssetFile(handler, entry);
             }
+
+            fileWatcher.Watch(handler, filePath);
         }
         else if (extension == FY_INFO_EXTENSION)
         {

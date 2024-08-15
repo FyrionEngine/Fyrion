@@ -279,7 +279,22 @@ namespace Fyrion
         return nullptr;
     }
 
-    void DirectoryAssetHandler::SetName(StringView desiredNewName) {}
+    void DirectoryAssetHandler::SetName(StringView desiredNewName)
+    {
+        if (this->name != desiredNewName)
+        {
+            String newName = ValidateName(desiredNewName);
+
+            String newAbsolutePath = Path::Join(Path::Parent(absolutePath), newName);
+            FileSystem::Rename(absolutePath, newAbsolutePath);
+            absolutePath = newAbsolutePath;
+
+            logger.Debug("directory {} renamed to {} ", name, newName);
+            name = newName;
+
+            AssetManager::WatchAsset(this);
+        }
+    }
 
     StringView DirectoryAssetHandler::GetAbsolutePath() const
     {
@@ -359,7 +374,20 @@ namespace Fyrion
         }
     }
 
-    void ChildAssetHandler::Delete() {}
+    void ChildAssetHandler::Delete()
+    {
+        if (instance)
+        {
+            instance->OnDestroyed();
+            //TODO - dependencies are not tracked, so destroying any instance could cause an error.
+            //AssetManager::UnloadAsset(this);
+        }
+
+        FileSystem::Remove(dataPath);
+        logger.Debug("{} deleted", dataPath);
+
+        AssetManagerCleanRefs(this);
+    }
 
     AssetHandler* ChildAssetHandler::CreateChild(StringView name)
     {
@@ -463,7 +491,26 @@ namespace Fyrion
 
     void JsonAssetHandler::SetName(StringView desiredNewName)
     {
-        name = desiredNewName;
+        if (this->name != desiredNewName)
+        {
+            String newName = ValidateName(desiredNewName);
+
+            String newAssetPath = Path::Join(Path::Parent(assetPath), newName, FY_ASSET_EXTENSION);
+            String newInfoPath = Path::Join(Path::Parent(infoPath), newName, FY_INFO_EXTENSION);
+            String newDataPath = Path::Join(Path::Parent(dataPath), newName, FY_DATA_EXTENSION);
+
+            FileSystem::Rename(assetPath, newAssetPath);
+            FileSystem::Rename(infoPath, newInfoPath);
+            FileSystem::Rename(dataPath, newDataPath);
+
+            assetPath = newAssetPath;
+            infoPath = newInfoPath;
+            dataPath = newDataPath;
+
+            logger.Debug("asset {} renamed to {} ", this->name, newName);
+            this->name = newName;
+            UpdatePath();
+        }
     }
 
     StringView JsonAssetHandler::GetAbsolutePath() const
@@ -471,7 +518,7 @@ namespace Fyrion
         return assetPath;
     }
 
-    bool JsonAssetHandler::IsModified() const
+    bool JsonAssetHandler::IsModified()
     {
         return currentVersion != persistedVersion;
     }
@@ -494,6 +541,7 @@ namespace Fyrion
         {
             handler->Save();
         }
+        persistedVersion = currentVersion;
     }
 
     void JsonAssetHandler::Delete()
@@ -602,7 +650,7 @@ namespace Fyrion
 
     void ImportedAssetHandler::AddRelatedFile(StringView fileAbsolutePath)
     {
-
+        relatedFiles.EmplaceBack(fileAbsolutePath);
     }
 
     void ImportedAssetHandler::Save()
@@ -622,7 +670,44 @@ namespace Fyrion
 
     void ImportedAssetHandler::Delete()
     {
+        if (!active) return;
+        active = false;
 
+        Array<AssetHandler*> childrenCopy = children;
+        for(AssetHandler* child: childrenCopy)
+        {
+            child->Delete();
+        }
+
+        if (instance)
+        {
+            instance->OnDestroyed();
+            //TODO - dependencies are not tracked, so destroying any instance could cause an error.
+            //AssetManager::UnloadAsset(this);
+        }
+
+        FileSystem::Remove(infoPath);
+        FileSystem::Remove(dataPath);
+        FileSystem::Remove(assetPath);
+        FileSystem::Remove(importedFilePath);
+
+        logger.Debug("{} deleted", importedFilePath);
+        logger.Debug("{} deleted", infoPath);
+        logger.Debug("{} deleted", dataPath);
+        logger.Debug("{} deleted", assetPath);
+
+        for (const String& relatedFile : relatedFiles)
+        {
+            FileSystem::Remove(relatedFile);
+            logger.Debug("{} deleted", relatedFile);
+        }
+
+        if (parent)
+        {
+           parent->RemoveChild(this);
+        }
+
+        AssetManagerCleanRefs(this);
     }
 
     Asset* ImportedAssetHandler::LoadInstance()

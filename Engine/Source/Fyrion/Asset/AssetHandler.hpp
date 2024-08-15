@@ -130,7 +130,7 @@ namespace Fyrion
     public:
         void                SetName(StringView desiredNewName) override;
         StringView          GetAbsolutePath() const override;
-        bool                IsModified() const;
+        bool                IsModified() override;
         void                SetModified() override;
         void                Save() override;
         void                Delete() override;

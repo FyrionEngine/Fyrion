@@ -7,7 +7,7 @@ namespace Fyrion
     typedef Span<StringView>(*FnGetImportExtensions)();
     typedef TypeID (*FnGetAssetTypeID)(StringView path);
     typedef void(*FnImportAsset)(StringView path, Asset* asset);
-    typedef void(*FnRenameAsset)(Asset* asset, StringView newName);
+    typedef void(*FnRenameAsset)(AssetHandler* asset, StringView newName, AssetHandler* newParent);
 
     struct AssetMeta
     {

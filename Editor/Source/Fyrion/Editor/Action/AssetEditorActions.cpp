@@ -39,9 +39,7 @@ namespace Fyrion
 
     void MoveAssetAction::MoveToFolder(AssetHandler* directory) const
     {
-        int a=  0;
-         // directory->AddChild(assetHandler);
-         // assetHandler->SetModified();
+        assetHandler->SetParent(directory);
     }
 
     void MoveAssetAction::RegisterType(NativeTypeHandler<MoveAssetAction>& type)

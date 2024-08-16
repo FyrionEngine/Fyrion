@@ -26,11 +26,22 @@ namespace Fyrion
 
         FY_BASE_TYPES(AssetIO);
 
+        static void MoveAsset(AssetHandler* asset, StringView newName, AssetHandler* newParent)
+        {
+            for(const String& file: asset->GetRelatedFiles())
+            {
+                String oldPath = Path::Join(asset->GetParent()->GetAbsolutePath(), file);
+                String newPath = Path::Join(newParent->GetAbsolutePath(), file);
+                FileSystem::Rename(oldPath, newPath);
+            }
+        }
+
         GLTFIO()
         {
             getImportExtensions = GetImportExtensions;
             getAssetTypeId = GetAssetTypeID;
             importAsset = ImportAsset;
+            renameAsset = MoveAsset;
         }
 
         static inline StringView extension[2] = {".gltf", ".glb"};

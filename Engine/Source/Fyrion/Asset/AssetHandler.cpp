@@ -59,16 +59,47 @@ namespace Fyrion
         return name;
     }
 
-    void AssetHandler::SetParent(AssetHandler* parent)
+    void AssetHandler::SetName(StringView desiredNewName)
     {
-        if (this->parent != nullptr && this->parent != parent)
+        if (name != desiredNewName)
         {
-            String newName = ValidateName(parent, this, name);
+            String newName = ValidateName(parent, this, desiredNewName);
             AssetMoved(newName, parent);
+            logger.Debug("asset {} renamed to {} ", this->name, newName);
             name = newName;
             UpdatePath();
         }
+    }
+
+    void AssetHandler::SetParent(AssetHandler* parent)
+    {
+        if (this->parent != nullptr)
+        {
+            if (this->parent != parent)
+            {
+                this->parent->RemoveChild(this);
+                String newName = ValidateName(parent, this, name);
+                AssetMoved(newName, parent);
+                name = newName;
+                UpdatePath();
+                parent->AddChild(this);
+            }
+            else
+            {
+                String newName = ValidateName(parent, this, name);
+                AssetMoved(newName, parent);
+                name = newName;
+                UpdatePath();
+            }
+        }
+
         this->parent = parent;
+
+        for (AssetHandler* child : children)
+        {
+            //same parent, but force to update the children to the new path.
+            child->SetParent(this);
+        }
     }
 
     StringView AssetHandler::GetPath() const
@@ -235,6 +266,11 @@ namespace Fyrion
         //empty
     }
 
+    Span<String> AssetHandler::GetRelatedFiles()
+    {
+        return {};
+    }
+
     void AssetHandler::RemoveChild(AssetHandler* child)
     {
         if (AssetHandler** it = FindFirst(children.begin(), children.end(), child))
@@ -288,21 +324,6 @@ namespace Fyrion
         return nullptr;
     }
 
-    void DirectoryAssetHandler::SetName(StringView desiredNewName)
-    {
-        if (this->name != desiredNewName)
-        {
-            String newName = ValidateName(parent, this, desiredNewName);
-
-            String newAbsolutePath = Path::Join(Path::Parent(absolutePath), newName);
-            FileSystem::Rename(absolutePath, newAbsolutePath);
-            absolutePath = newAbsolutePath;
-
-            logger.Debug("directory {} renamed to {} ", name, newName);
-            name = newName;
-        }
-    }
-
     StringView DirectoryAssetHandler::GetAbsolutePath() const
     {
         return absolutePath;
@@ -342,6 +363,8 @@ namespace Fyrion
         FileSystem::Rename(absolutePath, newAbsolutePath);
         absolutePath = newAbsolutePath;
         logger.Debug("directory {} moved to {} ", name, newName);
+
+        AssetManager::WatchAsset(this);
     }
 
     AssetHandler* DirectoryAssetHandler::CreateChild(StringView name)
@@ -354,7 +377,7 @@ namespace Fyrion
         DirectoryAssetHandler* handler = MemoryGlobals::GetDefaultAllocator().Alloc<DirectoryAssetHandler>();
         handler->name = name;
         handler->relativePath = String(name) + ":/",
-        handler->absolutePath = absolutePath;
+            handler->absolutePath = absolutePath;
         handler->parent = parent;
 
         if (parent)
@@ -367,11 +390,6 @@ namespace Fyrion
         AssetManagerAddHandler(handler);
 
         return handler;
-    }
-
-    void ChildAssetHandler::SetName(StringView desiredNewName)
-    {
-
     }
 
     StringView ChildAssetHandler::GetAbsolutePath() const
@@ -526,28 +544,19 @@ namespace Fyrion
         return false;
     }
 
-    void JsonAssetHandler::SetName(StringView desiredNewName)
+    void JsonAssetHandler::AssetMoved(StringView newName, AssetHandler* newParent)
     {
-        if (this->name != desiredNewName)
-        {
-            String newName = ValidateName(parent, this, desiredNewName);
+        String newAssetPath = Path::Join(newParent->GetAbsolutePath(), newName, FY_ASSET_EXTENSION);
+        String newInfoPath = Path::Join(newParent->GetAbsolutePath(), newName, FY_INFO_EXTENSION);
+        String newDataPath = Path::Join(newParent->GetAbsolutePath(), newName, FY_DATA_EXTENSION);
 
-            String newAssetPath = Path::Join(Path::Parent(assetPath), newName, FY_ASSET_EXTENSION);
-            String newInfoPath = Path::Join(Path::Parent(infoPath), newName, FY_INFO_EXTENSION);
-            String newDataPath = Path::Join(Path::Parent(dataPath), newName, FY_DATA_EXTENSION);
+        FileSystem::Rename(assetPath, newAssetPath);
+        FileSystem::Rename(infoPath, newInfoPath);
+        FileSystem::Rename(dataPath, newDataPath);
 
-            FileSystem::Rename(assetPath, newAssetPath);
-            FileSystem::Rename(infoPath, newInfoPath);
-            FileSystem::Rename(dataPath, newDataPath);
-
-            assetPath = newAssetPath;
-            infoPath = newInfoPath;
-            dataPath = newDataPath;
-
-            logger.Debug("asset {} renamed to {} ", this->name, newName);
-            this->name = newName;
-            UpdatePath();
-        }
+        assetPath = newAssetPath;
+        infoPath = newInfoPath;
+        dataPath = newDataPath;
     }
 
     StringView JsonAssetHandler::GetAbsolutePath() const
@@ -598,11 +607,10 @@ namespace Fyrion
 
         if (parent)
         {
-           parent->RemoveChild(this);
+            parent->RemoveChild(this);
         }
 
         AssetManagerCleanRefs(this);
-
     }
 
     Asset* JsonAssetHandler::LoadInstance()
@@ -670,11 +678,6 @@ namespace Fyrion
         return handler;
     }
 
-    void ImportedAssetHandler::SetName(StringView desiredNewName)
-    {
-
-    }
-
     StringView ImportedAssetHandler::GetAbsolutePath() const
     {
         return importedFilePath;
@@ -683,6 +686,11 @@ namespace Fyrion
     void ImportedAssetHandler::AddRelatedFile(StringView fileAbsolutePath)
     {
         relatedFiles.EmplaceBack(fileAbsolutePath);
+    }
+
+    Span<String> ImportedAssetHandler::GetRelatedFiles()
+    {
+        return relatedFiles;
     }
 
     void ImportedAssetHandler::Save()
@@ -706,7 +714,7 @@ namespace Fyrion
         active = false;
 
         Array<AssetHandler*> childrenCopy = children;
-        for(AssetHandler* child: childrenCopy)
+        for (AssetHandler* child : childrenCopy)
         {
             child->Delete();
         }
@@ -736,7 +744,7 @@ namespace Fyrion
 
         if (parent)
         {
-           parent->RemoveChild(this);
+            parent->RemoveChild(this);
         }
 
         AssetManagerCleanRefs(this);
@@ -775,6 +783,16 @@ namespace Fyrion
             writer.WriteUInt(object, "lastModifiedTime", lastModifiedTime);
         }
 
+        if (!relatedFiles.Empty())
+        {
+            ArchiveObject arr = writer.CreateArray();
+            for (const String& file : relatedFiles)
+            {
+                writer.AddString(arr, file);
+            }
+            writer.WriteValue(object, "relatedFiles", arr);
+        }
+
         return object;
     }
 
@@ -782,11 +800,48 @@ namespace Fyrion
     {
         AssetHandler::Deserialize(reader, object);
         lastModifiedTime = reader.ReadUInt(object, "lastModifiedTime");
+
+        if (ArchiveObject arr = reader.ReadObject(object, "relatedFiles"))
+        {
+            auto size = reader.ArrSize(arr);
+
+            ArchiveObject item{};
+            for (usize i = 0; i < size; ++i)
+            {
+                item = reader.Next(arr, item);
+                if (item)
+                {
+                    relatedFiles.EmplaceBack(reader.GetString(item));
+                }
+            }
+        }
     }
 
     AssetBufferManager* ImportedAssetHandler::GetBufferManager()
     {
         return &bufferManager;
+    }
+
+    void ImportedAssetHandler::AssetMoved(StringView newName, AssetHandler* newParent)
+    {
+        String newInfoPath = Path::Join(newParent->GetAbsolutePath(), newName, FY_IMPORT_EXTENSION);
+        String newImportedFilePath = Path::Join(newParent->GetAbsolutePath(), newName, Path::Extension(importedFilePath));
+        String newAssetPath = Path::Join(dataPath, newName, FY_ASSET_EXTENSION);
+
+        FileSystem::Rename(infoPath, newInfoPath);
+        FileSystem::Rename(assetPath, newAssetPath);
+        FileSystem::Rename(importedFilePath, newImportedFilePath);
+
+        if (io->renameAsset)
+        {
+            io->renameAsset(this, newName, newParent);
+        }
+
+        assetPath = newAssetPath;
+        infoPath = newInfoPath;
+        importedFilePath = newImportedFilePath;
+
+        AssetManager::WatchAsset(this);
     }
 
     ImportedAssetHandler* ImportedAssetHandler::Create(AssetIO* io, StringView importedFilePath, DirectoryAssetHandler* directory)

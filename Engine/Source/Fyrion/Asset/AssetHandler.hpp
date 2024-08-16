@@ -30,7 +30,7 @@ namespace Fyrion
         TypeHandler*                GetType() const;
         void                        SetType(TypeHandler* typeHandler);
         StringView                  GetName() const;
-        virtual void                SetName(StringView desiredNewName) = 0;
+        void                        SetName(StringView desiredNewName);
         void                        SetParent(AssetHandler* parent);
         StringView                  GetPath() const;
         virtual StringView          GetAbsolutePath() const = 0;
@@ -50,6 +50,7 @@ namespace Fyrion
         virtual bool                IsModified();
         virtual void                SetModified();
         virtual void                AddRelatedFile(StringView fileAbsolutePath);
+        virtual Span<String>        GetRelatedFiles();
         virtual void                Save() = 0;
         virtual void                Delete() = 0;
         virtual Asset*              LoadInstance();
@@ -63,7 +64,6 @@ namespace Fyrion
         static String ValidateName(AssetHandler* parent, AssetHandler* asset, StringView newName);
 
     protected:
-
         Asset*               instance{};
         AssetHandler*        prototype{};
         String               relativePath{};
@@ -84,6 +84,7 @@ namespace Fyrion
         void      SaveBuffer(AssetBuffer& buffer, ConstPtr data, usize dataSize) override;
         Array<u8> LoadBuffer(const AssetBuffer& buffer) const override;
         bool      HasBuffer(AssetBuffer& buffer) const override;
+
     private:
         AssetHandler* assetHandler;
     };
@@ -92,7 +93,7 @@ namespace Fyrion
     class FY_API DirectoryAssetHandler final : public AssetHandler
     {
     public:
-        void       SetName(StringView desiredNewName) override;
+        // void       SetName(StringView desiredNewName) override;
         StringView GetAbsolutePath() const override;
         void       Save() override;
         void       Delete() override;
@@ -113,7 +114,7 @@ namespace Fyrion
     class FY_API ChildAssetHandler final : public AssetHandler
     {
     public:
-        void          SetName(StringView desiredNewName) override;
+        //  void          SetName(StringView desiredNewName) override;
         StringView    GetAbsolutePath() const override;
         void          Save() override;
         void          Delete() override;
@@ -137,7 +138,8 @@ namespace Fyrion
     class FY_API JsonAssetHandler final : public AssetHandler
     {
     public:
-        void                SetName(StringView desiredNewName) override;
+        //  void                SetName(StringView desiredNewName) override;
+        void                AssetMoved(StringView newName, AssetHandler* newParent) override;
         StringView          GetAbsolutePath() const override;
         bool                IsModified() override;
         void                SetModified() override;
@@ -162,9 +164,10 @@ namespace Fyrion
     class FY_API ImportedAssetHandler final : public AssetHandler
     {
     public:
-        void                SetName(StringView desiredNewName) override;
+        void                AssetMoved(StringView newName, AssetHandler* newParent) override;
         StringView          GetAbsolutePath() const override;
         void                AddRelatedFile(StringView fileAbsolutePath) override;
+        Span<String>        GetRelatedFiles() override;
         void                Save() override;
         void                Delete() override;
         Asset*              LoadInstance() override;

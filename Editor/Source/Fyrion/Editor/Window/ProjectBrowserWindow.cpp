@@ -361,10 +361,10 @@ namespace Fyrion
                                     }
                                 }
 
-                                // if (!asset->IsChildOf(assetPayload.asset) && ImGui::ContentItemAcceptPayload(contentItem.ItemId))
-                                // {
-                                //     Editor::CreateTransaction()->CreateAction<MoveAssetAction>(assetPayload.asset, dynamic_cast<DirectoryAssetHandler*>(asset))->Commit();
-                                // }
+                                if (!asset->IsChildOf(assetPayload.asset) && ImGui::ContentItemAcceptPayload(contentItem.ItemId))
+                                {
+                                    Editor::CreateTransaction()->CreateAction<MoveAssetAction>(assetPayload.asset, dynamic_cast<DirectoryAssetHandler*>(asset))->Commit();
+                                }
 
                                 if (ImGui::ContentItemBeginPayload(contentItem.ItemId))
                                 {
@@ -498,7 +498,10 @@ namespace Fyrion
 
     void ProjectBrowserWindow::AssetNewFolder(const MenuItemEventData& eventData)
     {
-//        static_cast<ProjectBrowserWindow*>(eventData.drawData)->NewAsset(GetTypeID<DirectoryAsset>());
+        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
+        DirectoryAssetHandler* directoryAssetHandler = AssetManager::CreateDirectory(projectBrowserWindow->openDirectory, "New Folder");
+        ImGui::SelectContentItem(reinterpret_cast<usize>(directoryAssetHandler), CONTENT_TABLE_ID + projectBrowserWindow->windowId);
+        ImGui::RenameContentSelected(CONTENT_TABLE_ID + projectBrowserWindow->windowId);
     }
 
     void ProjectBrowserWindow::AssetNewScene(const MenuItemEventData& eventData)
@@ -581,9 +584,9 @@ namespace Fyrion
     void ProjectBrowserWindow::NewAsset(TypeID typeId)
     {
         Asset* asset = AssetManager::Create(Registry::FindTypeById(typeId), {
-            .parent = openDirectory,
+            .directoryAsset = openDirectory,
         });
-        ImGui::SelectContentItem(reinterpret_cast<usize>(asset), CONTENT_TABLE_ID + windowId);
+        ImGui::SelectContentItem(reinterpret_cast<usize>(asset->GetHandler()), CONTENT_TABLE_ID + windowId);
         ImGui::RenameContentSelected(CONTENT_TABLE_ID + windowId);
     }
 

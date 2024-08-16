@@ -19,6 +19,7 @@ namespace Fyrion
 
     struct AssetCreation
     {
+        UUID uuid{};
         StringView name{};
 
         //selecting a different asset, persist the asset data as a child.
@@ -47,8 +48,9 @@ namespace Fyrion
         static void                   QueueAssetImport(AssetIO* io, AssetHandler* assetHandler);
         static Asset*                 LoadById(const UUID& assetId);
         static Asset*                 LoadByPath(const StringView& path);
-        static Span<Asset*>           FindAssetsByType(TypeID typeId);
+        static Span<AssetHandler*>    FindAssetsByType(TypeID typeId);
         static AssetHandler*          FindHandlerByPath(const StringView& path);
+        static DirectoryAssetHandler* CreateDirectory(DirectoryAssetHandler* parent, StringView name);
         static Asset*                 Create(TypeHandler* typeHandler, const AssetCreation& assetCreation);
         static void                   DestroyAssets();
         static void                   EnableHotReload(bool enable);

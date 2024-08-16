@@ -59,6 +59,18 @@ namespace Fyrion
         return name;
     }
 
+    void AssetHandler::SetParent(AssetHandler* parent)
+    {
+        if (this->parent != nullptr && this->parent != parent)
+        {
+            String newName = ValidateName(parent, this, name);
+            AssetMoved(newName, parent);
+            name = newName;
+            UpdatePath();
+        }
+        this->parent = parent;
+    }
+
     StringView AssetHandler::GetPath() const
     {
         return relativePath;
@@ -103,7 +115,20 @@ namespace Fyrion
         return nullptr;
     }
 
-    String AssetHandler::ValidateName(StringView newName)
+    StringView AssetHandler::GetDisplayName(TypeHandler* type)
+    {
+        if (type)
+        {
+            if (const AssetMeta* meta = type->GetAttribute<AssetMeta>(); meta != nullptr && !meta->displayName.Empty())
+            {
+                return meta->displayName;
+            }
+            return type->GetSimpleName();
+        }
+        return "Asset";
+    }
+
+    String AssetHandler::ValidateName(AssetHandler* parent, AssetHandler* asset, StringView newName)
     {
         u32    count{};
         String finalName = newName;
@@ -113,7 +138,7 @@ namespace Fyrion
             nameFound = true;
             for (AssetHandler* child : parent->GetChildren())
             {
-                if (child == this) continue;
+                if (child == asset) continue;
 
                 if (finalName == child->name)
                 {
@@ -131,32 +156,16 @@ namespace Fyrion
         return finalName;
     }
 
-    //TODO this needs to be improved
-    StringView AssetHandler::GetDisplayName()
+    StringView AssetHandler::GetDisplayName() const
     {
-        if (displayName.Empty() && type)
-        {
-            displayName = type->GetSimpleName();
-            if (usize pos = std::string_view{displayName.CStr(), displayName.Size()}.find("Asset"); pos != nPos)
-            {
-                displayName.Erase(displayName.begin() + pos, displayName.begin() + pos + 5);
-            }
-            displayName = FormatName(displayName);
-        }
-
-        if (!displayName.Empty())
-        {
-            return displayName;
-        }
-
-        return "Asset";
+        return GetDisplayName(type);
     }
 
     void AssetHandler::UpdatePath()
     {
         if (parent != nullptr && !name.Empty())
         {
-            name = ValidateName(name);
+            name = ValidateName(parent, this, name);
 
             String newPath = String().Append(parent->GetPath()).Append("/").Append(name).Append(GetExtension());
             if (relativePath != newPath)
@@ -283,7 +292,7 @@ namespace Fyrion
     {
         if (this->name != desiredNewName)
         {
-            String newName = ValidateName(desiredNewName);
+            String newName = ValidateName(parent, this, desiredNewName);
 
             String newAbsolutePath = Path::Join(Path::Parent(absolutePath), newName);
             FileSystem::Rename(absolutePath, newAbsolutePath);
@@ -291,8 +300,6 @@ namespace Fyrion
 
             logger.Debug("directory {} renamed to {} ", name, newName);
             name = newName;
-
-            AssetManager::WatchAsset(this);
         }
     }
 
@@ -301,7 +308,13 @@ namespace Fyrion
         return absolutePath;
     }
 
-    void DirectoryAssetHandler::Save() {}
+    void DirectoryAssetHandler::Save()
+    {
+        if (!FileSystem::GetFileStatus(absolutePath).exists)
+        {
+            FileSystem::CreateDirectory(absolutePath);
+        }
+    }
 
     void DirectoryAssetHandler::Delete()
     {
@@ -321,6 +334,14 @@ namespace Fyrion
     Asset* DirectoryAssetHandler::LoadInstance()
     {
         return nullptr;
+    }
+
+    void DirectoryAssetHandler::AssetMoved(StringView newName, AssetHandler* newParent)
+    {
+        String newAbsolutePath = Path::Join(newParent->GetAbsolutePath(), newName);
+        FileSystem::Rename(absolutePath, newAbsolutePath);
+        absolutePath = newAbsolutePath;
+        logger.Debug("directory {} moved to {} ", name, newName);
     }
 
     AssetHandler* DirectoryAssetHandler::CreateChild(StringView name)
@@ -413,7 +434,7 @@ namespace Fyrion
         if (!instance && GetType() != nullptr)
         {
             instance = GetType()->Cast<Asset>(GetType()->NewInstance());
-            instance->SetInfo(this);
+            instance->SetHandler(this);
 
             String assetPath = Path::Join(GetDataPath(), name, FY_ASSET_EXTENSION);
             if (FileSystem::GetFileStatus(assetPath).exists)
@@ -426,6 +447,22 @@ namespace Fyrion
             }
         }
         return instance;
+    }
+
+    ArchiveObject ChildAssetHandler::Serialize(ArchiveWriter& writer) const
+    {
+        ArchiveObject object = AssetHandler::Serialize(writer);
+        writer.WriteString(object, "name", name);
+        return object;
+    }
+
+    void ChildAssetHandler::Deserialize(ArchiveReader& reader, ArchiveObject object)
+    {
+        if (StringView name = reader.ReadString(object, "name"); !name.Empty())
+        {
+            SetName(name);
+        }
+        AssetHandler::Deserialize(reader, object);
     }
 
     AssetBufferManager* ChildAssetHandler::GetBufferManager()
@@ -493,7 +530,7 @@ namespace Fyrion
     {
         if (this->name != desiredNewName)
         {
-            String newName = ValidateName(desiredNewName);
+            String newName = ValidateName(parent, this, desiredNewName);
 
             String newAssetPath = Path::Join(Path::Parent(assetPath), newName, FY_ASSET_EXTENSION);
             String newInfoPath = Path::Join(Path::Parent(infoPath), newName, FY_INFO_EXTENSION);
@@ -573,7 +610,7 @@ namespace Fyrion
         if (instance == nullptr && GetType() != nullptr)
         {
             instance = GetType()->Cast<Asset>(GetType()->NewInstance());
-            instance->SetInfo(this);
+            instance->SetHandler(this);
 
             if (FileSystem::GetFileStatus(assetPath).exists)
             {
@@ -609,9 +646,9 @@ namespace Fyrion
         if (!directory) return nullptr;
 
         JsonAssetHandler* handler = MemoryGlobals::GetDefaultAllocator().Alloc<JsonAssetHandler>();
-        handler->name = name;
         handler->parent = directory;
         handler->currentVersion = 1;
+        handler->name = name;
         handler->infoPath = Path::Join(directory->GetAbsolutePath(), handler->name, FY_INFO_EXTENSION);
         handler->assetPath = Path::Join(directory->GetAbsolutePath(), handler->name, FY_ASSET_EXTENSION);
         handler->dataPath = Path::Join(directory->GetAbsolutePath(), handler->name, FY_DATA_EXTENSION);
@@ -626,11 +663,6 @@ namespace Fyrion
                 handler->Deserialize(reader, reader.ReadObject());
             }
             handler->persistedVersion = handler->currentVersion;
-        }
-
-        if (!handler->GetUUID())
-        {
-            handler->SetUUID(UUID::RandomUUID());
         }
 
         handler->UpdatePath();
@@ -715,7 +747,7 @@ namespace Fyrion
         if (instance == nullptr && GetType() != nullptr)
         {
             instance = GetType()->Cast<Asset>(GetType()->NewInstance());
-            instance->SetInfo(this);
+            instance->SetHandler(this);
 
             if (FileSystem::GetFileStatus(assetPath).exists)
             {

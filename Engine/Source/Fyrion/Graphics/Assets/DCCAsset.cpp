@@ -1,61 +1,63 @@
 #include "DCCAsset.hpp"
 
+#include "Fyrion/Asset/AssetHandler.hpp"
+
 namespace Fyrion
 {
     MaterialAsset* DCCAsset::FindMaterialByName(const StringView& materialName)
     {
-        // for (Asset* asset : GetChildren())
-        // {
-        //     if (MaterialAsset* materialAsset = dynamic_cast<MaterialAsset*>(asset))
-        //     {
-        //         if (materialAsset->GetName() == materialName)
-        //         {
-        //             return materialAsset;
-        //         }
-        //     }
-        // }
+        for (AssetHandler* handler : GetHandler()->GetChildren())
+        {
+            if (handler->GetName() == materialName)
+            {
+                if (MaterialAsset* materialAsset = dynamic_cast<MaterialAsset*>(handler->LoadInstance()))
+                {
+                    return materialAsset;
+                }
+            }
+        }
         return nullptr;
     }
 
     MeshAsset* DCCAsset::FindMeshByName(const StringView& meshName)
     {
-        // for (Asset* asset : GetChildren())
-        // {
-        //     if (MeshAsset* meshAsset = dynamic_cast<MeshAsset*>(asset))
-        //     {
-        //         if (meshAsset->GetName() == meshName)
-        //         {
-        //             return meshAsset;
-        //         }
-        //     }
-        // }
+        for (AssetHandler* handler : GetHandler()->GetChildren())
+        {
+            if (handler->GetName() == meshName)
+            {
+                if (MeshAsset* meshAsset = dynamic_cast<MeshAsset*>(handler->LoadInstance()))
+                {
+                    return meshAsset;
+                }
+            }
+        }
         return nullptr;
     }
 
-    TextureAsset* DCCAsset::FindTextureByName(const StringView& textureName)
+    TextureAsset* DCCAsset::FindTextureByName(const StringView& textureName) const
     {
-        // for (Asset* asset : GetChildren())
-        // {
-        //     if (TextureAsset* textureAsset = dynamic_cast<TextureAsset*>(asset))
-        //     {
-        //         if (textureAsset->GetName() == textureName)
-        //         {
-        //             return textureAsset;
-        //         }
-        //     }
-        // }
+        for (AssetHandler* handler : GetHandler()->GetChildren())
+        {
+            if (handler->GetName() == textureName)
+            {
+                if (TextureAsset* textureAsset = dynamic_cast<TextureAsset*>(handler->LoadInstance()))
+                {
+                    return textureAsset;
+                }
+            }
+        }
         return nullptr;
     }
 
     SceneObjectAsset* DCCAsset::GetSceneObjectAsset()
     {
-        // for (Asset* asset : GetChildren())
-        // {
-        //     if (SceneObjectAsset* sceneObjectAsset = dynamic_cast<SceneObjectAsset*>(asset))
-        //     {
-        //         return sceneObjectAsset;
-        //     }
-        // }
+        for (AssetHandler* handler : GetHandler()->GetChildren())
+        {
+            if (SceneObjectAsset* sceneObjectAsset = dynamic_cast<SceneObjectAsset*>(handler->LoadInstance()))
+            {
+                return sceneObjectAsset;
+            }
+        }
         return nullptr;
     }
 

@@ -26,12 +26,14 @@ namespace Fyrion
         PreActionFn action;
     };
 
-    class EditorTransaction
+    class FY_API EditorTransaction
     {
     public:
         virtual ~EditorTransaction();
 
         EditorAction* CreateAction(TypeID typeId, VoidPtr* params, TypeID* paramTypes, usize paramNum);
+        void AddAction(TypeID typeId, EditorAction* action);
+
 
         template <typename T>
         T* CreateAction()

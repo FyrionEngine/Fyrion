@@ -19,19 +19,9 @@ namespace Fyrion
     public:
         FY_BASE_TYPES(Asset);
 
-        StringView GetShaderSource() const
-        {
-            return shaderSource;
-        }
-
         ShaderAssetType GetShaderType() const
         {
             return shaderType;
-        }
-
-        void SetShaderSource(const String& shaderSource)
-        {
-            this->shaderSource = shaderSource;
         }
 
         void SetShaderType(ShaderAssetType shaderType)
@@ -59,7 +49,6 @@ namespace Fyrion
         static void RegisterType(NativeTypeHandler<ShaderAsset>& type);
 
     private:
-        String                 shaderSource;
         ShaderAssetType        shaderType = ShaderAssetType::None;
         AssetBuffer            spriv{};
         Array<ShaderStageInfo> stages{};

@@ -106,6 +106,7 @@ namespace Fyrion
 
     void MeshAsset::RegisterType(NativeTypeHandler<MeshAsset>& type)
     {
+        type.Attribute<AssetMeta>(AssetMeta{.displayName = "Mesh"});
         type.Field<&MeshAsset::boundingBox>("boundingBox");
         type.Field<&MeshAsset::indicesCount>("indicesCount");
         type.Field<&MeshAsset::verticesCount>("verticesCount");

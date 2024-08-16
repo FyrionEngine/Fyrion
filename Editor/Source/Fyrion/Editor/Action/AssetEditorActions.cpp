@@ -1,8 +1,6 @@
 #include "AssetEditorActions.hpp"
 #include "Fyrion/Asset/Asset.hpp"
 #include "Fyrion/Asset/AssetHandler.hpp"
-#include "Fyrion/Asset/AssetTypes.hpp"
-#include "Fyrion/Asset/AssetManager.hpp"
 #include "Fyrion/Asset/AssetSerialization.hpp"
 #include "Fyrion/ImGui/ImGui.hpp"
 
@@ -10,7 +8,6 @@ namespace Fyrion
 {
     void RenameAssetAction::RegisterType(NativeTypeHandler<RenameAssetAction>& type)
     {
-        type.Constructor<AssetHandler*, StringView>();
     }
 
     RenameAssetAction::RenameAssetAction(AssetHandler* assetHandler, const StringView& newName) : assetHandler(assetHandler), oldName(assetHandler->GetName()), newName(newName) {}
@@ -42,26 +39,26 @@ namespace Fyrion
 
     void MoveAssetAction::MoveToFolder(AssetHandler* directory) const
     {
-         directory->AddChild(assetHandler);
-         assetHandler->SetModified();
+        int a=  0;
+         // directory->AddChild(assetHandler);
+         // assetHandler->SetModified();
     }
 
     void MoveAssetAction::RegisterType(NativeTypeHandler<MoveAssetAction>& type)
     {
-        type.Constructor<AssetHandler*, AssetHandler*>();
     }
 
     UpdateAssetAction::UpdateAssetAction(Asset* asset, Asset* newValue) : asset(asset)
     {
         JsonAssetWriter writer;
-        currentStrValue = JsonAssetWriter::Stringify(Serialization::Serialize(asset->GetInfo()->GetType(), writer, asset));
-        newStrValue = JsonAssetWriter::Stringify(Serialization::Serialize(asset->GetInfo()->GetType(), writer, newValue));
+        currentStrValue = JsonAssetWriter::Stringify(Serialization::Serialize(asset->GetHandler()->GetType(), writer, asset));
+        newStrValue = JsonAssetWriter::Stringify(Serialization::Serialize(asset->GetHandler()->GetType(), writer, newValue));
     }
 
     void UpdateAssetAction::Commit()
     {
         JsonAssetReader reader(newStrValue);
-        Serialization::Deserialize(asset->GetInfo()->GetType(), reader, reader.ReadObject(), asset);
+        Serialization::Deserialize(asset->GetHandler()->GetType(), reader, reader.ReadObject(), asset);
 
         ImGui::ClearDrawData(asset);
         asset->SetModified();
@@ -69,7 +66,7 @@ namespace Fyrion
     void UpdateAssetAction::Rollback()
     {
         JsonAssetReader reader(currentStrValue);
-        Serialization::Deserialize(asset->GetInfo()->GetType(), reader, reader.ReadObject(), asset);
+        Serialization::Deserialize(asset->GetHandler()->GetType(), reader, reader.ReadObject(), asset);
 
         ImGui::ClearDrawData(asset);
 
@@ -78,7 +75,6 @@ namespace Fyrion
 
     void UpdateAssetAction::RegisterType(NativeTypeHandler<UpdateAssetAction>& type)
     {
-        type.Constructor<Asset*, Asset*>();
     }
 
     void InitAssetEditorActions()

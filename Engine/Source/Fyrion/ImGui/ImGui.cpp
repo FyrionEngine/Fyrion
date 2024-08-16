@@ -1104,19 +1104,19 @@ namespace ImGui
                         std::function<void(TypeID typeId)> drawAssetSelection;
                         drawAssetSelection = [&](const TypeID typeId)
                         {
-                            for (Asset* asset : AssetManager::FindAssetsByType(typeId))
+                            for (AssetHandler* assetHandler : AssetManager::FindAssetsByType(typeId))
                             {
                                 ImGui::ContentItemDesc contentItem{};
                                 contentItem.ItemId = id;
                                 contentItem.ShowDetails = false;
-                                contentItem.Label = asset->GetInfo()->GetName().CStr();
+                                contentItem.Label = assetHandler->GetName().CStr();
                                 contentItem.CanRename = false;
                                 //contentItem.DetailsDesc = asset->GetDisplayName().CStr();
 
                                 if (ImGui::DrawContentItem(contentItem))
                                 {
                                     showAssetSelection = false;
-                                    callback(userData, asset);
+                                    callback(userData, assetHandler->LoadInstance());
                                 }
                                 id += 5;
                             }

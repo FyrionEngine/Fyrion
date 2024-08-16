@@ -1,4 +1,5 @@
 #pragma once
+#include "../../../ThirdParty/freetype/src/gzip/ftzconf.h"
 #include "Fyrion/Core/UUID.hpp"
 
 
@@ -30,11 +31,12 @@ namespace Fyrion
         void                        SetType(TypeHandler* typeHandler);
         StringView                  GetName() const;
         virtual void                SetName(StringView desiredNewName) = 0;
+        void                        SetParent(AssetHandler* parent);
         StringView                  GetPath() const;
         virtual StringView          GetAbsolutePath() const = 0;
         virtual StringView          GetDataPath();
         StringView                  GetExtension() const;
-        StringView                  GetDisplayName();
+        StringView                  GetDisplayName() const;
         AssetHandler*               GetParent() const;
         virtual void                UpdatePath();
         bool                        IsChildOf(AssetHandler* parent) const;
@@ -54,9 +56,13 @@ namespace Fyrion
         virtual void                UnloadInstance();
         virtual AssetHandler*       CreateChild(StringView name) = 0;
         virtual AssetBufferManager* GetBufferManager();
+        virtual void                AssetMoved(StringView newName, AssetHandler* newParent) {}
+
+        static StringView GetDisplayName(TypeHandler* type);
+
+        static String ValidateName(AssetHandler* parent, AssetHandler* asset, StringView newName);
 
     protected:
-        String ValidateName(StringView newName);
 
         Asset*               instance{};
         AssetHandler*        prototype{};
@@ -65,7 +71,6 @@ namespace Fyrion
         AssetHandler*        parent{};
         Array<AssetHandler*> children{};
         bool                 active = true;
-        String               displayName{};
 
     private:
         UUID         uuid{};
@@ -92,6 +97,7 @@ namespace Fyrion
         void       Save() override;
         void       Delete() override;
         Asset*     LoadInstance() override;
+        void       AssetMoved(StringView newName, AssetHandler* newParent) override;
 
         AssetHandler* CreateChild(StringView name) override;
 
@@ -115,6 +121,9 @@ namespace Fyrion
         void          UpdatePath() override;
         StringView    GetDataPath() override;
         Asset*        LoadInstance() override;
+
+        ArchiveObject Serialize(ArchiveWriter& writer) const override;
+        void          Deserialize(ArchiveReader& reader, ArchiveObject object) override;
 
         AssetBufferManager* GetBufferManager() override;
 

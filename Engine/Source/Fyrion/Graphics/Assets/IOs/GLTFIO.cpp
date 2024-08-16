@@ -62,7 +62,7 @@ namespace Fyrion
             {
                 meshAsset = AssetManager::Create<MeshAsset>(AssetCreation{
                     .name = name,
-                    .parent = dccAsset->GetInfo()
+                    .parent = dccAsset->GetHandler()
                 });
             }
 
@@ -312,7 +312,7 @@ namespace Fyrion
         {
             if (texture->image->uri != nullptr)
             {
-                String texturePath = String(dccAsset->GetInfo()->GetParent()->GetPath()).Append("/").Append(StringView{texture->image->uri});
+                String texturePath = String(dccAsset->GetHandler()->GetParent()->GetPath()).Append("/").Append(StringView{texture->image->uri});
 
                 TextureAsset* textureAsset = AssetManager::LoadByPath<TextureAsset>(texturePath);
                 if (textureAsset == nullptr)
@@ -370,7 +370,7 @@ namespace Fyrion
 
                 if (!FileSystem::GetFileStatus(bufferPath).exists)
                 {
-                    bufferPath = Path::Join(Path::Parent(path), asset->GetInfo()->GetName(), Path::Extension(uri));
+                    bufferPath = Path::Join(Path::Parent(path), asset->GetHandler()->GetName(), Path::Extension(uri));
                 }
 
                 if (!FileSystem::GetFileStatus(bufferPath).exists)
@@ -388,7 +388,7 @@ namespace Fyrion
                     MemCopy(data->buffers[i].uri, bufferName.CStr(), bufferName.Size());
                     data->buffers[i].uri[bufferName.Size()] = 0;
                 }
-                asset->GetInfo()->AddRelatedFile(bufferName);
+                asset->GetHandler()->AddRelatedFile(bufferName);
             }
 
             if (cgltf_load_buffers(&options, data, path.CStr()) != cgltf_result_success)
@@ -421,7 +421,7 @@ namespace Fyrion
                     {
                         textureAsset = AssetManager::Create<TextureAsset>(AssetCreation{
                             .name = textureName,
-                            .parent = dccAsset->GetInfo(),
+                            .parent = dccAsset->GetHandler(),
                         });
                     }
 
@@ -447,7 +447,7 @@ namespace Fyrion
                 {
                     materialAsset = AssetManager::Create<MaterialAsset>(AssetCreation{
                         .name = materialName,
-                        .parent = dccAsset->GetInfo(),
+                        .parent = dccAsset->GetHandler(),
                     });
                 }
 
@@ -503,8 +503,8 @@ namespace Fyrion
                 if (rootObjectAsset == nullptr)
                 {
                     rootObjectAsset = AssetManager::Create<SceneObjectAsset>(AssetCreation{
-                        .name = dccAsset->GetInfo()->GetName(),
-                        .parent = dccAsset->GetInfo()
+                        .name = dccAsset->GetHandler()->GetName(),
+                        .parent = dccAsset->GetHandler()
                     });
 
                     TransformComponent& transformComponent = rootObjectAsset->GetObject()->CreateComponent<TransformComponent>();

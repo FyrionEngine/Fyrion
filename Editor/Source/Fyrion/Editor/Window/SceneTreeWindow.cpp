@@ -259,7 +259,7 @@ namespace Fyrion
             skipDragDrop = true;
 
             AssetPayload* payload = static_cast<AssetPayload*>(ImGui::GetDragDropPayload()->Data);
-            SceneObjectAssetProvider* provider = dynamic_cast<SceneObjectAssetProvider*>(payload->asset);
+            SceneObjectAssetProvider* provider = dynamic_cast<SceneObjectAssetProvider*>(payload->asset->LoadInstance());
 
             if (provider != nullptr && ImGui::AcceptDragDropPayload(AssetDragDropType))
             {

@@ -273,8 +273,8 @@ namespace Fyrion
 
     void TextureAsset::RegisterType(NativeTypeHandler<TextureAsset>& type)
     {
+        type.Attribute<AssetMeta>(AssetMeta{.displayName = "Texture"});
         type.Field<&TextureAsset::format>("format");
-
         type.Field<&TextureAsset::mipLevels>("mipLevels");
         type.Field<&TextureAsset::arrayLayers>("arrayLayers");
         type.Field<&TextureAsset::imageBuffer>("imageBuffer");

@@ -35,7 +35,7 @@ namespace Fyrion
 
         MaterialAsset*    FindMaterialByName(const StringView& materialName);
         MeshAsset*        FindMeshByName(const StringView& meshName);
-        TextureAsset*     FindTextureByName(const StringView& textureName);
+        TextureAsset*     FindTextureByName(const StringView& textureName) const;
         SceneObjectAsset* GetSceneObjectAsset() override;
 
     private:

@@ -31,7 +31,6 @@ namespace Fyrion
         static void ImportAsset(StringView path, Asset* asset)
         {
             ShaderAsset* shaderAsset = asset->Cast<ShaderAsset>();
-            shaderAsset->SetShaderSource(FileSystem::ReadFileAsString(path));
 
             if (Path::Extension(path) == ".raster")
             {

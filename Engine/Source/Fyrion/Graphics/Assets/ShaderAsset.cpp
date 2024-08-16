@@ -1,8 +1,10 @@
 #include "ShaderAsset.hpp"
 
+#include "Fyrion/Asset/AssetTypes.hpp"
 #include "Fyrion/Core/Logger.hpp"
 #include "Fyrion/Graphics/Graphics.hpp"
 #include "Fyrion/Graphics/ShaderManager.hpp"
+#include "Fyrion/IO/FileSystem.hpp"
 
 namespace Fyrion
 {
@@ -17,7 +19,7 @@ namespace Fyrion
         Array<ShaderStageInfo> tempStages{};
 
         RenderApiType renderApi = Graphics::GetRenderApi();
-        StringView    source = GetShaderSource();
+        String source = FileSystem::ReadFileAsString(GetHandler()->GetAbsolutePath());
 
         if (shaderType == ShaderAssetType::Graphics)
         {
@@ -188,6 +190,7 @@ namespace Fyrion
 
     void ShaderAsset::RegisterType(NativeTypeHandler<ShaderAsset>& type)
     {
+        type.Attribute<AssetMeta>(AssetMeta{.displayName = "Shader"});
         type.Constructor<ShaderAsset>();
         type.Field<&ShaderAsset::spriv>("spriv");
         type.Field<&ShaderAsset::stages>("stages");

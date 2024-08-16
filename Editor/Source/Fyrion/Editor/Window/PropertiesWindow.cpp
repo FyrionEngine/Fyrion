@@ -357,11 +357,11 @@ namespace Fyrion
     {
         if (selectedAsset == nullptr && assetHandler == nullptr) return;
 
-        if (assetHandler == nullptr || assetHandler->LoadInstance() != nullptr)
-        {
-            ClearSelection();
-            selectedAsset = assetHandler;
-        }
+        // if (assetHandler == nullptr || assetHandler->LoadInstance() != nullptr)
+        // {
+        //     ClearSelection();
+        //     selectedAsset = assetHandler;
+        // }
     }
 
 #if FY_ASSET_REFACTOR

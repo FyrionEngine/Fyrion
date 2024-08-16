@@ -3,39 +3,37 @@
 #include "AssetHandler.hpp"
 #include "AssetSerialization.hpp"
 #include "Fyrion/Core/Logger.hpp"
-#include "Fyrion/IO/FileSystem.hpp"
-#include "Fyrion/IO/Path.hpp"
 
 namespace Fyrion
 {
-    AssetHandler* Asset::GetInfo() const
+    AssetHandler* Asset::GetHandler() const
     {
-        return info;
+        return handler;
     }
 
-    void Asset::SetInfo(AssetHandler* info)
+    void Asset::SetHandler(AssetHandler* handler)
     {
-        this->info = info;
+        this->handler = handler;
     }
 
     void Asset::SetModified()
     {
-        info->SetModified();
+        handler->SetModified();
     }
 
     ArchiveObject Asset::Serialize(ArchiveWriter& writer) const
     {
-        return Serialization::Serialize(info->GetType(), writer, this);
+        return Serialization::Serialize(handler->GetType(), writer, this);
     }
 
     void Asset::Deserialize(ArchiveReader& reader, ArchiveObject object)
     {
-        Serialization::Deserialize(info->GetType(), reader, object, this);
+        Serialization::Deserialize(handler->GetType(), reader, object, this);
     }
 
     void Asset::SaveBuffer(AssetBuffer& buffer, ConstPtr data, usize dataSize)
     {
-        if (AssetBufferManager* bufferManager = info->GetBufferManager())
+        if (AssetBufferManager* bufferManager = handler->GetBufferManager())
         {
             bufferManager->SaveBuffer(buffer, data, dataSize);
         }
@@ -43,7 +41,7 @@ namespace Fyrion
 
     Array<u8> Asset::LoadBuffer(AssetBuffer buffer) const
     {
-        if (AssetBufferManager* bufferManager = info->GetBufferManager())
+        if (AssetBufferManager* bufferManager = handler->GetBufferManager())
         {
             return bufferManager->LoadBuffer(buffer);
         }
@@ -52,7 +50,7 @@ namespace Fyrion
 
     bool Asset::HasBuffer(AssetBuffer buffer) const
     {
-        if (AssetBufferManager* bufferManager = info->GetBufferManager())
+        if (AssetBufferManager* bufferManager = handler->GetBufferManager())
         {
             return bufferManager->HasBuffer(buffer);
         }
@@ -61,9 +59,9 @@ namespace Fyrion
 
     Asset* Asset::GetParent() const
     {
-        if (info->GetParent() != nullptr)
+        if (handler->GetParent() != nullptr)
         {
-            return info->GetParent()->LoadInstance();
+            return handler->GetParent()->LoadInstance();
         }
         return nullptr;
     }

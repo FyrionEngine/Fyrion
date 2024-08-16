@@ -232,6 +232,7 @@ namespace Fyrion
 
     void MaterialAsset::RegisterType(NativeTypeHandler<MaterialAsset>& type)
     {
+        type.Attribute<AssetMeta>(AssetMeta{.displayName = "Material"});
         type.Field<&MaterialAsset::baseColor>("baseColor").Attribute<UIProperty>();
         type.Field<&MaterialAsset::baseColorTexture>("baseColorTexture").Attribute<UIProperty>();
         type.Field<&MaterialAsset::normalTexture>("normalTexture").Attribute<UIProperty>();

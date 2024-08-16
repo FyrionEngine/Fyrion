@@ -18,6 +18,7 @@
 #include "Fyrion/Asset/AssetTypes.hpp"
 #include "Fyrion/Asset/AssetHandler.hpp"
 #include "Fyrion/Core/HashMap.hpp"
+#include "Fyrion/IO/FileSystem.hpp"
 
 #define SHADER_MODEL "6_5"
 
@@ -42,7 +43,7 @@ namespace Fyrion
         DxcCreateInstanceProc dxcCreateInstance;
     }
 
-    struct IncludeHandler : public IDxcIncludeHandler
+    struct IncludeHandler : IDxcIncludeHandler
     {
         ShaderAsset*  shader{};
         IDxcBlobEncoding* blobEncoding{};
@@ -85,9 +86,9 @@ namespace Fyrion
             //check if that's a path
             if (StringView(includePath).FindFirstOf("://") == nPos)
             {
-                if (shader && shader->GetInfo()->GetParent() != nullptr)
+                if (shader && shader->GetHandler()->GetParent() != nullptr)
                 {
-                    includePath = String(shader->GetInfo()->GetParent()->GetPath()).Append("/").Append(includePath);
+                    includePath = String(shader->GetHandler()->GetParent()->GetPath()).Append("/").Append(includePath);
                 }
             }
 
@@ -97,8 +98,7 @@ namespace Fyrion
                 return S_FALSE;
             }
 
-            String source = shaderInclude->GetShaderSource();
-
+            String source = FileSystem::ReadFileAsString(shaderInclude->GetHandler()->GetAbsolutePath());
             utils->CreateBlob(source.CStr(), source.Size(), CP_UTF8, &blobEncoding);
             *ppIncludeSource = blobEncoding;
 

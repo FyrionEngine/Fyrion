@@ -78,11 +78,14 @@ namespace Fyrion
         assetsById.Erase(assetHandler->GetUUID());
         assetsByPath.Erase(assetHandler->GetPath());
 
-        if (auto it = assetsByType.Find(assetHandler->GetType()->GetTypeInfo().typeId))
+        if(assetHandler->GetType() != nullptr)
         {
-            if (const auto itArr = FindFirst(it->second.begin(), it->second.end(), assetHandler))
+            if (auto it = assetsByType.Find(assetHandler->GetType()->GetTypeInfo().typeId))
             {
-                it->second.Erase(itArr);
+                if (const auto itArr = FindFirst(it->second.begin(), it->second.end(), assetHandler))
+                {
+                    it->second.Erase(itArr);
+                }
             }
         }
     }
@@ -129,13 +132,12 @@ namespace Fyrion
         return nullptr;
     }
 
-    Span<Asset*> AssetManager::FindAssetsByType(TypeID typeId)
+    Span<AssetHandler*> AssetManager::FindAssetsByType(TypeID typeId)
     {
-        // if (auto it = assetsByType.Find(typeId))
-        // {
-        //     return it->second;
-        // }
-
+        if (auto it = assetsByType.Find(typeId))
+        {
+            return it->second;
+        }
         return {};
     }
 
@@ -148,23 +150,39 @@ namespace Fyrion
         return nullptr;
     }
 
+    DirectoryAssetHandler* AssetManager::CreateDirectory(DirectoryAssetHandler* parent, StringView name)
+    {
+        DirectoryAssetHandler* handler = DirectoryAssetHandler::Create(name, Path::Join(parent->GetAbsolutePath(), name), parent);
+        handler->Save();
+        fileWatcher.Watch(handler, handler->GetAbsolutePath());
+        logger.Debug("directory {} created on {}", handler->GetName(), handler->GetAbsolutePath());
+        return handler;
+    }
+
     Asset* AssetManager::Create(TypeHandler* typeHandler, const AssetCreation& assetCreation)
     {
+        String name = !assetCreation.name.Empty() ? String(assetCreation.name) : String("New ").Append(AssetHandler::GetDisplayName(typeHandler));
+
         if (assetCreation.directoryAsset != nullptr)
         {
-            JsonAssetHandler* handler = JsonAssetHandler::Create(assetCreation.name, assetCreation.directoryAsset);
+            JsonAssetHandler* handler = JsonAssetHandler::Create(AssetHandler::ValidateName(assetCreation.directoryAsset, nullptr, name),
+                                                                 assetCreation.directoryAsset);
             handler->SetUUID(UUID::RandomUUID());
             handler->SetType(typeHandler);
+
             return handler->LoadInstance();
         }
 
         if (assetCreation.parent != nullptr)
         {
-            AssetHandler* handler = assetCreation.parent->CreateChild(assetCreation.name);
+            AssetHandler* handler = assetCreation.parent->CreateChild(name);
             handler->SetType(typeHandler);
             handler->SetUUID(UUID::RandomUUID());
+            logger.Debug("asset {} created type {} ", name, typeHandler->GetName());
             return handler->LoadInstance();
         }
+
+        logger.Critical("asset cannot be created");
 
         return nullptr;
     }
@@ -213,7 +231,8 @@ namespace Fyrion
         else if (auto importer = importers.Find(extension))
         {
             AssetIO* io = importer->second;
-            ImportedAssetHandler::Create(io, filePath, parentDirectory);
+            ImportedAssetHandler* handler = ImportedAssetHandler::Create(io, filePath, parentDirectory);
+            fileWatcher.Watch(handler, filePath);
         }
     }
 
@@ -354,7 +373,10 @@ namespace Fyrion
                 }
                 case FileNotifyEvent::Removed:
                     logger.Debug("FileWatcher FileNotifyEvent::Removed {} ", modified.path);
-                    assetHandler->Delete();
+                    if (modified.path == assetHandler->GetAbsolutePath())
+                    {
+                        assetHandler->Delete();
+                    }
                     break;
                 case FileNotifyEvent::Modified:
                     logger.Debug("FileWatcher FileNotifyEvent::Modified {} ", modified.path);
@@ -362,7 +384,10 @@ namespace Fyrion
                     break;
                 case FileNotifyEvent::Renamed:
                     logger.Debug("FileWatcher FileNotifyEvent::Renamed {} ", modified.path);
-                    assetHandler->SetName(modified.name);
+                    if (modified.name != assetHandler->GetName())
+                    {
+                        assetHandler->SetName(modified.name);
+                    }
                     break;
             }
         });

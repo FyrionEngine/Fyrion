@@ -11,7 +11,8 @@ namespace Fyrion
 
     struct AssetMeta
     {
-        TypeID importSettings;
+        StringView displayName;
+        TypeID     importSettings;
     };
 
     struct AssetIO

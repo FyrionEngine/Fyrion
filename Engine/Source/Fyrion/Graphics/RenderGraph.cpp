@@ -340,15 +340,18 @@ namespace Fyrion
             if ((resource->creation.type == RenderGraphResourceType::Texture || resource->creation.type == RenderGraphResourceType::Attachment)
                 && resource->creation.scale > 0.f)
             {
-                if (resource->texture)
-                {
-                    Graphics::DestroyTexture(resource->texture);
-                }
+                Texture oldTexture = resource->texture;
 
                 Extent size = Extent{viewportExtent.width, viewportExtent.height} * resource->creation.scale;
                 resource->textureCreation.extent = {(size.width), (size.height), 1};
                 resource->textureCreation.name = resource->fullName;
                 resource->texture = Graphics::CreateTexture(resource->textureCreation);
+
+                //defer destroy to avoid getting the same pointer address for the next texture
+                if (oldTexture)
+                {
+                    Graphics::DestroyTexture(oldTexture);
+                }
 
                 if (resource->creation.type == RenderGraphResourceType::Texture)
                 {

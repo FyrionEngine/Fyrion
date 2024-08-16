@@ -196,7 +196,7 @@ namespace Fyrion
             .format = format,
             .usage = TextureUsage::Storage | TextureUsage::ShaderResource,
             .arrayLayers = 6,
-            .name = "Cubemap"
+            .name = "EquirectangularToCubemap"
         });
 
         textureArrayView = Graphics::CreateTextureView(TextureViewCreation{

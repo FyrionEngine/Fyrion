@@ -8,7 +8,8 @@
 #include "Fyrion/Graphics/Device/RenderDevice.hpp"
 #include "IconsFontAwesome6.h"
 #include "Fyrion/Engine.hpp"
-#include "Fyrion/Asset/AssetDatabase.hpp"
+#include "Fyrion/Asset/AssetHandler.hpp"
+#include "Fyrion/Asset/AssetManager.hpp"
 #include "Fyrion/Asset/AssetTypes.hpp"
 #include "Fyrion/Core/Attributes.hpp"
 #include "Fyrion/Core/StringUtils.hpp"
@@ -968,13 +969,15 @@ namespace ImGui
         ImGuiIO& io = ImGui::GetIO();
         io.Fonts->Clear();
 
-        if (UIFontAsset* fontAsset = AssetDatabase::FindByPath<UIFontAsset>("Fyrion://Fonts/DejaVuSans.ttf"))
+        if (UIFontAsset* fontAsset = AssetManager::LoadByPath<UIFontAsset>("Fyrion://Fonts/DejaVuSans.ttf"))
         {
             auto font = ImFontConfig();
             font.SizePixels = fontSize * scaleFactor;
             memcpy(font.Name, "NotoSans", 9);
             font.FontDataOwnedByAtlas = false;
-            io.Fonts->AddFontFromMemoryTTF(fontAsset->fontBytes.Data(), fontAsset->fontBytes.Size(), font.SizePixels, &font);
+
+            Array<u8> bytes = fontAsset->GetFont();
+            io.Fonts->AddFontFromMemoryTTF(bytes.Data(), bytes.Size(), font.SizePixels, &font);
         }
         else
         {
@@ -983,7 +986,7 @@ namespace ImGui
             io.Fonts->AddFontDefault(&config);
         }
 
-        if (UIFontAsset* fontAsset = AssetDatabase::FindByPath<UIFontAsset>("Fyrion://Fonts/fa-solid-900.otf"))
+        if (UIFontAsset* fontAsset = AssetManager::LoadByPath<UIFontAsset>("Fyrion://Fonts/fa-solid-900.otf"))
         {
             static const ImWchar icon_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
 
@@ -995,7 +998,8 @@ namespace ImGui
             config.FontDataOwnedByAtlas = false;
             memcpy(config.Name, "FontAwesome", 11);
 
-            io.Fonts->AddFontFromMemoryTTF(fontAsset->fontBytes.Data(), fontAsset->fontBytes.Size(), config.SizePixels, &config, icon_ranges);
+            Array<u8> bytes = fontAsset->GetFont();
+            io.Fonts->AddFontFromMemoryTTF(bytes.Data(), bytes.Size(), config.SizePixels, &config, icon_ranges);
         }
     }
 
@@ -1100,19 +1104,19 @@ namespace ImGui
                         std::function<void(TypeID typeId)> drawAssetSelection;
                         drawAssetSelection = [&](const TypeID typeId)
                         {
-                            for (Asset* asset : AssetDatabase::FindAssetsByType(typeId))
+                            for (AssetHandler* assetHandler : AssetManager::FindAssetsByType(typeId))
                             {
                                 ImGui::ContentItemDesc contentItem{};
                                 contentItem.ItemId = id;
                                 contentItem.ShowDetails = false;
-                                contentItem.Label = asset->GetName().CStr();
+                                contentItem.Label = assetHandler->GetName().CStr();
                                 contentItem.CanRename = false;
                                 //contentItem.DetailsDesc = asset->GetDisplayName().CStr();
 
                                 if (ImGui::DrawContentItem(contentItem))
                                 {
                                     showAssetSelection = false;
-                                    callback(userData, asset);
+                                    callback(userData, assetHandler->LoadInstance());
                                 }
                                 id += 5;
                             }

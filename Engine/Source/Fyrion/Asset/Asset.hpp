@@ -1,14 +1,15 @@
 #pragma once
-#include "AssetDatabase.hpp"
+#include "AssetManager.hpp"
+#include "AssetHandler.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Core/UUID.hpp"
 
 namespace Fyrion
 {
-    class Asset;
-    class AssetDirectory;
+    struct ImportSettings;
+    class AssetBufferManager;
 
-    struct Blob
+    struct AssetBuffer
     {
         u64 id;
 
@@ -24,83 +25,29 @@ namespace Fyrion
             return {strBuffer, bufSize};
         }
 
-        static Blob FromString(StringView str)
+        static AssetBuffer FromString(StringView str)
         {
-            return Blob{HexTo64(str)};
+            return AssetBuffer{HexTo64(str)};
         }
     };
 
     class FY_API Asset
     {
     public:
-        virtual ~Asset();
+        virtual ~Asset() = default;
 
-        UUID GetUUID() const
-        {
-            return uuid;
-        }
+        AssetHandler* GetHandler() const;
+        void          SetHandler(AssetHandler* handler);
+        void          SetModified();
+        ArchiveObject Serialize(ArchiveWriter& writer) const;
+        void          Deserialize(ArchiveReader& reader, ArchiveObject object);
+        void          SaveBuffer(AssetBuffer& buffer, ConstPtr data, usize dataSize);
+        Array<u8>     LoadBuffer(AssetBuffer buffer) const;
+        bool          HasBuffer(AssetBuffer buffer) const;
+        Asset*        GetParent() const;
 
-        void SetUUID(const UUID& p_uuid);
-
-        Asset* GetPrototype() const
-        {
-            return prototype;
-        }
-
-        TypeHandler* GetAssetType() const
-        {
-            return assetType;
-        }
-
-        TypeID GetAssetTypeId() const;
-
-        virtual StringView GetName() const
-        {
-            return name;
-        }
-
-        StringView GetPath() const
-        {
-            return path;
-        }
-        void SetPath(StringView path);
-
-        StringView GetAbsolutePath() const
-        {
-            return absolutePath;
-        }
-
-        virtual void SetName(StringView p_name);
-        virtual void SetExtension(StringView p_extension);
-        StringView   GetExtension() const;
-
-
-        bool IsActive() const
-        {
-            return active;
-        }
-
-        void SetActive(bool p_active);
-
-        AssetDirectory* GetDirectory() const
-        {
-            return directory;
-        }
-
-        bool IsChildOf(Asset* parent) const;
-
-        virtual void BuildPath();
-        virtual void OnActiveChanged() {}
-
-        virtual void OnModified() {};
-        void SetModified();
-
-        virtual bool       IsModified() const;
-        virtual StringView GetDisplayName() const;
-
-        friend class AssetDatabase;
-        friend class AssetDirectory;
-
+        virtual void OnModified() {}
+        virtual void OnDestroyed() {}
 
         template <typename T, Traits::EnableIf<Traits::IsBaseOf<Asset, T>>* = nullptr>
         T* Cast()
@@ -108,56 +55,26 @@ namespace Fyrion
             return dynamic_cast<T*>(this);
         }
 
-        void  SaveBlob(Blob& blob, ConstPtr data, usize dataSize);
-        usize GetBlobSize(Blob blob) const;
-        void  LoadBlob(Blob blob, VoidPtr, usize dataSize) const;
+        template <typename T, Traits::EnableIf<Traits::IsBaseOf<Asset, T>>* = nullptr>
+        T* GetParent()
+        {
+            return dynamic_cast<T*>(GetParent());
+        }
 
-        Span<Asset*> GetChildrenAssets() const;
-
-        Asset*       GetPhysicalAsset();
-        const Asset* GetPhysicalAsset() const;
-
-        Asset* GetOwner() const;
-        void   SetOwner(Asset* owner);
-
-        virtual bool          LoadData();
-        virtual void          SaveData();
-        virtual StringView    GetDataExtesion();
-        virtual void          DeserializeData(ArchiveReader& reader, ArchiveObject object);
-        virtual ArchiveObject SerializeData(ArchiveWriter& writer) const;
-
-    private:
-        usize           index{};
-        UUID            uuid{};
-        bool            hasBlobs = false;
-        String          path{};
-        Asset*          prototype{};
-        Asset*          owner{};
-        Array<Asset*>   assets{};
-        TypeHandler*    assetType{};
-        u64             currentVersion{};
-        u64             loadedVersion{};
-        u64             lastModified{};
-        String          name{};
-        String          extension;
-        String          absolutePath{};
-        AssetDirectory* directory{};
-        bool            active = true;
-
-        void ValidateName();
-
-    public:
         static void RegisterType(NativeTypeHandler<Asset>& type);
+
+    protected:
+        AssetHandler* handler{};
     };
 
     struct AssetApi
     {
-        Asset* (*castAsset)(VoidPtr ptr);
-        void   (*setAsset)(VoidPtr ptr,Asset* asset);
+        Asset* (*            castAsset)(VoidPtr ptr);
+        void (*              setAsset)(VoidPtr ptr, Asset* asset);
         const TypeHandler* (*getTypeHandler)();
     };
 
-    template<typename T>
+    template <typename T>
     struct TypeApiInfo<T, Traits::EnableIf<Traits::IsBaseOf<Asset, T>>>
     {
         static void ExtractApi(VoidPtr pointer)
@@ -168,7 +85,7 @@ namespace Fyrion
                 return static_cast<Asset*>(*static_cast<T**>(ptr));
             };
 
-            api->setAsset = [](VoidPtr ptr,Asset* asset)
+            api->setAsset = [](VoidPtr ptr, Asset* asset)
             {
                 *static_cast<T**>(ptr) = static_cast<T*>(asset);
             };
@@ -185,19 +102,90 @@ namespace Fyrion
     {
         constexpr static bool hasArchiveImpl = true;
 
+        static ArchiveObject GetObjectFromAsset(ArchiveWriter& writer, const T* asset)
+        {
+            AssetHandler* handler = asset->GetHandler();
+
+            ArchiveObject object = writer.CreateObject();
+
+            if (handler->GetUUID())
+            {
+                writer.WriteString(object, "uuid", ToString(handler->GetUUID()));
+            }
+            else if (!handler->GetPath().Empty())
+            {
+                writer.WriteString(object, "path", handler->GetPath());
+            }
+
+            if (handler->GetType()->GetTypeInfo().typeId != GetTypeID<T>())
+            {
+                writer.WriteString(object, "type", handler->GetType()->GetName());
+            }
+            return object;
+        }
+
         static void Write(ArchiveWriter& writer, ArchiveObject object, StringView name, T* const* value)
         {
             if (*value)
             {
-                writer.WriteString(object, name, ToString((*value)->GetUUID()));
+                writer.WriteValue(object, name, GetObjectFromAsset(writer, *value));
             }
         }
-        static void Read(ArchiveReader& reader, ArchiveObject object, StringView name, T** value)
+
+        static T* GetAssetFromObject(ArchiveReader& reader, ArchiveObject asserRef)
         {
-            UUID uuid = UUID::FromString(reader.ReadString(object, name));
+            UUID uuid = UUID::FromString(reader.ReadString(asserRef, "uuid"));
             if (uuid)
             {
-                *value = AssetDatabase::Create<T>(uuid);
+                if (T* asset = AssetManager::LoadById<T>(uuid))
+                {
+                    return asset;
+                }
+            }
+            String path = reader.ReadString(asserRef, "path");
+            if (!path.Empty())
+            {
+                if (T* asset = AssetManager::LoadByPath<T>(path))
+                {
+                    return asset;
+                }
+            }
+
+            if (!path.Empty() || uuid)
+            {
+                TypeHandler* typeHandler = nullptr;
+                if (StringView type = reader.ReadString(asserRef, "type"); !type.Empty())
+                {
+                    typeHandler = Registry::FindTypeByName(type);
+                }
+
+                if (!typeHandler)
+                {
+                    typeHandler = Registry::FindType<T>();
+                }
+
+                if (typeHandler)
+                {
+                    //TODO - not sure about it.
+
+                    // return static_cast<T*>(AssetManager::Create(
+                    //     typeHandler,
+                    //     AssetCreation{
+                    //         .uuid = uuid,
+                    //         .desiredPath = path
+                    //     }
+                    // ));
+                }
+            }
+
+            return nullptr;
+        }
+
+        static void Read(ArchiveReader& reader, ArchiveObject object, StringView name, T** value)
+        {
+            if (ArchiveObject asserRef = reader.ReadObject(object, name))
+            {
+                *value = GetAssetFromObject(reader, asserRef);
             }
             else if (*value)
             {
@@ -205,24 +193,23 @@ namespace Fyrion
             }
         }
 
-        static void Add(ArchiveWriter& writer, ArchiveObject array, T*const * value)
+        static void Add(ArchiveWriter& writer, ArchiveObject array, T* const * value)
         {
             if (*value)
             {
-                writer.AddString(array, ToString((*value)->GetUUID()));
+                writer.AddValue(array, GetObjectFromAsset(writer, *value));
             }
             else if (writer.HasOpt(SerializationOptions::IncludeNullOrEmptyValues))
             {
-                writer.AddString(array, ToString(UUID{}));
+                writer.AddValue(array, writer.CreateObject());
             }
         }
 
         static void Get(ArchiveReader& reader, ArchiveObject item, T** value)
         {
-            UUID uuid = UUID::FromString(reader.GetString(item));
-            if (uuid)
+            if (item)
             {
-                *value = AssetDatabase::Create<T>(uuid);
+                *value = GetAssetFromObject(reader, item);
             }
             else if (*value)
             {
@@ -232,28 +219,29 @@ namespace Fyrion
     };
 
     template <>
-    struct ArchiveType<Blob>
+    struct ArchiveType<AssetBuffer>
     {
         constexpr static bool hasArchiveImpl = true;
 
-        static void Write(ArchiveWriter& writer, ArchiveObject object, StringView name, const Blob* value)
+        static void Write(ArchiveWriter& writer, ArchiveObject object, StringView name, const AssetBuffer* value)
         {
             if (*value)
             {
                 writer.WriteString(object, name, value->ToString());
             }
         }
-        static void Read(ArchiveReader& reader, ArchiveObject object, StringView name, Blob* value)
+
+        static void Read(ArchiveReader& reader, ArchiveObject object, StringView name, AssetBuffer* value)
         {
-            *value = Blob::FromString(reader.ReadString(object, name));
+            *value = AssetBuffer::FromString(reader.ReadString(object, name));
         }
 
-        static void Add(ArchiveWriter& writer, ArchiveObject array, const Blob* value)
+        static void Add(ArchiveWriter& writer, ArchiveObject array, const AssetBuffer* value)
         {
             FY_ASSERT(false, "not implemented");
         }
 
-        static void Get(ArchiveReader& reader, ArchiveObject item, Blob* value)
+        static void Get(ArchiveReader& reader, ArchiveObject item, AssetBuffer* value)
         {
             FY_ASSERT(false, "not implemented");
         }

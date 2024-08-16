@@ -4,54 +4,42 @@
 
 namespace Fyrion
 {
+    typedef Span<StringView>(*FnGetImportExtensions)();
+    typedef TypeID (*FnGetAssetTypeID)(StringView path);
+    typedef void(*FnImportAsset)(StringView path, Asset* asset);
+    typedef void(*FnRenameAsset)(AssetHandler* asset, StringView newName, AssetHandler* newParent);
+
+    struct AssetMeta
+    {
+        StringView displayName;
+        TypeID     importSettings;
+    };
+
     struct AssetIO
     {
-        virtual Span<StringView> GetImportExtensions()
-        {
-            return {};
-        }
+        virtual ~AssetIO() = default;
 
-        virtual Asset* CreateAsset()
-        {
-            return nullptr;
-        }
+        FnGetImportExtensions getImportExtensions = nullptr;
+        FnGetAssetTypeID      getAssetTypeId = nullptr;
+        FnImportAsset         importAsset = nullptr;
+        FnRenameAsset         renameAsset = nullptr;
 
-        virtual void ImportAsset(StringView path, Asset* asset) {}
-
-        virtual     ~AssetIO() = default;
         static void RegisterType(NativeTypeHandler<AssetIO>& type);
     };
 
-
-    class FY_API AssetDirectory final : public Asset
+    struct ImportSettings
     {
-    public:
-        FY_BASE_TYPES(Asset);
-
-        void BuildPath() override;
-        void OnActiveChanged() override;
-
-        void SetExtension(StringView p_extension) override {}
-
-        StringView   GetDisplayName() const override;
-        void         AddChild(Asset* child);
-        void         RemoveChild(Asset* child);
-        Span<Asset*> GetChildren();
-        bool         IsModified() const override;
-
-        bool         HasChild(const StringView& childAbsolutePath) const;
-
-        static void RegisterType(NativeTypeHandler<AssetDirectory>& type);
-
-    private:
-        Array<Asset*> children;
+        virtual              ~ImportSettings() = default;
+        virtual TypeHandler* GetTypeHandler() = 0;
     };
 
     struct UIFontAsset final : Asset
     {
         FY_BASE_TYPES(Asset);
 
-        Array<u8> fontBytes;
+        AssetBuffer fontBytes;
+
+        Array<u8> GetFont() const;
 
         static void RegisterType(NativeTypeHandler<UIFontAsset>& type);
     };
@@ -59,11 +47,11 @@ namespace Fyrion
     struct UIFontAssetIO : AssetIO
     {
         FY_BASE_TYPES(AssetIO);
+        UIFontAssetIO();
 
-        StringView extensions[2] = {".ttf", ".otf"};
-
-        Span<StringView> GetImportExtensions() override;
-        Asset*           CreateAsset() override;
-        void             ImportAsset(StringView path, Asset* asset) override;
+        static inline StringView extensions[2] = {".ttf", ".otf"};
+        static Span<StringView> GetImportExtensions();
+        static TypeID           GetAssetTypeID(StringView path);
+        static void             ImportAsset(StringView path, Asset* asset);
     };
 }

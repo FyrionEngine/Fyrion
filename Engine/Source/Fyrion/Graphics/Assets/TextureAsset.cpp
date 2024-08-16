@@ -19,6 +19,17 @@ namespace Fyrion
     };
 
 
+    TypeHandler* TextureImportSettings::GetTypeHandler()
+    {
+        return Registry::FindType<TextureImportSettings>();
+    }
+
+    void TextureImportSettings::RegisterType(NativeTypeHandler<TextureImportSettings>& type)
+    {
+        type.Field<&TextureImportSettings::generateMipmaps>("generateMipmaps");
+        type.Field<&TextureImportSettings::textureType>("textureType");
+    }
+
     void TextureAssetImage::RegisterType(NativeTypeHandler<TextureAssetImage>& type)
     {
         type.Field<&TextureAssetImage::byteOffset>("byteOffset");
@@ -41,11 +52,6 @@ namespace Fyrion
         }
     }
 
-    StringView TextureAsset::GetDisplayName() const
-    {
-        return "Texture";
-    }
-
     void TextureAsset::SetImagePath(StringView path)
     {
         Image image(path);
@@ -60,7 +66,7 @@ namespace Fyrion
 
     void TextureAsset::SetImage(const Image& image)
     {
-        mipLevels = generateMipmaps ? static_cast<u32>(std::floor(std::log2(std::max(image.GetWidth(), image.GetHeight())))) + 1 : 1;
+        mipLevels = textureImportSettings.generateMipmaps ? static_cast<u32>(std::floor(std::log2(std::max(image.GetWidth(), image.GetHeight())))) + 1 : 1;
 
         format = Format::RGBA;
         images.Clear();
@@ -110,7 +116,7 @@ namespace Fyrion
             if (mipHeight > 1) mipHeight /= 2;
         }
 
-        SaveBlob(textureData, byteImages.Data(), byteImages.Size());
+        SaveBuffer(textureData, byteImages.Data(), byteImages.Size());
     }
 
     void TextureAsset::SetHDRImage(const HDRImage& image)
@@ -118,7 +124,7 @@ namespace Fyrion
         format = Format::RGBA32F;
         images.Clear();
 
-        switch (textureType)
+        switch (textureImportSettings.textureType)
         {
             case TextureType::Texture2D:
             {
@@ -132,7 +138,7 @@ namespace Fyrion
                     .size = static_cast<usize>(image.GetWidth() * image.GetHeight() * image.GetChannels())
                 });
 
-                SaveBlob(textureData, image.GetData().Data(), image.GetData().Size() * sizeof(f32));
+                SaveBuffer(textureData, image.GetData().Data(), image.GetData().Size() * sizeof(f32));
 
                 break;
             }
@@ -192,8 +198,8 @@ namespace Fyrion
 
     Texture TextureAsset::CreateTexture() const
     {
-        usize size = GetBlobSize(textureData);
-        if (size == 0)
+        Array<u8> textureBytes = LoadBuffer(textureData);
+        if (textureBytes.Size() == 0)
         {
             return {};
         }
@@ -204,9 +210,6 @@ namespace Fyrion
             .mipLevels = std::max(mipLevels, 1u),
             .arrayLayers = std::max(arrayLayers, 1u)
         });
-
-        Array<u8> textureBytes(size);
-        LoadBlob(textureData, textureBytes.Data(), textureBytes.Size());
 
         Array<TextureDataRegion> regions{};
         regions.Reserve(images.Size());
@@ -259,7 +262,7 @@ namespace Fyrion
     Image TextureAsset::GetImage() const
     {
         Image image{images[0].extent.width, images[0].extent.height, 4};
-        LoadBlob(textureData, image.GetData().begin(), image.GetData().Size());
+        image.data = Traits::Move(LoadBuffer(textureData));
         return image;
     }
 
@@ -268,22 +271,10 @@ namespace Fyrion
         return format;
     }
 
-    TextureType TextureAsset::GetTextureType() const
-    {
-        return textureType;
-    }
-
-    void TextureAsset::SetTextureType(TextureType textureType)
-    {
-        this->textureType = textureType;
-    }
-
     void TextureAsset::RegisterType(NativeTypeHandler<TextureAsset>& type)
     {
+        type.Attribute<AssetMeta>(AssetMeta{.displayName = "Texture"});
         type.Field<&TextureAsset::format>("format");
-        type.Field<&TextureAsset::textureType>("textureType").Attribute<UIProperty>();
-        type.Field<&TextureAsset::generateMipmaps>("generateMipmaps").Attribute<UIProperty>();
-
         type.Field<&TextureAsset::mipLevels>("mipLevels");
         type.Field<&TextureAsset::arrayLayers>("arrayLayers");
         type.Field<&TextureAsset::imageBuffer>("imageBuffer");

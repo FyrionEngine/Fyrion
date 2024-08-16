@@ -26,12 +26,14 @@ namespace Fyrion
         PreActionFn action;
     };
 
-    class EditorTransaction
+    class FY_API EditorTransaction
     {
     public:
         virtual ~EditorTransaction();
 
         EditorAction* CreateAction(TypeID typeId, VoidPtr* params, TypeID* paramTypes, usize paramNum);
+        void AddAction(TypeID typeId, EditorAction* action);
+
 
         template <typename T>
         T* CreateAction()
@@ -42,9 +44,9 @@ namespace Fyrion
         template <typename T, typename ...Args>
         T* CreateAction(Args&& ...args)
         {
-            TypeID ids[] = {GetTypeID<Args>()...,};
-            VoidPtr params[] = {&args...};
-            return static_cast<T*>(CreateAction(GetTypeID<T>(), params, ids, sizeof...(Args)));
+            T* action = MemoryGlobals::GetDefaultAllocator().Alloc<T>(Traits::Forward<Args>(args)...);
+            AddAction(GetTypeID<T>(), action);
+            return action;
         }
 
         void AddPreExecute(VoidPtr usarData, PreActionFn actionFn);

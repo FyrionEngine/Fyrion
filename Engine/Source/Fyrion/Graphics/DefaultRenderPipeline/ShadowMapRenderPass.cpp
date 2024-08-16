@@ -56,7 +56,7 @@ namespace Fyrion
             }
 
             GraphicsPipelineCreation graphicsPipelineCreation{
-                .shader = AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Shaders/Passes/ShadowMap.raster"),
+                .shader = AssetManager::LoadByPath<ShaderAsset>("Fyrion://Shaders/Passes/ShadowMap.raster"),
                 .renderPass = shadowMapPass[0],
                 .depthWrite = true,
                 .cullMode = CullMode::Front,

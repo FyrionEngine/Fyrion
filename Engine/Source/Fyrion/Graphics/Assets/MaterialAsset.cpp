@@ -27,7 +27,7 @@ namespace Fyrion
                 .textureProps = {0.0, 0.0, 0.0, 0.0},
             };
 
-            bindingSet = Graphics::CreateBindingSet(AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Shaders/Passes/GBufferRender.raster"));
+            bindingSet = Graphics::CreateBindingSet(AssetManager::LoadByPath<ShaderAsset>("Fyrion://Shaders/Passes/GBufferRender.raster"));
             bindingSet->GetVar("baseColorTexture")->SetTexture(baseColorTexture ? baseColorTexture->GetTexture() : Graphics::GetDefaultTexture());
             //bindingSet->GetVar("defaultSampler")->SetSampler(baseColorTexture ? baseColorTexture->GetSampler() : Graphics::GetDefaultSampler());
 
@@ -68,11 +68,6 @@ namespace Fyrion
             Graphics::DestroyBindingSet(bindingSet);
             bindingSet = nullptr;
         }
-    }
-
-    StringView MaterialAsset::GetDisplayName() const
-    {
-        return "Material";
     }
 
     Color MaterialAsset::GetBaseColor() const
@@ -237,6 +232,7 @@ namespace Fyrion
 
     void MaterialAsset::RegisterType(NativeTypeHandler<MaterialAsset>& type)
     {
+        type.Attribute<AssetMeta>(AssetMeta{.displayName = "Material"});
         type.Field<&MaterialAsset::baseColor>("baseColor").Attribute<UIProperty>();
         type.Field<&MaterialAsset::baseColorTexture>("baseColorTexture").Attribute<UIProperty>();
         type.Field<&MaterialAsset::normalTexture>("normalTexture").Attribute<UIProperty>();

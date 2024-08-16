@@ -58,7 +58,7 @@ namespace Fyrion
                                 data.children.Emplace(FileSystem::GetFileStatus(file).fileId);
                             }
                         }
-                        watchedFiles.EmplaceBack(newFiles.front());
+                        watchedFiles.EmplaceBack(Traits::Move(data));
                         newFiles.pop();
                     }
                 }
@@ -174,16 +174,17 @@ namespace Fyrion
     {
         if (internal)
         {
-            FileStatus fileStatus = FileSystem::GetFileStatus(fileDir);
-            internal->newFiles.emplace(FileWatcherData{
-                .path = fileDir,
-                .userData = userData,
-                .isDirectory = fileStatus.isDirectory,
-                .lastModifiedTime = fileStatus.lastModifiedTime,
-                .fileId = fileStatus.fileId
-            });
-
-            logger.Debug("file {} added to watcher ", fileDir);
+            if (FileStatus fileStatus = FileSystem::GetFileStatus(fileDir); fileStatus.exists)
+            {
+                internal->newFiles.emplace(FileWatcherData{
+                    .path = fileDir,
+                    .userData = userData,
+                    .isDirectory = fileStatus.isDirectory,
+                    .lastModifiedTime = fileStatus.lastModifiedTime,
+                    .fileId = fileStatus.fileId
+                });
+                logger.Debug("file {} added to watcher ", fileDir);
+            }
         }
     }
 

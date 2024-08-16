@@ -4,6 +4,7 @@
 #include "Assets/SceneObjectAsset.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "SceneTypes.hpp"
+#include "Fyrion/Asset/AssetHandler.hpp"
 
 namespace Fyrion
 {
@@ -129,7 +130,7 @@ namespace Fyrion
     {
         if (asset)
         {
-            return asset->GetName();
+            return asset->GetHandler()->GetName();
         }
 
         return name;
@@ -139,7 +140,7 @@ namespace Fyrion
     {
         if (asset)
         {
-            asset->SetName(p_name);
+            asset->GetHandler()->SetName(p_name);
         }
         else
         {
@@ -210,7 +211,7 @@ namespace Fyrion
 
         if (asset)
         {
-            return asset->GetUUID();
+            return asset->GetHandler()->GetUUID();
         }
 
         return {};
@@ -393,7 +394,7 @@ namespace Fyrion
         }
 
         prototypeUUID = UUID::FromString(reader.ReadString(object, "prototype"));
-        if (SceneObjectAsset* asset = AssetDatabase::FindById<SceneObjectAsset>(prototypeUUID))
+        if (SceneObjectAsset* asset = AssetManager::LoadById<SceneObjectAsset>(prototypeUUID))
         {
             SetPrototype(asset->GetObject());
         }

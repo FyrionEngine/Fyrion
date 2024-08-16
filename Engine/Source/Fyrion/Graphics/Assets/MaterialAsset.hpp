@@ -16,8 +16,6 @@ namespace Fyrion
         BindingSet* GetBindingSet();
         ~MaterialAsset() override;
 
-        StringView GetDisplayName() const override;
-
         Color         GetBaseColor() const;
         void          SetBaseColor(const Color& baseColor);
         TextureAsset* GetBaseColorTexture() const;

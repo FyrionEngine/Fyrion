@@ -3,7 +3,7 @@
 #include "EditorTypes.hpp"
 #include "Action/EditorAction.hpp"
 #include "Fyrion/Engine.hpp"
-#include "Fyrion/Asset/AssetDatabase.hpp"
+#include "Fyrion/Asset/AssetManager.hpp"
 #include "Fyrion/Asset/AssetSerialization.hpp"
 #include "Fyrion/Core/Event.hpp"
 #include "Fyrion/Core/Registry.hpp"
@@ -41,7 +41,7 @@ namespace Fyrion
     {
         Array<EditorWindowStorage> editorWindowStorages{};
         Array<OpenWindowStorage>   openWindows{};
-        Array<Asset*>              updatedItems{};
+        Array<AssetHandler*>       updatedItems{};
         String                     projectPath{};
 
         MenuItemContext menuContext{};
@@ -57,8 +57,8 @@ namespace Fyrion
 
         bool forceClose{};
 
-        UniquePtr<SceneEditor> sceneEditor{};
-        Array<AssetDirectory*> directories{};
+        UniquePtr<SceneEditor>        sceneEditor{};
+        Array<DirectoryAssetHandler*> directories{};
 
         Array<SharedPtr<EditorTransaction>> undoActions{};
         Array<SharedPtr<EditorTransaction>> redoActions{};
@@ -121,8 +121,8 @@ namespace Fyrion
             }
 
             //TODO: Create a setting for that.
-            Editor::OpenDirectory(AssetDatabase::FindByPath<AssetDirectory>("Fyrion:/"));
-            Editor::OpenDirectory(AssetDatabase::LoadFromDirectory(Path::Name(projectPath), Path::Join(projectPath, "Assets")));
+            Editor::OpenDirectory(AssetManager::FindHandlerByPath<DirectoryAssetHandler>("Fyrion:/"));
+            Editor::OpenDirectory(AssetManager::LoadFromDirectory(Path::Name(projectPath), Path::Join(projectPath, "Assets")));
         }
 
         void CloseEngine(const MenuItemEventData& eventData)
@@ -306,23 +306,16 @@ namespace Fyrion
                                 ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_None, 200.f * style.ScaleFactor);
                                 ImGui::TableHeadersRow();
 
-                                for (const Asset* asset : updatedItems)
+                                for (AssetHandler* assetHandler : updatedItems)
                                 {
                                     ImGui::TableNextRow();
 
-                                    ImVec4 color = style.Colors[ImGuiCol_Text];
-                                    if (!asset->IsActive())
-                                    {
-                                        color = ImVec4{180.f / 255.f, 85.f / 255.f, 85.f / 255.f, 255};
-                                    }
-
                                     ImGui::TableSetColumnIndex(0);
-                                    ImGui::TextColored(color, "%s", asset->GetName().CStr());
+                                    ImGui::Text("%s", assetHandler->GetName().CStr());
                                     ImGui::TableSetColumnIndex(1);
-                                    ImGui::TextColored(color, "%s", asset->GetPath().CStr());
+                                    ImGui::Text("%s", assetHandler->GetPath().CStr());
                                     ImGui::TableSetColumnIndex(2);
-
-                                    ImGui::TextColored(color, "%s", asset->GetDisplayName().CStr());
+                                    ImGui::Text("%s", assetHandler->GetDisplayName().CStr());
                                 }
                                 ImGui::EndTable();
                             }
@@ -330,7 +323,7 @@ namespace Fyrion
                             ImGui::EndChild();
                         }
 
-                        ImGui::BeginHorizontal("#jitrjirt", ImVec2(width, buttonHeight));
+                        ImGui::BeginHorizontal("#horizontal-save", ImVec2(width, buttonHeight));
 
                         ImGui::Spring(1.0f);
 
@@ -365,9 +358,9 @@ namespace Fyrion
 
         void SaveAll()
         {
-            for (AssetDirectory* directory : directories)
+            for (DirectoryAssetHandler* directory : directories)
             {
-                AssetDatabase::SaveOnDirectory(directory, directory->GetAbsolutePath());
+                AssetManager::SaveOnDirectory(directory, directory->GetAbsolutePath());
             }
         }
 
@@ -395,9 +388,9 @@ namespace Fyrion
 
             updatedItems.Clear();
 
-            for (AssetDirectory* directory : directories)
+            for (DirectoryAssetHandler* directory : directories)
             {
-                AssetDatabase::GetUpdatedAssets(directory, updatedItems);
+                AssetManager::GetUpdatedAssets(directory, updatedItems);
             }
 
             if (!updatedItems.Empty())
@@ -420,12 +413,12 @@ namespace Fyrion
         }
     }
 
-    void Editor::OpenDirectory(AssetDirectory* directory)
+    void Editor::OpenDirectory(DirectoryAssetHandler* directory)
     {
         directories.EmplaceBack(directory);
     }
 
-    Span<AssetDirectory*> Editor::GetOpenDirectories()
+    Span<DirectoryAssetHandler*> Editor::GetOpenDirectories()
     {
         return directories;
     }
@@ -460,7 +453,7 @@ namespace Fyrion
         FileSystem::CreateDirectory(settingsPath);
 
         JsonAssetWriter jsonAssetWriter;
-        auto object = jsonAssetWriter.CreateObject();
+        auto            object = jsonAssetWriter.CreateObject();
         jsonAssetWriter.WriteString(object, "engineVersion", FY_VERSION);
 
         FileSystem::SaveFileAsString(projectFilePath, JsonAssetWriter::Stringify(object));
@@ -494,6 +487,6 @@ namespace Fyrion
 
         CreateMenuItems();
 
-        AssetDatabase::SetCacheDirectory(Path::Join(projectPath, "Cache"));
+        AssetManager::SetDataDirectory(Path::Join(projectPath, "Data"));
     }
 }

@@ -1,14 +1,16 @@
 #include "DCCAsset.hpp"
 
+#include "Fyrion/Asset/AssetHandler.hpp"
+
 namespace Fyrion
 {
     MaterialAsset* DCCAsset::FindMaterialByName(const StringView& materialName)
     {
-        for (Asset* asset : GetChildrenAssets())
+        for (AssetHandler* handler : GetHandler()->GetChildren())
         {
-            if (MaterialAsset* materialAsset = dynamic_cast<MaterialAsset*>(asset))
+            if (handler->GetName() == materialName)
             {
-                if (materialAsset->GetName() == materialName)
+                if (MaterialAsset* materialAsset = dynamic_cast<MaterialAsset*>(handler->LoadInstance()))
                 {
                     return materialAsset;
                 }
@@ -19,11 +21,11 @@ namespace Fyrion
 
     MeshAsset* DCCAsset::FindMeshByName(const StringView& meshName)
     {
-        for (Asset* asset : GetChildrenAssets())
+        for (AssetHandler* handler : GetHandler()->GetChildren())
         {
-            if (MeshAsset* meshAsset = dynamic_cast<MeshAsset*>(asset))
+            if (handler->GetName() == meshName)
             {
-                if (meshAsset->GetName() == meshName)
+                if (MeshAsset* meshAsset = dynamic_cast<MeshAsset*>(handler->LoadInstance()))
                 {
                     return meshAsset;
                 }
@@ -32,13 +34,13 @@ namespace Fyrion
         return nullptr;
     }
 
-    TextureAsset* DCCAsset::FindTextureByName(const StringView& textureName)
+    TextureAsset* DCCAsset::FindTextureByName(const StringView& textureName) const
     {
-        for (Asset* asset : GetChildrenAssets())
+        for (AssetHandler* handler : GetHandler()->GetChildren())
         {
-            if (TextureAsset* textureAsset = dynamic_cast<TextureAsset*>(asset))
+            if (handler->GetName() == textureName)
             {
-                if (textureAsset->GetName() == textureName)
+                if (TextureAsset* textureAsset = dynamic_cast<TextureAsset*>(handler->LoadInstance()))
                 {
                     return textureAsset;
                 }
@@ -49,9 +51,9 @@ namespace Fyrion
 
     SceneObjectAsset* DCCAsset::GetSceneObjectAsset()
     {
-        for (Asset* asset : GetChildrenAssets())
+        for (AssetHandler* handler : GetHandler()->GetChildren())
         {
-            if (SceneObjectAsset* sceneObjectAsset = dynamic_cast<SceneObjectAsset*>(asset))
+            if (SceneObjectAsset* sceneObjectAsset = dynamic_cast<SceneObjectAsset*>(handler->LoadInstance()))
             {
                 return sceneObjectAsset;
             }
@@ -59,11 +61,14 @@ namespace Fyrion
         return nullptr;
     }
 
+    void DCCAssetImportSettings::RegisterType(NativeTypeHandler<DCCAssetImportSettings>& type)
+    {
+        type.Field<&DCCAssetImportSettings::scaleFactor>("scaleFactor");
+        type.Field<&DCCAssetImportSettings::mergeMaterials>("mergeMaterials");
+        type.Field<&DCCAssetImportSettings::mergeMeshes>("mergeMeshes");
+    }
 
     void DCCAsset::RegisterType(NativeTypeHandler<DCCAsset>& type)
     {
-        type.Field<&DCCAsset::scaleFactor>("scaleFactor");
-        type.Field<&DCCAsset::mergeMaterials>("mergeMaterials");
-        type.Field<&DCCAsset::mergeMeshes>("mergeMeshes");
     }
 }

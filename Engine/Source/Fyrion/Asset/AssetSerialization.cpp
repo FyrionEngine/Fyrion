@@ -111,6 +111,8 @@ namespace Fyrion
 
     String JsonAssetWriter::Stringify(ArchiveObject object)
     {
+        if (!object) return {};
+
         const yyjson_write_flag flg = YYJSON_WRITE_PRETTY | YYJSON_WRITE_ESCAPE_UNICODE;
         usize                   len = 0;
         yyjson_write_err        err;
@@ -138,6 +140,7 @@ namespace Fyrion
 
     JsonAssetReader::JsonAssetReader(StringView data)
     {
+        FY_ASSERT(!data.Empty(), "data cannot be empty");
         const yyjson_read_flag flg = {};
         yyjson_read_err        err;
         doc = yyjson_read_opts(const_cast<char*>(data.begin()), data.Size(), flg, &alloc, &err);

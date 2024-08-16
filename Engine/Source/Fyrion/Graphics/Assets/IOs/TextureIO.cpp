@@ -8,19 +8,26 @@ namespace Fyrion
     {
         FY_BASE_TYPES(AssetIO);
 
-        StringView extension[6] = {".png", ".jpg", ".jpeg", ".tga", "bmp", ".hdr"};
+        TextureIO()
+        {
+            getImportExtensions = GetImportExtensions;
+            getAssetTypeId = GetAssetTypeID;
+            importAsset = ImportAsset;
+        }
 
-        Span<StringView> GetImportExtensions() override
+        static inline StringView extension[6] = {".png", ".jpg", ".jpeg", ".tga", "bmp", ".hdr"};
+
+        static Span<StringView> GetImportExtensions()
         {
             return {extension, 6};
         }
 
-        Asset* CreateAsset() override
+        static TypeID GetAssetTypeID(StringView path)
         {
-            return AssetDatabase::Create<TextureAsset>(UUID::RandomUUID());
+            return GetTypeID<TextureAsset>();
         }
 
-        void ImportAsset(StringView path, Asset* asset) override
+        static void ImportAsset(StringView path, Asset* asset)
         {
             TextureAsset* textureAsset = asset->Cast<TextureAsset>();
 

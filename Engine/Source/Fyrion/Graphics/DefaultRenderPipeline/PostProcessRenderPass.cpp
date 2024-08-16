@@ -13,7 +13,7 @@ namespace Fyrion
 
         void Init() override
         {
-            ShaderAsset* shader = AssetDatabase::FindByPath<ShaderAsset>("Fyrion://Shaders/Passes/PostProcessRender.comp");
+            ShaderAsset* shader = AssetManager::LoadByPath<ShaderAsset>("Fyrion://Shaders/Passes/PostProcessRender.comp");
 
             pipelineState = Graphics::CreateComputePipelineState({
                 .shader = shader

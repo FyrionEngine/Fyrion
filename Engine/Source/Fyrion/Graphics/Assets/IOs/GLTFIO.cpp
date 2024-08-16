@@ -1,5 +1,6 @@
 #include <cgltf.h>
 
+#include "Fyrion/Asset/AssetHandler.hpp"
 #include "Fyrion/Asset/AssetTypes.hpp"
 #include "Fyrion/Core/Image.hpp"
 #include "Fyrion/Core/Logger.hpp"
@@ -12,6 +13,11 @@
 
 namespace Fyrion
 {
+    namespace
+    {
+        Logger& logger = Logger::GetLogger("Fyrion::GLTFIO");
+    }
+
     struct FY_API GLTFIO : AssetIO
     {
         using ImportedTextureMap = HashMap<usize, TextureAsset*>;
@@ -20,21 +26,37 @@ namespace Fyrion
 
         FY_BASE_TYPES(AssetIO);
 
-        Logger& logger = Logger::GetLogger("Fyrion::GLTFIO");
+        static void MoveAsset(AssetHandler* asset, StringView newName, AssetHandler* newParent)
+        {
+            for(const String& file: asset->GetRelatedFiles())
+            {
+                String oldPath = Path::Join(asset->GetParent()->GetAbsolutePath(), file);
+                String newPath = Path::Join(newParent->GetAbsolutePath(), file);
+                FileSystem::Rename(oldPath, newPath);
+            }
+        }
 
-        StringView extension[2] = {".gltf", ".glb"};
+        GLTFIO()
+        {
+            getImportExtensions = GetImportExtensions;
+            getAssetTypeId = GetAssetTypeID;
+            importAsset = ImportAsset;
+            renameAsset = MoveAsset;
+        }
 
-        Span<StringView> GetImportExtensions() override
+        static inline StringView extension[2] = {".gltf", ".glb"};
+
+        static Span<StringView> GetImportExtensions()
         {
             return {extension, 2};
         }
 
-        Asset* CreateAsset() override
+        static TypeID GetAssetTypeID(StringView path)
         {
-            return AssetDatabase::Create<DCCAsset>(UUID::RandomUUID());
+            return GetTypeID<DCCAsset>();
         }
 
-        MeshAsset* LoadGltfMesh(DCCAsset* dccAsset, ImportedMaterialMap& materialMap, cgltf_data* data, cgltf_mesh& gltfMesh, u32 index)
+        static MeshAsset* LoadGltfMesh(DCCAsset* dccAsset, ImportedMaterialMap& materialMap, cgltf_data* data, cgltf_mesh& gltfMesh, u32 index)
         {
             String name = gltfMesh.name != nullptr ? gltfMesh.name : String{"Mesh_"}.Append(index);
 
@@ -49,10 +71,10 @@ namespace Fyrion
             MeshAsset* meshAsset = dccAsset->FindMeshByName(name);
             if (meshAsset == nullptr)
             {
-                meshAsset = AssetDatabase::Create<MeshAsset>();
-                meshAsset->SetName(name);
-                meshAsset->SetUUID(UUID::RandomUUID());
-                meshAsset->SetOwner(dccAsset);
+                meshAsset = AssetManager::Create<MeshAsset>(AssetCreation{
+                    .name = name,
+                    .parent = dccAsset->GetHandler()
+                });
             }
 
             for (u32 p = 0; p < gltfMesh.primitives_count; ++p)
@@ -231,7 +253,7 @@ namespace Fyrion
             return meshAsset;
         }
 
-        void LoadGltfNode(const ImportedMeshMap& meshMap, SceneObject* parentObject, cgltf_node* node, u32& meshCount)
+        static void LoadGltfNode(const ImportedMeshMap& meshMap, SceneObject* parentObject, cgltf_node* node, u32& meshCount)
         {
             String nodeName = node->name != nullptr ? String{node->name}.Append("_").Append(meshCount++) : String("MeshNode_").Append(meshCount++);
 
@@ -297,13 +319,13 @@ namespace Fyrion
         }
 
 
-        TextureAsset* FindTexture(const ImportedTextureMap& textureMap, DCCAsset* dccAsset, cgltf_texture* texture)
+        static TextureAsset* FindTexture(const ImportedTextureMap& textureMap, DCCAsset* dccAsset, cgltf_texture* texture)
         {
             if (texture->image->uri != nullptr)
             {
-                String texturePath = String(dccAsset->GetDirectory()->GetPath()).Append("/").Append(StringView{texture->image->uri});
+                String texturePath = String(dccAsset->GetHandler()->GetParent()->GetPath()).Append("/").Append(StringView{texture->image->uri});
 
-                TextureAsset* textureAsset = AssetDatabase::FindByPath<TextureAsset>(texturePath);
+                TextureAsset* textureAsset = AssetManager::LoadByPath<TextureAsset>(texturePath);
                 if (textureAsset == nullptr)
                 {
                     // textureAsset = AssetDatabase::Create<TextureAsset>();
@@ -322,7 +344,7 @@ namespace Fyrion
             return nullptr;
         }
 
-        void ImportAsset(StringView path, Asset* asset) override
+        static void ImportAsset(StringView path, Asset* asset)
         {
             DCCAsset* dccAsset = static_cast<DCCAsset*>(asset);
 
@@ -354,14 +376,30 @@ namespace Fyrion
                     continue;
                 }
 
-                String bufferFile = Path::Join(Path::Parent(path), uri);
-                if (!FileSystem::GetFileStatus(bufferFile).exists)
+
+                String bufferPath = Path::Join(Path::Parent(path), uri);
+
+                if (!FileSystem::GetFileStatus(bufferPath).exists)
+                {
+                    bufferPath = Path::Join(Path::Parent(path), asset->GetHandler()->GetName(), Path::Extension(uri));
+                }
+
+                if (!FileSystem::GetFileStatus(bufferPath).exists)
                 {
                     logger.Error("buffer file not found {}", path.CStr());
                     cgltf_free(data);
                     return;
                 }
-                //TODO add bufferFile as file dependency to Asset*
+
+                String bufferName = Path::Name(bufferPath) + Path::Extension(bufferPath);
+                if (data->buffers[i].uri)
+                {
+                    data->memory.free_func(data->memory.user_data, data->buffers[i].uri);
+                    data->buffers[i].uri = (char*)data->memory.alloc_func(data->memory.user_data, bufferName.Size() + 1);
+                    MemCopy(data->buffers[i].uri, bufferName.CStr(), bufferName.Size());
+                    data->buffers[i].uri[bufferName.Size()] = 0;
+                }
+                asset->GetHandler()->AddRelatedFile(bufferName);
             }
 
             if (cgltf_load_buffers(&options, data, path.CStr()) != cgltf_result_success)
@@ -392,10 +430,10 @@ namespace Fyrion
                     TextureAsset* textureAsset = dccAsset->FindTextureByName(textureName);
                     if (textureAsset == nullptr)
                     {
-                        textureAsset = AssetDatabase::Create<TextureAsset>();
-                        textureAsset->SetName(textureName);
-                        textureAsset->SetUUID(UUID::RandomUUID());
-                        textureAsset->SetOwner(dccAsset);
+                        textureAsset = AssetManager::Create<TextureAsset>(AssetCreation{
+                            .name = textureName,
+                            .parent = dccAsset->GetHandler(),
+                        });
                     }
 
                     Span<const u8> imageBuffer{
@@ -418,10 +456,10 @@ namespace Fyrion
                 MaterialAsset* materialAsset = dccAsset->FindMaterialByName(materialName);
                 if (materialAsset == nullptr)
                 {
-                    materialAsset = AssetDatabase::Create<MaterialAsset>();
-                    materialAsset->SetName(materialName);
-                    materialAsset->SetUUID(UUID::RandomUUID());
-                    materialAsset->SetOwner(dccAsset);
+                    materialAsset = AssetManager::Create<MaterialAsset>(AssetCreation{
+                        .name = materialName,
+                        .parent = dccAsset->GetHandler(),
+                    });
                 }
 
                 if (material.has_pbr_metallic_roughness)
@@ -475,10 +513,10 @@ namespace Fyrion
                 SceneObjectAsset* rootObjectAsset = dccAsset->GetSceneObjectAsset();
                 if (rootObjectAsset == nullptr)
                 {
-                    rootObjectAsset = AssetDatabase::Create<SceneObjectAsset>();
-                    rootObjectAsset->SetName(dccAsset->GetName());
-                    rootObjectAsset->SetUUID(UUID::RandomUUID());
-                    rootObjectAsset->SetOwner(dccAsset);
+                    rootObjectAsset = AssetManager::Create<SceneObjectAsset>(AssetCreation{
+                        .name = dccAsset->GetHandler()->GetName(),
+                        .parent = dccAsset->GetHandler()
+                    });
 
                     TransformComponent& transformComponent = rootObjectAsset->GetObject()->CreateComponent<TransformComponent>();
                     transformComponent.SetUUID(UUID::RandomUUID());

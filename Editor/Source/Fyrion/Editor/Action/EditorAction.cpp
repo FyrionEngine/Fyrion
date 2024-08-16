@@ -39,6 +39,14 @@ namespace Fyrion
         return nullptr;
     }
 
+    void EditorTransaction::AddAction(TypeID typeId, EditorAction* action)
+    {
+        if (TypeHandler* typeHandler = Registry::FindTypeById(typeId))
+        {
+            actions.EmplaceBack(MakePair(typeHandler, action));
+        }
+    }
+
     void EditorTransaction::AddPreExecute(VoidPtr usarData, PreActionFn actionFn)
     {
         preExecute.EmplaceBack(usarData, actionFn);

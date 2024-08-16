@@ -61,8 +61,7 @@ namespace Fyrion
     String FileSystem::ReadFileAsString(const StringView& path)
     {
         String      ret{};
-        FileHandler fileHandler = OpenFile(path, AccessMode::ReadOnly);
-        if (fileHandler)
+        if (FileHandler fileHandler = OpenFile(path, AccessMode::ReadOnly))
         {
             ret.Resize(GetFileSize(fileHandler));
             ReadFile(fileHandler, ret.begin(), ret.Size());
@@ -74,8 +73,7 @@ namespace Fyrion
     Array<u8> FileSystem::ReadFileAsByteArray(const StringView& path)
     {
         Array<u8>   ret{};
-        FileHandler fileHandler = OpenFile(path, AccessMode::ReadOnly);
-        if (fileHandler)
+        if (FileHandler fileHandler = OpenFile(path, AccessMode::ReadOnly))
         {
             ret.Resize(GetFileSize(fileHandler));
             ReadFile(fileHandler, ret.begin(), ret.Size());
@@ -86,8 +84,12 @@ namespace Fyrion
 
     void FileSystem::SaveFileAsString(const StringView& path, const StringView& string)
     {
-        FileHandler fileHandler = OpenFile(path, AccessMode::WriteOnly);
-        if (fileHandler)
+        if (!GetFileStatus(Path::Parent(path)).exists)
+        {
+            CreateDirectory(Path::Parent(path));
+        }
+
+        if (FileHandler fileHandler = OpenFile(path, AccessMode::WriteOnly))
         {
             WriteFile(fileHandler, string.Data(), string.Size());
             CloseFile(fileHandler);

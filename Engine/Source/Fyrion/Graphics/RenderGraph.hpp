@@ -17,11 +17,6 @@ namespace Fyrion
     public:
         FY_BASE_TYPES(Asset);
 
-        StringView GetDisplayName() const override
-        {
-            return "Render Graph";
-        }
-
         Array<String>          GetPasses() const;
         Array<RenderGraphEdge> GetEdges() const;
 

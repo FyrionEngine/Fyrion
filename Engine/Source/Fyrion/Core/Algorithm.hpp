@@ -297,5 +297,18 @@ namespace Fyrion
         }
         return nullptr;
     }
+
+    template <typename Type, typename Func>
+    constexpr Type* FindIf(Type* begin, Type* end, Func func)
+    {
+        for (Type* it = begin; it != end; ++it)
+        {
+            if (func(*it))
+            {
+                return it;
+            }
+        }
+        return nullptr;
+    }
 }
 

@@ -8,6 +8,24 @@
 
 namespace Fyrion
 {
+
+    struct DCCAssetImportSettings : ImportSettings
+    {
+        FY_BASE_TYPES(ImportSettings);
+
+        TypeHandler* GetTypeHandler() override
+        {
+            return Registry::FindType<DCCAssetImportSettings>();
+        }
+
+        Vec3 scaleFactor{1.0, 1.0, 1.0};
+        bool mergeMaterials = false;
+        bool mergeMeshes = false;
+
+        static void RegisterType(NativeTypeHandler<DCCAssetImportSettings>& type);
+    };
+
+
     class FY_API DCCAsset : public Asset, public SceneObjectAssetProvider
     {
     public:
@@ -17,12 +35,10 @@ namespace Fyrion
 
         MaterialAsset*    FindMaterialByName(const StringView& materialName);
         MeshAsset*        FindMeshByName(const StringView& meshName);
-        TextureAsset*     FindTextureByName(const StringView& textureName);
+        TextureAsset*     FindTextureByName(const StringView& textureName) const;
         SceneObjectAsset* GetSceneObjectAsset() override;
 
     private:
-        Vec3 scaleFactor{1.0, 1.0, 1.0};
-        bool mergeMaterials = false;
-        bool mergeMeshes = false;
+        DCCAssetImportSettings importSettings;
     };
 }

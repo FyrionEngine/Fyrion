@@ -1,6 +1,7 @@
-add_subdirectory(ThirdParty)
-
 set(GLFW_BUILD_WAYLAND OFF)
+set(FT_DISABLE_HARFBUZZ ON)
+
+add_subdirectory(ThirdParty)
 
 file(GLOB_RECURSE FYRION_ENGINE_SOURCES Source/*.hpp Source/*.cpp Source/*.h Source/*.c)
 add_library(FyrionEngine SHARED ${FYRION_ENGINE_SOURCES})

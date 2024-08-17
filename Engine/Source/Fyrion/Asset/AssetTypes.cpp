@@ -40,12 +40,14 @@ namespace Fyrion
         return GetTypeID<UIFontAsset>();
     }
 
-    void UIFontAssetIO::ImportAsset(StringView path, Asset* asset)
+    bool UIFontAssetIO::ImportAsset(StringView path, Asset* asset)
     {
         UIFontAsset* fontAsset = asset->Cast<UIFontAsset>();
 
         Array<u8> bytes = FileSystem::ReadFileAsByteArray(path);
         fontAsset->SaveBuffer(fontAsset->fontBytes, bytes.begin(), bytes.Size());
+
+        return true;
     }
 
     void RegisterAssetTypes()

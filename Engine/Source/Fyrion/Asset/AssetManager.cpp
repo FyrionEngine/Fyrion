@@ -243,8 +243,10 @@ namespace Fyrion
         if (io->importAsset)
         {
             logger.Debug("Importing file {} ", assetHandler->GetAbsolutePath());
-            io->importAsset(assetHandler->GetAbsolutePath(), assetHandler->LoadInstance());
-            assetHandler->Save();
+            if (io->importAsset(assetHandler->GetAbsolutePath(), assetHandler->LoadInstance()))
+            {
+                assetHandler->Save();
+            }
         }
     }
 

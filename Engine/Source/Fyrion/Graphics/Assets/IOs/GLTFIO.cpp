@@ -344,7 +344,7 @@ namespace Fyrion
             return nullptr;
         }
 
-        static void ImportAsset(StringView path, Asset* asset)
+        static bool ImportAsset(StringView path, Asset* asset)
         {
             DCCAsset* dccAsset = static_cast<DCCAsset*>(asset);
 
@@ -354,7 +354,7 @@ namespace Fyrion
             if (result != cgltf_result_success)
             {
                 logger.Error("Error on import file {} ", path);
-                return;
+                return false;
             }
 
             for (cgltf_size i = 0; i < data->buffers_count; ++i)
@@ -388,7 +388,7 @@ namespace Fyrion
                 {
                     logger.Error("buffer file not found {}", path.CStr());
                     cgltf_free(data);
-                    return;
+                    return false;
                 }
 
                 String bufferName = Path::Name(bufferPath) + Path::Extension(bufferPath);
@@ -406,14 +406,14 @@ namespace Fyrion
             {
                 logger.Error("Failed to load buffers {}", path.CStr());
                 cgltf_free(data);
-                return;
+                return false;
             }
 
             if (cgltf_validate(data) != cgltf_result_success)
             {
                 logger.Error("Failed validation for {}", path.CStr());
                 cgltf_free(data);
-                return;
+                return false;
             }
 
             ImportedTextureMap  textureMap;
@@ -536,6 +536,7 @@ namespace Fyrion
             }
 
             cgltf_free(data);
+            return true;
         }
     };
 

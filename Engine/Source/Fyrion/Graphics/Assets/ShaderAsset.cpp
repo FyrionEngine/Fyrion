@@ -97,6 +97,7 @@ namespace Fyrion
         shaderInfo = ShaderManager::ExtractShaderInfo(bytes, stages, renderApi);
 
         SaveBuffer(spriv, bytes.Data(), bytes.Size());
+        GetHandler()->Save();
 
         for (PipelineState pipelineState : pipelineDependencies)
         {

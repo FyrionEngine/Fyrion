@@ -28,7 +28,7 @@ namespace Fyrion
             return GetTypeID<ShaderAsset>();
         }
 
-        static void ImportAsset(StringView path, Asset* asset)
+        static bool ImportAsset(StringView path, Asset* asset)
         {
             ShaderAsset* shaderAsset = asset->Cast<ShaderAsset>();
 
@@ -44,8 +44,7 @@ namespace Fyrion
             {
                 shaderAsset->SetShaderType(ShaderAssetType::Include);
             }
-
-            shaderAsset->Compile();
+            return false;
         }
     };
 

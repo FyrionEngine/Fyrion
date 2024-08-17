@@ -27,7 +27,7 @@ namespace Fyrion
             return GetTypeID<TextureAsset>();
         }
 
-        static void ImportAsset(StringView path, Asset* asset)
+        static bool ImportAsset(StringView path, Asset* asset)
         {
             TextureAsset* textureAsset = asset->Cast<TextureAsset>();
 
@@ -39,6 +39,8 @@ namespace Fyrion
             {
                 textureAsset->SetImagePath(path);
             }
+
+            return true;
         }
     };
 

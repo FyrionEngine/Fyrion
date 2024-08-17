@@ -6,7 +6,7 @@ namespace Fyrion
 {
     typedef Span<StringView>(*FnGetImportExtensions)();
     typedef TypeID (*FnGetAssetTypeID)(StringView path);
-    typedef void(*FnImportAsset)(StringView path, Asset* asset);
+    typedef bool(*FnImportAsset)(StringView path, Asset* asset);
     typedef void(*FnRenameAsset)(AssetHandler* asset, StringView newName, AssetHandler* newParent);
 
     struct AssetMeta
@@ -52,6 +52,6 @@ namespace Fyrion
         static inline StringView extensions[2] = {".ttf", ".otf"};
         static Span<StringView> GetImportExtensions();
         static TypeID           GetAssetTypeID(StringView path);
-        static void             ImportAsset(StringView path, Asset* asset);
+        static bool             ImportAsset(StringView path, Asset* asset);
     };
 }

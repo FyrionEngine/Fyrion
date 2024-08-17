@@ -38,6 +38,11 @@ namespace Fyrion
         component->object = this;
         components.EmplaceBack(component);
 
+        if (component->GetPrototype())
+        {
+            componentOverride.Insert(component->GetPrototype());
+        }
+
         if (active)
         {
             component->OnNotify(NotificationEvent{

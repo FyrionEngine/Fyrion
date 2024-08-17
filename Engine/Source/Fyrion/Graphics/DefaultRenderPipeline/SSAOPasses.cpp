@@ -1,3 +1,4 @@
+#include <ctime>
 #include <random>
 
 #include "Fyrion/Graphics/Graphics.hpp"

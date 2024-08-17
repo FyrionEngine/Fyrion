@@ -56,6 +56,9 @@ namespace Fyrion
 
     void JsonAssetWriter::WriteUInt(ArchiveObject object, const StringView& name, u64 value)
     {
+        // char buffer[20];
+        // usize size = StringConverter<u64>::ToString(buffer, 0, value);
+        // yyjson_mut_obj_add_strncpy(doc, static_cast<yyjson_mut_val*>(object.handler), name.CStr(), buffer, size);
         yyjson_mut_obj_add_uint(doc, static_cast<yyjson_mut_val*>(object.handler), name.CStr(), value);
     }
 

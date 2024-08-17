@@ -124,13 +124,13 @@ namespace Fyrion
                 break;
             case AccessMode::WriteOnly:
             {
-                flags = O_WRONLY | O_CREAT;
+                flags = O_WRONLY | O_CREAT | O_TRUNC;
                 permission = S_IWRITE | S_IREAD;
                 break;
             }
             case AccessMode::ReadAndWrite:
             {
-                flags = O_RDWR | O_CREAT;
+                flags = O_RDWR | O_CREAT | O_TRUNC;
                 permission = S_IWRITE | S_IREAD;
                 break;
             }

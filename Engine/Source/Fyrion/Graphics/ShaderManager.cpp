@@ -59,6 +59,11 @@ namespace Fyrion
                 return (char)c;
             });
 
+            if (const auto c = fileName.find("./"); c != std::string::npos)
+            {
+                fileName.replace(c, sizeof("./") - 1, "");
+            }
+
             if (const auto c = fileName.find(".\\"); c != std::string::npos)
             {
                 fileName.replace(c, sizeof(".\\") - 1, "");
@@ -114,10 +119,6 @@ namespace Fyrion
 
         ULONG Release() override
         {
-            if (blobEncoding)
-            {
-                blobEncoding->Release();
-            }
             return 0;
         }
 

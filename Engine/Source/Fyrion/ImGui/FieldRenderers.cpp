@@ -238,7 +238,7 @@ namespace Fyrion
     void DrawVecField(const String compName, const char* fieldName, float& value, bool* hasChanged, u32 color = 0, f32 speed = 0.005f)
     {
         ImGui::TableNextColumn();
-        String id = "##" + compName + "vec3" + fieldName;
+        String id = "##" + ToString(reinterpret_cast<usize>(&value));
         ImGui::BeginHorizontal(ImHashStr(id.CStr()));
         ImGui::Text("%s", fieldName);
         ImGui::Spring();

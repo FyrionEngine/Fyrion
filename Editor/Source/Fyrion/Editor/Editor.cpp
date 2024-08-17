@@ -444,12 +444,12 @@ namespace Fyrion
     {
         String fullProjectPath = Path::Join(newProjectPath, projectName);
         String assetsPath = Path::Join(fullProjectPath, "Assets");
-        String cachePath = Path::Join(fullProjectPath, "Cache");
+        String dataPath = Path::Join(fullProjectPath, "Data");
         String settingsPath = Path::Join(fullProjectPath, "Settings");
         String projectFilePath = Path::Join(fullProjectPath, projectName, FY_PROJECT_EXTENSION);
 
         FileSystem::CreateDirectory(assetsPath);
-        FileSystem::CreateDirectory(cachePath);
+        FileSystem::CreateDirectory(dataPath);
         FileSystem::CreateDirectory(settingsPath);
 
         JsonAssetWriter jsonAssetWriter;

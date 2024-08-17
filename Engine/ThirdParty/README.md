@@ -27,8 +27,8 @@
 - License: MIT
  
 ## freetype
-- Upstream: https://download.savannah.gnu.org/releases/freetype/freetype-2.10.0.tar.bz2
-- Version: freetype-2.10.0
+- Upstream: https://download.savannah.gnu.org/releases/freetype/freetype-2.13.3.tar.gz
+- Version: freetype-2.13.3
 - License: The FreeType Project LICENSE
 
 ## ImGui

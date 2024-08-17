@@ -19,7 +19,7 @@ namespace Fyrion
 
     namespace
     {
-        Logger& logger = Logger::GetLogger("Fyrion::AssetHandler", LogLevel::Debug);
+        Logger& logger = Logger::GetLogger("Fyrion::AssetHandler");
     }
 
     Asset* AssetHandler::GetInstance() const

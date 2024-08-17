@@ -447,10 +447,10 @@ namespace Fyrion
         projectLauncherSettings = AssetManager::LoadByPath<ProjectLauncherSettings>("Settings://ProjectLauncherSettings.fy_asset");
         if (projectLauncherSettings == nullptr)
         {
-            // projectLauncherSettings = AssetManager::Create<ProjectLauncherSettings>({
-            //     .name = "ProjectLauncherSettings",
-            //     .parent = settingsDir,
-            // });
+            projectLauncherSettings = AssetManager::Create<ProjectLauncherSettings>({
+                .name = "ProjectLauncherSettings",
+                .directoryAsset = settingsDir,
+            });
         }
 
         Event::Bind<OnInit, &LauncherInit>();

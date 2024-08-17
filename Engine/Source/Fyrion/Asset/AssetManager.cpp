@@ -28,7 +28,7 @@ namespace Fyrion
         FileWatcher                           fileWatcher;
         bool                                  hotReloadEnabled = false;
 
-        Logger& logger = Logger::GetLogger("Fyrion::AssetManager", LogLevel::Debug);
+        Logger& logger = Logger::GetLogger("Fyrion::AssetManager");
 
         bool  registerEvents = RegisterEvents();
 

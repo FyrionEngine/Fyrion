@@ -422,6 +422,14 @@ namespace Fyrion
         }
     }
 
+    void TypeHandler::BatchDestructor(VoidPtr data, usize count) const
+    {
+        if (fnBatchDestructor)
+        {
+            fnBatchDestructor(this, data, count);
+        }
+    }
+
     void TypeHandler::Copy(ConstPtr source, VoidPtr dest) const
     {
         if (fnCopy)
@@ -645,6 +653,11 @@ namespace Fyrion
     void TypeBuilder::SetFnDestructor(TypeHandler::FnDestructor destructor)
     {
         typeHandler.fnDestructor = destructor;
+    }
+
+    void TypeBuilder::SetFnBatchDestructor(TypeHandler::FnBatchDestructor batchDestructor)
+    {
+        typeHandler.fnBatchDestructor = batchDestructor;
     }
 
     void TypeBuilder::SetFnRelease(TypeHandler::FnRelease fnRelease)

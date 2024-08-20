@@ -284,20 +284,22 @@ namespace Fyrion
     public:
         typedef void (*FnDestroy)(const TypeHandler* typeHandler, Allocator& allocator, VoidPtr instance);
         typedef void (*FnDestructor)(const TypeHandler* typeHandler, VoidPtr instance);
+        typedef void (*FnBatchDestructor)(const TypeHandler* typeHandler, VoidPtr data, usize count);
         typedef void (*FnCopy)(const TypeHandler* typeHandler, ConstPtr source, VoidPtr dest);
         typedef void (*FnMove)(const TypeHandler* typeHandler, VoidPtr source, VoidPtr dest);
         typedef void (*FnRelease)(const TypeHandler* typeHandler, VoidPtr instance);
         friend class TypeBuilder;
     private:
-        String        name{};
-        String        simpleName{};
-        TypeInfo      typeInfo{};
-        u32           version{};
-        FnDestroy     fnDestroy{};
-        FnCopy        fnCopy{};
-        FnDestructor  fnDestructor{};
-        FnMove        fnMove{};
-        FnRelease     fnRelease{};
+        String            name{};
+        String            simpleName{};
+        TypeInfo          typeInfo{};
+        u32               version{};
+        FnDestroy         fnDestroy{};
+        FnCopy            fnCopy{};
+        FnDestructor      fnDestructor{};
+        FnBatchDestructor fnBatchDestructor{};
+        FnMove            fnMove{};
+        FnRelease         fnRelease{};
 
         HashMap<usize, SharedPtr<ConstructorHandler>> constructors{};
         Array<ConstructorHandler*>                    constructorArray{};
@@ -343,6 +345,7 @@ namespace Fyrion
         void    Destroy(VoidPtr instance, Allocator& allocator = MemoryGlobals::GetDefaultAllocator()) const;
         void    Release(VoidPtr instance) const;
         void    Destructor(VoidPtr instance) const;
+        void    BatchDestructor(VoidPtr data, usize count) const;
         void    Copy(ConstPtr source, VoidPtr dest) const;
         void    DeepCopy(ConstPtr source, VoidPtr dest) const;
         void    Move(VoidPtr source, VoidPtr dest) const;
@@ -485,6 +488,7 @@ namespace Fyrion
         void               SetFnDestroy(TypeHandler::FnDestroy fnDestroy);
         void               SetFnCopy(TypeHandler::FnCopy fnCopy);
         void               SetFnDestructor(TypeHandler::FnDestructor destructor);
+        void               SetFnBatchDestructor(TypeHandler::FnBatchDestructor batchDestructor);
         void               SetFnMove(TypeHandler::FnMove fnMove);
         void               SetFnRelease(TypeHandler::FnRelease fnRelease);
         ConstructorBuilder NewConstructor(TypeID* ids, FieldInfo* params, usize size);
@@ -981,6 +985,7 @@ namespace Fyrion
         static void DestroyImpl(const TypeHandler* typeHandler, Allocator& allocator, VoidPtr instance){}
         static void CopyImpl(const TypeHandler* typeHandler, ConstPtr source, VoidPtr dest) {}
         static void DestructorImpl(const TypeHandler* typeHandler, VoidPtr instance){}
+        static void BatchDestructorImpl(const TypeHandler* typeHandler, VoidPtr data, usize count) {};
         static void MoveImpl(const TypeHandler* typeHandler, VoidPtr origin, VoidPtr destination) {}
         static void ReleaseImpl(const TypeHandler* typeHandler, VoidPtr instance) {}
     };
@@ -1012,6 +1017,18 @@ namespace Fyrion
                 static_cast<Type*>(instance)->~Type();
             }
         };
+
+        static void BatchDestructorImpl(const TypeHandler* typeHandler, VoidPtr data, usize count)
+        {
+            if constexpr (Traits::IsDestructible<Type>)
+            {
+                Type* arr = static_cast<Type*>(data);
+                for (int i = 0; i < count; ++i)
+                {
+                    arr[i].~Type();
+                }
+            }
+        }
 
         static void MoveImpl(const TypeHandler* typeHandler, VoidPtr origin, VoidPtr destination)
         {
@@ -1051,6 +1068,7 @@ namespace Fyrion
             typeBuilder.SetFnDestroy(&NativeTypeHandlerFuncs<Type>::DestroyImpl);
             typeBuilder.SetFnCopy(&NativeTypeHandlerFuncs<Type>::CopyImpl);
             typeBuilder.SetFnDestructor(&NativeTypeHandlerFuncs<Type>::DestructorImpl);
+            typeBuilder.SetFnBatchDestructor(&NativeTypeHandlerFuncs<Type>::BatchDestructorImpl);
             typeBuilder.SetFnMove(&NativeTypeHandlerFuncs<Type>::MoveImpl);
             typeBuilder.SetFnRelease(&NativeTypeHandlerFuncs<Type>::ReleaseImpl);
         }

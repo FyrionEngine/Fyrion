@@ -25,6 +25,7 @@ namespace Fyrion::World2
         TypeID       typeId;
         TypeHandler* typeHandler;
         usize        typeSize;
+        bool         isTriviallyCopyable;
         usize        dataOffset;
         usize        stateOffset;
     };
@@ -61,7 +62,7 @@ namespace Fyrion::World2
         FY_FINLINE usize AddEntityChunk(Archetype* archetype, const ArchetypeChunk& chunk, Entity entity)
         {
             usize& count = GetEntityCount(archetype, chunk);
-            usize index = ++count;
+            usize  index = ++count;
             GetEntity(archetype, chunk, index) = entity;
             return index;
         }
@@ -185,7 +186,6 @@ namespace Fyrion::World2
         }
     };
 
-
     class FY_API World
     {
     public:
@@ -194,7 +194,7 @@ namespace Fyrion::World2
             rootArchetype = CreateArchetype(0, nullptr, 0);
         }
 
-        void Add(Entity entity, TypeID* types, VoidPtr* components, i16 size)
+        void AddComponents(Entity entity, TypeID* types, VoidPtr* components, i16 size)
         {
             if (EntityData* entityData = entities.GetSafe(entity))
             {
@@ -206,13 +206,23 @@ namespace Fyrion::World2
                 }
                 else
                 {
-                    //TODO move
+                    TypeID ids[ArchetypeMaxComponents];
+                    usize  i = 0;
+                    for (ArchetypeType& typ : entityData->archetype->types)
+                    {
+                        ids[i++] = typ.typeId;
+                    }
+                    for (usize j = 0; j < size; j++)
+                    {
+                        ids[i++] = types[j];
+                    }
+                    MoveEntity(entity, *entityData, FindOrCreateArchetype(ids, entityData->archetype->types.Size() + size));
                 }
 
                 for (int i = 0; i < size; ++i)
                 {
-                    const TypeID typeId = types[i];
-                    usize typeIndex = entityData->archetype->typeIndex.Find(typeId)->second;
+                    const TypeID   typeId = types[i];
+                    usize          typeIndex = entityData->archetype->typeIndex.Find(typeId)->second;
                     ArchetypeType& type = entityData->archetype->types[typeIndex];
 
                     // ComponentState& state = FY_CHUNK_COMPONENT_STATE(type, entityContainer.chunk, entityContainer.chunkIndex);
@@ -224,7 +234,7 @@ namespace Fyrion::World2
 
                     VoidPtr data = Internal::GetChunkComponentData(type, entityData->chunk, entityData->chunkIndex);
 
-                    if (type.typeHandler->GetTypeInfo().isTriviallyCopyable)
+                    if (type.isTriviallyCopyable)
                     {
                         if (components[i])
                         {
@@ -246,19 +256,14 @@ namespace Fyrion::World2
                             type.typeHandler->Construct(data);
                         }
                     }
-
-
-
-                    //type.sparse->Emplace(entity, data);
                 }
-
             }
         }
 
         FY_FINLINE Entity SpawnWithComponents(Entity parent, TypeID* types, VoidPtr* components, i16 size)
         {
             Entity entity = entities.CreateEntity();
-            Add(entity, types, components, size);
+            AddComponents(entity, types, components, size);
             return entity;
         }
 
@@ -270,15 +275,18 @@ namespace Fyrion::World2
             return SpawnWithComponents(NullEntity, ids.begin(), components.begin(), sizeof...(Types));
         }
 
-        void Remove(Entity entity, TypeID* types, usize size)
+        template <typename... Types>
+        void Add(Entity entity, Types&&... values)
         {
-
+            FixedArray<TypeID, sizeof...(Types)>  ids{GetTypeID<Types>()...};
+            FixedArray<VoidPtr, sizeof...(Types)> components{&values...};
+            AddComponents(entity, ids.begin(), components.begin(), sizeof...(Types));
         }
 
-        void Destroy(Entity entity)
-        {
 
-        }
+        void Remove(Entity entity, TypeID* types, usize size) {}
+
+        void Destroy(Entity entity) {}
 
     private:
         EntityStorage    entities;
@@ -296,7 +304,6 @@ namespace Fyrion::World2
                 {
                     return activeChunk;
                 }
-
             }
 
             ArchetypeChunk chunk = static_cast<ArchetypeChunk>(MemoryGlobals::GetDefaultAllocator().MemAlloc(archetype->chunkTotalAllocSize, 1));
@@ -314,7 +321,7 @@ namespace Fyrion::World2
                 {
                     return it->second[0].Get();
                 }
-                //TODO
+                FY_ASSERT(false, "more then one archetype with same hash!");
             }
 
             return CreateArchetype(hash, ids, size);
@@ -357,6 +364,7 @@ namespace Fyrion::World2
                             .typeId = sortedIds[t],
                             .typeHandler = typeHandler,
                             .typeSize = typeHandler->GetTypeInfo().size,
+                            .isTriviallyCopyable = typeHandler->GetTypeInfo().isTriviallyCopyable,
                         };
 
                         stride += typeHandler->GetTypeInfo().size;
@@ -380,7 +388,6 @@ namespace Fyrion::World2
                     archetype->types[t].stateOffset = archetype->chunkTotalAllocSize;
                     archetype->chunkTotalAllocSize += archetype->maxEntityChunkCount * sizeof(ComponentState);
                 }
-
             }
             else
             {
@@ -391,6 +398,98 @@ namespace Fyrion::World2
             }
 
             return archetype;
+        }
+
+        void RemoveEntity(Entity entity, EntityData& entityData)
+        {
+            ArchetypeChunk activeChunk = entityData.archetype->chunks.Back();
+            usize&         entityCount = Internal::GetEntityCount(entityData.archetype, activeChunk);
+            u32            lastIndex = entityCount - 1;
+            Entity         lastEntity = Internal::GetEntity(entityData.archetype, activeChunk, lastIndex);
+
+            if (lastEntity != entity)
+            {
+                for (ArchetypeType& type : entityData.archetype->types)
+                {
+                    VoidPtr src = Internal::GetChunkComponentData(type, activeChunk, lastIndex);
+                    VoidPtr dst = Internal::GetChunkComponentData(type, entityData.chunk, entityData.chunkIndex);
+
+                    if (!type.isTriviallyCopyable)
+                    {
+                        type.typeHandler->Move(src, dst);
+                    }
+                    else
+                    {
+                        MemCopy(dst, src, type.typeSize);
+                    }
+
+                    // FY_CHUNK_COMPONENT_STATE(type, entityData.chunk, entityData.chunkIndex) = FY_CHUNK_COMPONENT_STATE(type, activeChunk, lastIndex);
+                    // type.sparse->Emplace(lastEntity, dst);
+                }
+            }
+
+            Internal::GetEntity(entityData.archetype, entityData.chunk, entityData.chunkIndex) = lastEntity;
+
+            if (EntityData* lastData = entities.GetSafe(lastEntity))
+            {
+                lastData->chunk = entityData.chunk;
+                lastData->chunkIndex = entityData.chunkIndex;
+            }
+
+            entityCount--;
+
+            if (entityCount == 0)
+            {
+                MemoryGlobals::GetDefaultAllocator().MemFree(activeChunk);
+                entityData.archetype->chunks.PopBack();
+            }
+        }
+
+        void MoveEntity(Entity entity, EntityData& entityData, Archetype* newArchetype)
+        {
+            if (entityData.archetype == newArchetype) return;
+            ArchetypeChunk newChunk = FindOrCreateChunk(newArchetype);
+
+            usize& entityCount = Internal::GetEntityCount(newArchetype, newChunk);
+            u32    newIndex = entityCount++;
+
+            //move to the new chunk, destroy not used components
+            for (usize t = 0; t < entityData.archetype->types.Size(); ++t)
+            {
+                ArchetypeType& type = entityData.archetype->types[t];
+
+                VoidPtr src = Internal::GetChunkComponentData(type, entityData.chunk, entityData.chunkIndex);
+                if (auto it = newArchetype->typeIndex.Find(type.typeId))
+                {
+                    ArchetypeType& destType = newArchetype->types[it->second];
+                    VoidPtr        dst = Internal::GetChunkComponentData(destType, newChunk, newIndex);
+
+                    if (type.isTriviallyCopyable)
+                    {
+                        MemCopy(dst, src, destType.typeSize);
+                    }
+                    else
+                    {
+                        destType.typeHandler->Move(src, dst);
+                    }
+                   //FY_CHUNK_COMPONENT_STATE(destType, newChunk, newIndex) = FY_CHUNK_COMPONENT_STATE(type, entityData.chunk, entityData.chunkIndex);
+                   //destType.sparse->Emplace(entity, src);
+                }
+                else
+                {
+                    if (!type.isTriviallyCopyable)
+                    {
+                        type.typeHandler->Destructor(src);
+                    }
+                    //type.sparse->Remove(entity);
+                }
+            }
+
+            RemoveEntity(entity, entityData);
+
+            entityData.archetype = newArchetype;
+            entityData.chunk = newChunk;
+            entityData.chunkIndex = newIndex;
         }
     };
 }

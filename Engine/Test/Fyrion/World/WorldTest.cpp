@@ -72,17 +72,19 @@ namespace
         {
             Registry::Type<TestComponentOne>();
             Registry::Type<TestComponentTwo>();
+            Registry::Type<TestComponentThree>();
+
 
             World2::World world;
             World2::Entity entity = world.Spawn(TestComponentOne{.value = 10}, TestComponentTwo{.value = 20, .strTest = LONG_TEXT});
-
+            world.Add(entity, TestComponentThree{});
         }
     }
 
 
     TEST_CASE("World::TestMultiple")
     {
-        constexpr usize num = 20000;
+        constexpr usize num = 20;
 
         Engine::Init();
         {
@@ -111,24 +113,55 @@ namespace
             CHECK(world.Count() == num);
 
             {
-                Chronometer c;
-                for (u32 i = 0; i < num; ++i)
+                Array<entt::entity> entities;
+                entities.Reserve(num);
                 {
-                    auto entity = ecs.create();
-                    ecs.emplace<TestComponentOne>(entity);
-                    ecs.emplace<TestComponentTwo>(entity);
-                    ecs.emplace<TestComponentThree>(entity);
+                    Chronometer c;
+                    for (u32 i = 0; i < num; ++i)
+                    {
+                        auto entity = ecs.create();
+                        ecs.emplace<TestComponentOne>(entity);
+                        ecs.emplace<TestComponentTwo>(entity);
+                        entities.EmplaceBack(entity);
+                    }
+                    c.Print("Entt");
                 }
-                c.Print("Entt");
+
+                {
+                    Chronometer c;
+                    for(auto entity : entities)
+                    {
+                        ecs.emplace<TestComponentThree>(entity);
+                    }
+                    c.Print("entt add");
+                }
+
             }
 
             {
-                Chronometer c;
-                for (u32 i = 0; i < num; ++i)
+                Array<World2::Entity> entities;
+                entities.Reserve(num);
+
+
                 {
-                    world2.Spawn(TestComponentOne{.value = i}, TestComponentTwo{.value = 20}, TestComponentThree{.aaa = 0});
+                    Chronometer c;
+                    for (u32 i = 0; i < num; ++i)
+                    {
+                        entities.EmplaceBack(world2.Spawn(TestComponentOne{.value = i}, TestComponentTwo{.value = 20}));
+                    }
+                    c.Print("Archetype Spawn");
                 }
-                c.Print("Archetype");
+
+
+                {
+                    Chronometer c;
+                    for(World2::Entity entity : entities)
+                    {
+                      //  world2.Add(entity,TestComponentThree{.aaa = 444});
+                    }
+                    c.Print("Archetype Add");
+                }
+
             }
 
 

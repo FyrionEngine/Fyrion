@@ -186,10 +186,13 @@ namespace Fyrion
             }
 
             usize& count = Internal::ChunkGetCount(lastChunk);
-            if (count - 1 == 0) DestroyChunk(Page(indexRemoved));
-            if (count > 0) count--;
-
+            if (count - 1 == 0) DestroyChunk(Page(indexLast)); else count--;
             sparse.Remove(entity);
+        }
+
+        Span<EntityChunk> GetChunks() const
+        {
+            return chunks;
         }
 
     private:
@@ -214,7 +217,7 @@ namespace Fyrion
             if (EntityChunk chunk = chunks[page])
             {
                 typeHandler->BatchDestructor(Internal::ChunkGetData(chunk), Internal::ChunkGetCount(chunk));
-                MemoryGlobals::GetDefaultAllocator().DestroyAndFree(chunk);
+                MemoryGlobals::GetDefaultAllocator().MemFree(chunk);
                 chunks[page] = nullptr;
             }
         }

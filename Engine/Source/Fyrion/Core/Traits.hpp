@@ -298,5 +298,18 @@ namespace Fyrion::Traits
     template<typename Type>
     constexpr bool IsPointer = TIsPointer<Type>::value;
 
+    template <class T, class Tuple>
+    struct TupleIndex;
+
+    template <class T, class... Types>
+    struct TupleIndex<T, std::tuple<T, Types...>> {
+        static constexpr std::size_t value = 0;
+    };
+
+    template <class T, class U, class... Types>
+    struct TupleIndex<T, std::tuple<U, Types...>> {
+        static constexpr std::size_t value = 1 + TupleIndex<T, std::tuple<Types...>>::value;
+    };
+
 
 }

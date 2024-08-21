@@ -5,7 +5,7 @@
 
 #include <tuple>
 
-namespace Fyrion
+namespace Fyrion::World1
 {
 
     template<typename Type>
@@ -93,9 +93,6 @@ namespace Fyrion
                     }
                 }
             }
-
-
-
 
             // for(const auto& entity :  m_pools[0]->Packed())
             // {

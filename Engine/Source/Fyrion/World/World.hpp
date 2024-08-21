@@ -7,7 +7,7 @@
 #include "Fyrion/Core/HashMap.hpp"
 #include "Fyrion/Core/SharedPtr.hpp"
 
-namespace Fyrion
+namespace Fyrion::World1
 {
 
     class FY_API World

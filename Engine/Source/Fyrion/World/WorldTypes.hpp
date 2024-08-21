@@ -2,7 +2,7 @@
 #include "Fyrion/Common.hpp"
 
 
-namespace Fyrion
+namespace Fyrion::World1
 {
     using Entity = u64;
 

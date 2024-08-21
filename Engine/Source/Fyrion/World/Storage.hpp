@@ -5,7 +5,7 @@
 #include <Fyrion/Core/Array.hpp>
 #include "Fyrion/Core/Registry.hpp"
 
-namespace Fyrion
+namespace Fyrion::World1
 {
     template <usize PageSize>
     class BaseEntitySparseSet

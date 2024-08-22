@@ -1,14 +1,17 @@
 #include <doctest.h>
 
+#define FY_PERFORMANCE_TEST
+
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Core/Logger.hpp"
 #include "Fyrion/Core/Chronometer.hpp"
 #include "Fyrion/World/World.hpp"
+#include "Fyrion/World/Query.hpp"
 
+#ifdef FY_PERFORMANCE_TEST
 #define ENTT_ID_TYPE Fyrion::u64;
 #include "entt.hpp"
-#include "Fyrion/Scene/SceneManager.hpp"
-#include "Fyrion/Scene/SceneObject.hpp"
+#endif
 
 using namespace Fyrion;
 
@@ -37,20 +40,6 @@ namespace
         u64 zzz;
     };
 
-    struct TestComponentOneC : Component
-    {
-        FY_BASE_TYPES(Component);
-        u32 value;
-    };
-
-    struct TestComponentTwoC : Component
-    {
-        FY_BASE_TYPES(Component);
-
-        u32    value;
-        String strTest;
-    };
-
     TEST_CASE("World::Basic")
     {
         Engine::Init();
@@ -68,6 +57,8 @@ namespace
             CHECK(world.Get<TestComponentOne>(entity)->value == 10);
             CHECK(world.Get<TestComponentTwo>(entity)->value == 20);
             CHECK(world.Get<TestComponentTwo>(entity)->strTest == LONG_TEXT);
+
+            Query<TestComponentOne, TestComponentTwo> query = world.Query<TestComponentOne, TestComponentTwo>();
 
             world.Remove<TestComponentTwo>(entity);
 
@@ -91,7 +82,7 @@ namespace
 #ifdef FY_PERFORMANCE_TEST
     TEST_CASE("World::TestMultipleEntities")
     {
-        constexpr usize num = 2000000;
+        constexpr usize num = 1000000;
 
         Engine::Init();
         {
@@ -99,9 +90,6 @@ namespace
             Registry::Type<TestComponentTwo>();
             Registry::Type<TestComponentThree>();
             Registry::Type<TestComponentFour>();
-
-            Registry::Type<TestComponentOneC>();
-            Registry::Type<TestComponentTwoC>();
 
 
             entt::registry ecs;
@@ -131,21 +119,6 @@ namespace
             }
 
             {
-                SceneObject sceneObject{};
-                Chronometer c;
-                for (u32 i = 0; i < num; ++i)
-                {
-                    SceneObject* child = SceneManager::CreateObject();
-                    child->CreateComponent<TestComponentOneC>();
-                    child->CreateComponent<TestComponentTwoC>();
-                    child->CreateComponent<TestComponentOneC>();
-                    child->CreateComponent<TestComponentTwoC>();
-                    sceneObject.AddChild(child);
-                }
-                c.Print("Fyrion EC - create ");
-            }
-
-            {
                 Array<entt::entity> entities;
                 entities.Reserve(num);
                 {
@@ -154,7 +127,6 @@ namespace
                     {
                         auto entity = ecs.create();
                         ecs.emplace<TestComponentOne>(entity);
-                        ecs.emplace<TestComponentTwo>(entity);
                         ecs.emplace<TestComponentTwo>(entity);
                         ecs.emplace<TestComponentThree>(entity);
                         entities.EmplaceBack(entity);

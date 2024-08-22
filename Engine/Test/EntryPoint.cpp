@@ -10,7 +10,7 @@ using namespace Fyrion;
 
 int main(int argc, char** argv)
 {
-    AllocatorOptions flags = 0; //AllocatorOptions_DetectMemoryLeaks;
+    AllocatorOptions flags = AllocatorOptions_DetectMemoryLeaks;
 
     //flags |= AllocatorOptions_CaptureStackTrace;
 

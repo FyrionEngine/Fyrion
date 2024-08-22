@@ -12,6 +12,9 @@ namespace Fyrion
     constexpr u16           ChunkComponentSize = 16 * 1024;
     constexpr static Entity NullEntity = 0;
 
+    template<typename ...Types>
+    struct Query;
+
     struct ComponentState
     {
         u64 lastChange = 0;
@@ -80,7 +83,6 @@ namespace Fyrion
         Archetype*     archetype = nullptr;
         ArchetypeChunk chunk = nullptr;
         u32            chunkIndex = 0;
-        bool           alive = true;
     };
 
     class EntityStorage final
@@ -103,7 +105,6 @@ namespace Fyrion
             {
                 Entity entity = freeEntities.Back();
                 freeEntities.PopBack();
-                Get(entity).alive = true;
                 return entity;
             }
 
@@ -114,7 +115,6 @@ namespace Fyrion
                 .archetype = nullptr,
                 .chunk = nullptr,
                 .chunkIndex = 0,
-                .alive = true
             };
 
             return entity;
@@ -122,7 +122,6 @@ namespace Fyrion
 
         void Destroy(Entity entity)
         {
-            Get(entity).alive = false;
             freeEntities.EmplaceBack(entity);
         }
 
@@ -132,6 +131,12 @@ namespace Fyrion
         }
 
         EntityData* GetSafe(Entity entity)
+        {
+            auto page = Page(entity);
+            return page < entities.Size() ? &entities[page][Offset(entity)] : nullptr;
+        }
+
+        const EntityData* GetSafe(Entity entity) const
         {
             auto page = Page(entity);
             return page < entities.Size() ? &entities[page][Offset(entity)] : nullptr;
@@ -186,12 +191,40 @@ namespace Fyrion
         }
     };
 
-    class FY_API World
+    class FY_API World final
     {
     public:
+
+        FY_NO_COPY_CONSTRUCTOR(World);
+
         World()
         {
             rootArchetype = CreateArchetype(0, nullptr, 0);
+        }
+
+        ~World()
+        {
+            for(auto& it: archetypes)
+            {
+                for(auto& archetype: it.second)
+                {
+                    for(auto& chunk : archetype->chunks)
+                    {
+                        for(auto& type: archetype->types)
+                        {
+                            if (!type.isTriviallyCopyable)
+                            {
+                                usize count = Internal::GetEntityCount(archetype.Get(), chunk);
+                                for (usize e = 0; e < count; ++e)
+                                {
+                                    type.typeHandler->Destructor(Internal::GetChunkComponentData(type, chunk, e));
+                                }
+                            }
+                        }
+                        MemoryGlobals::GetDefaultAllocator().MemFree(chunk);
+                    }
+                }
+            }
         }
 
         void AddComponents(Entity entity, TypeID* types, VoidPtr* components, i16 size)
@@ -291,31 +324,103 @@ namespace Fyrion
         }
 
         template <typename... Types>
-        void Remove(Entity entity) {}
-
-        template <typename Type>
-        const Type* Get(Entity)
+        void Remove(Entity entity)
         {
+            FixedArray<TypeID, sizeof...(Types)>  ids{GetTypeID<Types>()...};
+            RemoveComponents(entity, ids.begin(), sizeof...(Types));
+        }
+
+        ConstPtr Get(Entity entity, TypeID typeId) const
+        {
+            if (const EntityData* data = entities.GetSafe(entity))
+            {
+                if (data->archetype != nullptr && data->chunk != nullptr)
+                {
+                    if (auto it = data->archetype->typeIndex.Find(typeId))
+                    {
+                        return Internal::GetChunkComponentData(data->archetype->types[it->second], data->chunk, data->chunkIndex);
+                    }
+                }
+            }
             return nullptr;
         }
 
         template <typename Type>
-        bool Has(Entity)
+        const Type* Get(Entity entity) const
         {
-            return false;
+            return static_cast<const Type*>(Get(entity, GetTypeID<Type>()));
         }
 
+        template <typename Type>
+        bool Has(Entity entity) const
+        {
+            return Get(entity, GetTypeID<Type>()) != nullptr;
+        }
 
         bool Alive(Entity entity) const
         {
+            if (const EntityData* data = entities.GetSafe(entity))
+            {
+                return data->archetype != nullptr;
+            }
+            return false;
+        }
+
+        bool RemoveComponents(Entity entity, TypeID* types, usize size)
+        {
+            if (EntityData* data = entities.GetSafe(entity))
+            {
+                usize newSize = 0;
+                TypeID ids[ArchetypeMaxComponents];
+
+                for(ArchetypeType& type : data->archetype->types)
+                {
+                    bool found = false;
+                    for (int i = 0; i < size; ++i)
+                    {
+                        if (types[i] == type.typeId)
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+                    //not found on list to remove. keep it
+                    if (!found)
+                    {
+                        ids[newSize++] = type.typeId;
+                    }
+                }
+
+                //types to remove not found
+                if (newSize != data->archetype->types.Size())
+                {
+                    Archetype* archetype = FindOrCreateArchetype(ids, newSize);
+                    MoveEntity(entity, *data, archetype);
+                }
+            }
             return false;
         }
 
 
-        void RemoveComponents(Entity entity, TypeID* types, usize size) {}
+        void Destroy(Entity entity)
+        {
+            if (EntityData* data = entities.GetSafe(entity))
+            {
+                RemoveEntity(entity, *data);
 
+                data->archetype = nullptr;
+                data->chunk = nullptr;
+                data->chunkIndex = 0;
 
-        void Destroy(Entity entity) {}
+                entities.Destroy(entity);
+            }
+        }
+
+        template<typename ...T>
+        decltype(auto) Query()
+        {
+            return Fyrion::Query<T...>{this};
+        }
 
     private:
         EntityStorage    entities;
@@ -520,13 +625,6 @@ namespace Fyrion
                     }
                     //FY_CHUNK_COMPONENT_STATE(destType, newChunk, newIndex) = FY_CHUNK_COMPONENT_STATE(type, entityData.chunk, entityData.chunkIndex);
                     //destType.sparse->Emplace(entity, src);
-                }
-                else
-                {
-                    if (!type.isTriviallyCopyable)
-                    {
-                        type.typeHandler->Destructor(src);
-                    }
                 }
             }
 

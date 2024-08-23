@@ -1,17 +1,10 @@
 #include <doctest.h>
 
-#define FY_PERFORMANCE_TEST
-
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Core/Logger.hpp"
 #include "Fyrion/Core/Chronometer.hpp"
 #include "Fyrion/World/World.hpp"
 #include "Fyrion/World/Query.hpp"
-
-#ifdef FY_PERFORMANCE_TEST
-#define ENTT_ID_TYPE Fyrion::u64;
-#include "entt.hpp"
-#endif
 
 using namespace Fyrion;
 
@@ -30,15 +23,6 @@ namespace
         String strTest;
     };
 
-    struct TestComponentThree
-    {
-        u64 aaa;
-    };
-
-    struct TestComponentFour
-    {
-        u64 zzz;
-    };
 
     TEST_CASE("World::Basic")
     {
@@ -46,7 +30,6 @@ namespace
         {
             Registry::Type<TestComponentOne>();
             Registry::Type<TestComponentTwo>();
-            Registry::Type<TestComponentThree>();
 
             World world;
             Entity entity = world.Spawn(TestComponentOne{.value = 10}, TestComponentTwo{.value = 20, .strTest = LONG_TEXT});
@@ -58,7 +41,17 @@ namespace
             CHECK(world.Get<TestComponentTwo>(entity)->value == 20);
             CHECK(world.Get<TestComponentTwo>(entity)->strTest == LONG_TEXT);
 
-            Query<TestComponentOne, TestComponentTwo> query = world.Query<TestComponentOne, TestComponentTwo>();
+            u32 count = 0;
+
+            world.Query<TestComponentOne, TestComponentTwo>().ForEach([&](const TestComponentOne& componentOne, const TestComponentTwo& componentTwo)
+            {
+                CHECK(componentOne.value == 10);
+                CHECK(componentTwo.value == 20);
+                CHECK(componentTwo.strTest == LONG_TEXT);
+                count++;
+            });
+
+            CHECK(count == 1);
 
             world.Remove<TestComponentTwo>(entity);
 
@@ -77,76 +70,4 @@ namespace
         }
         Engine::Destroy();
     }
-
-
-#ifdef FY_PERFORMANCE_TEST
-    TEST_CASE("World::TestMultipleEntities")
-    {
-        constexpr usize num = 1000000;
-
-        Engine::Init();
-        {
-            Registry::Type<TestComponentOne>();
-            Registry::Type<TestComponentTwo>();
-            Registry::Type<TestComponentThree>();
-            Registry::Type<TestComponentFour>();
-
-
-            entt::registry ecs;
-            World world;
-
-            {
-                Array<Entity> entities;
-                entities.Reserve(num);
-
-                {
-                    Chronometer c;
-                    for (u32 i = 0; i < num; ++i)
-                    {
-                        entities.EmplaceBack(world.Spawn(TestComponentOne{.value = i}, TestComponentTwo{.value = 20}, TestComponentThree{.aaa = 4444}));
-                    }
-                    c.Print("Fyrion - create three initial components");
-                }
-
-                {
-                    Chronometer c;
-                    for(Entity entity : entities)
-                    {
-                        world.Add(entity,TestComponentFour{.zzz = 444});
-                    }
-                    c.Print("Fyrion - add new component");
-                }
-            }
-
-            {
-                Array<entt::entity> entities;
-                entities.Reserve(num);
-                {
-                    Chronometer c;
-                    for (u32 i = 0; i < num; ++i)
-                    {
-                        auto entity = ecs.create();
-                        ecs.emplace<TestComponentOne>(entity);
-                        ecs.emplace<TestComponentTwo>(entity);
-                        ecs.emplace<TestComponentThree>(entity);
-                        entities.EmplaceBack(entity);
-                    }
-                    c.Print("Entt - create three initial components");
-                }
-
-                {
-                    Chronometer c;
-                    for(auto entity : entities)
-                    {
-                        ecs.emplace<TestComponentFour>(entity);
-                    }
-                    c.Print("Entt - add new component");
-                }
-
-            }
-        }
-        Engine::Destroy();
-    }
-#endif
-
 }

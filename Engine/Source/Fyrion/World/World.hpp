@@ -7,13 +7,14 @@
 
 namespace Fyrion
 {
+    class World;
     using Entity = u64;
     constexpr u8            ArchetypeMaxComponents = 128;
     constexpr u16           ChunkComponentSize = 16 * 1024;
     constexpr static Entity NullEntity = 0;
 
     template<typename ...Types>
-    struct Query;
+    class Query;
 
     struct ComponentState
     {
@@ -60,6 +61,11 @@ namespace Fyrion
             return *reinterpret_cast<Entity*>(&chunk[archetype->entityArrayOffset + index * sizeof(Entity)]);
         }
 
+        FY_FINLINE Entity* GetEntities(Archetype* archetype, const ArchetypeChunk& chunk)
+        {
+            return reinterpret_cast<Entity*>(&chunk[archetype->entityArrayOffset]);
+        }
+
         FY_FINLINE usize AddEntityChunk(Archetype* archetype, const ArchetypeChunk& chunk, Entity entity)
         {
             u32& count = GetEntityCount(archetype, chunk);
@@ -71,6 +77,12 @@ namespace Fyrion
         FY_FINLINE VoidPtr GetChunkComponentData(const ArchetypeType& archetypeType, const ArchetypeChunk& chunk, usize index)
         {
             return &chunk[archetypeType.dataOffset + (index * archetypeType.typeSize)];
+        }
+
+        template<typename T>
+        FY_FINLINE T* GetChunkComponentArray(const ArchetypeType& archetypeType, const ArchetypeChunk& chunk)
+        {
+            return reinterpret_cast<T*>(&chunk[archetypeType.dataOffset]);
         }
     }
 
@@ -191,6 +203,36 @@ namespace Fyrion
         }
     };
 
+    struct ArchetypeQuery
+    {
+        Archetype* archetype;
+        u8 columns[ArchetypeMaxComponents];
+    };
+
+    struct QueryCreation
+    {
+        usize        hash;
+        Span<TypeID> types;
+    };
+
+    struct QueryData
+    {
+        usize                 hash;
+        World*                world;
+        Array<TypeID>         types;
+        Array<ArchetypeQuery> archetypes;
+    };
+
+    using QueryHashMap = HashMap<usize, Array<SharedPtr<QueryData>>>;
+
+    struct System
+    {
+        virtual      ~System() = default;
+        virtual void OnCreate(World& world) {}
+        virtual void OnUpdate(World& world) {}
+        virtual void OnPostUpdate(World& world) {}
+    };
+
     class FY_API World final
     {
     public:
@@ -200,31 +242,6 @@ namespace Fyrion
         World()
         {
             rootArchetype = CreateArchetype(0, nullptr, 0);
-        }
-
-        ~World()
-        {
-            for(auto& it: archetypes)
-            {
-                for(auto& archetype: it.second)
-                {
-                    for(auto& chunk : archetype->chunks)
-                    {
-                        for(auto& type: archetype->types)
-                        {
-                            if (!type.isTriviallyCopyable)
-                            {
-                                usize count = Internal::GetEntityCount(archetype.Get(), chunk);
-                                for (usize e = 0; e < count; ++e)
-                                {
-                                    type.typeHandler->Destructor(Internal::GetChunkComponentData(type, chunk, e));
-                                }
-                            }
-                        }
-                        MemoryGlobals::GetDefaultAllocator().MemFree(chunk);
-                    }
-                }
-            }
         }
 
         void AddComponents(Entity entity, TypeID* types, VoidPtr* components, i16 size)
@@ -261,9 +278,9 @@ namespace Fyrion
                     // ComponentState& state = FY_CHUNK_COMPONENT_STATE(type, entityContainer.chunk, entityContainer.chunkIndex);
                     // ComponentState& chunkState = FY_CHUNK_STATE(typeIndex, entityContainer.archetype, entityContainer.chunk);
                     //
-                    // state.lastChange = m_currentFrame;
+                    // state.lastChange = currentStageCount;
                     // state.lastCheck = 0;
-                    // chunkState.lastChange = m_currentFrame;
+                    // chunkState.lastChange = currentStageCount;
 
                     VoidPtr data = Internal::GetChunkComponentData(type, entityData->chunk, entityData->chunkIndex);
 
@@ -419,13 +436,43 @@ namespace Fyrion
         template<typename ...T>
         decltype(auto) Query()
         {
-            return Fyrion::Query<T...>{this};
+            using QueryImpl = Fyrion::Query<T...>;
+            return QueryImpl(FindOrCreateQuery(QueryImpl::GetCreation()));
+        }
+
+        void Update();
+
+        ~World()
+        {
+            for(auto& it: archetypes)
+            {
+                for(auto& archetype: it.second)
+                {
+                    for(auto& chunk : archetype->chunks)
+                    {
+                        for(auto& type: archetype->types)
+                        {
+                            if (!type.isTriviallyCopyable)
+                            {
+                                usize count = Internal::GetEntityCount(archetype.Get(), chunk);
+                                for (usize e = 0; e < count; ++e)
+                                {
+                                    type.typeHandler->Destructor(Internal::GetChunkComponentData(type, chunk, e));
+                                }
+                            }
+                        }
+                        MemoryGlobals::GetDefaultAllocator().MemFree(chunk);
+                    }
+                }
+            }
         }
 
     private:
         EntityStorage    entities;
         ArchetypeHashMap archetypes;
         Archetype*       rootArchetype = nullptr;
+        QueryHashMap     queries;
+        u64              worldFrameCount = 1;
 
 
         ArchetypeChunk FindOrCreateChunk(Archetype* archetype)
@@ -528,6 +575,14 @@ namespace Fyrion
                 archetype->chunkTotalAllocSize = archetype->maxEntityChunkCount * sizeof(Entity);
                 archetype->entityCountOffset = archetype->chunkTotalAllocSize;
                 archetype->chunkTotalAllocSize += sizeof(u32);
+            }
+
+            for(auto& it: queries)
+            {
+                for(SharedPtr<QueryData>& data: it.second)
+                {
+                    CheckQueryArchetype(data.Get(), archetype);
+                }
             }
 
             return archetype;
@@ -634,5 +689,9 @@ namespace Fyrion
             entityData.chunk = newChunk;
             entityData.chunkIndex = newIndex;
         }
+
+        QueryData*  FindOrCreateQuery(const QueryCreation& queryCreation);
+
+        static void CheckQueryArchetype(QueryData* queryData, Archetype* archetype);
     };
 }

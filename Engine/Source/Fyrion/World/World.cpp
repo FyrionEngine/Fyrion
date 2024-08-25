@@ -55,9 +55,96 @@ namespace Fyrion
         queryData->archetypes.EmplaceBack(archetypes);
     }
 
+    void World::AddSystem(TypeID typeId)
+    {
+        if (TypeHandler* typeHandler = Registry::FindTypeById(typeId))
+        {
+            System* system = typeHandler->Cast<System>(typeHandler->NewInstance());
+            FY_ASSERT(system, "system cannot be created");
+            system->world = this;
+            systems.EmplaceBack(SystemStorage{
+                .typeHandler = typeHandler,
+                .system = system,
+                .initialized = false
+            });
+        }
+    }
+
     void World::Update()
     {
+        //create stage
+        for(SystemStorage& systemStorage : systems)
+        {
+            if (systemStorage.system)
+            {
+                if (!systemStorage.initialized)
+                {
+                    systemStorage.system->OnCreate();
+                    systemStorage.initialized = true;
+                }
+            }
+        }
 
+        //update stage
+        for(SystemStorage& systemStorage : systems)
+        {
+            if (systemStorage.system)
+            {
+                systemStorage.system->OnUpdate();
+            }
+        }
+
+        //post update stage
+        for(SystemStorage& systemStorage : systems)
+        {
+            if (systemStorage.system)
+            {
+                systemStorage.system->OnPostUpdate();
+            }
+        }
+    }
+
+    World::~World()
+    {
+
+        //destroy stage
+        for(SystemStorage& systemStorage : systems)
+        {
+            if (systemStorage.system)
+            {
+                systemStorage.system->OnDestroy();
+                systemStorage.typeHandler->Destroy(systemStorage.system);
+            }
+        }
+
+        for(auto& it: archetypes)
+        {
+            for(auto& archetype: it.second)
+            {
+                for(auto& chunk : archetype->chunks)
+                {
+                    for(auto& type: archetype->types)
+                    {
+                        if (!type.isTriviallyCopyable)
+                        {
+                            usize count = chunk.GetEntityCount();
+                            for (usize e = 0; e < count; ++e)
+                            {
+                                type.typeHandler->Destructor(chunk.GetChunkComponentData(type, e));
+                            }
+                        }
+                    }
+                    MemoryGlobals::GetDefaultAllocator().MemFree(chunk.data);
+                }
+            }
+        }
+    }
+
+
+    void WorldTypeRegister()
+    {
+        Registry::Type<System>();
+        Registry::Type<World>();
     }
 
 }

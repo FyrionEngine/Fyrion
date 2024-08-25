@@ -5,6 +5,35 @@
 
 namespace Fyrion
 {
+    template<typename...Ts>
+    using QueryTupleCat = decltype(std::tuple_cat(std::declval<Ts>()...));
+
+
+    template<typename T>
+    struct RefMut
+    {
+        using type = T;
+    };
+
+    template<typename T>
+    struct Changed
+    {
+        using type = T;
+    };
+
+    template<typename T>
+    struct Without
+    {
+    };
+
+    template<typename T>
+    struct QueryFilter
+    {
+        using type = T;
+    };
+
+
+
     template<typename T>
     struct QueryFunction {};
 
@@ -19,8 +48,8 @@ namespace Fyrion
             {
                 for (ArchetypeChunk& chunk : archetypeQuery.archetype->chunks)
                 {
-                    usize count = Internal::GetEntityCount(archetypeQuery.archetype, chunk);
-                    auto tupleComponents = std::make_tuple(Internal::GetChunkComponentArray<Traits::RemoveAll<Params>>(archetypeQuery.archetype->types[archetypeQuery.columns[I]], chunk)...);
+                    usize count = chunk.GetEntityCount();
+                    auto tupleComponents = std::make_tuple(chunk.GetChunkComponentArray<Traits::RemoveAll<Params>>(archetypeQuery.archetype->types[archetypeQuery.columns[I]])...);
                     //Entity* entities = Internal::GetEntities(archetypeQuery.archetype, chunk);
                     for (int e = 0; e < count; ++e)
                     {
@@ -36,6 +65,8 @@ namespace Fyrion
     class Query
     {
     public:
+      // using TupleTypes = QueryTupleCat<std::conditional_t<QueryTypeFilter<Types>::value, std::tuple<typename Types::type>, std::tuple<>>...>;
+
         Query() = default;
 
         Query(QueryData* data) : data(data)

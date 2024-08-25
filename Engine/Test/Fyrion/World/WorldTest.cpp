@@ -31,7 +31,7 @@ namespace
             Registry::Type<TestComponentOne>();
             Registry::Type<TestComponentTwo>();
 
-            World world;
+            World  world;
             Entity entity = world.Spawn(TestComponentOne{.value = 10}, TestComponentTwo{.value = 20, .strTest = LONG_TEXT});
 
             CHECK(world.Alive(entity));
@@ -67,6 +67,59 @@ namespace
 
             //it should recicle the entity id
             CHECK(world.Spawn() == entity);
+        }
+        Engine::Destroy();
+    }
+
+
+    struct TestSystem : System
+    {
+        FY_BASE_TYPES(System);
+
+        void OnCreate() override
+        {
+            for (u32 i = 0; i < 10; ++i)
+            {
+                world->Spawn(TestComponentOne{
+                    .value = i
+                });
+            }
+        }
+
+        void OnUpdate() override
+        {
+            world->Query<TestComponentOne, TestComponentTwo>().ForEach([](const TestComponentOne& one, TestComponentTwo& testComponentTwo)
+            {
+
+            });
+        }
+
+        void OnPostUpdate() override
+        {
+            world->Query<Changed<TestComponentTwo>>().ForEach([](const TestComponentTwo& testComponentTwo)
+            {
+
+            });
+        }
+
+        void OnDestroy() override
+        {
+
+        }
+    };
+
+    TEST_CASE("World::TestSystems")
+    {
+        Engine::Init();
+        {
+            Registry::Type<TestSystem>();
+            Registry::Type<TestComponentOne>();
+            Registry::Type<TestComponentTwo>();
+
+
+            World world;
+            world.AddSystem<TestSystem>();
+            world.Update();
         }
         Engine::Destroy();
     }

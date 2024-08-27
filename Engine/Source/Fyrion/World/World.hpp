@@ -4,6 +4,7 @@
 #include "Fyrion/Core/Array.hpp"
 #include "Fyrion/Core/HashMap.hpp"
 #include "Fyrion/Core/Registry.hpp"
+#include "System.hpp"
 
 namespace Fyrion
 {
@@ -16,6 +17,9 @@ namespace Fyrion
     template<typename ...Types>
     class Query;
 
+    template<typename T>
+    struct QueryFunction;
+
     struct ComponentState
     {
         u64 lastChange = 0;
@@ -24,6 +28,7 @@ namespace Fyrion
 
     struct ArchetypeType
     {
+        usize        index;
         TypeID       typeId;
         TypeHandler* typeHandler;
         usize        typeSize;
@@ -83,13 +88,26 @@ namespace Fyrion
             return index;
         }
 
-        FY_FINLINE VoidPtr GetChunkComponentData(const ArchetypeType& archetypeType, usize index) const
+        FY_FINLINE VoidPtr GetComponent(const ArchetypeType& archetypeType, usize index) const
         {
             return &data[archetypeType.dataOffset + (index * archetypeType.typeSize)];
         }
 
+        FY_FINLINE void SetComponentState(const ArchetypeType& archetypeType, usize index, const ComponentState& componentState) const
+        {
+            new(&data[archetypeType.stateOffset + (index * sizeof(ComponentState))]) ComponentState{componentState};
+            ComponentState& chunkState = *reinterpret_cast<ComponentState*>(&data[archetype->chunkStateOffset + archetypeType.index * sizeof(ComponentState)]);
+            chunkState.lastChange = componentState.lastChange;
+        }
+
+
+        // FY_FINLINE ComponentState& GetComponentState(const ArchetypeType& archetypeType, usize index) const
+        // {
+        //     return *reinterpret_cast<ComponentState*>(&data[archetypeType.stateOffset + (index * sizeof(ComponentState))]);
+        // }
+
         template<typename T>
-        FY_FINLINE T* GetChunkComponentArray(const ArchetypeType& archetypeType)
+        FY_FINLINE T* GetComponentArray(const ArchetypeType& archetypeType)
         {
             return reinterpret_cast<T*>(&data[archetypeType.dataOffset]);
         }
@@ -231,16 +249,6 @@ namespace Fyrion
 
     using QueryHashMap = HashMap<usize, Array<SharedPtr<QueryData>>>;
 
-    struct System
-    {
-        World* world = nullptr;
-        virtual      ~System() = default;
-
-        virtual void OnCreate() {}
-        virtual void OnUpdate() {}
-        virtual void OnPostUpdate() {}
-        virtual void OnDestroy() {}
-    };
 
     class FY_API World final
     {
@@ -283,14 +291,12 @@ namespace Fyrion
                     usize          typeIndex = entityData->chunk.archetype->typeIndex.Find(typeId)->second;
                     ArchetypeType& type = entityData->chunk.archetype->types[typeIndex];
 
-                    // ComponentState& state = FY_CHUNK_COMPONENT_STATE(type, entityContainer.chunk, entityContainer.chunkIndex);
-                    // ComponentState& chunkState = FY_CHUNK_STATE(typeIndex, entityContainer.archetype, entityContainer.chunk);
-                    //
-                    // state.lastChange = currentStageCount;
-                    // state.lastCheck = 0;
-                    // chunkState.lastChange = currentStageCount;
+                    entityData->chunk.SetComponentState(type, entityData->chunkIndex, ComponentState{
+                                                            .lastChange = worldStageCount,
+                                                            .lastCheck = 0
+                                                        });
 
-                    VoidPtr data = entityData->chunk.GetChunkComponentData(type,entityData->chunkIndex);
+                    VoidPtr data = entityData->chunk.GetComponent(type,entityData->chunkIndex);
 
                     if (type.isTriviallyCopyable)
                     {
@@ -363,7 +369,7 @@ namespace Fyrion
                 {
                     if (auto it = data->chunk.archetype->typeIndex.Find(typeId))
                     {
-                        return data->chunk.GetChunkComponentData(data->chunk.archetype->types[it->second], data->chunkIndex);
+                        return data->chunk.GetComponent(data->chunk.archetype->types[it->second], data->chunkIndex);
                     }
                 }
             }
@@ -447,6 +453,18 @@ namespace Fyrion
             return QueryImpl(FindOrCreateQuery(QueryImpl::GetCreation()));
         }
 
+        template<typename Func>
+        decltype(auto) ForEach(Func&& func)
+        {
+            QueryFunction<decltype(&Func::operator())>::ForEach(nullptr, func);
+        }
+
+        template<typename ...T>
+        decltype(auto) Iter()
+        {
+            return QueryIter<T...>();
+        }
+
 
         template<typename T>
         void AddSystem()
@@ -461,12 +479,14 @@ namespace Fyrion
         ~World();
 
     private:
+        void ExecuteSystemStage(SystemExecutionStage stage);
 
         struct SystemStorage
         {
-            TypeHandler* typeHandler;
-            System*      system;
-            bool         initialized;
+            TypeHandler* typeHandler{};
+            SystemSetup  setup{};
+            System*      system{};
+            bool         initialized{};
         };
 
 
@@ -474,8 +494,9 @@ namespace Fyrion
         ArchetypeHashMap     archetypes;
         Archetype*           rootArchetype = nullptr;
         QueryHashMap         queries;
-        u64                  worldFrameCount = 1;
+        u64                  worldStageCount = 1;
         Array<SystemStorage> systems;
+        bool                 simulating = true;
 
 
         ArchetypeChunk FindOrCreateChunk(Archetype* archetype)
@@ -491,6 +512,7 @@ namespace Fyrion
             ArchetypeChunk& chunk = archetype->chunks.EmplaceBack();
             chunk.archetype = archetype;
             chunk.data = static_cast<u8*>(MemoryGlobals::GetDefaultAllocator().MemAlloc(archetype->chunkTotalAllocSize, 1));
+            //TODO set memory only on needed data
             MemSet(chunk.data, 0, archetype->chunkTotalAllocSize);
             return chunk;
         }
@@ -543,6 +565,7 @@ namespace Fyrion
                         archetype->typeIndex.Emplace(sortedIds[t], static_cast<usize>(t));
 
                         archetype->types[t] = ArchetypeType{
+                            .index = t,
                             .typeId = sortedIds[t],
                             .typeHandler = typeHandler,
                             .typeSize = typeHandler->GetTypeInfo().size,
@@ -602,7 +625,7 @@ namespace Fyrion
             {
                 for (ArchetypeType& type : entityData.chunk.archetype->types)
                 {
-                    VoidPtr data = entityData.chunk.GetChunkComponentData(type, entityData.chunkIndex);
+                    VoidPtr data = entityData.chunk.GetComponent(type, entityData.chunkIndex);
                     if (!type.isTriviallyCopyable)
                     {
                         type.typeHandler->Destructor(data);
@@ -621,8 +644,8 @@ namespace Fyrion
             {
                 for (ArchetypeType& type : entityData.chunk.archetype->types)
                 {
-                    VoidPtr src = activeChunk.GetChunkComponentData(type, lastIndex);
-                    VoidPtr dst = entityData.chunk.GetChunkComponentData(type, entityData.chunkIndex);
+                    VoidPtr src = activeChunk.GetComponent(type, lastIndex);
+                    VoidPtr dst = entityData.chunk.GetComponent(type, entityData.chunkIndex);
 
                     if (!type.isTriviallyCopyable)
                     {
@@ -633,6 +656,8 @@ namespace Fyrion
                         MemCopy(dst, src, type.typeSize);
                     }
 
+
+                    //worldFrameCount
                     // FY_CHUNK_COMPONENT_STATE(type, entityData.chunk, entityData.chunkIndex) = FY_CHUNK_COMPONENT_STATE(type, activeChunk, lastIndex);
                     // type.sparse->Emplace(lastEntity, dst);
                 }
@@ -668,11 +693,11 @@ namespace Fyrion
             {
                 ArchetypeType& type = entityData.chunk.archetype->types[t];
 
-                VoidPtr src = entityData.chunk.GetChunkComponentData(type, entityData.chunkIndex);
+                VoidPtr src = entityData.chunk.GetComponent(type, entityData.chunkIndex);
                 if (auto it = newArchetype->typeIndex.Find(type.typeId))
                 {
                     ArchetypeType& destType = newArchetype->types[it->second];
-                    VoidPtr        dst = newChunk.GetChunkComponentData(destType, newIndex);
+                    VoidPtr        dst = newChunk.GetComponent(destType, newIndex);
 
                     if (type.isTriviallyCopyable)
                     {

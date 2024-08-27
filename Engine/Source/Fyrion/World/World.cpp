@@ -61,52 +61,55 @@ namespace Fyrion
         {
             System* system = typeHandler->Cast<System>(typeHandler->NewInstance());
             FY_ASSERT(system, "system cannot be created");
-            system->world = this;
-            systems.EmplaceBack(SystemStorage{
-                .typeHandler = typeHandler,
-                .system = system,
-                .initialized = false
-            });
+            if (system)
+            {
+                system->world = this;
+                systems.EmplaceBack(SystemStorage{
+                    .typeHandler = typeHandler,
+                    .system = system,
+                    .initialized = false
+                });
+            }
         }
+    }
+
+    void World::ExecuteSystemStage(SystemExecutionStage stage)
+    {
+        //update stage
+        for(SystemStorage& systemStorage : systems)
+        {
+            if (systemStorage.setup.stage == stage &&
+                ((simulating && systemStorage.setup.policy == SystemExecutionPolicy::Simulation) || systemStorage.setup.policy == SystemExecutionPolicy::Update) &&
+                systemStorage.system)
+            {
+                systemStorage.system->OnUpdate();
+            }
+        }
+        worldStageCount++;
     }
 
     void World::Update()
     {
-        //create stage
+        //init stage
         for(SystemStorage& systemStorage : systems)
         {
             if (systemStorage.system)
             {
                 if (!systemStorage.initialized)
                 {
-                    systemStorage.system->OnCreate();
+                    systemStorage.system->OnInit(systemStorage.setup);
                     systemStorage.initialized = true;
                 }
             }
         }
 
-        //update stage
-        for(SystemStorage& systemStorage : systems)
-        {
-            if (systemStorage.system)
-            {
-                systemStorage.system->OnUpdate();
-            }
-        }
-
-        //post update stage
-        for(SystemStorage& systemStorage : systems)
-        {
-            if (systemStorage.system)
-            {
-                systemStorage.system->OnPostUpdate();
-            }
-        }
+        ExecuteSystemStage(SystemExecutionStage::OnPreUpdate);
+        ExecuteSystemStage(SystemExecutionStage::OnUpdate);
+        ExecuteSystemStage(SystemExecutionStage::OnPostUpdate);
     }
 
     World::~World()
     {
-
         //destroy stage
         for(SystemStorage& systemStorage : systems)
         {
@@ -130,7 +133,7 @@ namespace Fyrion
                             usize count = chunk.GetEntityCount();
                             for (usize e = 0; e < count; ++e)
                             {
-                                type.typeHandler->Destructor(chunk.GetChunkComponentData(type, e));
+                                type.typeHandler->Destructor(chunk.GetComponent(type, e));
                             }
                         }
                     }

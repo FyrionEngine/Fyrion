@@ -50,12 +50,12 @@ namespace Fyrion
         friend bool operator==(const DirIterator& a, const DirIterator& b)
         {
             return a.m_path == b.m_path;
-        };
+        }
 
         friend bool operator!=(const DirIterator& a, const DirIterator& b)
         {
             return a.m_path != b.m_path;
-        };
+        }
 
         DirIterator& operator++();
 

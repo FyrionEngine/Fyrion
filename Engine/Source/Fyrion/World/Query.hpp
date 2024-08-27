@@ -13,12 +13,28 @@ namespace Fyrion
     struct RefMut
     {
         using type = T;
+
+        T& value;
+        bool updated = false;
+
+        void Set(const T& value)
+        {
+            if (!(value == this->value))
+            {
+                this->value = value;
+                updated = true;
+            }
+        }
     };
 
     template<typename T>
     struct Changed
     {
         using type = T;
+
+        T& value;
+
+
     };
 
     template<typename T>
@@ -32,8 +48,6 @@ namespace Fyrion
         using type = T;
     };
 
-
-
     template<typename T>
     struct QueryFunction {};
 
@@ -41,6 +55,12 @@ namespace Fyrion
     template<typename Lambda, typename Return, typename... Params>
     struct QueryFunction<Return(Lambda::*)(Params...) const>
     {
+        template<typename Func>
+        static void ForEach(QueryData* query, Func&& func)
+        {
+            ForEach(query, func, std::make_index_sequence<sizeof...(Params)>{});
+        }
+
         template<typename Func, std::size_t ...I>
         static void ForEach(QueryData* query, Func&& func, std::index_sequence<I...>)
         {
@@ -49,7 +69,7 @@ namespace Fyrion
                 for (ArchetypeChunk& chunk : archetypeQuery.archetype->chunks)
                 {
                     usize count = chunk.GetEntityCount();
-                    auto tupleComponents = std::make_tuple(chunk.GetChunkComponentArray<Traits::RemoveAll<Params>>(archetypeQuery.archetype->types[archetypeQuery.columns[I]])...);
+                    auto tupleComponents = std::make_tuple(chunk.GetComponentArray<Traits::RemoveAll<Params>>(archetypeQuery.archetype->types[archetypeQuery.columns[I]])...);
                     //Entity* entities = Internal::GetEntities(archetypeQuery.archetype, chunk);
                     for (int e = 0; e < count; ++e)
                     {
@@ -90,5 +110,45 @@ namespace Fyrion
 
     private:
         QueryData* data = nullptr;
+    };
+
+
+    template <typename... Types>
+    struct QueryEntry
+    {
+        decltype(auto) operator*()
+        {
+            return std::make_tuple(Types{}...);
+        }
+
+        friend bool operator==(const QueryEntry& a, const QueryEntry& b)
+        {
+            return false;
+        }
+
+        friend bool operator!=(const QueryEntry& a, const QueryEntry& b)
+        {
+            return false;
+        }
+
+        QueryEntry& operator++()
+        {
+            return *this;
+        }
+    };
+
+
+    template <typename... Types>
+    struct QueryIter
+    {
+        decltype(auto) begin()
+        {
+            return QueryEntry<Types...>{};
+        }
+
+        decltype(auto) end()
+        {
+            return QueryEntry<Types...>{};
+        }
     };
 }

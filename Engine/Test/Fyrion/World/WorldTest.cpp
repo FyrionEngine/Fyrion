@@ -14,7 +14,12 @@ namespace
 
     struct TestComponentOne
     {
-        u32 value;
+        u32 intValue;
+
+        bool operator==(const TestComponentOne& one) const
+        {
+            return this->intValue == one.intValue;
+        }
     };
 
     struct TestComponentTwo
@@ -32,12 +37,12 @@ namespace
             Registry::Type<TestComponentTwo>();
 
             World  world;
-            Entity entity = world.Spawn(TestComponentOne{.value = 10}, TestComponentTwo{.value = 20, .strTest = LONG_TEXT});
+            Entity entity = world.Spawn(TestComponentOne{.intValue = 10}, TestComponentTwo{.value = 20, .strTest = LONG_TEXT});
 
             CHECK(world.Alive(entity));
             CHECK(entity > 0);
 
-            CHECK(world.Get<TestComponentOne>(entity)->value == 10);
+            CHECK(world.Get<TestComponentOne>(entity)->intValue == 10);
             CHECK(world.Get<TestComponentTwo>(entity)->value == 20);
             CHECK(world.Get<TestComponentTwo>(entity)->strTest == LONG_TEXT);
 
@@ -45,7 +50,7 @@ namespace
 
             world.Query<TestComponentOne, TestComponentTwo>().ForEach([&](const TestComponentOne& componentOne, const TestComponentTwo& componentTwo)
             {
-                CHECK(componentOne.value == 10);
+                CHECK(componentOne.intValue == 10);
                 CHECK(componentTwo.value == 20);
                 CHECK(componentTwo.strTest == LONG_TEXT);
                 count++;
@@ -76,30 +81,35 @@ namespace
     {
         FY_BASE_TYPES(System);
 
-        void OnCreate() override
+        void OnInit(SystemSetup& setup) override
         {
             for (u32 i = 0; i < 10; ++i)
             {
                 world->Spawn(TestComponentOne{
-                    .value = i
+                    .intValue = i
                 });
             }
         }
 
         void OnUpdate() override
         {
-            world->Query<TestComponentOne, TestComponentTwo>().ForEach([](const TestComponentOne& one, TestComponentTwo& testComponentTwo)
-            {
 
-            });
-        }
+            //some possible implementations
+            // for (auto [one, two] : world->Iter<TestComponentOne, TestComponentTwo>())
+            // {
+            //     one.intValue = two.value;
+            // }
+            //
+            //
+            // world->ForEach([](RefMut<TestComponentOne>& one, const TestComponentTwo& testComponentTwo)
+            // {
+            //     one.Set(TestComponentOne{
+            //         .intValue = testComponentTwo.value
+            //     });
+            // });
 
-        void OnPostUpdate() override
-        {
-            world->Query<Changed<TestComponentTwo>>().ForEach([](const TestComponentTwo& testComponentTwo)
-            {
 
-            });
+            //Query<TestComponentOne, TestComponentTwo>()
         }
 
         void OnDestroy() override
@@ -115,7 +125,6 @@ namespace
             Registry::Type<TestSystem>();
             Registry::Type<TestComponentOne>();
             Registry::Type<TestComponentTwo>();
-
 
             World world;
             world.AddSystem<TestSystem>();

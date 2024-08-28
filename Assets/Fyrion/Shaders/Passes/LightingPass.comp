@@ -57,7 +57,7 @@ float textureProj(float4 shadowCoord, float2 offset, uint cascadeIndex)
 	float bias = 0.0005;
 
 	if ( shadowCoord.z > -1.0 && shadowCoord.z < 1.0 ) {
-		float dist = shadowMapTexture.Sample(shadowMapSampler, float3(shadowCoord.xy + offset, cascadeIndex)).r;
+		float dist = shadowMapTexture.SampleLevel(shadowMapSampler, float3(shadowCoord.xy + offset, cascadeIndex), 0.0).r;
 		if (shadowCoord.w > 0 && dist < shadowCoord.z - bias) {
 			shadow = 0.0;
 		}
@@ -162,7 +162,7 @@ void MainCS(in uint2 px : SV_DispatchThreadID)
 
     //indirect light
     {
-        float3 irradiance = diffuseIrradiance.Sample(samplerState, N).rgb;
+        float3 irradiance = diffuseIrradiance.SampleLevel(samplerState, N, 0.0).rgb;
 
         float3 F = FresnelSchlickRoughness(cosLo, F0, roughness);
         float3 kd = lerp(1.0 - F, 0.0, metallic);

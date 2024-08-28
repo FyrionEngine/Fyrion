@@ -93,21 +93,17 @@ namespace
 
         void OnUpdate() override
         {
+            //WithAll<>
 
-            //some possible implementations
-            // for (auto [one, two] : world->Iter<TestComponentOne, TestComponentTwo>())
-            // {
-            //     one.intValue = two.value;
-            // }
-            //
+            // QueryBuilder builder;
+            // builder.Changed<TestComponentOne>().WithAll<TestComponentOne, TestComponentTwo>().Build();
             //
             // world->ForEach([](RefMut<TestComponentOne>& one, const TestComponentTwo& testComponentTwo)
             // {
-            //     one.Set(TestComponentOne{
+            //     one = TestComponentOne{
             //         .intValue = testComponentTwo.value
-            //     });
+            //     };
             // });
-
 
             //Query<TestComponentOne, TestComponentTwo>()
         }

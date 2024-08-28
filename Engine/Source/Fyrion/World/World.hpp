@@ -459,13 +459,6 @@ namespace Fyrion
             QueryFunction<decltype(&Func::operator())>::ForEach(nullptr, func);
         }
 
-        template<typename ...T>
-        decltype(auto) Iter()
-        {
-            return QueryIter<T...>();
-        }
-
-
         template<typename T>
         void AddSystem()
         {

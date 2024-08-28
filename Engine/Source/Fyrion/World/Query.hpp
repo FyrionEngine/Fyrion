@@ -17,13 +17,15 @@ namespace Fyrion
         T& value;
         bool updated = false;
 
-        void Set(const T& value)
+        RefMut& operator=(const T& value)
         {
             if (!(value == this->value))
             {
                 this->value = value;
                 updated = true;
             }
+
+            return *this;
         }
     };
 
@@ -31,10 +33,7 @@ namespace Fyrion
     struct Changed
     {
         using type = T;
-
         T& value;
-
-
     };
 
     template<typename T>
@@ -113,42 +112,23 @@ namespace Fyrion
     };
 
 
-    template <typename... Types>
-    struct QueryEntry
+    struct QueryBuilder
     {
-        decltype(auto) operator*()
-        {
-            return std::make_tuple(Types{}...);
-        }
-
-        friend bool operator==(const QueryEntry& a, const QueryEntry& b)
-        {
-            return false;
-        }
-
-        friend bool operator!=(const QueryEntry& a, const QueryEntry& b)
-        {
-            return false;
-        }
-
-        QueryEntry& operator++()
+        template<typename ...T>
+        QueryBuilder& Changed()
         {
             return *this;
         }
-    };
 
-
-    template <typename... Types>
-    struct QueryIter
-    {
-        decltype(auto) begin()
+        template<typename ...T>
+        QueryBuilder& WithAll()
         {
-            return QueryEntry<Types...>{};
+            return *this;
         }
 
-        decltype(auto) end()
+        void Build()
         {
-            return QueryEntry<Types...>{};
+
         }
     };
 }

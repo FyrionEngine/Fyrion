@@ -20,7 +20,7 @@
 #include "Fyrion/Core/HashMap.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
 
-#define SHADER_MODEL "6_5"
+#define SHADER_MODEL "6_7"
 
 #define COMPUTE_SHADER_MODEL    L"cs_" SHADER_MODEL
 #define DOMAIN_SHADER_MODEL     L"ds_" SHADER_MODEL

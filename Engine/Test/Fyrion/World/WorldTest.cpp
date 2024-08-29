@@ -77,17 +77,23 @@ namespace
     }
 
 
-    struct TestSystem : System
+    u32 countBasicSystem = 0;
+    u32 updateCount = 1;
+    u32 changedOnUpdateCount = 0;
+    u32 changeOnPostUpdateCount = 0;
+
+    struct TestBasicSystem : System
     {
         FY_BASE_TYPES(System);
 
-        Query<Changed<TestComponentOne>, Changed<TestComponentTwo>> query;
+        Query<TestComponentOne, TestComponentTwo> query;
+        u64 initFrame = 0;
 
         void OnInit(SystemSetup& setup) override
         {
-            query = world->Query<Changed<TestComponentOne>, Changed<TestComponentTwo>>();
+            query = world->Query<TestComponentOne, TestComponentTwo>();
 
-            for (u32 i = 0; i < 10; ++i)
+            for (u32 i = 0; i < 5; ++i)
             {
                 world->Spawn(TestComponentOne{
                                  .intValue = i
@@ -96,24 +102,32 @@ namespace
                                  .value = 33,
                              }
                 );
+
+                initFrame = world->GetTickCount();
             }
         }
 
         void OnUpdate() override
         {
-            query.ForEach([](Entity entity, TestComponentOne& one, const TestComponentTwo& two)
+            u32 count = 0;
+            query.ForEach([&](Entity entity, const TestComponentOne& one, const TestComponentTwo& two)
             {
-                int a = 0;
+                CHECK(two.value == 33);
+                CHECK(one.intValue == count);
+                countBasicSystem++;
+                count++;
             });
 
+            CHECK(countBasicSystem == 5 * updateCount);
 
-            // world->ForEach([](RWValue<TestComponentOne>& one, const TestComponentTwo& testComponentTwo)
-            // {
-            //
-            // });
-
-            //Query<TestComponentOne, TestComponentTwo>()
+            //this shoud in the next frame.
+            world->Query<Changed<TestComponentOne>, TestComponentTwo>().ForEach([&](TestComponentTwo& testComponentTwo)
+            {
+                CHECK((initFrame + 1) == updateCount);
+                changedOnUpdateCount++;
+            });
         }
+
 
         void OnDestroy() override
         {
@@ -121,17 +135,48 @@ namespace
         }
     };
 
+    struct BasicPostProcessing : System
+    {
+        FY_BASE_TYPES(System);
+
+        void OnInit(SystemSetup& systemSetup) override
+        {
+            systemSetup.stage = SystemExecutionStage::OnPostUpdate;
+        }
+
+        void OnUpdate() override
+        {
+            //this shoud only in the same frame.
+            world->Query<Changed<TestComponentOne>, TestComponentTwo>().ForEach([&](TestComponentTwo& testComponentTwo)
+            {
+                CHECK(world->GetTickCount()-1 == updateCount);
+                changeOnPostUpdateCount++;
+            });
+        }
+    };
+
     TEST_CASE("World::TestSystems")
     {
         Engine::Init();
         {
-            Registry::Type<TestSystem>();
+            Registry::Type<TestBasicSystem>();
+            Registry::Type<BasicPostProcessing>();
             Registry::Type<TestComponentOne>();
             Registry::Type<TestComponentTwo>();
 
             World world;
-            world.AddSystem<TestSystem>();
-            world.Update();
+            world.AddSystem<TestBasicSystem>();
+            world.AddSystem<BasicPostProcessing>();
+
+            for (int i = 0; i < 5; ++i)
+            {
+                world.Update();
+                updateCount++;
+            }
+
+            CHECK(countBasicSystem == 5 * (updateCount -1));
+            CHECK(changedOnUpdateCount == 5);
+            CHECK(changeOnPostUpdateCount == 5);
         }
         Engine::Destroy();
     }

@@ -19,8 +19,7 @@ namespace Fyrion
 
     struct ComponentState
     {
-        u64 lastChange = 0;
-        u64 lastCheck = 0;
+        u64 tickCheck = 0;
     };
 
     struct ArchetypeType
@@ -94,17 +93,19 @@ namespace Fyrion
         {
             new(&data[archetypeType.stateOffset + (index * sizeof(ComponentState))]) ComponentState{componentState};
             ComponentState& chunkState = *reinterpret_cast<ComponentState*>(&data[archetype->chunkStateOffset + archetypeType.index * sizeof(ComponentState)]);
-            chunkState.lastChange = componentState.lastChange;
+            chunkState.tickCheck = componentState.tickCheck;
         }
 
-        FY_FINLINE bool IsChunkDirty(u64 stageCount, const ArchetypeType& archetypeType)
+        FY_FINLINE bool IsChunkDirty(u64 tickCount, const ArchetypeType& archetypeType) const
         {
-            return true;
+            ComponentState& chunkState = *reinterpret_cast<ComponentState*>(&data[archetype->chunkStateOffset + archetypeType.index * sizeof(ComponentState)]);
+            return chunkState.tickCheck == tickCount;
         }
 
-        FY_FINLINE bool IsEntityDirty(u64 stageCount, const ArchetypeType& archetypeType, usize entityIndex)
+        FY_FINLINE bool IsEntityDirty(u64 tickCount, const ArchetypeType& archetypeType, usize entityIndex) const
         {
-            return true;
+            ComponentState& componentState = *reinterpret_cast<ComponentState*>(&data[archetypeType.stateOffset + (entityIndex * sizeof(ComponentState))]);
+            return componentState.tickCheck == tickCount;
         }
 
         template<typename T>
@@ -296,8 +297,7 @@ namespace Fyrion
                     ArchetypeType& type = entityData->chunk.archetype->types[typeIndex];
 
                     entityData->chunk.SetComponentState(type, entityData->chunkIndex, ComponentState{
-                                                            .lastChange = worldStageCount,
-                                                            .lastCheck = 0
+                                                            .tickCheck = worldTickCount + 1,            //always mark to check in the next tick.
                                                         });
 
                     VoidPtr data = entityData->chunk.GetComponent(type,entityData->chunkIndex);
@@ -456,9 +456,9 @@ namespace Fyrion
             return Fyrion::Query<Types...>(this);
         }
 
-        FY_FINLINE u64 GetStageCount() const
+        FY_FINLINE u64 GetTickCount() const
         {
-            return worldStageCount;
+            return worldTickCount;
         }
 
         template<typename T>
@@ -492,7 +492,7 @@ namespace Fyrion
         ArchetypeHashMap     archetypes;
         Archetype*           rootArchetype = nullptr;
         QueryHashMap         queries;
-        u64                  worldStageCount = 1;
+        u64                  worldTickCount = 1;
         Array<SystemStorage> systems;
         bool                 simulating = true;
 

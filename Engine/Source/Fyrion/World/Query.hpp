@@ -86,13 +86,13 @@ namespace Fyrion
         template<typename TupleType>
         FY_FINLINE static bool IsValidChunk(QueryData* query, ArchetypeQuery& archetypeQuery, ArchetypeChunk& chunk)
         {
-            return (chunk.IsChunkDirty(query->world->GetStageCount(), archetypeQuery.archetype->types[archetypeQuery.columns[Traits::TupleIndex<T, TupleType>::value]]) && ...);
+            return (chunk.IsChunkDirty(query->world->GetTickCount(), archetypeQuery.archetype->types[archetypeQuery.columns[Traits::TupleIndex<T, TupleType>::value]]) && ...);
         }
 
         template<typename TupleType>
         FY_FINLINE static bool IsValidEntity(QueryData* query, ArchetypeQuery& archetypeQuery, ArchetypeChunk& chunk, u32 entityIndex)
         {
-            return (chunk.IsEntityDirty(query->world->GetStageCount(), archetypeQuery.archetype->types[archetypeQuery.columns[Traits::TupleIndex<T, TupleType>::value]], entityIndex) && ...);
+            return (chunk.IsEntityDirty(query->world->GetTickCount(), archetypeQuery.archetype->types[archetypeQuery.columns[Traits::TupleIndex<T, TupleType>::value]], entityIndex) && ...);
         }
     };
 
@@ -151,12 +151,10 @@ namespace Fyrion
             }
         }
 
-        template<typename... QueryTypes, typename Func>
+        template <typename... QueryTypes, typename Func>
         FY_FINLINE static void ForEach(Query<QueryTypes...>& query, Func&& func)
         {
-            ForEach(query, Traits::Forward<Func>(func),
-                    std::make_index_sequence<std::tuple_size_v<typename Query<QueryTypes...>::ValidationTypes>>{}
-            );
+            ForEach(query, Traits::Forward<Func>(func), std::make_index_sequence<std::tuple_size_v<typename Query<QueryTypes...>::ValidationTypes>>{});
         }
     };
 

@@ -104,7 +104,7 @@ namespace Fyrion
 
         ExecuteSystemStage(SystemExecutionStage::OnPreUpdate);
         ExecuteSystemStage(SystemExecutionStage::OnUpdate);
-        worldStageCount++;
+        worldTickCount++;
         ExecuteSystemStage(SystemExecutionStage::OnPostUpdate);
     }
 

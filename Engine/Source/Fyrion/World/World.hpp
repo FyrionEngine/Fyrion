@@ -99,13 +99,13 @@ namespace Fyrion
 
         FY_FINLINE bool IsChunkDirty(u64 stageCount, const ArchetypeType& archetypeType)
         {
-            return false;
+            return true;
         }
 
-        // FY_FINLINE ComponentState& GetComponentState(const ArchetypeType& archetypeType, usize index) const
-        // {
-        //     return *reinterpret_cast<ComponentState*>(&data[archetypeType.stateOffset + (index * sizeof(ComponentState))]);
-        // }
+        FY_FINLINE bool IsEntityDirty(u64 stageCount, const ArchetypeType& archetypeType, usize entityIndex)
+        {
+            return true;
+        }
 
         template<typename T>
         FY_FINLINE T* GetComponentArray(const ArchetypeType& archetypeType)

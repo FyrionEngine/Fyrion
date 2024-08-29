@@ -2,7 +2,7 @@
 
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Core/Logger.hpp"
-#include "Fyrion/Core/Chronometer.hpp"
+#include "Fyrion/Scene/Components/TransformComponent.hpp"
 #include "Fyrion/World/World.hpp"
 #include "Fyrion/World/Query.hpp"
 
@@ -81,11 +81,11 @@ namespace
     {
         FY_BASE_TYPES(System);
 
-        Query<Changed<TestComponentOne>, TestComponentTwo> query;
+        Query<Changed<TestComponentOne>, Changed<TestComponentTwo>> query;
 
         void OnInit(SystemSetup& setup) override
         {
-            query = world->Query<Changed<TestComponentOne>, TestComponentTwo>();
+            query = world->Query<Changed<TestComponentOne>, Changed<TestComponentTwo>>();
 
             for (u32 i = 0; i < 10; ++i)
             {
@@ -101,9 +101,9 @@ namespace
 
         void OnUpdate() override
         {
-            query.ForEach([](TestComponentOne& one, const TestComponentTwo& two)
+            query.ForEach([](Entity entity, TestComponentOne& one, const TestComponentTwo& two)
             {
-
+                int a = 0;
             });
 
 

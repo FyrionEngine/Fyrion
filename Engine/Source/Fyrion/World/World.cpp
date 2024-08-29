@@ -85,7 +85,6 @@ namespace Fyrion
                 systemStorage.system->OnUpdate();
             }
         }
-        worldStageCount++;
     }
 
     void World::Update()
@@ -105,6 +104,7 @@ namespace Fyrion
 
         ExecuteSystemStage(SystemExecutionStage::OnPreUpdate);
         ExecuteSystemStage(SystemExecutionStage::OnUpdate);
+        worldStageCount++;
         ExecuteSystemStage(SystemExecutionStage::OnPostUpdate);
     }
 

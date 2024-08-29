@@ -15,10 +15,7 @@ namespace Fyrion
     constexpr static Entity NullEntity = 0;
 
     template<typename ...Types>
-    class Query;
-
-    template<typename T>
-    struct QueryFunction;
+    struct Query;
 
     struct ComponentState
     {
@@ -100,6 +97,10 @@ namespace Fyrion
             chunkState.lastChange = componentState.lastChange;
         }
 
+        FY_FINLINE bool IsChunkDirty(u64 stageCount, const ArchetypeType& archetypeType)
+        {
+            return false;
+        }
 
         // FY_FINLINE ComponentState& GetComponentState(const ArchetypeType& archetypeType, usize index) const
         // {
@@ -235,8 +236,11 @@ namespace Fyrion
 
     struct QueryCreation
     {
-        usize        hash;
+        usize        hash = 0;
         Span<TypeID> types;
+        Span<TypeID> changed;
+        Span<TypeID> with;
+        Span<TypeID> without;
     };
 
     struct QueryData
@@ -446,17 +450,15 @@ namespace Fyrion
             }
         }
 
-        template<typename ...T>
+        template <typename... Types>
         decltype(auto) Query()
         {
-            using QueryImpl = Fyrion::Query<T...>;
-            return QueryImpl(FindOrCreateQuery(QueryImpl::GetCreation()));
+            return Fyrion::Query<Types...>(this);
         }
 
-        template<typename Func>
-        decltype(auto) ForEach(Func&& func)
+        FY_FINLINE u64 GetStageCount() const
         {
-            QueryFunction<decltype(&Func::operator())>::ForEach(nullptr, func);
+            return worldStageCount;
         }
 
         template<typename T>
@@ -470,6 +472,9 @@ namespace Fyrion
         void Update();
 
         ~World();
+
+        template <typename... T>
+        friend class Query;
 
     private:
         void ExecuteSystemStage(SystemExecutionStage stage);
@@ -712,7 +717,6 @@ namespace Fyrion
         }
 
         QueryData*  FindOrCreateQuery(const QueryCreation& queryCreation);
-
         static void CheckQueryArchetype(QueryData* queryData, Archetype* archetype);
     };
 }

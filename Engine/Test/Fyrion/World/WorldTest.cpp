@@ -81,28 +81,35 @@ namespace
     {
         FY_BASE_TYPES(System);
 
+        Query<Changed<TestComponentOne>, TestComponentTwo> query;
+
         void OnInit(SystemSetup& setup) override
         {
+            query = world->Query<Changed<TestComponentOne>, TestComponentTwo>();
+
             for (u32 i = 0; i < 10; ++i)
             {
                 world->Spawn(TestComponentOne{
-                    .intValue = i
-                });
+                                 .intValue = i
+                             },
+                             TestComponentTwo{
+                                 .value = 33,
+                             }
+                );
             }
         }
 
         void OnUpdate() override
         {
-            //WithAll<>
+            query.ForEach([](TestComponentOne& one, const TestComponentTwo& two)
+            {
 
-            // QueryBuilder builder;
-            // builder.Changed<TestComponentOne>().WithAll<TestComponentOne, TestComponentTwo>().Build();
-            //
-            // world->ForEach([](RefMut<TestComponentOne>& one, const TestComponentTwo& testComponentTwo)
+            });
+
+
+            // world->ForEach([](RWValue<TestComponentOne>& one, const TestComponentTwo& testComponentTwo)
             // {
-            //     one = TestComponentOne{
-            //         .intValue = testComponentTwo.value
-            //     };
+            //
             // });
 
             //Query<TestComponentOne, TestComponentTwo>()

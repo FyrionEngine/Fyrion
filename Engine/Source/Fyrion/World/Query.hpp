@@ -1,51 +1,95 @@
 #pragma once
 
-#include "World.hpp"
 #include <tuple>
+
+#include "World.hpp"
 
 namespace Fyrion
 {
-    template<typename...Ts>
-    using QueryTupleCat = decltype(std::tuple_cat(std::declval<Ts>()...));
-
-
-    template<typename T>
-    struct RefMut
+    template <typename T>
+    struct RWValue
     {
         using type = T;
-
         T& value;
+
         bool updated = false;
 
-        RefMut& operator=(const T& value)
+        RWValue& operator=(const T& value)
         {
             if (!(value == this->value))
             {
                 this->value = value;
                 updated = true;
             }
-
             return *this;
         }
     };
 
-    template<typename T>
+
+    template <typename ...T>
     struct Changed
     {
-        using type = T;
-        T& value;
     };
 
-    template<typename T>
+    template <typename ...T>
     struct Without
     {
     };
 
-    template<typename T>
-    struct QueryFilter
+    template <typename T>
+    struct ComponentHandler
     {
-        using type = T;
+        FY_FINLINE static bool IsValidChunk(QueryData* query, ArchetypeQuery& archetypeQuery, ArchetypeChunk& chunk)
+        {
+            return true;
+        }
+
+        FY_FINLINE static bool IsValidEntity(QueryData* query, ArchetypeQuery& archetypeQuery, ArchetypeChunk& chunk, u32 entityIndex)
+        {
+            return true;
+        }
+
+        FY_FINLINE static void GetComponentIDs(Array<TypeID>& ids)
+        {
+            ids.EmplaceBack(GetTypeID<T>());
+        }
     };
+
+    template <typename ...T>
+    struct ComponentHandler<Changed<T...>>
+    {
+        FY_FINLINE static bool IsValidChunk(QueryData* query, ArchetypeQuery& archetypeQuery, ArchetypeChunk& chunk)
+        {
+            //TODO find the index here.
+            return chunk.IsChunkDirty(query->world->GetStageCount(), archetypeQuery.archetype->types[archetypeQuery.columns[0]]);
+        }
+
+        FY_FINLINE static bool IsValidEntity(QueryData* query, ArchetypeQuery& archetypeQuery, ArchetypeChunk& chunk, u32 entityIndex)
+        {
+            return true;
+        }
+
+        FY_FINLINE static void GetComponentIDs(Array<TypeID>& ids)
+        {
+            (ids.EmplaceBack(GetTypeID<T>()),...);
+        }
+    };
+
+    template <typename ...T>
+    struct QueryValidator
+    {
+        FY_FINLINE static bool IsValidChunk(QueryData* query, ArchetypeQuery& archetypeQuery, ArchetypeChunk& chunk)
+        {
+            return (ComponentHandler<T>::IsValidChunk(query, archetypeQuery, chunk) && ...);
+        }
+
+        FY_FINLINE static bool IsValidEntity(QueryData* query, ArchetypeQuery& archetypeQuery, ArchetypeChunk& chunk, u32 entityIndex)
+        {
+            return (ComponentHandler<T>::IsValidEntity(query, archetypeQuery, chunk, entityIndex) && ...);
+        }
+    };
+
+    struct QueryData;
 
     template<typename T>
     struct QueryFunction {};
@@ -54,81 +98,66 @@ namespace Fyrion
     template<typename Lambda, typename Return, typename... Params>
     struct QueryFunction<Return(Lambda::*)(Params...) const>
     {
-        template<typename Func>
+        template<typename... QueryTypes, typename Func>
         static void ForEach(QueryData* query, Func&& func)
         {
-            ForEach(query, func, std::make_index_sequence<sizeof...(Params)>{});
+            ForEach<QueryTypes...>(query, func, std::make_index_sequence<sizeof...(Params)>{});
         }
 
-        template<typename Func, std::size_t ...I>
-        static void ForEach(QueryData* query, Func&& func, std::index_sequence<I...>)
+        template<typename... QueryTypes, typename Func, std::size_t ...I>
+        static void ForEach(Query<QueryTypes...>& query, Func&& func, std::index_sequence<I...>)
         {
-            for (ArchetypeQuery& archetypeQuery : query->archetypes)
+            using QueryValidatorImpl = QueryValidator<QueryTypes...>;
+
+            for (ArchetypeQuery& archetypeQuery : query.data->archetypes)
             {
                 for (ArchetypeChunk& chunk : archetypeQuery.archetype->chunks)
                 {
-                    usize count = chunk.GetEntityCount();
-                    auto tupleComponents = std::make_tuple(chunk.GetComponentArray<Traits::RemoveAll<Params>>(archetypeQuery.archetype->types[archetypeQuery.columns[I]])...);
-                    //Entity* entities = Internal::GetEntities(archetypeQuery.archetype, chunk);
-                    for (int e = 0; e < count; ++e)
+                    if (QueryValidatorImpl::IsValidChunk(query.data, archetypeQuery,  chunk))
                     {
-                        func(std::get<I>(tupleComponents)[e]...);
+                        auto tupleComponents = std::make_tuple(chunk.GetComponentArray<Traits::RemoveAll<Params>>(archetypeQuery.archetype->types[archetypeQuery.columns[I]])...);
+                        //Entity* entities = Internal::GetEntities(archetypeQuery.archetype, chunk);
+
+                        usize count = chunk.GetEntityCount();
+                        for (int e = 0; e < count; ++e)
+                        {
+                            if (QueryValidatorImpl::IsValidEntity(query.data, archetypeQuery, chunk, e))
+                            {
+                                func(std::get<I>(tupleComponents)[e]...);
+                            }
+                        }
                     }
                 }
             }
         }
     };
 
-
     template <typename... Types>
-    class Query
+    struct Query
     {
-    public:
-      // using TupleTypes = QueryTupleCat<std::conditional_t<QueryTypeFilter<Types>::value, std::tuple<typename Types::type>, std::tuple<>>...>;
-
         Query() = default;
 
-        Query(QueryData* data) : data(data)
+        explicit Query(World* world)
         {
+            FY_ASSERT(world, "World cannot be null");
+            //static TypeID types[sizeof...(Types)] {GetTypeID<Types>()...};
+            Array<TypeID> types;
+            (ComponentHandler<Types>::GetComponentIDs(types),...);
+            data = world->FindOrCreateQuery({
+                .hash = MurmurHash64(types.begin(), types.Size() * sizeof(TypeID), HashSeed64),
+                .types = types
+            });
         }
 
-        template<typename Func>
+        template <typename Func>
         void ForEach(Func&& func)
         {
-            QueryFunction<decltype(&Func::operator())>::ForEach(data, func, std::make_index_sequence<sizeof...(Types)>{});
+            FY_ASSERT(data, "query not initialized");
+            QueryFunction<decltype(&Func::operator())>::ForEach(*this, func, std::make_index_sequence<sizeof...(Types)>{});
         }
 
-        static QueryCreation GetCreation()
-        {
-            static TypeID types[sizeof...(Types)] {GetTypeID<Types>()...};
-            return {
-                .hash = MurmurHash64(types, sizeof...(Types) * sizeof(TypeID), HashSeed64),
-                .types = {types, sizeof...(Types)}
-            };
-        }
-
-    private:
         QueryData* data = nullptr;
     };
 
 
-    struct QueryBuilder
-    {
-        template<typename ...T>
-        QueryBuilder& Changed()
-        {
-            return *this;
-        }
-
-        template<typename ...T>
-        QueryBuilder& WithAll()
-        {
-            return *this;
-        }
-
-        void Build()
-        {
-
-        }
-    };
 }

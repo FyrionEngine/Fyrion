@@ -2,7 +2,6 @@
 
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Core/Logger.hpp"
-#include "Fyrion/Scene/Components/TransformComponent.hpp"
 #include "Fyrion/World/World.hpp"
 #include "Fyrion/World/Query.hpp"
 
@@ -110,8 +109,11 @@ namespace
         void OnUpdate() override
         {
             u32 count = 0;
+            Entity lastEntity = 0;
             query.ForEach([&](Entity entity, const TestComponentOne& one, const TestComponentTwo& two)
             {
+                CHECK(entity > lastEntity);
+                lastEntity = entity;
                 CHECK(two.value == 33);
                 CHECK(one.intValue == count);
                 countBasicSystem++;
@@ -120,8 +122,9 @@ namespace
 
             CHECK(countBasicSystem == 5 * updateCount);
 
+
             //this shoud in the next frame.
-            world->Query<Changed<TestComponentOne>, TestComponentTwo>().ForEach([&](TestComponentTwo& testComponentTwo)
+            world->Query<Changed<TestComponentOne>, TestComponentTwo>().ForEach([&](const TestComponentTwo& testComponentTwo)
             {
                 CHECK((initFrame + 1) == updateCount);
                 changedOnUpdateCount++;
@@ -146,14 +149,24 @@ namespace
 
         void OnUpdate() override
         {
-            //this shoud only in the same frame.
-            world->Query<Changed<TestComponentOne>, TestComponentTwo>().ForEach([&](TestComponentTwo& testComponentTwo)
+            //this shoud execute only in the same frame.
+
+            //TODO - change TestComponentTwo here
+            world->Query<Changed<TestComponentOne>, TestComponentTwo>().ForEach([&](const TestComponentTwo& testComponentTwo)
             {
+               // testComponentTwo.value.value = 10;
+
                 CHECK(world->GetTickCount()-1 == updateCount);
                 changeOnPostUpdateCount++;
             });
+
+            world->Query<Changed<TestComponentTwo>>().ForEach([&](const TestComponentTwo& testComponentTwo)
+            {
+                //TODO check the value here. it should be in the same frame.
+            });
         }
     };
+
 
     TEST_CASE("World::TestSystems")
     {

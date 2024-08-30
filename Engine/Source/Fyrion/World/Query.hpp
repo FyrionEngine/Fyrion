@@ -25,14 +25,16 @@ namespace Fyrion
 
 
     template <typename T>
-    struct RWValue
+    struct ReadWrite
     {
         using type = T;
         T& value;
 
+        ReadWrite(T& value) : value(value) {}
+
         bool updated = false;
 
-        RWValue& operator=(const T& value)
+        ReadWrite& operator=(const T& value)
         {
             if (!(value == this->value))
             {
@@ -123,7 +125,7 @@ namespace Fyrion
                         {
                             if ((ComponentHandler<std::tuple_element_t<V, ValidationTypes>>::template IsValidEntity<TupleTypes>(query.data, archetypeQuery, chunk, e) || ...))
                             {
-                                func(std::get<Traits::RemoveAll<Params>*>(tupleComponents)[e]...);
+                                func(static_cast<const Traits::RemoveAll<Params>&>(std::get<Traits::RemoveAll<Params>*>(tupleComponents)[e])...);
                             }
                         }
                     }
@@ -145,7 +147,7 @@ namespace Fyrion
                     usize count = chunk.GetEntityCount();
                     for (int e = 0; e < count; ++e)
                     {
-                        func(std::get<Traits::RemoveAll<Params>*>(tupleComponents)[e]...);
+                        func(static_cast<const Traits::RemoveAll<Params>&>(std::get<Traits::RemoveAll<Params>*>(tupleComponents)[e])...);
                     }
                 }
             }

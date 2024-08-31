@@ -9,7 +9,6 @@ namespace Fyrion
 
     namespace Internal
     {
-
         template<typename TupleType>
         constexpr static void GetTupleTypeIds(TypeID* ids, std::index_sequence<>)
         {
@@ -69,7 +68,7 @@ namespace Fyrion
         }
     };
 
-    template <>
+    template<>
     struct ComponentHandler<Entity>
     {
         template <typename TupleType>
@@ -98,6 +97,34 @@ namespace Fyrion
         }
     };
 
+    template<typename T>
+    struct ComponentHandler<ReadWrite<T>>
+    {
+        using Tuple = decltype(std::make_tuple(std::declval<T>()));
+        using ValidationTuple = decltype(std::tuple());
+
+        template <typename TupleType>
+        FY_FINLINE static decltype(auto) GetChunkData(ArchetypeQuery& archetypeQuery, ArchetypeChunk& chunk)
+        {
+            return chunk.GetComponentArray<T>(archetypeQuery.archetype->types[archetypeQuery.columns[Traits::TupleIndex<T, TupleType>::value]]);
+        }
+    };
+
+    template<typename T>
+    struct TypeExtractorImpl
+    {
+        using Type = Traits::RemoveAll<T>;
+    };
+
+    template<typename T>
+    struct TypeExtractorImpl<ReadWrite<T>>
+    {
+        using Type = Traits::RemoveAll<T>;
+    };
+
+    template<typename T>
+    using TypeExtractor = typename TypeExtractorImpl<T>::Type;
+
 
     struct QueryData;
 
@@ -125,7 +152,7 @@ namespace Fyrion
                         {
                             if ((ComponentHandler<std::tuple_element_t<V, ValidationTypes>>::template IsValidEntity<TupleTypes>(query.data, archetypeQuery, chunk, e) || ...))
                             {
-                                func(static_cast<const Traits::RemoveAll<Params>&>(std::get<Traits::RemoveAll<Params>*>(tupleComponents)[e])...);
+                                func(static_cast<const Traits::RemoveAll<Params>&>(std::get<TypeExtractor<Params>*>(tupleComponents)[e])...);
                             }
                         }
                     }
@@ -178,6 +205,8 @@ namespace Fyrion
                 .hash = MurmurHash64(types, std::tuple_size_v<TupleTypes> * sizeof(TypeID), HashSeed64),
                 .types = {types, std::tuple_size_v<TupleTypes>}
             });
+
+            tick = world->GetLastTick();
         }
 
         template <typename Func>
@@ -188,6 +217,7 @@ namespace Fyrion
         }
 
         QueryData* data = nullptr;
+        u64        tick = 0;
     };
 
 

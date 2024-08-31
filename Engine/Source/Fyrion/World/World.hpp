@@ -456,6 +456,11 @@ namespace Fyrion
             return Fyrion::Query<Types...>(this);
         }
 
+        FY_FINLINE u64 GetLastTick() const
+        {
+            return lastTick;
+        }
+
         FY_FINLINE u64 GetTickCount() const
         {
             return worldTickCount;
@@ -493,6 +498,7 @@ namespace Fyrion
         Archetype*           rootArchetype = nullptr;
         QueryHashMap         queries;
         u64                  worldTickCount = 1;
+        u64                  lastTick = 0;
         Array<SystemStorage> systems;
         bool                 simulating = true;
 

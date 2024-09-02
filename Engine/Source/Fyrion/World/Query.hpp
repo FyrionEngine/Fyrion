@@ -4,6 +4,8 @@
 
 #include "World.hpp"
 
+//query need a redesign.
+
 namespace Fyrion
 {
 
@@ -135,7 +137,7 @@ namespace Fyrion
     struct PostExecutionCheck
     {
         template <typename... QueryTypes, typename T>
-        FY_FINLINE static void Check(Query<QueryTypes...>& query, ArchetypeChunk& chunk, usize entityIndex, const T&)
+        constexpr static void Check(Query<QueryTypes...>& query, ArchetypeChunk& chunk, usize entityIndex, const T&)
         {
         }
 
@@ -143,18 +145,38 @@ namespace Fyrion
         static void Check(Query<QueryTypes...>& query, ArchetypeChunk& chunk, usize entityIndex, ReadWrite<T> readWrite);
     };
 
+    template<typename T>
+    struct IsValidParam
+    {
+        constexpr static bool valid = true;
+    };
+
+    template<typename T>
+    struct IsValidParam<const T&>
+    {
+        constexpr static bool valid = true;
+    };
+
+    template<typename T>
+    struct IsValidParam<T&>
+    {
+        constexpr static bool valid = false;
+    };
+
 
     template<typename Lambda, typename Return, typename... Params>
     struct QueryFunction<Return(Lambda::*)(Params...) const>
     {
+        static_assert((IsValidParam<Params>::valid && ...), "param cannot be a non const reference");
+
         template<typename... QueryTypes, std::size_t ...V>
-        FY_FINLINE static void PostCheck(Query<QueryTypes...>& query, auto& tuple, ArchetypeChunk& chunk, usize entityIndex, std::index_sequence<V...>)
+        constexpr static void PostCheck(Query<QueryTypes...>& query, auto& tuple, ArchetypeChunk& chunk, usize entityIndex, std::index_sequence<V...>)
         {
             (PostExecutionCheck::Check(query, chunk, entityIndex, std::get<V>(tuple)), ...);
         }
 
         template<typename... QueryTypes, typename Func, std::size_t ...V>
-        static void ForEach(Query<QueryTypes...>& query, Func&& func, std::index_sequence<V...>)
+        constexpr static void ForEach(Query<QueryTypes...>& query, Func&& func, std::index_sequence<V...>)
         {
             using ValidationTypes = typename Query<QueryTypes...>::ValidationTypes;
             using TupleTypes = typename Query<QueryTypes...>::TupleTypes;
@@ -182,7 +204,7 @@ namespace Fyrion
         }
 
         template<typename... QueryTypes, typename Func>
-        static void ForEach(Query<QueryTypes...>& query, Func&& func, std::index_sequence<>)
+        constexpr static void ForEach(Query<QueryTypes...>& query, Func&& func, std::index_sequence<>)
         {
             using TupleTypes = typename Query<QueryTypes...>::TupleTypes;
 
@@ -204,7 +226,7 @@ namespace Fyrion
         }
 
         template <typename... QueryTypes, typename Func>
-        FY_FINLINE static void ForEach(Query<QueryTypes...>& query, Func&& func)
+        constexpr static void ForEach(Query<QueryTypes...>& query, Func&& func)
         {
             ForEach(query, Traits::Forward<Func>(func), std::make_index_sequence<std::tuple_size_v<typename Query<QueryTypes...>::ValidationTypes>>{});
         }
@@ -236,7 +258,7 @@ namespace Fyrion
         void ForEach(Func&& func)
         {
             FY_ASSERT(data, "query not initialized");
-            QueryFunction<decltype(&Func::operator())>::ForEach(*this, func);
+            QueryFunction<decltype(&Func::operator())>::ForEach(*this, Traits::Forward<Func>(func));
             tick = data->world->GetTick();
         }
 

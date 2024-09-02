@@ -88,11 +88,16 @@ namespace Fyrion
             return &data[archetypeType.dataOffset + (index * archetypeType.typeSize)];
         }
 
-        FY_FINLINE void SetComponentState(const ArchetypeType& archetypeType, usize index, const ComponentState& componentState) const
+        FY_FINLINE void SetComponentState(const ArchetypeType& archetypeType, usize entityIndex, const ComponentState& componentState) const
         {
-            new(&data[archetypeType.stateOffset + (index * sizeof(ComponentState))]) ComponentState{componentState};
+            new(&data[archetypeType.stateOffset + (entityIndex * sizeof(ComponentState))]) ComponentState{componentState};
             ComponentState& chunkState = *reinterpret_cast<ComponentState*>(&data[archetype->chunkStateOffset + archetypeType.index * sizeof(ComponentState)]);
             chunkState.tickCheck = componentState.tickCheck;
+        }
+
+        const ComponentState& GetComponentState(const ArchetypeType& archetypeType, usize entityIndex) const
+        {
+            return *reinterpret_cast<ComponentState*>(&data[archetypeType.stateOffset + (entityIndex * sizeof(ComponentState))]);
         }
 
         FY_FINLINE void AdvanceComponentState(const ArchetypeType& archetypeType, usize entityIndex)
@@ -671,11 +676,7 @@ namespace Fyrion
                     {
                         MemCopy(dst, src, type.typeSize);
                     }
-
-
-                    //worldFrameCount
-                    // FY_CHUNK_COMPONENT_STATE(type, entityData.chunk, entityData.chunkIndex) = FY_CHUNK_COMPONENT_STATE(type, activeChunk, lastIndex);
-                    // type.sparse->Emplace(lastEntity, dst);
+                    entityData.chunk.SetComponentState(type, entityData.chunkIndex, activeChunk.GetComponentState(type, lastIndex));
                 }
             }
 
@@ -723,8 +724,8 @@ namespace Fyrion
                     {
                         destType.typeHandler->Move(src, dst);
                     }
-                    //FY_CHUNK_COMPONENT_STATE(destType, newChunk, newIndex) = FY_CHUNK_COMPONENT_STATE(type, entityData.chunk, entityData.chunkIndex);
-                    //destType.sparse->Emplace(entity, src);
+
+                    newChunk.SetComponentState(type, newIndex, entityData.chunk.GetComponentState(type, entityData.chunkIndex));
                 }
             }
 

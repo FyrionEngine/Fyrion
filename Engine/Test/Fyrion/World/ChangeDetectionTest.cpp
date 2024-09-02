@@ -37,7 +37,7 @@ namespace
             u32 count = 0;
 
             //fist time detecting change, this query should execute.
-            q1.ForEach([&](TestChange& change)
+            q1.ForEach([&](const TestChange& change)
             {
                 count++;
             });
@@ -45,7 +45,7 @@ namespace
             CHECK(count == 1);
 
             //sabe query again, in the same frame, it should not execute.
-            q1.ForEach([&](TestChange& change)
+            q1.ForEach([&](const TestChange& change)
             {
                 count++;
             });
@@ -53,7 +53,7 @@ namespace
             CHECK(count == 1);
 
             //same query, different instance, it should execute.
-            q2.ForEach([&](TestChange& change)
+            q2.ForEach([&](const TestChange& change)
             {
                 count++;
             });
@@ -64,7 +64,7 @@ namespace
             world.Update();
 
             //q3 never executed on the first frame. it should execute now.
-            q3.ForEach([&](TestChange& change)
+            q3.ForEach([&](const TestChange& change)
             {
                 count++;
             });
@@ -72,7 +72,7 @@ namespace
             CHECK(count == 3);
 
             //and should not execute again
-            q3.ForEach([&](TestChange& change)
+            q3.ForEach([&](const TestChange& change)
             {
                 count++;
             });
@@ -83,21 +83,21 @@ namespace
             world.Update();
 
             //nothing should execute now.
-            q1.ForEach([&](TestChange& change)
+            q1.ForEach([&](const TestChange& change)
             {
                 count++;
             });
 
             CHECK(count == 3);
 
-            q2.ForEach([&](TestChange& change)
+            q2.ForEach([&](const TestChange& change)
             {
                 count++;
             });
 
             CHECK(count == 3);
 
-            q3.ForEach([&](TestChange& change)
+            q3.ForEach([&](const TestChange& change)
             {
                 count++;
             });

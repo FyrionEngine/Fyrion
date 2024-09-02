@@ -31,7 +31,7 @@ namespace Fyrion
 
         ReadWrite(T& value) : value(value) {}
 
-        bool updated = false;
+        bool updated = true;
 
         ReadWrite& operator=(const T& value)
         {
@@ -83,17 +83,18 @@ namespace Fyrion
     {
         using Tuple = decltype(std::make_tuple(std::declval<T>()...));
         using ValidationTuple = decltype(std::make_tuple(std::declval<Changed<T...>>()));
+        using PostCheckTuple = decltype(std::tuple());
 
         template<typename TupleType>
-        FY_FINLINE static bool IsValidChunk(QueryData* query, ArchetypeQuery& archetypeQuery, ArchetypeChunk& chunk)
+        FY_FINLINE static bool IsValidChunk(u64 tick, ArchetypeQuery& archetypeQuery, ArchetypeChunk& chunk)
         {
-            return (chunk.IsChunkDirty(query->world->GetTickCount(), archetypeQuery.archetype->types[archetypeQuery.columns[Traits::TupleIndex<T, TupleType>::value]]) && ...);
+            return (chunk.IsChunkDirty(tick, archetypeQuery.archetype->types[archetypeQuery.columns[Traits::TupleIndex<T, TupleType>::value]]) && ...);
         }
 
         template<typename TupleType>
-        FY_FINLINE static bool IsValidEntity(QueryData* query, ArchetypeQuery& archetypeQuery, ArchetypeChunk& chunk, u32 entityIndex)
+        FY_FINLINE static bool IsValidEntity(u64 tick, ArchetypeQuery& archetypeQuery, ArchetypeChunk& chunk, u32 entityIndex)
         {
-            return (chunk.IsEntityDirty(query->world->GetTickCount(), archetypeQuery.archetype->types[archetypeQuery.columns[Traits::TupleIndex<T, TupleType>::value]], entityIndex) && ...);
+            return (chunk.IsEntityDirty(tick, archetypeQuery.archetype->types[archetypeQuery.columns[Traits::TupleIndex<T, TupleType>::value]], entityIndex) && ...);
         }
     };
 
@@ -131,9 +132,27 @@ namespace Fyrion
     template<typename T>
     struct QueryFunction {};
 
+    struct PostExecutionCheck
+    {
+        template <typename... QueryTypes, typename T>
+        FY_FINLINE static void Check(Query<QueryTypes...>& query, ArchetypeChunk& chunk, usize entityIndex, const T&)
+        {
+        }
+
+        template<typename... QueryTypes, typename T>
+        static void Check(Query<QueryTypes...>& query, ArchetypeChunk& chunk, usize entityIndex, ReadWrite<T> readWrite);
+    };
+
+
     template<typename Lambda, typename Return, typename... Params>
     struct QueryFunction<Return(Lambda::*)(Params...) const>
     {
+        template<typename... QueryTypes, std::size_t ...V>
+        FY_FINLINE static void PostCheck(Query<QueryTypes...>& query, auto& tuple, ArchetypeChunk& chunk, usize entityIndex, std::index_sequence<V...>)
+        {
+            (PostExecutionCheck::Check(query, chunk, entityIndex, std::get<V>(tuple)), ...);
+        }
+
         template<typename... QueryTypes, typename Func, std::size_t ...V>
         static void ForEach(Query<QueryTypes...>& query, Func&& func, std::index_sequence<V...>)
         {
@@ -144,15 +163,17 @@ namespace Fyrion
             {
                 for (ArchetypeChunk& chunk : archetypeQuery.archetype->chunks)
                 {
-                    if ((ComponentHandler<std::tuple_element_t<V, ValidationTypes>>::template IsValidChunk<TupleTypes>(query.data, archetypeQuery, chunk) || ...))
+                    if ((ComponentHandler<std::tuple_element_t<V, ValidationTypes>>::template IsValidChunk<TupleTypes>(query.tick, archetypeQuery, chunk) || ...))
                     {
                         auto tupleComponents = std::make_tuple(ComponentHandler<Traits::RemoveAll<Params>>::template GetChunkData<TupleTypes>(archetypeQuery, chunk)...);
                         usize count = chunk.GetEntityCount();
                         for (int e = 0; e < count; ++e)
                         {
-                            if ((ComponentHandler<std::tuple_element_t<V, ValidationTypes>>::template IsValidEntity<TupleTypes>(query.data, archetypeQuery, chunk, e) || ...))
+                            if ((ComponentHandler<std::tuple_element_t<V, ValidationTypes>>::template IsValidEntity<TupleTypes>(query.tick, archetypeQuery, chunk, e) || ...))
                             {
-                                func(static_cast<const Traits::RemoveAll<Params>&>(std::get<TypeExtractor<Params>*>(tupleComponents)[e])...);
+                                auto tupleItems = std::make_tuple(static_cast<const Traits::RemoveAll<Params>&>(std::get<TypeExtractor<Params>*>(tupleComponents)[e])...);
+                                std::apply(func, tupleItems);
+                                PostCheck(query, tupleItems, chunk, e, std::make_index_sequence<std::tuple_size_v<decltype(tupleItems)>>{});
                             }
                         }
                     }
@@ -174,7 +195,9 @@ namespace Fyrion
                     usize count = chunk.GetEntityCount();
                     for (int e = 0; e < count; ++e)
                     {
-                        func(static_cast<const Traits::RemoveAll<Params>&>(std::get<Traits::RemoveAll<Params>*>(tupleComponents)[e])...);
+                        auto tupleItems = std::make_tuple(static_cast<const Traits::RemoveAll<Params>&>(std::get<TypeExtractor<Params>*>(tupleComponents)[e])...);
+                        std::apply(func, tupleItems);
+                        PostCheck(query, tupleItems, chunk, e, std::make_index_sequence<std::tuple_size_v<decltype(tupleItems)>>{});
                     }
                 }
             }
@@ -214,11 +237,21 @@ namespace Fyrion
         {
             FY_ASSERT(data, "query not initialized");
             QueryFunction<decltype(&Func::operator())>::ForEach(*this, func);
+            tick = data->world->GetTick();
         }
 
         QueryData* data = nullptr;
         u64        tick = 0;
     };
 
-
+    template <typename... QueryTypes, typename T>
+    void PostExecutionCheck::Check(Query<QueryTypes...>& query, ArchetypeChunk& chunk, usize entityIndex, ReadWrite<T> readWrite)
+    {
+        if (readWrite.updated)
+        {
+            query.data->world->AdvanceTick();
+            using TupleTypes = typename Query<QueryTypes...>::TupleTypes;
+            chunk.AdvanceComponentState(chunk.archetype->types[Traits::TupleIndex<T, TupleTypes>::value], entityIndex);
+        }
+    }
 }

@@ -104,8 +104,9 @@ namespace Fyrion
 
         ExecuteSystemStage(SystemExecutionStage::OnPreUpdate);
         ExecuteSystemStage(SystemExecutionStage::OnUpdate);
-        worldTickCount++;
         ExecuteSystemStage(SystemExecutionStage::OnPostUpdate);
+
+        lastTick = tick;
     }
 
     World::~World()

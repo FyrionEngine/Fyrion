@@ -37,7 +37,6 @@ namespace Fyrion
 
     struct Archetype
     {
-        u32                   id;
         u64                   hash;
         usize                 maxEntityChunkCount;
         usize                 chunkTotalAllocSize;
@@ -96,16 +95,24 @@ namespace Fyrion
             chunkState.tickCheck = componentState.tickCheck;
         }
 
+        FY_FINLINE void AdvanceComponentState(const ArchetypeType& archetypeType, usize entityIndex)
+        {
+            ComponentState& componentState = *reinterpret_cast<ComponentState*>(&data[archetypeType.stateOffset + (entityIndex * sizeof(ComponentState))]);
+            componentState.tickCheck++;
+            ComponentState& chunkState = *reinterpret_cast<ComponentState*>(&data[archetype->chunkStateOffset + archetypeType.index * sizeof(ComponentState)]);
+            chunkState.tickCheck = componentState.tickCheck;
+        }
+
         FY_FINLINE bool IsChunkDirty(u64 tickCount, const ArchetypeType& archetypeType) const
         {
             ComponentState& chunkState = *reinterpret_cast<ComponentState*>(&data[archetype->chunkStateOffset + archetypeType.index * sizeof(ComponentState)]);
-            return chunkState.tickCheck == tickCount;
+            return chunkState.tickCheck > tickCount;
         }
 
         FY_FINLINE bool IsEntityDirty(u64 tickCount, const ArchetypeType& archetypeType, usize entityIndex) const
         {
             ComponentState& componentState = *reinterpret_cast<ComponentState*>(&data[archetypeType.stateOffset + (entityIndex * sizeof(ComponentState))]);
-            return componentState.tickCheck == tickCount;
+            return componentState.tickCheck > tickCount;
         }
 
         template<typename T>
@@ -297,7 +304,7 @@ namespace Fyrion
                     ArchetypeType& type = entityData->chunk.archetype->types[typeIndex];
 
                     entityData->chunk.SetComponentState(type, entityData->chunkIndex, ComponentState{
-                                                            .tickCheck = worldTickCount + 1,            //always mark to check in the next tick.
+                                                            .tickCheck = tick
                                                         });
 
                     VoidPtr data = entityData->chunk.GetComponent(type,entityData->chunkIndex);
@@ -461,9 +468,15 @@ namespace Fyrion
             return lastTick;
         }
 
-        FY_FINLINE u64 GetTickCount() const
+        FY_FINLINE u64 AdvanceTick()
         {
-            return worldTickCount;
+            tick++;
+            return tick;
+        }
+
+        FY_FINLINE u64 GetTick() const
+        {
+            return tick;
         }
 
         template<typename T>
@@ -479,7 +492,7 @@ namespace Fyrion
         ~World();
 
         template <typename... T>
-        friend class Query;
+        friend struct Query;
 
     private:
         void ExecuteSystemStage(SystemExecutionStage stage);
@@ -497,7 +510,7 @@ namespace Fyrion
         ArchetypeHashMap     archetypes;
         Archetype*           rootArchetype = nullptr;
         QueryHashMap         queries;
-        u64                  worldTickCount = 1;
+        u64                  tick = 1;
         u64                  lastTick = 0;
         Array<SystemStorage> systems;
         bool                 simulating = true;
@@ -555,7 +568,6 @@ namespace Fyrion
 
             Archetype* archetype = it->second.EmplaceBack(MakeShared<Archetype>()).Get();
             archetype->hash = hash;
-            archetype->id = 0; //world.archetypes.count();
             archetype->chunkTotalAllocSize = 0;
             archetype->types = {size};
 

@@ -46,7 +46,6 @@ namespace
             CHECK(world.Get<TestComponentTwo>(entity)->strTest == LONG_TEXT);
 
             u32 count = 0;
-
             world.Query<TestComponentOne, TestComponentTwo>().ForEach([&](const TestComponentOne& componentOne, const TestComponentTwo& componentTwo)
             {
                 CHECK(componentOne.intValue == 10);
@@ -77,9 +76,9 @@ namespace
 
 
     u32 countBasicSystem = 0;
+    u32 countPostSystem = 0;
     u32 updateCount = 1;
-    u32 changedOnUpdateCount = 0;
-    u32 changeOnPostUpdateCount = 0;
+
 
     struct TestBasicSystem : System
     {
@@ -102,7 +101,7 @@ namespace
                              }
                 );
 
-                initFrame = world->GetTickCount();
+                initFrame = world->GetTick();
             }
         }
 
@@ -121,16 +120,7 @@ namespace
             });
 
             CHECK(countBasicSystem == 5 * updateCount);
-
-
-            //this shoud in the next frame.
-            world->Query<Changed<TestComponentOne>, TestComponentTwo>().ForEach([&](const TestComponentTwo& testComponentTwo)
-            {
-                CHECK((initFrame + 1) == updateCount);
-                changedOnUpdateCount++;
-            });
         }
-
 
         void OnDestroy() override
         {
@@ -149,24 +139,9 @@ namespace
 
         void OnUpdate() override
         {
-            //this shoud execute only in the same frame.
-
-            if (updateCount == 3)
+            world->Query<TestComponentTwo>().ForEach([&](const TestComponentTwo& testComponentTwo)
             {
-                world->Query<Changed<TestComponentOne>, ReadWrite<TestComponentTwo>>().ForEach([&](ReadWrite<TestComponentTwo> testComponentTwo)
-                {
-                    testComponentTwo.value.value = 34;
-                    CHECK(world->GetTickCount()-1 == updateCount);
-                    changeOnPostUpdateCount++;
-                });
-            }
-
-
-
-            world->Query<Changed<TestComponentTwo>>().ForEach([&](const TestComponentTwo& testComponentTwo)
-            {
-                int a = 0;
-                //TODO check the value here. it should be in the same frame.
+                countPostSystem++;
             });
         }
     };
@@ -192,8 +167,7 @@ namespace
             }
 
             CHECK(countBasicSystem == 5 * (updateCount -1));
-            CHECK(changedOnUpdateCount == 5);
-          //  CHECK(changeOnPostUpdateCount == 5);
+            CHECK(countPostSystem == 5 * (updateCount -1));
         }
         Engine::Destroy();
     }

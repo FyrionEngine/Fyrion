@@ -8,23 +8,6 @@
 
 namespace Fyrion
 {
-
-    namespace Internal
-    {
-        template<typename TupleType>
-        constexpr static void GetTupleTypeIds(TypeID* ids, std::index_sequence<>)
-        {
-        }
-
-        template<typename TupleType, usize I, usize ...Is>
-        constexpr static void GetTupleTypeIds(TypeID* ids, std::index_sequence<I, Is...>)
-        {
-            ids[I] = GetTypeID<std::tuple_element_t<I, TupleType>>();
-            GetTupleTypeIds<TupleType>(ids, std::index_sequence<Is...>{});
-        }
-    }
-
-
     template <typename T>
     struct ReadWrite
     {
@@ -98,6 +81,13 @@ namespace Fyrion
         {
             return (chunk.IsEntityDirty(tick, archetypeQuery.archetype->types[archetypeQuery.columns[Traits::TupleIndex<T, TupleType>::value]], entityIndex) && ...);
         }
+    };
+
+    template <typename ...T>
+    struct ComponentHandler<Without<T...>>
+    {
+        using Tuple = decltype(std::tuple());
+        using ValidationTuple = decltype(std::tuple());
     };
 
     template<typename T>
@@ -232,6 +222,46 @@ namespace Fyrion
         }
     };
 
+    template<typename >
+    struct QueryTypesArr
+    {
+        constexpr static usize tupleSize = 0;
+    };
+
+    template<typename ...T>
+    struct QueryTypesArr<std::tuple<T...>>
+    {
+        constexpr static usize tupleSize = sizeof...(T);
+        constexpr static TypeID types[tupleSize] = {GetTypeID<T>()...};
+    };
+
+    template<>
+    struct QueryTypesArr<std::tuple<>>
+    {
+        constexpr static usize tupleSize = 0;
+    };
+
+
+    template<typename>
+    struct WithoutHandler
+    {
+        static void UpdateCreation(QueryCreation& creation)
+        {
+        }
+    };
+
+    template<typename ...T>
+    struct WithoutHandler<Without<T...>>
+    {
+        static void UpdateCreation(QueryCreation& creation)
+        {
+            Array<TypeID> types;
+            types.Reserve(sizeof...(T));
+            (types.EmplaceBack(GetTypeID<T>()), ...);
+            creation.without.EmplaceBack(types);
+        }
+    };
+
     template <typename... Types>
     struct Query
     {
@@ -243,14 +273,23 @@ namespace Fyrion
         explicit Query(World* world)
         {
             FY_ASSERT(world, "World cannot be null");
-            TypeID types[std::tuple_size_v<TupleTypes>];
-            Internal::GetTupleTypeIds<TupleTypes>(types, std::make_index_sequence<std::tuple_size_v<TupleTypes>>{});
 
-            data = world->FindOrCreateQuery({
-                .hash = MurmurHash64(types, std::tuple_size_v<TupleTypes> * sizeof(TypeID), HashSeed64),
-                .types = {types, std::tuple_size_v<TupleTypes>}
-            });
+            QueryCreation queryCreation{};
 
+            if constexpr (sizeof...(Types) > 0)
+            {
+                TypeID types[sizeof...(Types)];
+                queryCreation.hash = MurmurHash64(types, sizeof...(Types) * sizeof(TypeID), HashSeed64);
+            }
+
+            if constexpr (QueryTypesArr<TupleTypes>::tupleSize > 0)
+            {
+                queryCreation.types = Span<TypeID>{const_cast<TypeID*>(QueryTypesArr<TupleTypes>::types), QueryTypesArr<TupleTypes>::tupleSize};
+            }
+
+            (WithoutHandler<Types>::UpdateCreation(queryCreation),...);
+
+            data = world->FindOrCreateQuery(queryCreation);
             tick = world->GetLastTick();
         }
 

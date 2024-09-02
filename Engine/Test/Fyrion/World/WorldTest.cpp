@@ -27,6 +27,10 @@ namespace
         String strTest;
     };
 
+    struct TestComponentThree
+    {
+    };
+
 
     TEST_CASE("World::Basic")
     {
@@ -38,6 +42,8 @@ namespace
             World  world;
             Entity entity = world.Spawn(TestComponentOne{.intValue = 10}, TestComponentTwo{.value = 20, .strTest = LONG_TEXT});
 
+            world.Spawn();
+
             CHECK(world.Alive(entity));
             CHECK(entity > 0);
 
@@ -45,16 +51,27 @@ namespace
             CHECK(world.Get<TestComponentTwo>(entity)->value == 20);
             CHECK(world.Get<TestComponentTwo>(entity)->strTest == LONG_TEXT);
 
-            u32 count = 0;
-            world.Query<TestComponentOne, TestComponentTwo>().ForEach([&](const TestComponentOne& componentOne, const TestComponentTwo& componentTwo)
             {
-                CHECK(componentOne.intValue == 10);
-                CHECK(componentTwo.value == 20);
-                CHECK(componentTwo.strTest == LONG_TEXT);
-                count++;
-            });
+                u32 count = 0;
+                world.Query<TestComponentOne, TestComponentTwo>().ForEach([&](const TestComponentOne& componentOne, const TestComponentTwo& componentTwo)
+                {
+                    CHECK(componentOne.intValue == 10);
+                    CHECK(componentTwo.value == 20);
+                    CHECK(componentTwo.strTest == LONG_TEXT);
+                    count++;
+                });
 
-            CHECK(count == 1);
+                CHECK(count == 1);
+            }
+
+            {
+                u32 count = 0;
+                world.Query().ForEach([&](Entity entity)
+                {
+                    count++;
+                });
+                CHECK(count == 2);
+            }
 
             world.Remove<TestComponentTwo>(entity);
 
@@ -170,5 +187,46 @@ namespace
             CHECK(countPostSystem == 5 * (updateCount -1));
         }
         Engine::Destroy();
+    }
+
+    TEST_CASE("World::TestWithout")
+    {
+
+        Engine::Init();
+        {
+            Registry::Type<TestComponentOne>();
+            Registry::Type<TestComponentTwo>();
+            Registry::Type<TestComponentThree>();
+
+            World world;
+
+            world.Spawn(TestComponentOne{}, TestComponentThree{});
+            world.Spawn(TestComponentThree{});
+            world.Spawn(TestComponentOne{}, TestComponentTwo{});
+
+            auto q1 = world.Query<Without<TestComponentOne>, Without<TestComponentTwo>>();
+            auto q2 = world.Query<Without<TestComponentOne, TestComponentTwo>>();
+
+
+            {
+                u32 count = 0;
+                q1.ForEach([&]
+                {
+                    count++;
+                });
+                CHECK(count == 2);
+            }
+
+            {
+                u32 count = 0;
+                q2.ForEach([&]
+                {
+                    count++;
+                });
+                CHECK(count == 1);
+            }
+        }
+        Engine::Destroy();
+
     }
 }

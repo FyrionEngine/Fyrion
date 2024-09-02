@@ -249,11 +249,9 @@ namespace Fyrion
 
     struct QueryCreation
     {
-        usize        hash = 0;
-        Span<TypeID> types;
-        Span<TypeID> changed;
-        Span<TypeID> with;
-        Span<TypeID> without;
+        usize                hash = 0;
+        Array<TypeID>        types;
+        Array<Array<TypeID>> without;
     };
 
     struct QueryData
@@ -261,6 +259,7 @@ namespace Fyrion
         usize                 hash;
         World*                world;
         Array<TypeID>         types;
+        Array<Array<TypeID>>  without;
         Array<ArchetypeQuery> archetypes;
     };
 

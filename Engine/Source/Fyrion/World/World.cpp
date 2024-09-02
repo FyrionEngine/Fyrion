@@ -14,13 +14,13 @@ namespace Fyrion
 
         for (const SharedPtr<QueryData>& data : it->second)
         {
-            if (data->types == queryCreation.types)
+            if (data->types == queryCreation.types && data->without == queryCreation.without)
             {
                 return data.Get();
             }
         }
 
-        SharedPtr<QueryData>& data = it->second.EmplaceBack(MakeShared<QueryData>(queryCreation.hash, this, queryCreation.types));
+        SharedPtr<QueryData>& data = it->second.EmplaceBack(MakeShared<QueryData>(queryCreation.hash, this, queryCreation.types, queryCreation.without));
 
         for(auto& aIt : archetypes)
         {
@@ -38,6 +38,35 @@ namespace Fyrion
         ArchetypeQuery archetypes{
             .archetype = archetype
         };
+
+        if (!queryData->without.Empty())
+        {
+            u32 countFound = 0;
+
+            for (u32 i = 0; i < queryData->without.Size(); ++i)
+            {
+                bool found = false;
+
+                for (u32 j = 0; j < queryData->without[i].Size(); ++j)
+                {
+                    TypeID type = queryData->without[i][j];
+                    if (archetype->typeIndex.Has(type))
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+                if (found)
+                {
+                    countFound++;
+                }
+            }
+
+            if (countFound == queryData->without.Size())
+            {
+                return;
+            }
+        }
 
         for (u32 i = 0; i < queryData->types.Size(); ++i)
         {

@@ -314,7 +314,7 @@ namespace Fyrion
 
             for (u32 c = 0; c < node->children_count; ++c)
             {
-                LoadGltfNode(meshMap, parentObject, node->children[c], meshCount);
+                LoadGltfNode(meshMap, object, node->children[c], meshCount);
             }
         }
 

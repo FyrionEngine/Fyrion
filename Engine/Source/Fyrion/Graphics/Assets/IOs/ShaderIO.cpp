@@ -44,6 +44,9 @@ namespace Fyrion
             {
                 shaderAsset->SetShaderType(ShaderAssetType::Include);
             }
+
+            shaderAsset->Compile();
+
             return false;
         }
     };

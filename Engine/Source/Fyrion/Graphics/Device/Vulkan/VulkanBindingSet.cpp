@@ -10,13 +10,7 @@ namespace Fyrion
     VulkanBindingSet::VulkanBindingSet(ShaderAsset* shaderAsset, VulkanDevice& vulkanDevice) : vulkanDevice(vulkanDevice),
                                                                                                shaderAsset(shaderAsset)
     {
-        if (!shaderAsset->IsCompiled())
-        {
-            shaderAsset->Compile();
-        }
-
         shaderAsset->AddBindingSetDependency(this);
-
         LoadInfo();
     }
 

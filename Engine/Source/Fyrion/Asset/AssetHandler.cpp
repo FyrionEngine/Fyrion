@@ -757,6 +757,14 @@ namespace Fyrion
             instance = GetType()->Cast<Asset>(GetType()->NewInstance());
             instance->SetHandler(this);
 
+            if (pendingImport)
+            {
+                u64 lastModifiedTime = FileSystem::GetFileStatus(importedFilePath).lastModifiedTime;
+                this->lastModifiedTime = lastModifiedTime;
+                AssetManager::QueueAssetImport(io, this);
+                pendingImport = false;
+            }
+
             if (FileSystem::GetFileStatus(assetPath).exists)
             {
                 if (const String str = FileSystem::ReadFileAsString(assetPath); !str.Empty())
@@ -878,8 +886,7 @@ namespace Fyrion
 
         if (!infoLoaded || handler->lastModifiedTime != lastModifiedTime || !FileSystem::GetFileStatus(handler->assetPath).exists)
         {
-            handler->lastModifiedTime = lastModifiedTime;
-            AssetManager::QueueAssetImport(io, handler);
+            handler->pendingImport = true;
         }
 
         handler->UpdatePath();

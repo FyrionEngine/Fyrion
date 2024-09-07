@@ -884,11 +884,6 @@ namespace Fyrion
         bool invalidPass = creation.attachments.Empty() && !creation.renderPass && !creation.pipelineState && creation.depthFormat == Format::Undefined;
         FY_ASSERT(!invalidPass, "creation needs attachments or renderpass or pipelineState");
 
-        if (!shader->IsCompiled())
-        {
-            shader->Compile();
-        }
-
         //shader not valid.
         if(!shader->IsCompiled())
         {
@@ -1204,11 +1199,6 @@ namespace Fyrion
     {
         ShaderAsset* shader = creation.shader;
         FY_ASSERT(shader, "shader is null");
-
-        if (!shader->IsCompiled())
-        {
-            shader->Compile();
-        }
 
         //shader not valid.
         if(!shader->IsCompiled())

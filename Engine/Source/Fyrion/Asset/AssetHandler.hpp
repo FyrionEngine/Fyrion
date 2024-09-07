@@ -188,5 +188,6 @@ namespace Fyrion
         String                 dataPath{};
         String                 assetPath{};
         Array<String>          relatedFiles{};
+        bool                   pendingImport{};
     };
 }

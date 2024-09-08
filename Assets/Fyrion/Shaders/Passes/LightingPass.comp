@@ -177,7 +177,6 @@ void MainCS(in uint2 px : SV_DispatchThreadID)
 
         //diffuse irradiance
         float3 diffuseIBL = (kd * baseColor * irradiance * ssao);
-        //float3 diffuseIBL = (kd * baseColor * irradiance);
 
         //specular
         uint    specularTextureLevels   = QuerySpecularTextureLevels();

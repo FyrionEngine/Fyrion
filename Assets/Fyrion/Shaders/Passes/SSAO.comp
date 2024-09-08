@@ -1,6 +1,6 @@
 #define SSAO_KERNEL_ARRAY_SIZE 64
 #define SSAO_KERNEL_SIZE 64
-#define SSAO_RADIUS 0.5
+#define SSAO_RADIUS 0.3
 
 struct UBOSSAOKernel
 {
@@ -47,15 +47,13 @@ void MainCS(in uint2 px : SV_DispatchThreadID)
 {
 	int2 outDim;
 	ssaoTexture.GetDimensions(outDim.x, outDim.y);
-
     const float2 uv = (float2(px) + 0.5) / outDim.xy;
 
     // Get G-Buffer values
 	//float3 fragPos = ReconstructVSPosFromDepth(uv);
 
 	float3 fragPos =  mul(pushConst.view, float4(position.SampleLevel(colorSampler, uv, 0.0).rgb, 1.0)).xyz;
-
-	float3 normal  =  normalize(mul((float3x3)pushConst.view,textureNormal.SampleLevel(colorSampler,  uv, 1.0).xyz));
+	float3 normal  =  normalize(mul((float3x3)pushConst.view,textureNormal.SampleLevel(colorSampler,  uv, 1.0).xyz) * 2.0 - 1.0);
 
 	// Get a random vector using a noise lookup
 	int2 texDim;
@@ -64,8 +62,7 @@ void MainCS(in uint2 px : SV_DispatchThreadID)
 	ssaoNoiseTexture.GetDimensions(noiseDim.x, noiseDim.y);
 
 	const float2 noiseUV = float2(float(texDim.x)/float(noiseDim.x), float(texDim.y)/(noiseDim.y)) * uv;
-
-	float3 randomVec     = normalize(ssaoNoiseTexture.SampleLevel(ssaoNoiseSampler, noiseUV, 1.0).xyz);
+	float3 randomVec     = normalize(ssaoNoiseTexture.SampleLevel(ssaoNoiseSampler, noiseUV, 1.0).xyz * 2.0 - 1.0);
 
 	// Create TBN matrix
 	float3 tangent      = normalize(randomVec - normal * dot(randomVec, normal));
@@ -73,17 +70,15 @@ void MainCS(in uint2 px : SV_DispatchThreadID)
 	float3x3 TBN        = transpose(float3x3(tangent, bitangent, normal));
 
 	// Calculate occlusion value
-
-	float bias = 0.01;
-
+	float bias = 0.025;
 	float occlusion = 0.0f;
 	for(int i = 0; i < SSAO_KERNEL_SIZE; i++)
 	{
-		float3 samplePos = mul(TBN, uboSSAOKernel.samples[i].xyz);
-		samplePos = fragPos + samplePos * SSAO_RADIUS;
+		float3 sample = mul(TBN, uboSSAOKernel.samples[i].xyz);
+		sample = sample * SSAO_RADIUS + fragPos;
 
 		// project
-		float4 offset = float4(samplePos, 1.0f);
+		float4 offset = float4(sample, 1.0f);
 		offset = mul(pushConst.projection, offset);
 		offset.xyz /= offset.w;
 		offset.xyz = offset.xyz * 0.5f + 0.5f;
@@ -93,9 +88,8 @@ void MainCS(in uint2 px : SV_DispatchThreadID)
         //float sampleDepth =  position.SampleLevel(colorSampler, offset.xy, 0.0).z;
         float sampleDepth =  mul(pushConst.view, float4(position.SampleLevel(colorSampler, offset.xy, 0.0).xyz, 1.0)).z;
 
-		float rangeCheck = smoothstep(0.0f, 1.0f, SSAO_RADIUS / abs(fragPos.z - sampleDepth - bias));
-		occlusion += (sampleDepth >= samplePos.z - bias ? 1.0f : 0.0f) * rangeCheck;
+		float rangeCheck = smoothstep(0.0f, 1.0f, SSAO_RADIUS / abs(fragPos.z - sampleDepth));
+		occlusion += (sampleDepth >= sample.z + bias ? 1.0f : 0.0f) * rangeCheck;
 	}
-
 	ssaoTexture[px] = 1.0 - (occlusion / float(SSAO_KERNEL_SIZE));
 }

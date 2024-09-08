@@ -16,7 +16,7 @@ void MainCS(in uint2 px : SV_DispatchThreadID)
     color *= exposure;
     //color = color / (color + 1.0);
     //color = Uncharted2Tonemap(color);
-    //color =  ACESTonemap(color);
+    color =  ACESTonemap(color);
 
     // gamma correct
     color = pow(color, 1.0/2.2);

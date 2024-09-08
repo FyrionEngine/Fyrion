@@ -95,6 +95,7 @@ namespace Fyrion
             RenderGraphResource* gBufferPositionAO = node->GetInputResource("GBufferPositionAO");
             RenderGraphResource* shadowDepthTexture = node->GetInputResource("ShadowDepthTexture");
             RenderGraphResource* lightColor = node->GetOutputResource("LightColor");
+            RenderGraphResource* ssaoTexture = node->GetInputResource("SSAOTexture");
 
             ShadowMapDataInfo* shadowMapDataInfo = static_cast<ShadowMapDataInfo*>(shadowDepthTexture->reference);
 
@@ -113,7 +114,9 @@ namespace Fyrion
             bindingSet->GetVar("brdfLUT")->SetTexture(brdflutGenerator.GetTexture());
             bindingSet->GetVar("specularMap")->SetTexture(specularMapGenerator.GetTexture());
             bindingSet->GetVar("shadowMapTexture")->SetTexture(shadowDepthTexture->texture);
+            bindingSet->GetVar("ssaoTexture")->SetTexture(ssaoTexture->texture);
             bindingSet->GetVar("shadowMapSampler")->SetSampler(shadowMapSampler);
+
             bindingSet->GetVar("data")->SetValue(&data, sizeof(LightingData));
 
             cmd.BindPipelineState(lightingPSO);
@@ -157,6 +160,11 @@ namespace Fyrion
                     .name = "GBufferPositionAO",
                     .type = RenderGraphResourceType::Texture,
                     .format = Format::RGBA32F
+                })
+                .Input(RenderGraphResourceCreation{
+                    .name = "SSAOTexture",
+                    .type = RenderGraphResourceType::Texture,
+                    .format = Format::R
                 })
                 .Input(RenderGraphResourceCreation{
                     .name = "Depth",

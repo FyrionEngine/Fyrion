@@ -5,7 +5,8 @@
 		"Fyrion::SkyboxGenRenderPass",
 		"Fyrion::LightingRenderPass",
 		"Fyrion::SkyboxBlitRenderPass",
-		"Fyrion::PostProcessRenderPass"
+		"Fyrion::PostProcessRenderPass",
+		"Fyrion::SSAOPass"
 	],
 	"edges": [
 		{
@@ -67,6 +68,24 @@
 			"nodeOutput": "Fyrion::SkyboxBlitRenderPass",
 			"input": "LightColor",
 			"nodeInput": "Fyrion::PostProcessRenderPass"
+		},
+		{
+			"output": "GBufferNormalRoughness",
+			"nodeOutput": "Fyrion::SceneRenderPass",
+			"input": "GBufferNormalRoughness",
+			"nodeInput": "Fyrion::SSAOPass"
+		},
+		{
+			"output": "GBufferPositionAO",
+			"nodeOutput": "Fyrion::SceneRenderPass",
+			"input": "GBufferPositionAO",
+			"nodeInput": "Fyrion::SSAOPass"
+		},
+		{
+			"output": "SSAOTexture",
+			"nodeOutput": "Fyrion::SSAOPass",
+			"input": "SSAOTexture",
+			"nodeInput": "Fyrion::LightingRenderPass"
 		}
 	],
 	"colorOutput": "Fyrion::PostProcessRenderPass#OutputColor",

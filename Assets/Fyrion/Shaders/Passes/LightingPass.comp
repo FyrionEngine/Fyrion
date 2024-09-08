@@ -35,6 +35,8 @@ Texture2DArray          shadowMapTexture        : register(t10);
 SamplerState            shadowMapSampler        : register(s11);
 ConstantBuffer<LightingData> data               : register(b12);
 
+Texture2D<float>        ssaoTexture            : register(t13);
+
 uint QuerySpecularTextureLevels()
 {
 	uint width, height, levels;
@@ -98,12 +100,18 @@ void MainCS(in uint2 px : SV_DispatchThreadID)
         return;
     }
 
+	int2 outDim;
+	lightColor.GetDimensions(outDim.x, outDim.y);
+    const float2 uv = (float2(px) + 0.5) / outDim.xy;
+
     float3  baseColor   = gbufferColorMetallic[px].rgb;
     float3  N           = gbufferNormalRoughness[px].rgb;
     float   metallic    = gbufferColorMetallic[px].a;
     float   roughness   = gbufferNormalRoughness[px].a;
     float3  fragPos     = gBufferPositionAO[px].xyz;
     float3  ao          = gBufferPositionAO[px].a;
+
+    float   ssao        = ssaoTexture.SampleLevel(samplerState, uv, 0.0).r;
 
     float3  fragViewPos  = mul(data.view, float4(fragPos, 1.0)).xyz;
 
@@ -168,7 +176,8 @@ void MainCS(in uint2 px : SV_DispatchThreadID)
         float3 kd = lerp(1.0 - F, 0.0, metallic);
 
         //diffuse irradiance
-        float3 diffuseIBL = kd * baseColor * irradiance;
+        float3 diffuseIBL = (kd * baseColor * irradiance * ssao);
+        //float3 diffuseIBL = (kd * baseColor * irradiance);
 
         //specular
         uint    specularTextureLevels   = QuerySpecularTextureLevels();

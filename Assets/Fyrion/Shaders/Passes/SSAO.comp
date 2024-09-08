@@ -11,9 +11,10 @@ struct PushConst
 {
 	float4x4 projection;
 	float4x4 view;
+	float4x4 projInv;
 };
 
-Texture2D           texturePositionDepth    : register(t0);
+Texture2D           position                : register(t0);
 Texture2D           textureNormal           : register(t1);
 Texture2D           ssaoNoiseTexture        : register(t2);
 SamplerState        ssaoNoiseSampler        : register(s3);
@@ -25,31 +26,46 @@ SamplerState                   colorSampler : register(s7);
 
 [[vk::push_constant]] PushConst pushConst;
 
+
+//float3 ReconstructVSPosFromDepth(float2 uv)
+//{
+////    float depth =  depthTexture.SampleLevel(colorSampler, uv, 1.0).r;
+////    float x = uv.x * 2.0 - 1.0;
+////    float y = (1.0 - uv.y) * 2.0 - 1.0;
+////    float4 pos = float4(x, y, depth, 1.0);
+////    float4 posVS = mul(pushConst.projInv, pos);
+////    return posVS.xyz / posVS.w;
+//
+////    float depth =  depthTexture.SampleLevel(colorSampler, uv, 1.0).r;
+////    return float3(uv, depth);
+//
+//    return 0.0;
+//}
+
 [numthreads(16, 16, 1)]
 void MainCS(in uint2 px : SV_DispatchThreadID)
 {
-
 	int2 outDim;
 	ssaoTexture.GetDimensions(outDim.x, outDim.y);
 
     const float2 uv = (float2(px) + 0.5) / outDim.xy;
 
     // Get G-Buffer values
-	float3 fragPos = texturePositionDepth.Sample(colorSampler,  uv).rgb;
+	//float3 fragPos = ReconstructVSPosFromDepth(uv);
 
-	fragPos = mul(pushConst.view, float4(fragPos, 1.0)).xyz;
+	float3 fragPos =  mul(pushConst.view, float4(position.SampleLevel(colorSampler, uv, 0.0).rgb, 1.0)).xyz;
 
-	float3 normal  = normalize( mul(pushConst.view,  float4(textureNormal.Sample(colorSampler,  uv).rgb, 1.0)).xyz  * 2.0 - 1.0);
+	float3 normal  =  normalize(mul((float3x3)pushConst.view,textureNormal.SampleLevel(colorSampler,  uv, 1.0).xyz));
 
 	// Get a random vector using a noise lookup
 	int2 texDim;
-	texturePositionDepth.GetDimensions(texDim.x, texDim.y);
+	position.GetDimensions(texDim.x, texDim.y);
 	int2 noiseDim;
 	ssaoNoiseTexture.GetDimensions(noiseDim.x, noiseDim.y);
 
 	const float2 noiseUV = float2(float(texDim.x)/float(noiseDim.x), float(texDim.y)/(noiseDim.y)) * uv;
 
-	float3 randomVec     = normalize(ssaoNoiseTexture.Sample(ssaoNoiseSampler, noiseUV).xyz) * 2.0 - 1.0;
+	float3 randomVec     = normalize(ssaoNoiseTexture.SampleLevel(ssaoNoiseSampler, noiseUV, 1.0).xyz);
 
 	// Create TBN matrix
 	float3 tangent      = normalize(randomVec - normal * dot(randomVec, normal));
@@ -57,6 +73,9 @@ void MainCS(in uint2 px : SV_DispatchThreadID)
 	float3x3 TBN        = transpose(float3x3(tangent, bitangent, normal));
 
 	// Calculate occlusion value
+
+	float bias = 0.01;
+
 	float occlusion = 0.0f;
 	for(int i = 0; i < SSAO_KERNEL_SIZE; i++)
 	{
@@ -68,15 +87,15 @@ void MainCS(in uint2 px : SV_DispatchThreadID)
 		offset = mul(pushConst.projection, offset);
 		offset.xyz /= offset.w;
 		offset.xyz = offset.xyz * 0.5f + 0.5f;
+        offset.y = 1.0 - offset.y;
 
-        float4 samplePoss = float4(texturePositionDepth.Sample(colorSampler, offset.xy).xyz, 1.0);
-        samplePoss = mul(pushConst.view, samplePoss);
-        float sampleDepth = samplePoss.z;
+        //float sampleDepth = ReconstructVSPosFromDepth(offset.xy).z;
+        //float sampleDepth =  position.SampleLevel(colorSampler, offset.xy, 0.0).z;
+        float sampleDepth =  mul(pushConst.view, float4(position.SampleLevel(colorSampler, offset.xy, 0.0).xyz, 1.0)).z;
 
-//        float bias = 0.005;
-
-		float rangeCheck = smoothstep(0.0f, 1.0f, SSAO_RADIUS / abs(fragPos.z - sampleDepth));
-		occlusion += (sampleDepth >= samplePos.z ? 1.0f : 0.0f) * rangeCheck;
+		float rangeCheck = smoothstep(0.0f, 1.0f, SSAO_RADIUS / abs(fragPos.z - sampleDepth - bias));
+		occlusion += (sampleDepth >= samplePos.z - bias ? 1.0f : 0.0f) * rangeCheck;
 	}
+
 	ssaoTexture[px] = 1.0 - (occlusion / float(SSAO_KERNEL_SIZE));
 }

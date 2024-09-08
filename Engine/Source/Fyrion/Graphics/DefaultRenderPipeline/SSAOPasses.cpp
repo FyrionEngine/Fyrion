@@ -22,6 +22,7 @@ namespace Fyrion
     {
         Mat4 projection;
         Mat4 view;
+        Mat4 invProj;
     };
 
     struct SSAOPass : RenderGraphPass
@@ -106,45 +107,26 @@ namespace Fyrion
         void Render(f64 deltaTime, RenderCommands& cmd) override
         {
             RenderGraphResource* gBufferNormalRoughness = node->GetInputResource("GBufferNormalRoughness");
-            RenderGraphResource* gBufferPositionAO = node->GetInputResource("GBufferPositionAO");
+            RenderGraphResource* position = node->GetInputResource("GBufferPositionAO");
             RenderGraphResource* ssaoTexture = node->GetOutputResource("SSAOTexture");
 
-            bindingSet->GetVar("texturePositionDepth")->SetTexture(gBufferPositionAO->texture);
+            bindingSet->GetVar("position")->SetTexture(position->texture);
             bindingSet->GetVar("textureNormal")->SetTexture(gBufferNormalRoughness->texture);
             bindingSet->GetVar("ssaoTexture")->SetTexture(ssaoTexture->texture);
-
 
             cmd.BindPipelineState(pipelineState);
             cmd.BindBindingSet(pipelineState, bindingSet);
 
             UBO ubo{
                 .projection = graph->GetCameraData().projection,
-                .view = graph->GetCameraData().view
+                .view = graph->GetCameraData().view,
+                .invProj = graph->GetCameraData().projectionInverse
             };
             cmd.PushConstants(pipelineState, ShaderStage::Compute, &ubo, sizeof(UBO));
-
-            cmd.ResourceBarrier(ResourceBarrierInfo{
-                .texture = ssaoTexture->texture,
-                .oldLayout = ResourceLayout::ShaderReadOnly,
-                .newLayout = ResourceLayout::General
-            });
 
             cmd.Dispatch(std::ceil(ssaoTexture->textureCreation.extent.width / 16.f),
                          std::ceil(ssaoTexture->textureCreation.extent.height / 16.f),
                          1.f);
-
-
-            cmd.ResourceBarrier(ResourceBarrierInfo{
-                .texture = ssaoTexture->texture,
-                .oldLayout = ResourceLayout::General,
-                .newLayout = ResourceLayout::ShaderReadOnly
-            });
-
-
-            ImGui::SetNextWindowSize(ImVec2(800, 800), ImGuiCond_Appearing);
-            ImGui::Begin("debug");
-            ImGui::TextureItem(ssaoTexture->texture, {(f32)ssaoTexture->textureCreation.extent.width, (f32)ssaoTexture->textureCreation.extent.height});
-            ImGui::End();
         }
 
         void Destroy() override
@@ -164,6 +146,7 @@ namespace Fyrion
                 .Input(RenderGraphResourceCreation{
                     .name = "GBufferPositionAO",
                     .type = RenderGraphResourceType::Texture,
+                    .format = Format::RGBA32F
                 })
                 .Output(RenderGraphResourceCreation{
                     .name = "SSAOTexture",
@@ -188,7 +171,7 @@ namespace Fyrion
 
     void RegisterSSAOPasses()
     {
-        // Registry::Type<SSAOPass>();
+        Registry::Type<SSAOPass>();
         // Registry::Type<SSAOBlurPass>();
     }
 }

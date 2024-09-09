@@ -25,7 +25,9 @@ namespace Fyrion
 
     struct VulkanDescriptorSet
     {
-        VulkanDevice& vulkanDevice;
+        u32               set;
+        VulkanDevice&     vulkanDevice;
+        VulkanBindingSet& bindingSet;
 
         FixedArray<u8, FY_FRAMES_IN_FLIGHT> frames{0, 0};
         Array<VulkanDescriptorSetData>      data;
@@ -36,17 +38,24 @@ namespace Fyrion
         Array<VkDescriptorBufferInfo> descriptorBufferInfos;
 
         void MarkDirty();
+        void CheckDescriptorSetData();
+    };
+
+    struct VulkanBindingVarBuffer
+    {
+        VulkanBuffer buffer;
+        u8           frame;
     };
 
     struct VulkanBindingVar : BindingVar
     {
         VulkanBindingSet& bindingSet;
 
-        SharedPtr<VulkanDescriptorSet> descriptorSet{};
-        u32                            binding{};
-        u32                            arrayElement{};
-        DescriptorType                 descriptorType{};
-        u32                            size{};
+        VulkanDescriptorSet* descriptorSet{};
+        u32                  binding{};
+        u32                  arrayElement{};
+        DescriptorType       descriptorType{};
+        u32                  size{};
 
         VulkanBindingVar(VulkanBindingSet& bindingSet) : bindingSet(bindingSet) {}
         ~VulkanBindingVar() override;
@@ -55,7 +64,9 @@ namespace Fyrion
         VulkanTextureView*  textureView{};
         VulkanSampler*      sampler{};
         VulkanBuffer*       buffer{};      //external buffers, BindingSet don't own it
-        Array<VulkanBuffer> valueBuffer{}; //internal buffers created for "SetValue"
+
+        FixedArray<u8, FY_FRAMES_IN_FLIGHT> bufferFrames{0, 0};
+        Array<VulkanBindingVarBuffer>       valueBuffer{}; //internal buffers created for "SetValue"
 
         void SetTexture(const Texture& texture) override;
         void SetTextureView(const TextureView& textureView) override;
@@ -76,7 +87,7 @@ namespace Fyrion
         HashMap<u32, DescriptorLayout> descriptorLayoutLookup{};
 
         //binding set values
-        HashMap<String, SharedPtr<VulkanBindingVar>> bindingVars;
+        HashMap<String, VulkanBindingVar*> bindingVars;
 
         //runtime vulkan data
         HashMap<u32, SharedPtr<VulkanDescriptorSet>> descriptorSets{};

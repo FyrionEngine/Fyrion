@@ -21,6 +21,7 @@ namespace Fyrion
             for (auto& data : descriptorIt.second->data)
             {
                 vkDestroyDescriptorSetLayout(vulkanDevice.device, data.descriptorSetLayout, nullptr);
+                vkFreeDescriptorSets(vulkanDevice.device, vulkanDevice.descriptorPool, 1, &data.descriptorSet);
             }
         }
 
@@ -33,9 +34,9 @@ namespace Fyrion
         //it should recreate the bindingVars but keep the original values
         //note: never remove a bindingVar, even if it's not present anymore in the shader.
         auto oldBindingVar = Traits::Move(bindingVars);
-        for(const auto& bindingVarIt: oldBindingVar)
+        for (const auto& bindingVarIt : oldBindingVar)
         {
-            VulkanBindingVar* oldVar = bindingVarIt.second.Get();
+            VulkanBindingVar* oldVar = bindingVarIt.second;
 
             VulkanBindingVar* newVar = static_cast<VulkanBindingVar*>(GetVar(bindingVarIt.first));
             newVar->texture = oldVar->texture;
@@ -73,6 +74,11 @@ namespace Fyrion
     {
         shaderAsset->RemoveBindingSetDependency(this);
 
+        for (auto& bindingVar : bindingVars)
+        {
+            vulkanDevice.allocator.DestroyAndFree(bindingVar.second);
+        }
+
         for (auto& descriptorIt : descriptorSets)
         {
             for (auto& data : descriptorIt.second->data)
@@ -85,18 +91,86 @@ namespace Fyrion
 
     void VulkanDescriptorSet::MarkDirty()
     {
-        data[frames[vulkanDevice.currentFrame]].dirty = true;
+        for (auto& d : data)
+        {
+            d.dirty = true;
+        }
+    }
+
+    void VulkanDescriptorSet::CheckDescriptorSetData()
+    {
+        if (data.Empty() || data[frames[vulkanDevice.currentFrame]].frame != vulkanDevice.currentFrame)
+        {
+
+            usize size = data.Size();
+
+            DescriptorLayout& descriptorLayout = bindingSet.descriptorLayoutLookup[set];
+
+            frames[vulkanDevice.currentFrame] = this->data.Size();
+            VulkanDescriptorSetData& newData = this->data.EmplaceBack();
+            newData.frame = vulkanDevice.currentFrame;
+
+            bool hasRuntimeArray = false;
+            Vulkan::CreateDescriptorSetLayout(vulkanDevice.device, descriptorLayout, &newData.descriptorSetLayout, &hasRuntimeArray);
+
+            VkDescriptorSetAllocateInfo allocInfo{};
+            allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+            allocInfo.descriptorPool = vulkanDevice.descriptorPool;
+            allocInfo.descriptorSetCount = 1;
+            allocInfo.pSetLayouts = &newData.descriptorSetLayout;
+
+            VkDescriptorSetVariableDescriptorCountAllocateInfoEXT countInfo{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO_EXT};
+
+            u32 maxBinding = MaxBindlessResources - 1;
+            countInfo.descriptorSetCount = 1;
+            countInfo.pDescriptorCounts = &maxBinding;
+
+            if (hasRuntimeArray && vulkanDevice.deviceFeatures.bindlessSupported)
+            {
+                allocInfo.pNext = &countInfo;
+            }
+
+            VkResult result = vkAllocateDescriptorSets(vulkanDevice.device, &allocInfo, &newData.descriptorSet);
+
+            if (result == VK_ERROR_OUT_OF_POOL_MEMORY || result == VK_ERROR_FRAGMENTED_POOL)
+            {
+                //TODO -- needs a pool of "descriptor pool"
+                vulkanDevice.logger.Error("VK_ERROR_OUT_OF_POOL_MEMORY");
+            }
+            else if (result != VK_SUCCESS)
+            {
+                vulkanDevice.logger.Error("Error on vkAllocateDescriptorSets");
+            }
+
+            bindingVars.Resize(descriptorLayout.bindings.Size());
+            descriptorWrites.Resize(descriptorLayout.bindings.Size());
+            descriptorImageInfos.Resize(descriptorLayout.bindings.Size());
+            descriptorBufferInfos.Resize(descriptorLayout.bindings.Size());
+
+            for (int i = 0; i < descriptorLayout.bindings.Size(); ++i)
+            {
+                const DescriptorBinding& descriptorBinding = descriptorLayout.bindings[i];
+
+                VulkanBindingVar* bindingVar = bindingSet.bindingVars.Emplace(descriptorBinding.name, vulkanDevice.allocator.Alloc<VulkanBindingVar>(bindingSet)).first->second;
+                bindingVar->descriptorSet = this;
+                bindingVar->binding = descriptorBinding.binding;
+                bindingVar->descriptorType = descriptorBinding.descriptorType;
+                bindingVar->size = descriptorBinding.size;
+                bindingVars[i] = bindingVar;
+            }
+        }
     }
 
     VulkanBindingVar::~VulkanBindingVar()
     {
-        for(VulkanBuffer& vulkanBuffer : valueBuffer)
+        for (VulkanBindingVarBuffer& bindingVarBuffer : valueBuffer)
         {
-            if (vulkanBuffer.buffer && vulkanBuffer.allocation)
+            if (bindingVarBuffer.buffer.buffer && bindingVarBuffer.buffer.allocation)
             {
-                vmaDestroyBuffer(descriptorSet->vulkanDevice.vmaAllocator, vulkanBuffer.buffer, vulkanBuffer.allocation);
+                vmaDestroyBuffer(bindingSet.vulkanDevice.vmaAllocator, bindingVarBuffer.buffer.buffer, bindingVarBuffer.buffer.allocation);
             }
         }
+        valueBuffer.Clear();
     }
 
     void VulkanBindingVar::SetTexture(const Texture& p_texture)
@@ -115,7 +189,6 @@ namespace Fyrion
             texture = {};
             MarkDirty();
         }
-
     }
 
     void VulkanBindingVar::SetTextureView(const TextureView& p_textureView)
@@ -147,8 +220,7 @@ namespace Fyrion
 
     void VulkanBindingVar::SetValue(ConstPtr ptr, usize size)
     {
-        //TODO check if that's a different frame? and if there is already
-        if (valueBuffer.Empty())
+        if (valueBuffer.Empty() || valueBuffer[bufferFrames[bindingSet.vulkanDevice.currentFrame]].frame != bindingSet.vulkanDevice.currentFrame)
         {
             VkBufferCreateInfo bufferInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
             bufferInfo.size = size;
@@ -159,19 +231,23 @@ namespace Fyrion
             vmaAllocInfo.usage = VMA_MEMORY_USAGE_AUTO;
             vmaAllocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
 
-            VulkanBuffer& vulkanBuffer = valueBuffer.EmplaceBack();
+            bufferFrames[bindingSet.vulkanDevice.currentFrame] = valueBuffer.Size();
+            VulkanBindingVarBuffer& bindingVarBuffer = valueBuffer.EmplaceBack();
+            bindingVarBuffer.frame = bindingSet.vulkanDevice.currentFrame;
+
+            VulkanBuffer& vulkanBuffer = bindingVarBuffer.buffer;
             vulkanBuffer.bufferCreation.size = size;
 
-            vmaCreateBuffer(descriptorSet->vulkanDevice.vmaAllocator,
-                &bufferInfo,
-                &vmaAllocInfo,
-                &vulkanBuffer.buffer,
-                &vulkanBuffer.allocation,
-                &vulkanBuffer.allocInfo);
+            vmaCreateBuffer(bindingSet.vulkanDevice.vmaAllocator,
+                            &bufferInfo,
+                            &vmaAllocInfo,
+                            &vulkanBuffer.buffer,
+                            &vulkanBuffer.allocation,
+                            &vulkanBuffer.allocInfo);
         }
 
-        VulkanBuffer& vulkanBuffer =  valueBuffer[0];
-        char* memory = static_cast<char*>(vulkanBuffer.allocInfo.pMappedData);
+        VulkanBuffer& vulkanBuffer = valueBuffer[bufferFrames[bindingSet.vulkanDevice.currentFrame]].buffer;
+        char*         memory = static_cast<char*>(vulkanBuffer.allocInfo.pMappedData);
         MemCopy(memory, ptr, size);
     }
 
@@ -192,7 +268,7 @@ namespace Fyrion
             auto varDescriptorSetIt = valueDescriptorSetLookup.Find(name);
             if (varDescriptorSetIt == valueDescriptorSetLookup.end())
             {
-                return bindingVars.Emplace(name, MakeShared<VulkanBindingVar>(*this)).first->second.Get();
+                return bindingVars.Emplace(name, vulkanDevice.allocator.Alloc<VulkanBindingVar>(*this)).first->second;
             }
 
             u32 set = varDescriptorSetIt->second;
@@ -202,75 +278,23 @@ namespace Fyrion
             //if there is no VulkanDescriptorSet for the attribute, create one.
             if (descriptorSetIt == descriptorSets.end())
             {
-                descriptorSetIt = descriptorSets.Emplace(set, MakeShared<VulkanDescriptorSet>(vulkanDevice)).first;
+                descriptorSetIt = descriptorSets.Emplace(set, MakeShared<VulkanDescriptorSet>(set, vulkanDevice, *this)).first;
             }
-
-            DescriptorLayout& descriptorLayout = descriptorLayoutLookup[set];
 
             SharedPtr<VulkanDescriptorSet> vulkanDescriptorSet = descriptorSetIt->second;
-
-
-            //TODO check if that's a different frame? and if there is already
-            //vulkanDescriptorSet->data[vulkanDescriptorSet->frame[vulkanDevice.currentFrame]];
-
-            if (vulkanDescriptorSet->data.Empty())
-            {
-                VulkanDescriptorSetData& data = vulkanDescriptorSet->data.EmplaceBack();
-                data.frame = vulkanDevice.currentFrame;
-
-                bool hasRuntimeArray = false;
-                Vulkan::CreateDescriptorSetLayout(vulkanDevice.device, descriptorLayout, &data.descriptorSetLayout, &hasRuntimeArray);
-
-                VkDescriptorSetAllocateInfo allocInfo{};
-                allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-                allocInfo.descriptorPool = vulkanDevice.descriptorPool;
-                allocInfo.descriptorSetCount = 1;
-                allocInfo.pSetLayouts = &data.descriptorSetLayout;
-
-                VkDescriptorSetVariableDescriptorCountAllocateInfoEXT countInfo{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO_EXT};
-
-                u32 maxBinding = MaxBindlessResources - 1;
-                countInfo.descriptorSetCount = 1;
-                countInfo.pDescriptorCounts = &maxBinding;
-
-                if (hasRuntimeArray && vulkanDevice.deviceFeatures.bindlessSupported)
-                {
-                    allocInfo.pNext = &countInfo;
-                }
-
-                VkResult result = vkAllocateDescriptorSets(vulkanDevice.device, &allocInfo, &data.descriptorSet);
-
-                if (result == VK_ERROR_OUT_OF_POOL_MEMORY || result == VK_ERROR_FRAGMENTED_POOL)
-                {
-                    //TODO -- needs a pool of "descriptor pool"
-                    vulkanDevice.logger.Error("VK_ERROR_OUT_OF_POOL_MEMORY");
-                }
-                else if (result != VK_SUCCESS)
-                {
-                    vulkanDevice.logger.Error("Error on vkAllocateDescriptorSets");
-                }
-
-                vulkanDescriptorSet->bindingVars.Resize(descriptorLayout.bindings.Size());
-                vulkanDescriptorSet->descriptorWrites.Resize(descriptorLayout.bindings.Size());
-                vulkanDescriptorSet->descriptorImageInfos.Resize(descriptorLayout.bindings.Size());
-                vulkanDescriptorSet->descriptorBufferInfos.Resize(descriptorLayout.bindings.Size());
-
-                for (int i = 0; i < descriptorLayout.bindings.Size(); ++i)
-                {
-                    const DescriptorBinding& descriptorBinding = descriptorLayout.bindings[i];
-
-                    VulkanBindingVar* bindingVar = bindingVars.Emplace(descriptorBinding.name, MakeShared<VulkanBindingVar>(*this)).first->second.Get();
-                    bindingVar->descriptorSet = vulkanDescriptorSet;
-                    bindingVar->binding = descriptorBinding.binding;
-                    bindingVar->descriptorType = descriptorBinding.descriptorType;
-                    bindingVar->size = descriptorBinding.size;
-                    vulkanDescriptorSet->bindingVars[i] = bindingVar;
-                }
-            }
-
+            vulkanDescriptorSet->CheckDescriptorSetData();
             it = bindingVars.Find(name);
+            if (it != bindingVars.end())
+            {
+                return it->second;
+            }
         }
-        return it->second.Get();
+
+        if (it->second->descriptorSet)
+        {
+            it->second->descriptorSet->CheckDescriptorSetData();
+        }
+        return it->second;
     }
 
     void VulkanBindingSet::Bind(VulkanCommands& cmd, const PipelineState& pipeline)
@@ -281,7 +305,6 @@ namespace Fyrion
         {
             VulkanDescriptorSet*     descriptorSet = descriptorIt.second.Get();
             VulkanDescriptorSetData& data = descriptorSet->data[descriptorIt.second->frames[vulkanDevice.currentFrame]];
-
             if (data.dirty)
             {
                 for (int b = 0; b < descriptorSet->descriptorWrites.Size(); ++b)
@@ -314,13 +337,15 @@ namespace Fyrion
                             }
                             else
                             {
-                                descriptorSet->descriptorImageInfos[b].imageView = static_cast<VulkanTextureView*>(static_cast<VulkanTexture*>(Graphics::GetDefaultTexture().handler)->textureView.handler)->imageView;
+                                descriptorSet->descriptorImageInfos[b].imageView = static_cast<VulkanTextureView*>(static_cast<VulkanTexture*>(Graphics::GetDefaultTexture().handler)->textureView.
+                                    handler)->imageView;
                             }
 
-                            descriptorSet->descriptorImageInfos[b].imageLayout = depthFormat ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL :
-                                vulkanBindingVar->descriptorType == DescriptorType::SampledImage
-                                    ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-                                    : VK_IMAGE_LAYOUT_GENERAL;
+                            descriptorSet->descriptorImageInfos[b].imageLayout = depthFormat
+                                                                                     ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
+                                                                                     : vulkanBindingVar->descriptorType == DescriptorType::SampledImage
+                                                                                     ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                                                                                     : VK_IMAGE_LAYOUT_GENERAL;
 
                             writeDescriptorSet.pImageInfo = &descriptorSet->descriptorImageInfos[b];
                             break;
@@ -344,7 +369,7 @@ namespace Fyrion
                             }
                             else if (!vulkanBindingVar->valueBuffer.Empty())
                             {
-                                VulkanBuffer& vulkanBuffer = vulkanBindingVar->valueBuffer[0];
+                                VulkanBuffer& vulkanBuffer = vulkanBindingVar->valueBuffer[vulkanBindingVar->bufferFrames[vulkanDevice.currentFrame]].buffer;
                                 descriptorSet->descriptorBufferInfos[b].offset = 0;
                                 descriptorSet->descriptorBufferInfos[b].buffer = vulkanBuffer.buffer;
                                 descriptorSet->descriptorBufferInfos[b].range = vulkanBuffer.bufferCreation.size;

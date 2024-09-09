@@ -134,6 +134,8 @@ namespace Fyrion
             Graphics::DestroyComputePipelineState(pipelineState);
             Graphics::DestroyBindingSet(bindingSet);
             Graphics::DestroyTexture(noiseTexture);
+            Graphics::DestroySampler(colorSampler);
+            Graphics::DestroySampler(noiseSampler);
         }
 
         static void RegisterType(NativeTypeHandler<SSAOPass>& type)

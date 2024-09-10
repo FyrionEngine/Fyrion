@@ -17,6 +17,7 @@ namespace Fyrion
         virtual PipelineState   CreateGraphicsPipelineState(const GraphicsPipelineCreation& graphicsPipelineCreation) = 0;
         virtual PipelineState   CreateComputePipelineState(const ComputePipelineCreation& computePipelineCreation) = 0;
         virtual BindingSet*     CreateBindingSet(ShaderAsset* shaderAsset) = 0;
+        virtual BindingSet*     CreateBindingSet(Span<DescriptorLayout> descriptorLayouts) = 0;
         virtual void            DestroySwapchain(const Swapchain& swapchain) = 0;
         virtual void            DestroyRenderPass(const RenderPass& renderPass) = 0;
         virtual void            DestroyBuffer(const Buffer& buffer) = 0;

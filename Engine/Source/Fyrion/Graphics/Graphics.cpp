@@ -124,6 +124,11 @@ namespace Fyrion
         return renderDevice->CreateBindingSet(shaderAsset);
     }
 
+    BindingSet* Graphics::CreateBindingSet(Span<DescriptorLayout> descriptorLayouts)
+    {
+        return renderDevice->CreateBindingSet(descriptorLayouts);
+    }
+
     void Graphics::DestroySwapchain(const Swapchain& swapchain)
     {
         renderDevice->DestroySwapchain(swapchain);

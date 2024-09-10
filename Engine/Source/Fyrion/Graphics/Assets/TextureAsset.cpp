@@ -5,7 +5,6 @@
 #include "Fyrion/Core/Attributes.hpp"
 #include "Fyrion/Core/Image.hpp"
 #include "Fyrion/Graphics/Graphics.hpp"
-#include "Fyrion/Graphics/RenderUtils.hpp"
 #include "Fyrion/Graphics/Assets/ShaderAsset.hpp"
 
 namespace Fyrion

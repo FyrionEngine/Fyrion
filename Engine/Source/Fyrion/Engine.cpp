@@ -13,6 +13,7 @@
 #include "Fyrion/IO/FileSystem.hpp"
 #include "Fyrion/IO/Path.hpp"
 #include "Fyrion/Core/ArgParser.hpp"
+#include "Graphics/RenderStorage.hpp"
 #include "Graphics/Assets/TextureAsset.hpp"
 
 namespace Fyrion
@@ -112,6 +113,8 @@ namespace Fyrion
 
         onInitHandler.Invoke();
 
+        RenderStorage::Init();
+
         running = true;
     }
 
@@ -143,6 +146,8 @@ namespace Fyrion
 
             if (Extent extent = Platform::GetWindowExtent(window))
             {
+                RenderStorage::UpdateResources();
+
                 RenderCommands& cmd = GraphicsBeginFrame();
                 cmd.Begin();
 

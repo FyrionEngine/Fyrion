@@ -6,6 +6,8 @@
 
 namespace Fyrion
 {
+    struct RenderAssetHandler;
+
     enum class TextureType
     {
         Texture2D,
@@ -54,6 +56,9 @@ namespace Fyrion
         void SetTextureType(TextureType textureType);
 
         static void RegisterType(NativeTypeHandler<TextureAsset>& type);
+
+
+        RenderAssetHandler* handler = nullptr;
 
     private:
         TextureImportSettings textureImportSettings{};

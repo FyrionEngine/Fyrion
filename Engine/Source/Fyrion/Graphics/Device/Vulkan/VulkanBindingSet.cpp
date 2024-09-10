@@ -8,11 +8,14 @@
 namespace Fyrion
 {
     VulkanBindingSet::VulkanBindingSet(ShaderAsset* shaderAsset, VulkanDevice& vulkanDevice) : vulkanDevice(vulkanDevice),
-                                                                                               shaderAsset(shaderAsset)
+                                                                                               shaderAsset(shaderAsset),
+                                                                                               descriptorLayouts(shaderAsset->GetShaderInfo().descriptors)
     {
         shaderAsset->AddBindingSetDependency(this);
         LoadInfo();
     }
+
+    VulkanBindingSet::VulkanBindingSet(Span<DescriptorLayout> descriptorLayouts, VulkanDevice& vulkanDevice) : vulkanDevice(vulkanDevice), descriptorLayouts(descriptorLayouts) {}
 
     void VulkanBindingSet::Reload()
     {
@@ -49,9 +52,7 @@ namespace Fyrion
 
     void VulkanBindingSet::LoadInfo()
     {
-        const ShaderInfo& shaderInfo = shaderAsset->GetShaderInfo();
-
-        for (const DescriptorLayout& descriptorLayout : shaderInfo.descriptors)
+        for (const DescriptorLayout& descriptorLayout : descriptorLayouts)
         {
             auto setIt = descriptorLayoutLookup.Find(descriptorLayout.set);
 
@@ -72,7 +73,11 @@ namespace Fyrion
 
     VulkanBindingSet::~VulkanBindingSet()
     {
-        shaderAsset->RemoveBindingSetDependency(this);
+        if (shaderAsset)
+        {
+            shaderAsset->RemoveBindingSetDependency(this);
+        }
+
 
         for (auto& bindingVar : bindingVars)
         {
@@ -101,7 +106,6 @@ namespace Fyrion
     {
         if (data.Empty() || data[frames[vulkanDevice.currentFrame]].frame != vulkanDevice.currentFrame)
         {
-
             usize size = data.Size();
 
             DescriptorLayout& descriptorLayout = bindingSet.descriptorLayoutLookup[set];

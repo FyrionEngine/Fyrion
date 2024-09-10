@@ -14,6 +14,7 @@ namespace Fyrion::Graphics
     FY_API PipelineState   CreateGraphicsPipelineState(const GraphicsPipelineCreation& graphicsPipelineCreation);
     FY_API PipelineState   CreateComputePipelineState(const ComputePipelineCreation& computePipelineCreation);
     FY_API BindingSet*     CreateBindingSet(ShaderAsset* shaderAsset);
+    FY_API BindingSet*     CreateBindingSet(Span<DescriptorLayout> descriptorLayouts);
     FY_API void            DestroySwapchain(const Swapchain& swapchain);
     FY_API void            DestroyRenderPass(const RenderPass& renderPass);
     FY_API void            DestroyBuffer(const Buffer& buffer);

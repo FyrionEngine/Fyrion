@@ -26,6 +26,7 @@ namespace Fyrion
         VkDevice                   device{};
         VmaAllocator               vmaAllocator{};
         VkDescriptorPool           descriptorPool{};
+        VkDescriptorPool           bindlessDescriptorPool{};
         bool                       maintenance4Available = false;
         bool                       debugUtilsExtensionPresent = false;
         bool                       deviceAddressAvailable = false;
@@ -71,6 +72,7 @@ namespace Fyrion
         PipelineState   CreateGraphicsPipelineState(const GraphicsPipelineCreation& graphicsPipelineCreation) override;
         PipelineState   CreateComputePipelineState(const ComputePipelineCreation& computePipelineCreation) override;
         BindingSet*     CreateBindingSet(ShaderAsset* shaderAsset) override;
+        BindingSet*     CreateBindingSet(Span<DescriptorLayout> descriptorLayouts) override;
         void            DestroySwapchain(const Swapchain& swapchain) override;
         void            DestroyRenderPass(const RenderPass& renderPass) override;
         void            DestroyBuffer(const Buffer& buffer) override;

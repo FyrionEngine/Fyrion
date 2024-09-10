@@ -4,6 +4,7 @@
 #include "Fyrion/Core/Color.hpp"
 #include "Fyrion/Graphics/GraphicsTypes.hpp"
 #include "Fyrion/Core/Math.hpp"
+#include "Fyrion/Graphics/RenderAssetHandler.hpp"
 
 
 namespace Fyrion
@@ -51,6 +52,7 @@ namespace Fyrion
 
         static void RegisterType(NativeTypeHandler<MaterialAsset>& type);
 
+        RenderAssetHandler* handler = nullptr;
     private:
         Color         baseColor{Color::WHITE};
         TextureAsset* baseColorTexture{};
@@ -68,6 +70,6 @@ namespace Fyrion
         AlphaMode     alphaMode{};
         Vec2          uvScale{1.0f, 1.0f};
 
-        BindingSet*   bindingSet = nullptr;
+        BindingSet* bindingSet = nullptr;
     };
 }

@@ -17,4 +17,6 @@ namespace Fyrion::RenderStorage
     FY_API void                 AddDirectionalLight(usize address, const DirectionalLight& directionalLight);
     FY_API void                 RemoveDirectionalLight(usize address);
     FY_API DirectionalLight*    GetDirectionalLight();
+    FY_API void                 Init();
+    FY_API void                 UpdateResources();
 }

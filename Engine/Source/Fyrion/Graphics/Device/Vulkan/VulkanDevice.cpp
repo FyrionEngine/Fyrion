@@ -25,6 +25,11 @@ namespace Fyrion
             vkDestroyFence(device, inFlightFences[i], nullptr);
         }
 
+        if (bindlessDescriptorPool)
+        {
+            vkDestroyDescriptorPool(device, bindlessDescriptorPool, nullptr);
+        }
+
         vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 
         vkDestroyCommandPool(device, temporaryCmd->commandPool, nullptr);
@@ -414,27 +419,41 @@ namespace Fyrion
             defaultCommands[j] = MakeShared<VulkanCommands>(*this);
         }
 
-        VkDescriptorPoolSize sizes[5] = {
-            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 500},
-            {VK_DESCRIPTOR_TYPE_SAMPLER, 500},
-            {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 500},
-            {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 500},
-            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 500}
-        };
+        //default descriptor pool
+        {
+            VkDescriptorPoolSize sizes[5] = {
+                {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 500},
+                {VK_DESCRIPTOR_TYPE_SAMPLER, 500},
+                {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 500},
+                {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 500},
+                {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 500}
+            };
 
-        VkDescriptorPoolCreateInfo poolInfo{};
-        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.poolSizeCount = 5;
-        poolInfo.pPoolSizes = sizes;
-        poolInfo.maxSets = 500;
-        poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+            VkDescriptorPoolCreateInfo poolInfo{};
+            poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+            poolInfo.poolSizeCount = 5;
+            poolInfo.pPoolSizes = sizes;
+            poolInfo.maxSets = 500;
+            poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+            vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool);
+        }
+
 
         if (deviceFeatures.bindlessSupported)
         {
-            poolInfo.flags |= VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT;
+            VkDescriptorPoolSize sizes[2] = {
+                {VK_DESCRIPTOR_TYPE_SAMPLER, MaxBindlessResources},
+                {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, MaxBindlessResources},
+            };
+
+            VkDescriptorPoolCreateInfo poolInfo{VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO};
+            poolInfo.poolSizeCount = 2;
+            poolInfo.pPoolSizes = sizes;
+            poolInfo.maxSets = MaxBindlessResources * 2;
+            poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT | VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT;
+            vkCreateDescriptorPool(device, &poolInfo, nullptr, &bindlessDescriptorPool);
         }
 
-        vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool);
         vkGetDeviceQueue(device, graphicsFamily, 0, &graphicsQueue);
         vkGetDeviceQueue(device, presentFamily, 0, &presentQueue);
 
@@ -1283,6 +1302,11 @@ namespace Fyrion
     BindingSet* VulkanDevice::CreateBindingSet(ShaderAsset* shaderAsset)
     {
         return allocator.Alloc<VulkanBindingSet>(shaderAsset, *this);
+    }
+
+    BindingSet* VulkanDevice::CreateBindingSet(Span<DescriptorLayout> descriptorLayouts)
+    {
+        return allocator.Alloc<VulkanBindingSet>(descriptorLayouts, *this);
     }
 
     void VulkanDevice::DestroySwapchain(const Swapchain& swapchain)

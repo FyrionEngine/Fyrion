@@ -79,8 +79,9 @@ namespace Fyrion
 
     struct VulkanBindingSet : BindingSet
     {
-        VulkanDevice& vulkanDevice;
-        ShaderAsset*  shaderAsset;
+        VulkanDevice&          vulkanDevice;
+        ShaderAsset*           shaderAsset;
+        Span<DescriptorLayout> descriptorLayouts;
 
         //shader reflection data
         HashMap<String, u32>           valueDescriptorSetLookup{};
@@ -93,6 +94,7 @@ namespace Fyrion
         HashMap<u32, SharedPtr<VulkanDescriptorSet>> descriptorSets{};
 
         VulkanBindingSet(ShaderAsset* shaderAsset, VulkanDevice& vulkanDevice);
+        VulkanBindingSet(Span<DescriptorLayout> descriptorLayouts, VulkanDevice& vulkanDevice);
         ~VulkanBindingSet() override;
 
         BindingVar* GetVar(const StringView& name) override;

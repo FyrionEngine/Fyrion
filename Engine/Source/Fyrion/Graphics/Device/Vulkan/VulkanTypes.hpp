@@ -11,7 +11,7 @@ namespace Fyrion
 {
     class VulkanDevice;
 
-    static const u32 MaxBindlessResources = 16536;
+    static const u32 MaxBindlessResources = 8192;
 
     struct VulkanSwapChainSupportDetails
     {

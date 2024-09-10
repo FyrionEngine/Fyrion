@@ -28,6 +28,7 @@ namespace Fyrion
         VkDescriptorPool           descriptorPool{};
         bool                       maintenance4Available = false;
         bool                       debugUtilsExtensionPresent = false;
+        bool                       deviceAddressAvailable = false;
         Array<Adapter>             adapters{};
 
         //raytrace

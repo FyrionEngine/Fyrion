@@ -1,6 +1,6 @@
 #define SSAO_KERNEL_ARRAY_SIZE 64
 #define SSAO_KERNEL_SIZE 64
-#define SSAO_RADIUS 0.3
+#define SSAO_RADIUS 0.5
 
 struct UBOSSAOKernel
 {

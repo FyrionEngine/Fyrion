@@ -162,11 +162,16 @@ namespace Fyrion
 
         deviceFeatures.multiDrawIndirectSupported = vulkanDeviceFeatures.multiDrawIndirect;
 
-        VkPhysicalDeviceDescriptorIndexingFeatures indexingFeatures{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES, nullptr};
-        VkPhysicalDeviceFeatures2                  deviceFeatures2{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, &indexingFeatures};
-        vkGetPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures2);
-        //TODO check other extensions for bindless.
-        deviceFeatures.bindlessSupported = false; //indexingFeatures.descriptorBindingPartiallyBound && indexingFeatures.runtimeDescriptorArray;
+        {
+            VkPhysicalDeviceDescriptorIndexingFeatures indexingFeatures{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES, nullptr};
+            VkPhysicalDeviceFeatures2                  deviceFeatures2{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, &indexingFeatures};
+            vkGetPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures2);
+            deviceFeatures.bindlessSupported =
+                indexingFeatures.descriptorBindingPartiallyBound &&
+                indexingFeatures.runtimeDescriptorArray &&
+                indexingFeatures.descriptorBindingSampledImageUpdateAfterBind &&
+                indexingFeatures.descriptorBindingStorageImageUpdateAfterBind;
+        }
 
 
         uint32_t extensionCount;
@@ -176,6 +181,7 @@ namespace Fyrion
 
         maintenance4Available = Vulkan::QueryDeviceExtensions(availableExtensions, VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
         deviceFeatures.raytraceSupported = Vulkan::QueryDeviceExtensions(availableExtensions, VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
+        deviceAddressAvailable = Vulkan::QueryDeviceExtensions(availableExtensions, VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
 
         if (deviceFeatures.raytraceSupported)
         {
@@ -225,26 +231,7 @@ namespace Fyrion
         FY_ASSERT(graphicsFamily != U32_MAX, "Graphics queue not found");
         FY_ASSERT(presentFamily != U32_MAX, "Present queue not found");
 
-
         float queuePriority = 1.0f;
-
-        //**raytrace***
-        VkPhysicalDeviceRayQueryFeaturesKHR deviceRayQueryFeaturesKhr{};
-        deviceRayQueryFeaturesKhr.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
-        deviceRayQueryFeaturesKhr.pNext = nullptr;
-        deviceRayQueryFeaturesKhr.rayQuery = VK_TRUE;
-
-        VkPhysicalDeviceAccelerationStructureFeaturesKHR deviceAccelerationStructureFeaturesKhr{};
-
-        deviceAccelerationStructureFeaturesKhr.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
-        deviceAccelerationStructureFeaturesKhr.pNext = &deviceRayQueryFeaturesKhr;
-        deviceAccelerationStructureFeaturesKhr.accelerationStructure = VK_TRUE;
-
-        VkPhysicalDeviceRayTracingPipelineFeaturesKHR deviceRayTracingPipelineFeatures{};
-        deviceRayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
-        deviceRayTracingPipelineFeatures.pNext = &deviceAccelerationStructureFeaturesKhr;
-        deviceRayTracingPipelineFeatures.rayTracingPipeline = VK_TRUE;
-        //endraytrace.
 
         Array<VkDeviceQueueCreateInfo> queueCreateInfos{};
         if (graphicsFamily != presentFamily)
@@ -270,57 +257,11 @@ namespace Fyrion
             queueCreateInfos[0].pQueuePriorities = &queuePriority;
         }
 
-        VkPhysicalDeviceFeatures physicalDeviceFeatures{};
 
-        if (vulkanDeviceFeatures.samplerAnisotropy)
-        {
-            physicalDeviceFeatures.samplerAnisotropy = VK_TRUE;
-        }
-
-        if (deviceFeatures.multiDrawIndirectSupported)
-        {
-            physicalDeviceFeatures.multiDrawIndirect = VK_TRUE;
-        }
-
-        physicalDeviceFeatures.shaderInt64 = VK_TRUE;
-        physicalDeviceFeatures.fillModeNonSolid = true;
-
-        VkPhysicalDeviceVulkan12Features features12{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
-        features12.bufferDeviceAddress = VK_TRUE;
-
-        VkPhysicalDeviceMaintenance4FeaturesKHR vkPhysicalDeviceMaintenance4FeaturesKhr{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES_KHR};
-        vkPhysicalDeviceMaintenance4FeaturesKhr.maintenance4 = true;
-
-        if (deviceFeatures.raytraceSupported)
-        {
-            vkPhysicalDeviceMaintenance4FeaturesKhr.pNext = &deviceRayTracingPipelineFeatures;
-        }
-
-        if (maintenance4Available)
-        {
-            features12.pNext = &vkPhysicalDeviceMaintenance4FeaturesKhr;
-        }
-
-        if (debugUtilsExtensionPresent)
-        {
-
-        }
-
-        if (deviceFeatures.bindlessSupported)
-        {
-            //TODO do I need all these features?
-            features12.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
-            features12.runtimeDescriptorArray = VK_TRUE;
-            features12.descriptorBindingVariableDescriptorCount = VK_TRUE;
-            features12.descriptorBindingPartiallyBound = VK_TRUE;
-            features12.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
-            features12.descriptorBindingUniformBufferUpdateAfterBind = VK_TRUE;
-        }
 
         VkDeviceCreateInfo createInfo{VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
         createInfo.pQueueCreateInfos = queueCreateInfos.Data();
         createInfo.queueCreateInfoCount = queueCreateInfos.Size();
-        createInfo.pEnabledFeatures = &physicalDeviceFeatures;
 
         Array<const char*> deviceExtensions{};
         deviceExtensions.EmplaceBack(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
@@ -339,8 +280,13 @@ namespace Fyrion
             deviceExtensions.EmplaceBack(VK_KHR_SPIRV_1_4_EXTENSION_NAME);
             deviceExtensions.EmplaceBack(VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME);
             deviceExtensions.EmplaceBack(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
+        }
+
+        if (deviceAddressAvailable)
+        {
             deviceExtensions.EmplaceBack(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
         }
+
 
 #ifdef FY_APPLE
         deviceExtensions.EmplaceBack("VK_KHR_portability_subset");
@@ -360,7 +306,84 @@ namespace Fyrion
             createInfo.enabledLayerCount = 0;
         }
 
-        createInfo.pNext = &features12;
+
+        //--------------  begin feature chain
+        VkPhysicalDeviceFeatures2 deviceFeatures2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
+
+        if (vulkanDeviceFeatures.samplerAnisotropy)
+        {
+            deviceFeatures2.features.samplerAnisotropy = VK_TRUE;
+        }
+
+        if (deviceFeatures.multiDrawIndirectSupported)
+        {
+            deviceFeatures2.features.multiDrawIndirect = VK_TRUE;
+        }
+
+        if (vulkanDeviceFeatures.shaderInt64)
+        {
+            deviceFeatures2.features.shaderInt64 = VK_TRUE;
+        }
+
+        if (vulkanDeviceFeatures.fillModeNonSolid)
+        {
+            deviceFeatures2.features.fillModeNonSolid = true;
+        }
+
+        VkPhysicalDeviceMaintenance4FeaturesKHR vkPhysicalDeviceMaintenance4FeaturesKhr{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES_KHR};
+        vkPhysicalDeviceMaintenance4FeaturesKhr.maintenance4 = true;
+
+        if (maintenance4Available)
+        {
+            vkPhysicalDeviceMaintenance4FeaturesKhr.pNext = deviceFeatures2.pNext;
+            deviceFeatures2.pNext = &vkPhysicalDeviceMaintenance4FeaturesKhr;
+        }
+
+        VkPhysicalDeviceDescriptorIndexingFeatures indexingFeatures{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES, nullptr};
+
+        if (deviceFeatures.bindlessSupported)
+        {
+            indexingFeatures.descriptorBindingPartiallyBound = true;
+            indexingFeatures.runtimeDescriptorArray = true;
+            indexingFeatures.descriptorBindingSampledImageUpdateAfterBind = true;
+            indexingFeatures.descriptorBindingStorageImageUpdateAfterBind = true;
+
+            indexingFeatures.pNext = deviceFeatures2.pNext;
+            deviceFeatures2.pNext = &indexingFeatures;
+        }
+
+
+        VkPhysicalDeviceRayQueryFeaturesKHR deviceRayQueryFeaturesKhr{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR};
+        deviceRayQueryFeaturesKhr.rayQuery = true;
+
+        VkPhysicalDeviceAccelerationStructureFeaturesKHR deviceAccelerationStructureFeaturesKhr{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};
+        deviceAccelerationStructureFeaturesKhr.pNext = &deviceRayQueryFeaturesKhr;
+        deviceAccelerationStructureFeaturesKhr.accelerationStructure = true;
+
+        VkPhysicalDeviceRayTracingPipelineFeaturesKHR deviceRayTracingPipelineFeatures{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
+        deviceRayTracingPipelineFeatures.pNext = &deviceAccelerationStructureFeaturesKhr;
+        deviceRayTracingPipelineFeatures.rayTracingPipeline = true;
+
+        if (deviceFeatures.raytraceSupported)
+        {
+            deviceRayTracingPipelineFeatures.pNext = deviceFeatures2.pNext;
+            deviceFeatures2.pNext = &deviceRayTracingPipelineFeatures;
+        }
+
+
+        VkPhysicalDeviceBufferDeviceAddressFeatures bufferDeviceAddressFeatures{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES};
+        bufferDeviceAddressFeatures.bufferDeviceAddress = true;
+
+        if (deviceAddressAvailable)
+        {
+            bufferDeviceAddressFeatures.pNext = deviceFeatures2.pNext;
+            deviceFeatures2.pNext = &bufferDeviceAddressFeatures;
+        }
+        //--------------  end feature chain
+
+
+        //features12.pNext
+        createInfo.pNext = &deviceFeatures2;
 
         if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS)
         {
@@ -375,7 +398,12 @@ namespace Fyrion
         allocatorInfo.physicalDevice = physicalDevice;
         allocatorInfo.device = device;
         allocatorInfo.instance = instance;
-        allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+
+        if (deviceAddressAvailable)
+        {
+            allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+        }
+
         allocatorInfo.pVulkanFunctions = &vmaVulkanFunctions;
         vmaCreateAllocator(&allocatorInfo, &vmaAllocator);
 
@@ -863,7 +891,7 @@ namespace Fyrion
         vkSamplerInfo.addressModeU = Vulkan::CastTextureAddressMode(samplerCreation.addressMode);
         vkSamplerInfo.addressModeV = vkSamplerInfo.addressModeU;
         vkSamplerInfo.addressModeW = vkSamplerInfo.addressModeU;
-        vkSamplerInfo.anisotropyEnable = samplerCreation.anisotropyEnable;
+        vkSamplerInfo.anisotropyEnable = samplerCreation.anisotropyEnable && vulkanDeviceFeatures.samplerAnisotropy;
         vkSamplerInfo.maxAnisotropy = vulkanDeviceProperties.limits.maxSamplerAnisotropy;
         vkSamplerInfo.borderColor = Vulkan::CasterBorderColor(samplerCreation.borderColor);
         vkSamplerInfo.unnormalizedCoordinates = VK_FALSE;

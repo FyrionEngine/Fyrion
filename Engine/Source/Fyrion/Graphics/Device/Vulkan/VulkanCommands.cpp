@@ -156,6 +156,7 @@ namespace Fyrion
 
     void VulkanCommands::TraceRays(PipelineState pipeline, u32 x, u32 y, u32 z)
     {
+
     }
 
     void VulkanCommands::BeginLabel(const StringView& name, const Vec4& color)

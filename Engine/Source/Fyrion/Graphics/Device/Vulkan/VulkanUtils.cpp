@@ -326,7 +326,7 @@ namespace Fyrion::Vulkan
 		}
 		vkCreateDescriptorSetLayout(vkDevice, &setLayoutCreateInfo, nullptr, descriptorSetLayout);
 
-		if (hasRuntimeArrayValue)
+		if (hasRuntimeArrayValue && hasRuntimeArrays)
 		{
 			*hasRuntimeArrays = hasRuntimeArrayValue;
 		}

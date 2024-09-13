@@ -79,8 +79,6 @@ PSOutput MainPS(VSOutput input)
     float3 baseColor    = material.baseColorAlphaCutOff.rgb;
     float  alphaCutOff   = material.baseColorAlphaCutOff.a;
 
-
-
     float4 color = baseColorTexture.Sample(defaultSampler, uv) * float4(baseColor, 1.0);
 
     if (color.a < alphaCutOff)

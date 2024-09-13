@@ -49,6 +49,7 @@ namespace Fyrion
 
             cmd.BindPipelineState(pipelineState);
             cmd.BindBindingSet(pipelineState, bindingSet);
+            //cmd.BindBindingSet(pipelineState, RenderStorage::GetBindlessTextures());
 
             for (MeshRenderData& meshRenderData : RenderStorage::GetMeshesToRender())
             {

@@ -5,6 +5,7 @@
 #include "Graphics.hpp"
 #include "GraphicsTypes.hpp"
 #include "Assets/MaterialAsset.hpp"
+#include "Fyrion/Engine.hpp"
 #include "Fyrion/Core/HashMap.hpp"
 
 namespace Fyrion
@@ -26,6 +27,7 @@ namespace Fyrion
 
     struct TextureAssetHandler : RenderAssetHandler
     {
+        u64 textureIndex = 0;
         u64 refCount = 0;
 
         void RefIncrease() override
@@ -53,12 +55,17 @@ namespace Fyrion
         Array<MaterialAsset*> pendingLoadingMaterials;
 
         BindingSet* bindlessTextures;
+        BindingVar* textures;
+        u64         textureCount = 0;
 
         void UploadTextureData()
         {
             for (TextureAsset* textureAsset : pendingLoadingTextures)
             {
-                Texture texture = textureAsset->CreateTexture();
+                if (TextureAssetHandler* handler = dynamic_cast<TextureAssetHandler*>(textureAsset->handler))
+                {
+                    textures->SetTextureAt(textureAsset->CreateTexture(), handler->textureIndex);
+                }
             }
             pendingLoadingTextures.Clear();
         }
@@ -69,7 +76,9 @@ namespace Fyrion
             {
                 if (!textureAsset->handler)
                 {
-                    textureAsset->handler = MemoryGlobals::GetDefaultAllocator().Alloc<TextureAssetHandler>();
+                    TextureAssetHandler* textureAssetHandler = MemoryGlobals::GetDefaultAllocator().Alloc<TextureAssetHandler>();
+                    textureAssetHandler->textureIndex = textureCount++;
+                    textureAsset->handler = textureAssetHandler;
                     pendingLoadingTextures.EmplaceBack(textureAsset);
                 }
                 textureAsset->handler->RefIncrease();
@@ -113,10 +122,10 @@ namespace Fyrion
         data.mesh = mesh;
         data.materials = materials;
 
-        for (MaterialAsset* material : materials)
-        {
-            RequestMaterialLoad(material);
-        }
+        // for (MaterialAsset* material : materials)
+        // {
+        //     RequestMaterialLoad(material);
+        // }
     }
 
     Span<MeshRenderData> RenderStorage::GetMeshesToRender()
@@ -166,21 +175,42 @@ namespace Fyrion
         return nullptr;
     }
 
+    BindingSet* RenderStorage::GetBindlessTextures()
+    {
+        return bindlessTextures;
+    }
+
+
+    void RenderStorageDestroy()
+    {
+        // if (bindlessTextures)
+        // {
+        //     Graphics::DestroyBindingSet(bindlessTextures);
+        //     bindlessTextures = nullptr;
+        // }
+    }
+
     void RenderStorage::Init()
     {
-        DescriptorLayout descriptorLayout{
-            .set = 1,
-            .bindings = {
-                DescriptorBinding
-                {
-                    .binding = 0,
-                    .descriptorType = DescriptorType::SampledImage,
-                    .renderType = RenderType::RuntimeArray
-                }
-            }
-        };
-        bindlessTextures = Graphics::CreateBindingSet({descriptorLayout});
+        // DescriptorLayout descriptorLayout{
+        //     .set = 4,
+        //     .bindings = {
+        //         DescriptorBinding
+        //         {
+        //             .binding = 0,
+        //             .name = "textures",
+        //             .descriptorType = DescriptorType::SampledImage,
+        //             .renderType = RenderType::RuntimeArray,
+        //             .shaderStage = ShaderStage::Pixel
+        //         }
+        //     }
+        // };
+        // bindlessTextures = Graphics::CreateBindingSet({descriptorLayout});
+        // textures = bindlessTextures->GetVar("textures");
+        //
+        // Event::Bind<OnShutdown, RenderStorageDestroy>();
     }
+
 
     void RenderStorage::UpdateResources()
     {

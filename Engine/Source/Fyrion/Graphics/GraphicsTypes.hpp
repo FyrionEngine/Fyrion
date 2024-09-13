@@ -650,17 +650,24 @@ namespace Fyrion
         Array<MaterialAsset*> materials{};
     };
 
+    struct TextureArrayElement
+    {
+        Texture texture;
+        usize   index;
+    };
+
     struct BindingVar;
 
     struct FY_API BindingVar
     {
         virtual ~BindingVar() = default;
 
-        virtual void SetTexture(const Texture& texture) = 0;
-        virtual void SetTextureView(const TextureView& textureView) = 0;
-        virtual void SetSampler(const Sampler& sampler) = 0;
-        virtual void SetBuffer(const Buffer& buffer) = 0;
-        virtual void SetValue(ConstPtr ptr, usize size) = 0;
+        virtual void  SetTexture(const Texture& texture) = 0;
+        virtual void  SetTextureAt(const Texture& texture, usize index) = 0;
+        virtual void  SetTextureView(const TextureView& textureView) = 0;
+        virtual void  SetSampler(const Sampler& sampler) = 0;
+        virtual void  SetBuffer(const Buffer& buffer) = 0;
+        virtual void  SetValue(ConstPtr ptr, usize size) = 0;
     };
 
     struct FY_API BindingSet

@@ -3,6 +3,21 @@ set(FT_DISABLE_HARFBUZZ ON)
 
 add_subdirectory(ThirdParty)
 
+
+
+cmrc_add_resource_library(
+				FyrionContent
+				ALIAS FyrionContent::RS
+				NAMESPACE StaticContent
+
+				Content/Fonts/DejaVuSans.ttf
+				Content/Fonts/fa-solid-900.otf
+
+				Content/Images/Logo.jpeg
+)
+
+
+
 file(GLOB_RECURSE FYRION_ENGINE_SOURCES Source/*.hpp Source/*.cpp Source/*.h Source/*.c)
 add_library(FyrionEngine SHARED ${FYRION_ENGINE_SOURCES})
 
@@ -12,7 +27,7 @@ target_include_directories(FyrionEngine PRIVATE ThirdParty/dxc/include)
 
 target_compile_definitions(FyrionEngine PUBLIC FMT_LIB_EXPORT=1)
 
-target_link_libraries(FyrionEngine PRIVATE mimalloc glfw vma volk vulkan-sdk freetype nfd SPIRV-Reflect cpptrace::cpptrace yyjson stb cgltf mikktspace)
+target_link_libraries(FyrionEngine PRIVATE mimalloc glfw vma volk vulkan-sdk freetype nfd SPIRV-Reflect cpptrace::cpptrace yyjson stb cgltf mikktspace FyrionContent::RS)
 
 add_binary_file(FyrionEngine ThirdParty/dxc dxcompiler)
 

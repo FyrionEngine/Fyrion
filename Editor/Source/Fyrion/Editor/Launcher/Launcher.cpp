@@ -2,8 +2,7 @@
 
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Asset/AssetManager.hpp"
-#include "Fyrion/Asset/AssetTypes.hpp"
-#include "Fyrion/Graphics/Assets/TextureAsset.hpp"
+#include "Fyrion/Asset/Asset.hpp"
 #include "Fyrion/ImGui/IconsFontAwesome6.h"
 #include "Fyrion/ImGui/ImGui.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
@@ -11,6 +10,7 @@
 #include "Fyrion/Platform/Platform.hpp"
 
 #include "LauncherTypes.hpp"
+#include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Core/StringUtils.hpp"
 #include "Fyrion/Editor/Editor.hpp"
 
@@ -28,7 +28,6 @@ namespace Fyrion
         String                   searchText{};
         String                   appFolder{};
         String                   settingsFolder{};
-        DirectoryAssetHandler*   settingsDir = nullptr;
         ProjectLauncherSettings* projectLauncherSettings = nullptr;
 
         String newProjectPath{};
@@ -46,10 +45,10 @@ namespace Fyrion
 
     void LauncherInit()
     {
-        if (TextureAsset* textureAsset = AssetManager::LoadByPath<TextureAsset>("Fyrion://Textures/LogoSmall.jpeg"))
-        {
-            iconTexture = textureAsset->GetTexture();
-        }
+        // if (TextureAsset* textureAsset = AssetManager::LoadByPath<TextureAsset>("Fyrion://Textures/LogoSmall.jpeg"))
+        // {
+        //     iconTexture = textureAsset->GetTexture();
+        // }
 
         if (projectLauncherSettings->defaultPath.Empty())
         {
@@ -414,7 +413,7 @@ namespace Fyrion
 
     void OnLauncherShutdown()
     {
-        AssetManager::SaveOnDirectory(settingsDir, settingsFolder);
+      //  AssetManager::SaveOnDirectory(settingsDir, settingsFolder);
     }
 
     void Launcher::Shutdown()
@@ -433,7 +432,6 @@ namespace Fyrion
         {
             FileSystem::CreateDirectory(appFolder);
         }
-        AssetManager::SetDataDirectory(Path::Join(appFolder, "Data"));
 
         settingsFolder = Path::Join(appFolder, "Settings");
 
@@ -442,15 +440,15 @@ namespace Fyrion
             FileSystem::CreateDirectory(settingsFolder);
         }
 
-        settingsDir = AssetManager::LoadFromDirectory("Settings", settingsFolder);
+        //settingsDir = AssetManager::LoadFromDirectory("Settings", settingsFolder);
 
         projectLauncherSettings = AssetManager::LoadByPath<ProjectLauncherSettings>("Settings://ProjectLauncherSettings.fy_asset");
         if (projectLauncherSettings == nullptr)
         {
-            projectLauncherSettings = AssetManager::Create<ProjectLauncherSettings>({
-                .name = "ProjectLauncherSettings",
-                .directoryAsset = settingsDir,
-            });
+            // projectLauncherSettings = AssetManager::Create<ProjectLauncherSettings>({
+            //     .name = "ProjectLauncherSettings",
+            //     .directoryAsset = settingsDir,
+            // });
         }
 
         Event::Bind<OnInit, &LauncherInit>();

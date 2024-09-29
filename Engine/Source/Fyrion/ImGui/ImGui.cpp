@@ -15,6 +15,7 @@
 #include "Fyrion/ImGui/Lib/ImGuizmo.h"
 #include "Fyrion/Core/HashMap.hpp"
 #include "Fyrion/Core/Registry.hpp"
+#include "Fyrion/Core/StaticContent.hpp"
 
 using namespace Fyrion;
 
@@ -966,38 +967,29 @@ namespace ImGui
         ImGuiIO& io = ImGui::GetIO();
         io.Fonts->Clear();
 
-        // if (UIFontAsset* fontAsset = AssetManager::LoadByPath<UIFontAsset>("Fyrion://Fonts/DejaVuSans.ttf"))
-        // {
-        //     auto font = ImFontConfig();
-        //     font.SizePixels = fontSize * scaleFactor;
-        //     memcpy(font.Name, "NotoSans", 9);
-        //     font.FontDataOwnedByAtlas = false;
-        //
-        //     Array<u8> bytes = fontAsset->GetFont();
-        //     io.Fonts->AddFontFromMemoryTTF(bytes.Data(), bytes.Size(), font.SizePixels, &font);
-        // }
-        // else
         {
-            ImFontConfig config{};
-            config.SizePixels = fontSize * scaleFactor;
-            io.Fonts->AddFontDefault(&config);
+            Array<u8> bytes = StaticContent::GetBinaryFile("Content/Fonts/DejaVuSans.ttf");
+            auto font = ImFontConfig();
+            font.SizePixels = fontSize * scaleFactor;
+            memcpy(font.Name, "DejaVuSans", 9);
+            font.FontDataOwnedByAtlas = false;
+            io.Fonts->AddFontFromMemoryTTF(bytes.Data(), bytes.Size(), font.SizePixels, &font);
         }
 
-        // if (UIFontAsset* fontAsset = AssetManager::LoadByPath<UIFontAsset>("Fyrion://Fonts/fa-solid-900.otf"))
-        // {
-        //     static const ImWchar icon_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
-        //
-        //     ImFontConfig config = ImFontConfig();
-        //     config.SizePixels = fontSize * scaleFactor;
-        //     config.MergeMode = true;
-        //     config.GlyphMinAdvanceX = fontSize * scaleFactor;
-        //     config.GlyphMaxAdvanceX = fontSize * scaleFactor;
-        //     config.FontDataOwnedByAtlas = false;
-        //     memcpy(config.Name, "FontAwesome", 11);
-        //
-        //     Array<u8> bytes = fontAsset->GetFont();
-        //     io.Fonts->AddFontFromMemoryTTF(bytes.Data(), bytes.Size(), config.SizePixels, &config, icon_ranges);
-        // }
+        {
+            static constexpr ImWchar icon_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
+
+            ImFontConfig config = ImFontConfig();
+            config.SizePixels = fontSize * scaleFactor;
+            config.MergeMode = true;
+            config.GlyphMinAdvanceX = fontSize * scaleFactor;
+            config.GlyphMaxAdvanceX = fontSize * scaleFactor;
+            config.FontDataOwnedByAtlas = false;
+            memcpy(config.Name, "FontAwesome", 11);
+
+            Array<u8> bytes = StaticContent::GetBinaryFile("Content/Fonts/fa-solid-900.otf");
+            io.Fonts->AddFontFromMemoryTTF(bytes.Data(), bytes.Size(), config.SizePixels, &config, icon_ranges);
+        }
     }
 
     void Init(Fyrion::Window window, Fyrion::Swapchain swapchain)

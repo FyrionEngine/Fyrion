@@ -4,6 +4,7 @@ project(Fyrion)
 set(CMAKE_CXX_STANDARD 20)
 
 include(CMake/CMakeFunctions.cmake)
+include(CMake/CMakeRC.cmake)
 
 
 set(FY_ENGINE_VERSION "0.1")
@@ -51,9 +52,9 @@ endif()
 
 enable_testing()
 
-#add_subdirectory(Editor)
+add_subdirectory(Editor)
 add_subdirectory(Engine)
-#add_subdirectory(Fyrion)
+add_subdirectory(Fyrion)
 add_subdirectory(Player)
 
 

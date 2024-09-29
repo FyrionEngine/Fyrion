@@ -9,6 +9,7 @@
 #include "Fyrion/Graphics/Graphics.hpp"
 #include "TypeRegister.hpp"
 #include "Asset/AssetManager.hpp"
+#include "Core/StaticContent.hpp"
 #include "Fyrion/ImGui/ImGui.hpp"
 #include "Fyrion/Core/ArgParser.hpp"
 #include "IO/FileSystem.hpp"
@@ -87,6 +88,7 @@ namespace Fyrion
         GraphicsCreateDevice(Adapter{});
 
         window = Platform::CreateWindow(contextCreation.title, contextCreation.resolution, windowFlags);
+        Platform::SetWindowIcon(window, StaticContent::GetImageFile("Content/Images/Logo.jpeg"));
 
         swapchain = Graphics::CreateSwapchain(SwapchainCreation{
             .window = window,

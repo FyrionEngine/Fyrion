@@ -1,6 +1,6 @@
 #include "AssetManager.hpp"
 
-#include "AssetTypes.hpp"
+#include "Asset.hpp"
 #include "Fyrion/Core/HashMap.hpp"
 #include "Fyrion/Core/SharedPtr.hpp"
 #include "Fyrion/Core/UUID.hpp"

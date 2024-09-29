@@ -4,7 +4,6 @@
 #include "Action/EditorAction.hpp"
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Asset/AssetManager.hpp"
-#include "Fyrion/Asset/AssetSerialization.hpp"
 #include "Fyrion/Core/Event.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Core/UniquePtr.hpp"
@@ -15,11 +14,11 @@
 
 namespace Fyrion
 {
-    void InitProjectBrowser();
-    void InitPropertiesWindow();
-    void InitSceneViewWindow();
-    void InitSceneTreeWindow();
-    void InitGraphEditorWindow();
+    // void InitProjectBrowser();
+    // void InitPropertiesWindow();
+    // void InitSceneViewWindow();
+    // void InitSceneTreeWindow();
+    // void InitGraphEditorWindow();
     void InitEditorAction();
 
     struct EditorWindowStorage
@@ -41,7 +40,7 @@ namespace Fyrion
     {
         Array<EditorWindowStorage> editorWindowStorages{};
         Array<OpenWindowStorage>   openWindows{};
-        Array<AssetHandler*>       updatedItems{};
+        //Array<AssetHandler*>       updatedItems{};
         String                     projectPath{};
 
         MenuItemContext menuContext{};
@@ -57,9 +56,6 @@ namespace Fyrion
 
         bool forceClose{};
 
-        UniquePtr<SceneEditor>        sceneEditor{};
-        Array<DirectoryAssetHandler*> directories{};
-
         Array<SharedPtr<EditorTransaction>> undoActions{};
         Array<SharedPtr<EditorTransaction>> redoActions{};
 
@@ -68,7 +64,6 @@ namespace Fyrion
         void Shutdown()
         {
             menuContext = {};
-            sceneEditor = {};
 
             for (OpenWindowStorage& openWindow : openWindows)
             {
@@ -82,8 +77,6 @@ namespace Fyrion
             openWindows.ShrinkToFit();
             editorWindowStorages.Clear();
             editorWindowStorages.ShrinkToFit();
-            directories.Clear();
-            directories.ShrinkToFit();
             idCounter = 100000;
 
             undoActions.Clear();
@@ -121,8 +114,8 @@ namespace Fyrion
             }
 
             //TODO: Create a setting for that.
-            Editor::OpenDirectory(AssetManager::FindHandlerByPath<DirectoryAssetHandler>("Fyrion:/"));
-            Editor::OpenDirectory(AssetManager::LoadFromDirectory(Path::Name(projectPath), Path::Join(projectPath, "Assets")));
+            // Editor::OpenDirectory(AssetManager::FindHandlerByPath<DirectoryAssetHandler>("Fyrion:/"));
+            // Editor::OpenDirectory(AssetManager::LoadFromDirectory(Path::Name(projectPath), Path::Join(projectPath, "Assets")));
         }
 
         void CloseEngine(const MenuItemEventData& eventData)
@@ -279,89 +272,89 @@ namespace Fyrion
 
         void ProjectUpdate()
         {
-            if (!updatedItems.Empty())
-            {
-                bool                   open{true};
-                static ImGuiTableFlags flags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Resizable;
-                ImGuiStyle&            style = ImGui::GetStyle();
-                ImGui::SetNextWindowSize({600 * style.ScaleFactor, 400 * style.ScaleFactor}, ImGuiCond_Once);
-                ImGui::StyleColor childBg(ImGuiCol_PopupBg, IM_COL32(28, 31, 33, 255));
-                if (ImGui::BeginPopupModal("Save Content", &open, ImGuiWindowFlags_NoScrollbar))
-                {
-                    ImGui::Text("Pending items to save");
-                    {
-                        ImGui::StyleColor tableBorderStyleColor(ImGuiCol_TableBorderLight, IM_COL32(0, 0, 0, 0));
-                        ImGui::StyleColor childBg(ImGuiCol_ChildBg, IM_COL32(22, 23, 25, 255));
-
-                        f32 width = ImGui::GetContentRegionAvail().x - 5;
-                        f32 height = ImGui::GetContentRegionAvail().y;
-                        f32 buttonHeight = 25 * style.ScaleFactor;
-
-                        if (ImGui::BeginChild(455343, ImVec2(width, height - buttonHeight), false))
-                        {
-                            if (ImGui::BeginTable("table-pending-to-save", 3, flags))
-                            {
-                                ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_None, 100.f * style.ScaleFactor);
-                                ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_None, 300.f * style.ScaleFactor);
-                                ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_None, 200.f * style.ScaleFactor);
-                                ImGui::TableHeadersRow();
-
-                                for (AssetHandler* assetHandler : updatedItems)
-                                {
-                                    ImGui::TableNextRow();
-
-                                    ImGui::TableSetColumnIndex(0);
-                                    ImGui::Text("%s", assetHandler->GetName().CStr());
-                                    ImGui::TableSetColumnIndex(1);
-                                    ImGui::Text("%s", assetHandler->GetPath().CStr());
-                                    ImGui::TableSetColumnIndex(2);
-                                    ImGui::Text("%s", assetHandler->GetDisplayName().CStr());
-                                }
-                                ImGui::EndTable();
-                            }
-
-                            ImGui::EndChild();
-                        }
-
-                        ImGui::BeginHorizontal("#horizontal-save", ImVec2(width, buttonHeight));
-
-                        ImGui::Spring(1.0f);
-
-                        if (ImGui::Button("Save All"))
-                        {
-                            SaveAll();
-                            forceClose = true;
-                            Engine::Shutdown();
-                        }
-
-                        if (ImGui::Button("Don't Save"))
-                        {
-                            forceClose = true;
-                            Engine::Shutdown();
-                        }
-
-                        if (ImGui::Button("Cancel"))
-                        {
-                            ImGui::CloseCurrentPopup();
-                        }
-
-                        ImGui::EndHorizontal();
-                    }
-                    ImGui::EndPopup();
-                }
-                else if (!updatedItems.Empty())
-                {
-                    updatedItems.Clear();
-                }
-            }
+            // if (!updatedItems.Empty())
+            // {
+            //     bool                   open{true};
+            //     static ImGuiTableFlags flags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Resizable;
+            //     ImGuiStyle&            style = ImGui::GetStyle();
+            //     ImGui::SetNextWindowSize({600 * style.ScaleFactor, 400 * style.ScaleFactor}, ImGuiCond_Once);
+            //     ImGui::StyleColor childBg(ImGuiCol_PopupBg, IM_COL32(28, 31, 33, 255));
+            //     if (ImGui::BeginPopupModal("Save Content", &open, ImGuiWindowFlags_NoScrollbar))
+            //     {
+            //         ImGui::Text("Pending items to save");
+            //         {
+            //             ImGui::StyleColor tableBorderStyleColor(ImGuiCol_TableBorderLight, IM_COL32(0, 0, 0, 0));
+            //             ImGui::StyleColor childBg(ImGuiCol_ChildBg, IM_COL32(22, 23, 25, 255));
+            //
+            //             f32 width = ImGui::GetContentRegionAvail().x - 5;
+            //             f32 height = ImGui::GetContentRegionAvail().y;
+            //             f32 buttonHeight = 25 * style.ScaleFactor;
+            //
+            //             if (ImGui::BeginChild(455343, ImVec2(width, height - buttonHeight), false))
+            //             {
+            //                 if (ImGui::BeginTable("table-pending-to-save", 3, flags))
+            //                 {
+            //                     ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_None, 100.f * style.ScaleFactor);
+            //                     ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_None, 300.f * style.ScaleFactor);
+            //                     ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_None, 200.f * style.ScaleFactor);
+            //                     ImGui::TableHeadersRow();
+            //
+            //                     for (AssetHandler* assetHandler : updatedItems)
+            //                     {
+            //                         ImGui::TableNextRow();
+            //
+            //                         ImGui::TableSetColumnIndex(0);
+            //                         ImGui::Text("%s", assetHandler->GetName().CStr());
+            //                         ImGui::TableSetColumnIndex(1);
+            //                         ImGui::Text("%s", assetHandler->GetPath().CStr());
+            //                         ImGui::TableSetColumnIndex(2);
+            //                         ImGui::Text("%s", assetHandler->GetDisplayName().CStr());
+            //                     }
+            //                     ImGui::EndTable();
+            //                 }
+            //
+            //                 ImGui::EndChild();
+            //             }
+            //
+            //             ImGui::BeginHorizontal("#horizontal-save", ImVec2(width, buttonHeight));
+            //
+            //             ImGui::Spring(1.0f);
+            //
+            //             if (ImGui::Button("Save All"))
+            //             {
+            //                 SaveAll();
+            //                 forceClose = true;
+            //                 Engine::Shutdown();
+            //             }
+            //
+            //             if (ImGui::Button("Don't Save"))
+            //             {
+            //                 forceClose = true;
+            //                 Engine::Shutdown();
+            //             }
+            //
+            //             if (ImGui::Button("Cancel"))
+            //             {
+            //                 ImGui::CloseCurrentPopup();
+            //             }
+            //
+            //             ImGui::EndHorizontal();
+            //         }
+            //         ImGui::EndPopup();
+            //     }
+            //     else if (!updatedItems.Empty())
+            //     {
+            //         updatedItems.Clear();
+            //     }
+            // }
         }
 
         void SaveAll()
         {
-            for (DirectoryAssetHandler* directory : directories)
-            {
-                AssetManager::SaveOnDirectory(directory, directory->GetAbsolutePath());
-            }
+            // for (DirectoryAssetHandler* directory : directories)
+            // {
+            //     AssetManager::SaveOnDirectory(directory, directory->GetAbsolutePath());
+            // }
         }
 
         void EditorUpdate(f64 deltaTime)
@@ -386,18 +379,18 @@ namespace Fyrion
         {
             if (forceClose) return;
 
-            updatedItems.Clear();
+            //updatedItems.Clear();
 
-            for (DirectoryAssetHandler* directory : directories)
-            {
-                AssetManager::GetUpdatedAssets(directory, updatedItems);
-            }
+            // for (DirectoryAssetHandler* directory : directories)
+            // {
+            //     AssetManager::GetUpdatedAssets(directory, updatedItems);
+            // }
 
-            if (!updatedItems.Empty())
-            {
-                ImGui::OpenPopup("Save Content");
-                *canClose = false;
-            }
+            // if (!updatedItems.Empty())
+            // {
+            //     ImGui::OpenPopup("Save Content");
+            //     *canClose = false;
+            // }
         }
     }
 
@@ -413,20 +406,6 @@ namespace Fyrion
         }
     }
 
-    void Editor::OpenDirectory(DirectoryAssetHandler* directory)
-    {
-        directories.EmplaceBack(directory);
-    }
-
-    Span<DirectoryAssetHandler*> Editor::GetOpenDirectories()
-    {
-        return directories;
-    }
-
-    SceneEditor& Editor::GetSceneEditor()
-    {
-        return *sceneEditor.Get();
-    }
 
     EditorTransaction* Editor::CreateTransaction()
     {
@@ -452,33 +431,32 @@ namespace Fyrion
         FileSystem::CreateDirectory(dataPath);
         FileSystem::CreateDirectory(settingsPath);
 
-        JsonAssetWriter jsonAssetWriter;
-        auto            object = jsonAssetWriter.CreateObject();
-        jsonAssetWriter.WriteString(object, "engineVersion", FY_VERSION);
-
-        FileSystem::SaveFileAsString(projectFilePath, JsonAssetWriter::Stringify(object));
+        // JsonAssetWriter jsonAssetWriter;
+        // auto            object = jsonAssetWriter.CreateObject();
+        // jsonAssetWriter.WriteString(object, "engineVersion", FY_VERSION);
+        //
+        // FileSystem::SaveFileAsString(projectFilePath, JsonAssetWriter::Stringify(object));
 
         return projectFilePath;
     }
 
     void Editor::Init(StringView projectFile)
     {
-        if (Path::Extension(projectFile) != FY_PROJECT_EXTENSION)
-        {
-            return;
-        }
+        // if (Path::Extension(projectFile) != FY_PROJECT_EXTENSION)
+        // {
+        //     return;
+        // }
 
         projectPath = Path::Parent(projectFile);
-        sceneEditor = MakeUnique<SceneEditor>();
 
         Registry::Type<EditorWindow>();
 
         InitEditorAction();
-        InitProjectBrowser();
-        InitSceneTreeWindow();
-        InitSceneViewWindow();
-        InitPropertiesWindow();
-        InitGraphEditorWindow();
+        // InitProjectBrowser();
+        // InitSceneTreeWindow();
+        // InitSceneViewWindow();
+        // InitPropertiesWindow();
+        // InitGraphEditorWindow();
 
         Event::Bind<OnInit, &InitEditor>();
         Event::Bind<OnUpdate, &EditorUpdate>();
@@ -486,7 +464,5 @@ namespace Fyrion
         Event::Bind<OnShutdownRequest, &OnEditorShutdownRequest>();
 
         CreateMenuItems();
-
-        AssetManager::SetDataDirectory(Path::Join(projectPath, "Data"));
     }
 }

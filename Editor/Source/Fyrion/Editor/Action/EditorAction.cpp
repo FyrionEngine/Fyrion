@@ -5,9 +5,6 @@
 namespace Fyrion
 {
 
-    void InitAssetEditorActions();
-    void InitSceneEditorAction();
-
     EditorTransaction::~EditorTransaction()
     {
         for(const auto& action : actions)
@@ -83,8 +80,5 @@ namespace Fyrion
     {
         Registry::Type<EditorTransaction>();
         Registry::Type<EditorAction>();
-
-        InitAssetEditorActions();
-        InitSceneEditorAction();
     }
 }

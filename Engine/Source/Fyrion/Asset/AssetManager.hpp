@@ -3,20 +3,14 @@
 #include "Fyrion/Common.hpp"
 #include "Fyrion/Core/StringView.hpp"
 
-namespace Fyrion
+namespace Fyrion::AssetManager
 {
-    class FY_API AssetManager
+
+    FY_API void LoadPackage(StringView name, StringView path);
+
+    template<typename T>
+    T* LoadByPath(StringView path)
     {
-    public:
-
-
-        template<typename T>
-        static T* LoadByPath(StringView path)
-        {
-            return nullptr;
-        }
-
-
-    private:
-    };
+        return nullptr;
+    }
 }

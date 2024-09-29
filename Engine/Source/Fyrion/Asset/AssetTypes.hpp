@@ -4,6 +4,9 @@
 namespace Fyrion
 {
 
+    class Asset
+    {
 
+    };
 
 }

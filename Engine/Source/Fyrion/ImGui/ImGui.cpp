@@ -8,9 +8,6 @@
 #include "Fyrion/Graphics/Device/RenderDevice.hpp"
 #include "IconsFontAwesome6.h"
 #include "Fyrion/Engine.hpp"
-#include "Fyrion/Asset/AssetHandler.hpp"
-#include "Fyrion/Asset/AssetManager.hpp"
-#include "Fyrion/Asset/AssetTypes.hpp"
 #include "Fyrion/Core/Attributes.hpp"
 #include "Fyrion/Core/StringUtils.hpp"
 #include "Fyrion/Core/UniquePtr.hpp"
@@ -969,38 +966,38 @@ namespace ImGui
         ImGuiIO& io = ImGui::GetIO();
         io.Fonts->Clear();
 
-        if (UIFontAsset* fontAsset = AssetManager::LoadByPath<UIFontAsset>("Fyrion://Fonts/DejaVuSans.ttf"))
-        {
-            auto font = ImFontConfig();
-            font.SizePixels = fontSize * scaleFactor;
-            memcpy(font.Name, "NotoSans", 9);
-            font.FontDataOwnedByAtlas = false;
-
-            Array<u8> bytes = fontAsset->GetFont();
-            io.Fonts->AddFontFromMemoryTTF(bytes.Data(), bytes.Size(), font.SizePixels, &font);
-        }
-        else
+        // if (UIFontAsset* fontAsset = AssetManager::LoadByPath<UIFontAsset>("Fyrion://Fonts/DejaVuSans.ttf"))
+        // {
+        //     auto font = ImFontConfig();
+        //     font.SizePixels = fontSize * scaleFactor;
+        //     memcpy(font.Name, "NotoSans", 9);
+        //     font.FontDataOwnedByAtlas = false;
+        //
+        //     Array<u8> bytes = fontAsset->GetFont();
+        //     io.Fonts->AddFontFromMemoryTTF(bytes.Data(), bytes.Size(), font.SizePixels, &font);
+        // }
+        // else
         {
             ImFontConfig config{};
             config.SizePixels = fontSize * scaleFactor;
             io.Fonts->AddFontDefault(&config);
         }
 
-        if (UIFontAsset* fontAsset = AssetManager::LoadByPath<UIFontAsset>("Fyrion://Fonts/fa-solid-900.otf"))
-        {
-            static const ImWchar icon_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
-
-            ImFontConfig config = ImFontConfig();
-            config.SizePixels = fontSize * scaleFactor;
-            config.MergeMode = true;
-            config.GlyphMinAdvanceX = fontSize * scaleFactor;
-            config.GlyphMaxAdvanceX = fontSize * scaleFactor;
-            config.FontDataOwnedByAtlas = false;
-            memcpy(config.Name, "FontAwesome", 11);
-
-            Array<u8> bytes = fontAsset->GetFont();
-            io.Fonts->AddFontFromMemoryTTF(bytes.Data(), bytes.Size(), config.SizePixels, &config, icon_ranges);
-        }
+        // if (UIFontAsset* fontAsset = AssetManager::LoadByPath<UIFontAsset>("Fyrion://Fonts/fa-solid-900.otf"))
+        // {
+        //     static const ImWchar icon_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
+        //
+        //     ImFontConfig config = ImFontConfig();
+        //     config.SizePixels = fontSize * scaleFactor;
+        //     config.MergeMode = true;
+        //     config.GlyphMinAdvanceX = fontSize * scaleFactor;
+        //     config.GlyphMaxAdvanceX = fontSize * scaleFactor;
+        //     config.FontDataOwnedByAtlas = false;
+        //     memcpy(config.Name, "FontAwesome", 11);
+        //
+        //     Array<u8> bytes = fontAsset->GetFont();
+        //     io.Fonts->AddFontFromMemoryTTF(bytes.Data(), bytes.Size(), config.SizePixels, &config, icon_ranges);
+        // }
     }
 
     void Init(Fyrion::Window window, Fyrion::Swapchain swapchain)
@@ -1104,22 +1101,22 @@ namespace ImGui
                         std::function<void(TypeID typeId)> drawAssetSelection;
                         drawAssetSelection = [&](const TypeID typeId)
                         {
-                            for (AssetHandler* assetHandler : AssetManager::FindAssetsByType(typeId))
-                            {
-                                ImGui::ContentItemDesc contentItem{};
-                                contentItem.ItemId = id;
-                                contentItem.ShowDetails = false;
-                                contentItem.Label = assetHandler->GetName().CStr();
-                                contentItem.CanRename = false;
-                                //contentItem.DetailsDesc = asset->GetDisplayName().CStr();
-
-                                if (ImGui::DrawContentItem(contentItem))
-                                {
-                                    showAssetSelection = false;
-                                    callback(userData, assetHandler->LoadInstance());
-                                }
-                                id += 5;
-                            }
+                            // for (AssetHandler* assetHandler : AssetManager::FindAssetsByType(typeId))
+                            // {
+                            //     ImGui::ContentItemDesc contentItem{};
+                            //     contentItem.ItemId = id;
+                            //     contentItem.ShowDetails = false;
+                            //     contentItem.Label = assetHandler->GetName().CStr();
+                            //     contentItem.CanRename = false;
+                            //     //contentItem.DetailsDesc = asset->GetDisplayName().CStr();
+                            //
+                            //     if (ImGui::DrawContentItem(contentItem))
+                            //     {
+                            //         showAssetSelection = false;
+                            //         callback(userData, assetHandler->LoadInstance());
+                            //     }
+                            //     id += 5;
+                            // }
 
                             if (TypeHandler* typeHandler = Registry::FindTypeById(typeId))
                             {

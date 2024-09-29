@@ -8,13 +8,8 @@
 #include "Fyrion/Graphics/GraphicsTypes.hpp"
 #include "Fyrion/Graphics/Graphics.hpp"
 #include "TypeRegister.hpp"
-#include "Asset/AssetManager.hpp"
 #include "Fyrion/ImGui/ImGui.hpp"
-#include "Fyrion/IO/FileSystem.hpp"
-#include "Fyrion/IO/Path.hpp"
 #include "Fyrion/Core/ArgParser.hpp"
-#include "Graphics/RenderStorage.hpp"
-#include "Graphics/Assets/TextureAsset.hpp"
 
 namespace Fyrion
 {
@@ -27,14 +22,8 @@ namespace Fyrion
     void            GraphicsShutdown();
     void            RegistryShutdown();
     void            EventShutdown();
-    void            SceneManagerInit();
-    void            SceneManagerShutdown();
     void            ShaderManagerInit();
     void            ShaderManagerShutdown();
-    void            DefaultRenderPipelineInit();
-    void            DefaultRenderPipelineShutdown();
-    void            AssetDatabaseInit();
-    void            AssetDatabaseShutdown();
     void            InputInit();
 
 
@@ -70,16 +59,13 @@ namespace Fyrion
         args.Parse(argc, argv);
 
         TypeRegister();
-        AssetDatabaseInit();
         InputInit();
         ShaderManagerInit();
-        SceneManagerInit();
-        DefaultRenderPipelineInit();
     }
 
     void Engine::CreateContext(const EngineContextCreation& contextCreation)
     {
-        AssetManager::LoadFromDirectory("Fyrion", Path::Join(FileSystem::AssetFolder(), "Fyrion"));
+        //AssetManager::LoadFromDirectory("Fyrion", Path::Join(FileSystem::AssetFolder(), "Fyrion"));
 
         PlatformInit();
 
@@ -99,11 +85,6 @@ namespace Fyrion
 
         window = Platform::CreateWindow(contextCreation.title, contextCreation.resolution, windowFlags);
 
-        if (TextureAsset* textureAsset = AssetManager::LoadByPath<TextureAsset>("Fyrion://Textures/Logo.jpeg"))
-        {
-            Platform::SetWindowIcon(window, textureAsset->GetImage());
-        }
-
         swapchain = Graphics::CreateSwapchain(SwapchainCreation{
             .window = window,
             .vsync = true
@@ -112,8 +93,6 @@ namespace Fyrion
         ImGui::Init(window, swapchain);
 
         onInitHandler.Invoke();
-
-        RenderStorage::Init();
 
         running = true;
     }
@@ -146,8 +125,6 @@ namespace Fyrion
 
             if (Extent extent = Platform::GetWindowExtent(window))
             {
-                RenderStorage::UpdateResources();
-
                 RenderCommands& cmd = GraphicsBeginFrame();
                 cmd.Begin();
 
@@ -199,8 +176,6 @@ namespace Fyrion
         Graphics::WaitQueue();
 
         onShutdownHandler.Invoke();
-
-        AssetManager::DestroyAssets();
 
         Graphics::DestroySwapchain(swapchain);
         Platform::DestroyWindow(window);
@@ -263,10 +238,7 @@ namespace Fyrion
 
     void Engine::Destroy()
     {
-        DefaultRenderPipelineShutdown();
-        SceneManagerShutdown();
         ShaderManagerShutdown();
-        AssetDatabaseShutdown();
         RegistryShutdown();
         EventShutdown();
     }

@@ -1,10 +1,6 @@
 #include "Graphics.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "GraphicsTypes.hpp"
-#include "RenderGraph.hpp"
-#include "Assets/DCCAsset.hpp"
-#include "Assets/ShaderAsset.hpp"
-#include "Assets/TextureAsset.hpp"
 
 namespace Fyrion
 {
@@ -26,10 +22,6 @@ namespace Fyrion
         }
     };
 
-    void RegisterShaderIO();
-    void RegisterTextureIO();
-    void RegisterGLTFIO();
-
     void RegisterGraphicsTypes()
     {
         Registry::Type<InterfaceVariable>();
@@ -41,23 +33,12 @@ namespace Fyrion
         Registry::Type<ShaderInfo>();
         Registry::Type<Buffer>();
         Registry::Type<Texture>();
-        Registry::Type<RenderGraph>();
         Registry::Type<RenderGraphEdge>();
-        Registry::Type<RenderGraphAsset>();
-        Registry::Type<RenderGraphPass>();
         Registry::Type<ShaderAsset>();
-        Registry::Type<TextureAsset>();
-        Registry::Type<TextureImportSettings>();
-        Registry::Type<DCCAsset>();
-        Registry::Type<DCCAssetImportSettings>();
+
         Registry::Type<MeshAsset>();
         Registry::Type<MaterialAsset>();
         Registry::Type<MeshPrimitive>();
-        Registry::Type<TextureAssetImage>();
-
-        RegisterGLTFIO();
-        RegisterShaderIO();
-        RegisterTextureIO();
 
         auto bufferUsage = Registry::Type<BufferUsage>();
         bufferUsage.Value<BufferUsage::VertexBuffer>("VertexBuffer");
@@ -69,23 +50,11 @@ namespace Fyrion
         bufferUsage.Value<BufferUsage::AccelerationStructureStorage>("AccelerationStructureStorage");
         bufferUsage.Value<BufferUsage::All>("All");
 
-        auto shaderAssetType = Registry::Type<ShaderAssetType>();
-        shaderAssetType.Value<ShaderAssetType::None>("None");
-        shaderAssetType.Value<ShaderAssetType::Graphics>("Graphics");
-        shaderAssetType.Value<ShaderAssetType::Compute>("Compute");
-        shaderAssetType.Value<ShaderAssetType::Raytrace>("Raytrace");
-
-
         auto alphaMode = Registry::Type<AlphaMode>();
         alphaMode.Value<AlphaMode::None>("None");
         alphaMode.Value<AlphaMode::Opaque>("Opaque");
         alphaMode.Value<AlphaMode::Mask>("Mask");
         alphaMode.Value<AlphaMode::Blend>("Blend");
-
-        auto textureType = Registry::Type<TextureType>();
-        textureType.Value<TextureType::Texture2D>("Texture2D");
-        textureType.Value<TextureType::Texture3D>("Texture3D");
-        textureType.Value<TextureType::Cubemap>("Cubemap");
 
         auto format = Registry::Type<Format>();
         format.Value<Format::R>("R");

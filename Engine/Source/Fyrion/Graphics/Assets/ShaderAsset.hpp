@@ -1,60 +1,27 @@
 #pragma once
-#include "Fyrion/Asset/Asset.hpp"
-#include "Fyrion/Core/HashSet.hpp"
+
+#include "Fyrion/Common.hpp"
 #include "Fyrion/Graphics/GraphicsTypes.hpp"
+
 
 namespace Fyrion
 {
-    enum class ShaderAssetType
-    {
-        None,
-        Include,
-        Graphics,
-        Compute,
-        Raytrace
-    };
-
-    class FY_API ShaderAsset : public Asset
+    class FY_API ShaderAsset
     {
     public:
-        FY_BASE_TYPES(Asset);
-
-        ShaderAssetType GetShaderType() const
-        {
-            return shaderType;
-        }
-
-        void SetShaderType(ShaderAssetType shaderType)
-        {
-            this->shaderType = shaderType;
-        }
-
-        const ShaderInfo& GetShaderInfo() const
-        {
-            FY_ASSERT(IsCompiled(), "shader is not compiled");
-            return shaderInfo;
-        }
-
-        Span<ShaderStageInfo> GetStages() const;
-        Array<u8>             GetBytes() const;
-
-        bool IsCompiled() const;
-        void Compile();
-
         void AddPipelineDependency(PipelineState pipelineState);
         void AddShaderDependency(ShaderAsset* shaderAsset);
         void AddBindingSetDependency(BindingSet* bindingSet);
         void RemoveBindingSetDependency(BindingSet* bindingSet);
 
-        static void RegisterType(NativeTypeHandler<ShaderAsset>& type);
+        const ShaderInfo& GetShaderInfo() const;
+
+        bool                  IsCompiled() const;
+        Span<ShaderStageInfo> GetStages() const;
+        Array<u8>             GetBytes() const;
 
     private:
-        ShaderAssetType        shaderType = ShaderAssetType::None;
-        AssetBuffer            spriv{};
+        ShaderInfo             shaderInfo;
         Array<ShaderStageInfo> stages{};
-        ShaderInfo             shaderInfo{};
-        Array<PipelineState>   pipelineDependencies{};
-        HashSet<ShaderAsset*>  shaderDependencies{};
-        HashSet<BindingSet*>   bindingSetDependencies{};
     };
 }

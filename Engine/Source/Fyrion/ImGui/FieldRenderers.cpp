@@ -1,7 +1,5 @@
 #include "IconsFontAwesome6.h"
 #include "ImGui.hpp"
-#include "Fyrion/Asset/Asset.hpp"
-#include "Fyrion/Asset/AssetHandler.hpp"
 #include "Fyrion/Core/Attributes.hpp"
 #include "Fyrion/Core/Color.hpp"
 #include "Fyrion/Core/Registry.hpp"
@@ -194,45 +192,45 @@ namespace Fyrion
         VoidPtr fieldValue;
     };
 
-    bool DrawAssetField(ImGui::DrawTypeContent* context, const TypeInfo& typeInfo, VoidPtr value, bool* hasChanged)
-    {
-        if (typeInfo.apiId != GetTypeID<AssetApi>()) return false;
-
-        AssetApi assetApi{};
-        typeInfo.extractApi(&assetApi);
-
-        //TODO check if that's a pointer
-        Asset* asset = assetApi.castAsset(value);
-        String name = asset ? asset->GetHandler()->GetName() : "";
-
-        ImGui::SetNextItemWidth(-22 * ImGui::GetStyle().ScaleFactor);
-
-        ImGui::PushID(context->ReserveID());
-
-        ImGui::InputText(context->ReserveID(), name, ImGuiInputTextFlags_ReadOnly);
-        ImGui::SameLine(0, 0);
-        auto size = ImGui::GetItemRectSize();
-        if (ImGui::Button(ICON_FA_CIRCLE_DOT, ImVec2{size.y, size.y}))
-        {
-            static DrawAssetFieldUserData data{};
-            data.context = context;
-            data.typeInfo = typeInfo;
-            data.fieldValue = value;
-
-            ImGui::ShowAssetSelector(typeInfo.typeId, &data, [](VoidPtr userData, Asset* asset)
-            {
-                DrawAssetFieldUserData* data = static_cast<DrawAssetFieldUserData*>(userData);
-
-                AssetApi assetApi{};
-                data->typeInfo.extractApi(&assetApi);
-                assetApi.setAsset(data->fieldValue, asset);
-                data->context->hasChanged = true;
-            });
-        }
-        ImGui::PopID();
-
-        return true;
-    }
+    // bool DrawAssetField(ImGui::DrawTypeContent* context, const TypeInfo& typeInfo, VoidPtr value, bool* hasChanged)
+    // {
+    //     if (typeInfo.apiId != GetTypeID<AssetApi>()) return false;
+    //
+    //     AssetApi assetApi{};
+    //     typeInfo.extractApi(&assetApi);
+    //
+    //     //TODO check if that's a pointer
+    //     Asset* asset = assetApi.castAsset(value);
+    //     String name = asset ? asset->GetHandler()->GetName() : "";
+    //
+    //     ImGui::SetNextItemWidth(-22 * ImGui::GetStyle().ScaleFactor);
+    //
+    //     ImGui::PushID(context->ReserveID());
+    //
+    //     ImGui::InputText(context->ReserveID(), name, ImGuiInputTextFlags_ReadOnly);
+    //     ImGui::SameLine(0, 0);
+    //     auto size = ImGui::GetItemRectSize();
+    //     if (ImGui::Button(ICON_FA_CIRCLE_DOT, ImVec2{size.y, size.y}))
+    //     {
+    //         static DrawAssetFieldUserData data{};
+    //         data.context = context;
+    //         data.typeInfo = typeInfo;
+    //         data.fieldValue = value;
+    //
+    //         ImGui::ShowAssetSelector(typeInfo.typeId, &data, [](VoidPtr userData, Asset* asset)
+    //         {
+    //             DrawAssetFieldUserData* data = static_cast<DrawAssetFieldUserData*>(userData);
+    //
+    //             AssetApi assetApi{};
+    //             data->typeInfo.extractApi(&assetApi);
+    //             assetApi.setAsset(data->fieldValue, asset);
+    //             data->context->hasChanged = true;
+    //         });
+    //     }
+    //     ImGui::PopID();
+    //
+    //     return true;
+    // }
 
 
     void DrawVecField(const String compName, const char* fieldName, float& value, bool* hasChanged, u32 color = 0, f32 speed = 0.005f)
@@ -526,7 +524,6 @@ namespace Fyrion
         AddFieldRenderer(Vec3Renderer);
         AddFieldRenderer(Vec2Renderer);
         AddFieldRenderer(QuatRenderer);
-        AddFieldRenderer(DrawAssetField);
         AddFieldRenderer(DrawArrayField);
         AddFieldRenderer(EnumRenderer);
     }

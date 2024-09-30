@@ -3,22 +3,16 @@
 #include "EditorTypes.hpp"
 #include "Action/EditorAction.hpp"
 #include "Fyrion/Engine.hpp"
-#include "Fyrion/Asset/AssetManager.hpp"
 #include "Fyrion/Core/Event.hpp"
 #include "Fyrion/Core/Registry.hpp"
-#include "Fyrion/Core/UniquePtr.hpp"
 #include "Fyrion/ImGui/ImGui.hpp"
 #include "Fyrion/ImGui/Lib/imgui_internal.h"
 #include "Fyrion/IO/FileSystem.hpp"
 #include "Fyrion/IO/Path.hpp"
+#include "Window/ProjectBrowserWindow.hpp"
 
 namespace Fyrion
 {
-    // void InitProjectBrowser();
-    // void InitPropertiesWindow();
-    // void InitSceneViewWindow();
-    // void InitSceneTreeWindow();
-    // void InitGraphEditorWindow();
     void InitEditorAction();
 
     struct EditorWindowStorage
@@ -40,8 +34,8 @@ namespace Fyrion
     {
         Array<EditorWindowStorage> editorWindowStorages{};
         Array<OpenWindowStorage>   openWindows{};
+        Array<String>              openPackages{};
         //Array<AssetHandler*>       updatedItems{};
-        String                     projectPath{};
 
         MenuItemContext menuContext{};
         bool            dockInitialized = false;
@@ -440,6 +434,11 @@ namespace Fyrion
         return projectFilePath;
     }
 
+    Array<String> Editor::GetOpenPackages()
+    {
+        return openPackages;
+    }
+
     void Editor::Init(StringView projectFile)
     {
         // if (Path::Extension(projectFile) != FY_PROJECT_EXTENSION)
@@ -447,16 +446,16 @@ namespace Fyrion
         //     return;
         // }
 
-        projectPath = Path::Parent(projectFile);
+        //projectPath = Path::Parent(projectFile);
+
+        openPackages.EmplaceBack("C:\\dev\\Fyrion\\Fyrion\\Assets\\Fyrion");
+        openPackages.EmplaceBack("C:\\dev\\Fyrion\\Projects\\Refactor");
 
         Registry::Type<EditorWindow>();
 
         InitEditorAction();
-        // InitProjectBrowser();
-        // InitSceneTreeWindow();
-        // InitSceneViewWindow();
-        // InitPropertiesWindow();
-        // InitGraphEditorWindow();
+
+        Registry::Type<ProjectBrowserWindow>();
 
         Event::Bind<OnInit, &InitEditor>();
         Event::Bind<OnUpdate, &EditorUpdate>();

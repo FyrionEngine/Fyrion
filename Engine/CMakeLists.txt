@@ -13,6 +13,8 @@ cmrc_add_resource_library(
 				Content/Fonts/DejaVuSans.ttf
 				Content/Fonts/fa-solid-900.otf
 
+				Content/Images/FileIcon.png
+				Content/Images/FolderIcon.png
 				Content/Images/Logo.jpeg
 )
 

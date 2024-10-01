@@ -27,12 +27,14 @@ namespace Fyrion
         f32                   contentBrowserZoom = 0.8;
         String                openDirectory;
         String                stringCache;
+        String                  selectedItem;
         HashMap<String, bool> openTreeFolders{};
 
         FileTreeCache fileTreeCache;
 
         Texture folderTexture = {};
         Texture fileTexture = {};
+        Texture brickTexture = {};
 
         void DrawPathItems();
         void DrawTreeNode(const FileTreeCacheNode& node);

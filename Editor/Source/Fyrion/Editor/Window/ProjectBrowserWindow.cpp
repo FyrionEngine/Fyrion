@@ -1,5 +1,6 @@
 #include "ProjectBrowserWindow.hpp"
 
+#include "imgui_internal.h"
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Core/StaticContent.hpp"
 #include "Fyrion/Editor/Editor.hpp"
@@ -26,6 +27,7 @@ namespace Fyrion
 
         folderTexture = StaticContent::GetTextureFile("Content/Images/FolderIcon.png");
         fileTexture = StaticContent::GetTextureFile("Content/Images/FileIcon.png");
+        brickTexture = StaticContent::GetTextureFile("Content/Images/brickwall.jpg");
     }
 
     void ProjectBrowserWindow::DrawPathItems()
@@ -207,155 +209,259 @@ namespace Fyrion
             ImGui::TableNextColumn();
             {
                 ImGui::StyleColor childBg(ImGuiCol_ChildBg, IM_COL32(27, 28, 30, 255));
-                auto              padding = 5.f * style.ScaleFactor;
+                //auto              padding = 5.f * style.ScaleFactor;
+                auto padding = 0;
                 ImGui::StyleVar   cellPadding(ImGuiStyleVar_CellPadding, ImVec2(padding, padding));
-                ImGui::StyleVar   browserWinPadding(ImGuiStyleVar_WindowPadding, ImVec2(padding * 2, padding));
+                ImGui::StyleVar   browserWinPadding(ImGuiStyleVar_WindowPadding, ImVec2(5.f * style.ScaleFactor, 5.f * style.ScaleFactor));
 
                 ImGui::BeginChild(52211, ImVec2(0, 0), false, ImGuiWindowFlags_AlwaysUseWindowPadding);
 
                 ImGui::SetWindowFontScale(contentBrowserZoom);
 
-                //DirectoryAssetHandler* selectedDiretory = nullptr;
+                u32 thumbnailSize = 112 * ImGui::GetStyle().ScaleFactor;
 
-                if (ImGui::BeginContentTable(id + CONTENT_TABLE_ID, contentBrowserZoom * 112 * ImGui::GetStyle().ScaleFactor))
+                static ImGuiTableFlags tableFlags = ImGuiTableFlags_SizingFixedSame;
+                u32 columns = Math::Max(static_cast<u32>((ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x) / thumbnailSize), 1u);
+
+                if (ImGui::BeginTable("ContentTable", columns, tableFlags))
                 {
+                    for (int i = 0; i < columns; ++i)
+                    {
+                        char buffer[20]{};
+                        StringConverter<i32>::ToString(buffer, 0, i);
+                        ImGui::TableSetupColumn(buffer, ImGuiTableColumnFlags_WidthFixed, thumbnailSize);
+                    }
+
+
+                    String newOpenDirectory = "";
+
+
                     if (const FileTreeCacheNode* openDirectoryNode = fileTreeCache.FindNode(openDirectory))
                     {
                         for (const auto& childNode : openDirectoryNode->children)
                         {
-                            if (!childNode->isDirectory) continue;
+                            ImGui::TableNextColumn();
 
-                            ImGui::ContentItemDesc contentItem{};
-                            contentItem.ItemId = childNode->hash;
-                            contentItem.ShowDetails = false;
-                            contentItem.Label = childNode->fileName.CStr();
-                            contentItem.DragDropType = AssetDragDropType;
-                            contentItem.AcceptPayload = AssetDragDropType;
-                            //contentItem.TooltipText = asset->GetPath().CStr();
-                            contentItem.Texture = folderTexture;
+                            auto cursorPos = ImGui::GetCursorScreenPos();
 
-                            // if (asset->IsModified())
-                            // {
-                            //     contentItem.PreLabel = "*";
-                            // }
+                            //texture
+                            f32 imagePadding = thumbnailSize * 0.08f;
+                            ImGui::DrawTexture(childNode->isDirectory ? folderTexture : brickTexture, {
+                                          i32(cursorPos.x + imagePadding * 2),
+                                          i32(cursorPos.y + imagePadding),
+                                          (u32)(cursorPos.x + thumbnailSize - imagePadding * 2),
+                                          (u32)(cursorPos.y + thumbnailSize - imagePadding * 3)
+                                      });
 
-                            if (ImGui::DrawContentItem(contentItem))
+                            //rect size
+                            ImGui::ItemSize(ImVec2{(f32)thumbnailSize, (f32)thumbnailSize - imagePadding * 2});
+
+                            ImGui::BeginHorizontal(&childNode, ImVec2(thumbnailSize, 0.0f));
+                            ImGui::Spring();
+
+                            //text
+                            ImGui::Text("%s", childNode->fileName.CStr());
+
+                            ImGui::Spring();
+                            ImGui::EndHorizontal();
+
+                            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 2 * ImGui::GetStyle().ScaleFactor);
+
+                            auto posIni = ImVec2(cursorPos.x, cursorPos.y);
+                            auto posEnd = ImVec2(cursorPos.x + thumbnailSize, ImGui::GetCursorScreenPos().y - 1);
+
+                            bool hovered = ImGui::IsMouseHoveringRect(posIni, posEnd, true);
+
+                            if (hovered)
                             {
-                                ImGui::ContentItemSelected(U32_MAX);
-                                //selectedDiretory = directoryInfo;
+                                drawList->AddRectFilled(posIni,
+                                                        posEnd,
+                                                        IM_COL32(40, 41, 43, 255),
+                                                        0.0f);
                             }
 
-                            if (ImGui::ContentItemSelected(contentItem.ItemId))
+                            i32  mouseCount = ImGui::GetMouseClickedCount(ImGuiMouseButton_Left);
+                            bool isDoubleClicked = mouseCount >= 2 && (mouseCount % 2) == 0 && hovered;
+                            bool isClicked = (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)) && hovered;
+
+                            if (isClicked)
                             {
-                                //newItemSelected = asset;
+                                selectedItem = childNode->absolutePath;
                             }
 
-                            if (ImGui::ContentItemRenamed(contentItem.ItemId))
+                            if (isDoubleClicked)
                             {
-                                // if (ImGui::ContentRenameString() != asset->GetName())
-                                // {
-                                //     Editor::CreateTransaction()->CreateAction<RenameAssetAction>(asset, ImGui::ContentRenameString())->Commit();
-                                // }
+                                if (childNode->isDirectory)
+                                {
+                                    openDirectory = childNode->absolutePath;
+                                    selectedItem = "";
+                                }
                             }
 
-                            // if (!asset->IsChildOf(assetPayload.asset) && ImGui::ContentItemAcceptPayload(contentItem.ItemId))
-                            // {
-                            //     Editor::CreateTransaction()->CreateAction<MoveAssetAction>(assetPayload.asset, dynamic_cast<DirectoryAssetHandler*>(asset))->Commit();
-                            // }
 
-                            // if (ImGui::ContentItemBeginPayload(contentItem.ItemId))
-                            // {
-                            //     assetPayload.asset = selectedItem;
-                            //}
+
+
+                            if (childNode->absolutePath == selectedItem)
+                            {
+                                //selected
+                                drawList->AddRect(ImVec2(cursorPos.x, cursorPos.y),
+                                                  ImVec2(cursorPos.x + thumbnailSize, ImGui::GetCursorScreenPos().y - 1),
+                                                 ImGui::ColorConvertFloat4ToU32(ImVec4(0.26f, 0.59f, 0.98f, 1.0f)),
+                                                  0.0f, 0, 2);
+                            }
+
+
+
+
                         }
-
-                        for (const auto& childNode : openDirectoryNode->children)
-                        {
-                            if (childNode->isDirectory) continue;
-
-                            ImGui::ContentItemDesc contentItem{};
-                            contentItem.ItemId = childNode->hash;
-                            contentItem.ShowDetails = false;
-                            contentItem.Label = childNode->fileName.CStr();
-                            contentItem.DragDropType = AssetDragDropType;
-                            contentItem.AcceptPayload = AssetDragDropType;
-                            //contentItem.TooltipText = asset->GetPath().CStr();
-                            contentItem.Texture = fileTexture;
-
-                            // if (asset->IsModified())
-                            // {
-                            //     contentItem.PreLabel = "*";
-                            // }
-
-                            if (ImGui::DrawContentItem(contentItem))
-                            {
-
-                            }
-
-                        }
-
-                        // for (AssetHandler* assetHandler : openDirectory->GetChildren())
-                        // {
-                        //     if (DirectoryAssetHandler* directoryInfo = dynamic_cast<DirectoryAssetHandler*>(assetHandler); directoryInfo == nullptr)
-                        //     {
-                        //         ImGui::ContentItemDesc contentItem{};
-                        //         contentItem.ItemId = reinterpret_cast<usize>(assetHandler);
-                        //         contentItem.ShowDetails = true;
-                        //         contentItem.Label = assetHandler->GetName().CStr();
-                        //         contentItem.DetailsDesc = assetHandler->GetDisplayName().CStr();
-                        //         contentItem.DragDropType = AssetDragDropType;
-                        //         contentItem.DragDropPayload = &assetPayload;
-                        //         contentItem.DragDropPayloadSize = sizeof(AssetPayload);
-                        //         contentItem.TooltipText = assetHandler->GetPath().CStr();
-                        //         contentItem.Texture = fileTexture;
-                        //
-                        //         if (assetHandler->IsModified())
-                        //         {
-                        //             contentItem.PreLabel = "*";
-                        //         }
-                        //
-                        //         if (ImGui::DrawContentItem(contentItem))
-                        //         {
-                        //             if (SceneObjectAsset* sceneObjectAsset = dynamic_cast<SceneObjectAsset*>(assetHandler->LoadInstance()))
-                        //             {
-                        //                 Editor::CreateTransaction()->CreateAction<OpenSceneAction>(Editor::GetSceneEditor(), sceneObjectAsset)->Commit();
-                        //             }
-                        //             // else if (node->objectType == GetTypeID<GraphAsset>() || node->objectType == GetTypeID<RenderGraphAsset>())
-                        //             // {
-                        //             //     GraphEditorWindow::OpenGraphWindow(node->rid);
-                        //             // }
-                        //         }
-                        //
-                        //         if (ImGui::ContentItemSelected(contentItem.ItemId))
-                        //         {
-                        //             newItemSelected = assetHandler;
-                        //         }
-                        //
-                        //         if (ImGui::ContentItemRenamed(contentItem.ItemId))
-                        //         {
-                        //             if (ImGui::ContentRenameString() != assetHandler->GetName())
-                        //             {
-                        //                 Editor::CreateTransaction()->CreateAction<RenameAssetAction>(assetHandler, ImGui::ContentRenameString())->Commit();
-                        //             }
-                        //         }
-                        //
-                        //         if (ImGui::ContentItemBeginPayload(contentItem.ItemId))
-                        //         {
-                        //             assetPayload.asset = selectedItem;
-                        //         }
-                        //     }
-                        // }
                     }
-                    ImGui::EndContentTable();
 
-                    if (!ImGui::RenamingSelected(CONTENT_TABLE_ID + id) && ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))
+                    ImGui::EndTable();
+
+                    if (!newOpenDirectory.Empty())
                     {
-                        if (ImGui::IsKeyPressed(ImGuiKey_Backspace) && openDirectory)
-                        {
-                        //    selectedDiretory = dynamic_cast<DirectoryAssetHandler*>(openDirectory->GetParent());
-                        }
+                        openDirectory = newOpenDirectory;
                     }
                 }
+
+
+
+
+
+                // //DirectoryAssetHandler* selectedDiretory = nullptr;
+                //
+                // if (ImGui::BeginContentTable(id + CONTENT_TABLE_ID, contentBrowserZoom * 112 * ImGui::GetStyle().ScaleFactor))
+                // {
+                //     if (const FileTreeCacheNode* openDirectoryNode = fileTreeCache.FindNode(openDirectory))
+                //     {
+                //         for (const auto& childNode : openDirectoryNode->children)
+                //         {
+                //             if (!childNode->isDirectory) continue;
+                //
+                //             ImGui::ContentItemDesc contentItem{};
+                //             contentItem.ItemId = childNode->hash;
+                //             contentItem.ShowDetails = false;
+                //             contentItem.Label = childNode->fileName.CStr();
+                //             contentItem.DragDropType = AssetDragDropType;
+                //             contentItem.AcceptPayload = AssetDragDropType;
+                //             contentItem.Texture = folderTexture;
+                //
+                //             if (ImGui::DrawContentItem(contentItem))
+                //             {
+                //                 ImGui::ContentItemSelected(U32_MAX);
+                //             }
+                //
+                //             if (ImGui::ContentItemSelected(contentItem.ItemId))
+                //             {
+                //                 //newItemSelected = asset;
+                //             }
+                //
+                //             if (ImGui::ContentItemRenamed(contentItem.ItemId))
+                //             {
+                //                 // if (ImGui::ContentRenameString() != asset->GetName())
+                //                 // {
+                //                 //     Editor::CreateTransaction()->CreateAction<RenameAssetAction>(asset, ImGui::ContentRenameString())->Commit();
+                //                 // }
+                //             }
+                //
+                //             // if (!asset->IsChildOf(assetPayload.asset) && ImGui::ContentItemAcceptPayload(contentItem.ItemId))
+                //             // {
+                //             //     Editor::CreateTransaction()->CreateAction<MoveAssetAction>(assetPayload.asset, dynamic_cast<DirectoryAssetHandler*>(asset))->Commit();
+                //             // }
+                //
+                //             // if (ImGui::ContentItemBeginPayload(contentItem.ItemId))
+                //             // {
+                //             //     assetPayload.asset = selectedItem;
+                //             //}
+                //         }
+                //
+                //         for (const auto& childNode : openDirectoryNode->children)
+                //         {
+                //             if (childNode->isDirectory) continue;
+                //
+                //             ImGui::ContentItemDesc contentItem{};
+                //             contentItem.ItemId = childNode->hash;
+                //             contentItem.ShowDetails = false;
+                //             contentItem.Label = childNode->fileName.CStr();
+                //             contentItem.DragDropType = AssetDragDropType;
+                //             contentItem.AcceptPayload = AssetDragDropType;
+                //             //contentItem.TooltipText = asset->GetPath().CStr();
+                //             contentItem.Texture = fileTexture;
+                //
+                //             // if (asset->IsModified())
+                //             // {
+                //             //     contentItem.PreLabel = "*";
+                //             // }
+                //
+                //             if (ImGui::DrawContentItem(contentItem))
+                //             {
+                //
+                //             }
+                //
+                //         }
+                //
+                //         // for (AssetHandler* assetHandler : openDirectory->GetChildren())
+                //         // {
+                //         //     if (DirectoryAssetHandler* directoryInfo = dynamic_cast<DirectoryAssetHandler*>(assetHandler); directoryInfo == nullptr)
+                //         //     {
+                //         //         ImGui::ContentItemDesc contentItem{};
+                //         //         contentItem.ItemId = reinterpret_cast<usize>(assetHandler);
+                //         //         contentItem.ShowDetails = true;
+                //         //         contentItem.Label = assetHandler->GetName().CStr();
+                //         //         contentItem.DetailsDesc = assetHandler->GetDisplayName().CStr();
+                //         //         contentItem.DragDropType = AssetDragDropType;
+                //         //         contentItem.DragDropPayload = &assetPayload;
+                //         //         contentItem.DragDropPayloadSize = sizeof(AssetPayload);
+                //         //         contentItem.TooltipText = assetHandler->GetPath().CStr();
+                //         //         contentItem.Texture = fileTexture;
+                //         //
+                //         //         if (assetHandler->IsModified())
+                //         //         {
+                //         //             contentItem.PreLabel = "*";
+                //         //         }
+                //         //
+                //         //         if (ImGui::DrawContentItem(contentItem))
+                //         //         {
+                //         //             if (SceneObjectAsset* sceneObjectAsset = dynamic_cast<SceneObjectAsset*>(assetHandler->LoadInstance()))
+                //         //             {
+                //         //                 Editor::CreateTransaction()->CreateAction<OpenSceneAction>(Editor::GetSceneEditor(), sceneObjectAsset)->Commit();
+                //         //             }
+                //         //             // else if (node->objectType == GetTypeID<GraphAsset>() || node->objectType == GetTypeID<RenderGraphAsset>())
+                //         //             // {
+                //         //             //     GraphEditorWindow::OpenGraphWindow(node->rid);
+                //         //             // }
+                //         //         }
+                //         //
+                //         //         if (ImGui::ContentItemSelected(contentItem.ItemId))
+                //         //         {
+                //         //             newItemSelected = assetHandler;
+                //         //         }
+                //         //
+                //         //         if (ImGui::ContentItemRenamed(contentItem.ItemId))
+                //         //         {
+                //         //             if (ImGui::ContentRenameString() != assetHandler->GetName())
+                //         //             {
+                //         //                 Editor::CreateTransaction()->CreateAction<RenameAssetAction>(assetHandler, ImGui::ContentRenameString())->Commit();
+                //         //             }
+                //         //         }
+                //         //
+                //         //         if (ImGui::ContentItemBeginPayload(contentItem.ItemId))
+                //         //         {
+                //         //             assetPayload.asset = selectedItem;
+                //         //         }
+                //         //     }
+                //         // }
+                //     }
+                //     ImGui::EndContentTable();
+                //
+                //     if (!ImGui::RenamingSelected(CONTENT_TABLE_ID + id) && ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))
+                //     {
+                //         if (ImGui::IsKeyPressed(ImGuiKey_Backspace) && openDirectory)
+                //         {
+                //         //    selectedDiretory = dynamic_cast<DirectoryAssetHandler*>(openDirectory->GetParent());
+                //         }
+                //     }
+                // }
 
               //   if (selectedDiretory)
               //   {
@@ -404,8 +510,10 @@ namespace Fyrion
 
     ProjectBrowserWindow::~ProjectBrowserWindow()
     {
+        Graphics::WaitQueue();
         Graphics::DestroyTexture(folderTexture);
         Graphics::DestroyTexture(fileTexture);
+        Graphics::DestroyTexture(brickTexture);
     }
 
     void ProjectBrowserWindow::OpenProjectBrowser(const MenuItemEventData& eventData)

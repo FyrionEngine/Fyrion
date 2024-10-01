@@ -16,6 +16,7 @@ cmrc_add_resource_library(
 				Content/Images/FileIcon.png
 				Content/Images/FolderIcon.png
 				Content/Images/Logo.jpeg
+				Content/Images/brickwall.jpg
 )
 
 

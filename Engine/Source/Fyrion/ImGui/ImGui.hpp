@@ -37,24 +37,6 @@ namespace ImGui
     typedef void (*DrawTypeCallbackFn)(DrawTypeDesc& desc, VoidPtr newValue);
     typedef void (*FnAssetSelectorCallback)(VoidPtr userData, Asset* asset);
 
-    struct ContentItemDesc
-    {
-        ImGuiID     ItemId{};
-        const char* PreLabel{};
-        const char* Label{};
-        Texture     Texture{};
-        bool        CanRename{};
-        bool        ShowDetails{};
-        const char* DetailsDesc{};
-        u32*        Color{};
-        bool        DefaultSelected{};
-        const char* AcceptPayload{};
-        const char* DragDropType{};
-        VoidPtr     DragDropPayload{};
-        usize       DragDropPayloadSize{};
-        const char* TooltipText{};
-    };
-
     struct DrawTypeDesc
     {
         usize              itemId{};
@@ -83,6 +65,25 @@ namespace ImGui
             idCount += 10;
             return idCount;
         }
+    };
+
+    struct ContentItemDesc
+    {
+        usize      id;
+        StringView label;
+        Texture    texture;
+        bool       selected;
+        u32        thumbnailSize;
+        bool       renameItem;
+    };
+
+    struct ContentItemState
+    {
+        bool   renamed;
+        String newName;
+        bool   hovered;
+        bool   clicked;
+        bool   doubleClicked;
     };
 
     typedef bool (*FieldRendererFn)(DrawTypeContent* context, const TypeInfo& typeInfo, VoidPtr value, bool* hasChanged);
@@ -132,7 +133,8 @@ namespace ImGui
     FY_API void EndTreeNode();
     FY_API bool TreeNode(u32 id, const char* label, ImGuiTreeNodeFlags flags = 0);
     FY_API bool TreeLeaf(u32 id, const char* label, ImGuiTreeNodeFlags flags = 0);
-    FY_API void TextureItem(Texture texture, const ImVec2& image_size, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1), const ImVec4& tint_col = ImVec4(1, 1, 1, 1), const ImVec4& border_col = ImVec4(0, 0, 0, 0));
+    FY_API void TextureItem(Texture       texture, const ImVec2& image_size, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1), const ImVec4& tint_col = ImVec4(1, 1, 1, 1),
+                            const ImVec4& border_col = ImVec4(0, 0, 0, 0));
     FY_API void DrawTexture(Texture texture, const Rect& rect, const ImVec4& tintCol = ImVec4(1, 1, 1, 1));
     FY_API bool BeginPopupMenu(const char* str, ImGuiWindowFlags popupFlags = 0, bool setSize = true);
     FY_API void EndPopupMenu(bool closePopup = true);
@@ -143,9 +145,9 @@ namespace ImGui
 
     FY_API ImU32 TextToColor(const char* str);
 
-
-
-
+    FY_API bool             BeginContentTable(const char* id, u32 thumbnailSize);
+    FY_API ContentItemState ContentItem(const ContentItemDesc& contentItemDesc);
+    FY_API void             EndContentTable();
 
     FY_API void ShowAssetSelector(TypeID assetId, VoidPtr userData, FnAssetSelectorCallback callback);
 

@@ -39,7 +39,6 @@ namespace ImGui
         f32      scaleFactor = 1.0;
         ImGuiKey keys[static_cast<u32>(Key::MAX)];
 
-        ImGuiID                                    currentContentTable{U32_MAX};
         HashMap<usize, UniquePtr<DrawTypeContent>> drawTypes{};
         Array<FieldRendererFn>                     fieldRenders{};
         Array<AssetSelector>                       assetSelectors;
@@ -920,5 +919,127 @@ namespace ImGui
         {
             ImGui::ClearActiveID();
         }
+    }
+
+    //content table
+
+    bool BeginContentTable(const char* tableId, u32 thumbnailSize)
+    {
+        static ImGuiTableFlags tableFlags = ImGuiTableFlags_SizingFixedSame;
+        u32 columns = Math::Max(static_cast<u32>((ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x) / thumbnailSize), 1u);
+
+        bool ret = ImGui::BeginTable(tableId, columns, tableFlags);
+        if (ret)
+        {
+            for (int i = 0; i < columns; ++i)
+            {
+                char buffer[20]{};
+                StringConverter<i32>::ToString(buffer, 0, i);
+                TableSetupColumn(buffer, ImGuiTableColumnFlags_WidthFixed, thumbnailSize);
+            }
+        }
+        return ret;
+    }
+
+    ContentItemState ContentItem(const ContentItemDesc& contentItemDesc)
+    {
+        ImGui::TableNextColumn();
+        auto* drawList = ImGui::GetWindowDrawList();
+        auto cursorPos = ImGui::GetCursorScreenPos();
+
+        auto table = ImGui::GetCurrentTable();
+        auto width = table->Columns.Data->WidthGiven;
+
+        //texture
+        f32 imagePadding = contentItemDesc.thumbnailSize * 0.08f;
+
+        auto posIni = ImVec2(cursorPos.x, cursorPos.y);
+        auto posEnd = ImVec2(cursorPos.x + contentItemDesc.thumbnailSize, cursorPos.y + contentItemDesc.thumbnailSize);
+        bool hovered = ImGui::IsMouseHoveringRect(posIni, posEnd, true);
+
+        if (hovered)
+        {
+            drawList->AddRectFilled(posIni,
+                                    posEnd,
+                                    IM_COL32(40, 41, 43, 255),
+                                    0.0f);
+        }
+
+        i32  mouseCount = ImGui::GetMouseClickedCount(ImGuiMouseButton_Left);
+        bool isDoubleClicked = mouseCount >= 2 && (mouseCount % 2) == 0 && hovered;
+        bool isClicked = (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)) && hovered;
+
+        ContentItemState state = ContentItemState{
+            .hovered = hovered,
+            .clicked = isClicked,
+            .doubleClicked = isDoubleClicked,
+        };
+
+        ImGui::DrawTexture(contentItemDesc.texture, {
+                               i32(cursorPos.x + imagePadding * 2),
+                               i32(cursorPos.y + imagePadding),
+                               (u32)(cursorPos.x + contentItemDesc.thumbnailSize - imagePadding * 2),
+                               (u32)(cursorPos.y + contentItemDesc.thumbnailSize - imagePadding * 3)
+                           });
+
+        //rect size
+        ImGui::ItemSize(ImVec2{(f32)contentItemDesc.thumbnailSize, (f32)contentItemDesc.thumbnailSize - imagePadding * 2});
+
+        if (contentItemDesc.renameItem)
+        {
+            //TODO how to get this magic number?
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 10 * ImGui::GetStyle().ScaleFactor);
+        }
+
+
+
+        ImGui::BeginHorizontal(contentItemDesc.id + 10, ImVec2(contentItemDesc.thumbnailSize, 0.0f));
+        ImGui::Spring();
+
+        if (!contentItemDesc.renameItem)
+        {
+            //text
+            ImGui::Text("%s", contentItemDesc.label.CStr());
+        }
+        else
+        {
+            static String renameStringCache = {};
+            static auto magicNumber = 8.f;
+            auto cursor = ImGui::GetCursorScreenPos();
+
+            ImGui::SetNextItemWidth(width - magicNumber);
+            ImGui::SetCursorScreenPos(ImVec2{cursor.x - magicNumber, cursor.y});
+
+            ImGui::StyleColor frameColor(ImGuiCol_FrameBg, IM_COL32(52, 53, 55, 255));
+
+            ImGui::InputText(40101, renameStringCache);
+
+            if (!ImGui::IsItemActive())
+            {
+                renameStringCache = contentItemDesc.label;
+                ImGui::SetKeyboardFocusHere();
+            }
+        }
+
+        ImGui::Spring();
+        ImGui::EndHorizontal();
+
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 2 * ImGui::GetStyle().ScaleFactor);
+
+        if (contentItemDesc.selected)
+        {
+            //selected
+            drawList->AddRect(ImVec2(cursorPos.x, cursorPos.y),
+                              ImVec2(cursorPos.x + contentItemDesc.thumbnailSize, ImGui::GetCursorScreenPos().y - 1),
+                              ImGui::ColorConvertFloat4ToU32(ImVec4(0.26f, 0.59f, 0.98f, 1.0f)),
+                              0.0f, 0, 2);
+        }
+
+        return state;
+    }
+
+    void EndContentTable()
+    {
+        ImGui::EndTable();
     }
 }

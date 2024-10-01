@@ -1,4 +1,5 @@
 #pragma once
+#include "Fyrion/Core/HashSet.hpp"
 #include "Fyrion/Editor/EditorTypes.hpp"
 #include "Fyrion/Editor/MenuItem.hpp"
 #include "Fyrion/Editor/Asset/FileTreeCache.hpp"
@@ -27,7 +28,9 @@ namespace Fyrion
         f32                   contentBrowserZoom = 0.8;
         String                openDirectory;
         String                stringCache;
-        String                  selectedItem;
+        HashSet<String>       selectedItems;
+        String                lastSelectedItem;
+        String                renamingItem;
         HashMap<String, bool> openTreeFolders{};
 
         FileTreeCache fileTreeCache;
@@ -39,5 +42,10 @@ namespace Fyrion
         void DrawPathItems();
         void DrawTreeNode(const FileTreeCacheNode& node);
         void SetOpenDirectory(StringView directory);
+
+
+        static bool CheckSelectedAsset(const MenuItemEventData& eventData);
+        static void AssetRename(const MenuItemEventData& eventData);
+        static void Shutdown();
     };
 }

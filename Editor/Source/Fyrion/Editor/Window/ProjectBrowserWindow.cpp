@@ -1,6 +1,7 @@
 #include "ProjectBrowserWindow.hpp"
 
 #include "imgui_internal.h"
+#include "Fyrion/Engine.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Core/StaticContent.hpp"
 #include "Fyrion/Editor/Editor.hpp"
@@ -104,6 +105,25 @@ namespace Fyrion
     void ProjectBrowserWindow::SetOpenDirectory(StringView directory)
     {
         openDirectory = directory;
+    }
+
+    bool ProjectBrowserWindow::CheckSelectedAsset(const MenuItemEventData& eventData)
+    {
+        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
+        return !projectBrowserWindow->lastSelectedItem.Empty();
+    }
+
+
+
+    void ProjectBrowserWindow::AssetRename(const MenuItemEventData& eventData)
+    {
+        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
+        projectBrowserWindow->renamingItem = projectBrowserWindow->lastSelectedItem;
+    }
+
+    void ProjectBrowserWindow::Shutdown()
+    {
+        menuItemContext = MenuItemContext{};
     }
 
     void ProjectBrowserWindow::Draw(u32 id, bool& open)
@@ -219,111 +239,61 @@ namespace Fyrion
                 ImGui::SetWindowFontScale(contentBrowserZoom);
 
                 u32 thumbnailSize = 112 * ImGui::GetStyle().ScaleFactor;
-
-                static ImGuiTableFlags tableFlags = ImGuiTableFlags_SizingFixedSame;
-                u32 columns = Math::Max(static_cast<u32>((ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x) / thumbnailSize), 1u);
-
-                if (ImGui::BeginTable("ContentTable", columns, tableFlags))
+                if (ImGui::BeginContentTable("ProjectBrowser", thumbnailSize))
                 {
-                    for (int i = 0; i < columns; ++i)
-                    {
-                        char buffer[20]{};
-                        StringConverter<i32>::ToString(buffer, 0, i);
-                        ImGui::TableSetupColumn(buffer, ImGuiTableColumnFlags_WidthFixed, thumbnailSize);
-                    }
-
-
                     String newOpenDirectory = "";
-
 
                     if (const FileTreeCacheNode* openDirectoryNode = fileTreeCache.FindNode(openDirectory))
                     {
                         for (const auto& childNode : openDirectoryNode->children)
                         {
-                            ImGui::TableNextColumn();
+                            ImGui::ContentItemDesc desc;
+                            desc.id = reinterpret_cast<usize>(childNode.Get());
+                            desc.label = childNode->fileName.CStr();
+                            desc.texture = childNode->isDirectory ? folderTexture : brickTexture;
+                            desc.renameItem = renamingItem == childNode->absolutePath;
+                            desc.thumbnailSize = thumbnailSize;
+                            desc.selected = selectedItems.Has(childNode->absolutePath);
 
-                            auto cursorPos = ImGui::GetCursorScreenPos();
+                            ImGui::ContentItemState state = ImGui::ContentItem(desc);
 
-                            //texture
-                            f32 imagePadding = thumbnailSize * 0.08f;
-                            ImGui::DrawTexture(childNode->isDirectory ? folderTexture : brickTexture, {
-                                          i32(cursorPos.x + imagePadding * 2),
-                                          i32(cursorPos.y + imagePadding),
-                                          (u32)(cursorPos.x + thumbnailSize - imagePadding * 2),
-                                          (u32)(cursorPos.y + thumbnailSize - imagePadding * 3)
-                                      });
-
-                            //rect size
-                            ImGui::ItemSize(ImVec2{(f32)thumbnailSize, (f32)thumbnailSize - imagePadding * 2});
-
-                            ImGui::BeginHorizontal(&childNode, ImVec2(thumbnailSize, 0.0f));
-                            ImGui::Spring();
-
-                            //text
-                            ImGui::Text("%s", childNode->fileName.CStr());
-
-                            ImGui::Spring();
-                            ImGui::EndHorizontal();
-
-                            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 2 * ImGui::GetStyle().ScaleFactor);
-
-                            auto posIni = ImVec2(cursorPos.x, cursorPos.y);
-                            auto posEnd = ImVec2(cursorPos.x + thumbnailSize, ImGui::GetCursorScreenPos().y - 1);
-
-                            bool hovered = ImGui::IsMouseHoveringRect(posIni, posEnd, true);
-
-                            if (hovered)
+                            if (state.clicked)
                             {
-                                drawList->AddRectFilled(posIni,
-                                                        posEnd,
-                                                        IM_COL32(40, 41, 43, 255),
-                                                        0.0f);
+                                if (!(ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_LeftCtrl)) || ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_RightCtrl))))
+                                {
+                                    selectedItems.Clear();
+                                    lastSelectedItem = "";
+                                }
+                                selectedItems.Emplace(childNode->absolutePath);
+                                lastSelectedItem = childNode->absolutePath;
                             }
 
-                            i32  mouseCount = ImGui::GetMouseClickedCount(ImGuiMouseButton_Left);
-                            bool isDoubleClicked = mouseCount >= 2 && (mouseCount % 2) == 0 && hovered;
-                            bool isClicked = (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)) && hovered;
-
-                            if (isClicked)
-                            {
-                                selectedItem = childNode->absolutePath;
-                            }
-
-                            if (isDoubleClicked)
+                            if (state.doubleClicked)
                             {
                                 if (childNode->isDirectory)
                                 {
                                     openDirectory = childNode->absolutePath;
-                                    selectedItem = "";
+                                    selectedItems.Clear();
+                                    lastSelectedItem = "";
                                 }
                             }
 
 
-                            if (childNode->absolutePath == selectedItem)
+                            if (state.renamed)
                             {
-                                //selected
-                                drawList->AddRect(ImVec2(cursorPos.x, cursorPos.y),
-                                                  ImVec2(cursorPos.x + thumbnailSize, ImGui::GetCursorScreenPos().y - 1),
-                                                 ImGui::ColorConvertFloat4ToU32(ImVec4(0.26f, 0.59f, 0.98f, 1.0f)),
-                                                  0.0f, 0, 2);
+                                childNode->fileName = state.newName;
+                                renamingItem = "";
                             }
-
-
-
-
                         }
                     }
 
-                    ImGui::EndTable();
+                    ImGui::EndContentTable();
 
                     if (!newOpenDirectory.Empty())
                     {
                         openDirectory = newOpenDirectory;
                     }
                 }
-
-
-
 
 
                 // //DirectoryAssetHandler* selectedDiretory = nullptr;
@@ -478,18 +448,18 @@ namespace Fyrion
         }
 
         bool closePopup = false;
-        // if (!ImGui::RenamingSelected(CONTENT_TABLE_ID + id) && ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))
-        // {
-        //     if (menuItemContext.ExecuteHotKeys(this))
-        //     {
-        //         closePopup = true;
-        //     }
-        //
-        //     if (ImGui::IsMouseReleased(ImGuiMouseButton_Right))
-        //     {
-        //         ImGui::OpenPopup("project-browser-popup");
-        //     }
-        // }
+        if (renamingItem.Empty() && ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))
+        {
+            if (menuItemContext.ExecuteHotKeys(this))
+            {
+                closePopup = true;
+            }
+
+            if (ImGui::IsMouseReleased(ImGuiMouseButton_Right))
+            {
+                ImGui::OpenPopup("project-browser-popup");
+            }
+        }
 
         auto popupRes = ImGui::BeginPopupMenu("project-browser-popup");
         if (popupRes)
@@ -500,7 +470,6 @@ namespace Fyrion
                 ImGui::CloseCurrentPopup();
             }
         }
-
         ImGui::EndPopupMenu(popupRes);
 
         ImGui::End();
@@ -521,12 +490,17 @@ namespace Fyrion
 
     void ProjectBrowserWindow::AddMenuItem(const MenuItemCreation& menuItem)
     {
-
+        menuItemContext.AddMenuItem(menuItem);
     }
 
     void ProjectBrowserWindow::RegisterType(NativeTypeHandler<ProjectBrowserWindow>& type)
     {
+        Event::Bind<OnShutdown, Shutdown>();
+
         Editor::AddMenuItem(MenuItemCreation{.itemName = "Window/Project Browser", .action = OpenProjectBrowser});
+        AddMenuItem(MenuItemCreation{.itemName = "Rename", .icon = ICON_FA_PEN_TO_SQUARE, .priority = 30, .itemShortcut{.presKey = Key::F2}, .action = AssetRename, .enable = CheckSelectedAsset});
+
+
         type.Attribute<EditorWindowProperties>(EditorWindowProperties{
             .dockPosition = DockPosition::Bottom,
             .createOnInit = true

@@ -161,63 +161,63 @@ namespace Fyrion
                 {
                     ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.01f, 0.5f));
 
-                    ImGui::BeginContentTable(30001, 96 * ImGui::GetStyle().ScaleFactor);
-
-                    i32 c = 0;
-
-                    auto it = projectLauncherSettings->recentProjects.begin();
-                    while (it != projectLauncherSettings->recentProjects.end())
-                    {
-                        const String& recentProject = *it;
-
-                        if (!FileSystem::GetFileStatus(recentProject).exists)
-                        {
-                            projectLauncherSettings->SetModified();
-                            it = projectLauncherSettings->recentProjects.Erase(it);
-                            continue;
-                        }
-
-                        String projectName = Path::Name(*it);
-
-                        if (!searchText.Empty())
-                        {
-                            if (!ContainsIgnoreCase(ToUpper(projectName), searchText))
-                            {
-                                ++it;
-                                continue;
-                            }
-                        }
-
-                        c++;
-
-                        ImGui::ContentItemDesc contentItem{};
-                        contentItem.ItemId = 30001 + c;
-                        contentItem.CanRename = false;
-                        contentItem.ShowDetails = true;
-                        contentItem.DetailsDesc = "Project";
-                        contentItem.Label = projectName.CStr();
-                        contentItem.Texture = iconTexture;
-
-                        if (ImGui::DrawContentItem(contentItem))
-                        {
-                            projectFilePath = recentProject;
-                            Engine::Shutdown();
-                        }
-
-                        if (ImGui::ContentItemHovered(contentItem.ItemId) && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
-                        {
-                            openPopup = true;
-                        }
-                        //
-                        if (ImGui::ContentItemFocused(contentItem.ItemId))
-                        {
-                            selectedProject = recentProject;
-                        }
-
-                        ++it;
-                    }
-
-                    ImGui::EndContentTable();
+                    // ImGui::BeginContentTable(30001, 96 * ImGui::GetStyle().ScaleFactor);
+                    //
+                    // i32 c = 0;
+                    //
+                    // auto it = projectLauncherSettings->recentProjects.begin();
+                    // while (it != projectLauncherSettings->recentProjects.end())
+                    // {
+                    //     const String& recentProject = *it;
+                    //
+                    //     if (!FileSystem::GetFileStatus(recentProject).exists)
+                    //     {
+                    //         projectLauncherSettings->SetModified();
+                    //         it = projectLauncherSettings->recentProjects.Erase(it);
+                    //         continue;
+                    //     }
+                    //
+                    //     String projectName = Path::Name(*it);
+                    //
+                    //     if (!searchText.Empty())
+                    //     {
+                    //         if (!ContainsIgnoreCase(ToUpper(projectName), searchText))
+                    //         {
+                    //             ++it;
+                    //             continue;
+                    //         }
+                    //     }
+                    //
+                    //     c++;
+                    //
+                    //     ImGui::ContentItemDesc contentItem{};
+                    //     contentItem.ItemId = 30001 + c;
+                    //     contentItem.CanRename = false;
+                    //     contentItem.ShowDetails = true;
+                    //     contentItem.DetailsDesc = "Project";
+                    //     contentItem.Label = projectName.CStr();
+                    //     contentItem.Texture = iconTexture;
+                    //
+                    //     if (ImGui::DrawContentItem(contentItem))
+                    //     {
+                    //         projectFilePath = recentProject;
+                    //         Engine::Shutdown();
+                    //     }
+                    //
+                    //     if (ImGui::ContentItemHovered(contentItem.ItemId) && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
+                    //     {
+                    //         openPopup = true;
+                    //     }
+                    //     //
+                    //     if (ImGui::ContentItemFocused(contentItem.ItemId))
+                    //     {
+                    //         selectedProject = recentProject;
+                    //     }
+                    //
+                    //     ++it;
+                    // }
+                    //
+                    // ImGui::EndContentTable();
                     ImGui::PopStyleVar(); //ImGuiStyleVar_SelectableTextAlign
                 }
             }
@@ -235,24 +235,24 @@ namespace Fyrion
                 {
                     ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPos().x + padding.x * 1.5f, ImGui::GetCursorPos().y + padding.y * 1.5f));
 
-                    ImGui::BeginContentTable(templateProjectId, 96 * ImGui::GetStyle().ScaleFactor, ImGuiContentTableFlags_SelectionNoFocus);
-
-                    if (!ImGui::GetSelectedContentItem())
-                    {
-                        ImGui::SelectContentItem(30010, templateProjectId);
-                    }
-
-                    ImGui::ContentItemDesc contentItem{};
-                    contentItem.ItemId = 30010;
-                    contentItem.CanRename = false;
-                    contentItem.ShowDetails = true;
-                    contentItem.DetailsDesc = "Template";
-                    contentItem.Label = "Default";
-                    contentItem.Texture = iconTexture;
-
-                    ImGui::DrawContentItem(contentItem);
-
-                    ImGui::EndContentTable();
+                    // ImGui::BeginContentTable(templateProjectId, 96 * ImGui::GetStyle().ScaleFactor, ImGuiContentTableFlags_SelectionNoFocus);
+                    //
+                    // if (!ImGui::GetSelectedContentItem())
+                    // {
+                    //     ImGui::SelectContentItem(30010, templateProjectId);
+                    // }
+                    //
+                    // ImGui::ContentItemDesc contentItem{};
+                    // contentItem.ItemId = 30010;
+                    // contentItem.CanRename = false;
+                    // contentItem.ShowDetails = true;
+                    // contentItem.DetailsDesc = "Template";
+                    // contentItem.Label = "Default";
+                    // contentItem.Texture = iconTexture;
+                    //
+                    // ImGui::DrawContentItem(contentItem);
+                    //
+                    // ImGui::EndContentTable();
                 }
                 ImGui::EndChild();
             }

@@ -27,22 +27,6 @@ namespace Fyrion
 
 namespace ImGui
 {
-    struct ContentTable
-    {
-        f32    thumbnailSize{};
-        u32    selectedItem = 0;
-        u32    hoveredItem{};
-        bool   renamingSelected{};
-        u32    renamingId{};
-        String renamingStringCache{};
-        u32    renamedItem{};
-        u32    renamedCancelled{};
-        bool   renamingFocus{};
-        bool   selectionNoFocus{};
-        u32    acceptPayloadItem{U32_MAX};
-        u32    beginPayloadItem{U32_MAX};
-    };
-
     struct AssetSelector
     {
         TypeID                  assetId;
@@ -55,7 +39,6 @@ namespace ImGui
         f32      scaleFactor = 1.0;
         ImGuiKey keys[static_cast<u32>(Key::MAX)];
 
-        HashMap<ImGuiID, ContentTable>             contentTables{};
         ImGuiID                                    currentContentTable{U32_MAX};
         HashMap<usize, UniquePtr<DrawTypeContent>> drawTypes{};
         Array<FieldRendererFn>                     fieldRenders{};
@@ -356,372 +339,6 @@ namespace ImGui
         auto color = ImHashStr(str, strlen(str));
         auto vecColor = ImGui::ColorConvertU32ToFloat4(color);
         return IM_COL32(vecColor.x * 255, vecColor.y * 255, vecColor.z * 255, 255);
-    }
-
-    ContentTable& CurrentTable()
-    {
-        return contentTables[currentContentTable];
-    }
-
-    ContentTable& CurrentTable(ImGuiID id)
-    {
-        return contentTables[id];
-    }
-
-    bool BeginContentTable(u32 id, f32 ThumbnailSize, ImGuiContentTableFlags flags)
-    {
-        auto& contentTable = contentTables[id];
-        contentTable.thumbnailSize = ThumbnailSize;
-        currentContentTable = id;
-        contentTable.hoveredItem = U32_MAX;
-        contentTable.renamedItem = U32_MAX;
-        contentTable.renamedCancelled = U32_MAX;
-        contentTable.selectionNoFocus = (flags & ImGuiContentTableFlags_SelectionNoFocus);
-
-        if (contentTable.renamingSelected && contentTable.renamingId != contentTable.selectedItem)
-        {
-            CancelRenameContentSelected(id);
-        }
-
-        static ImGuiTableFlags tableFlags = ImGuiTableFlags_SizingFixedSame;
-        auto                   cellPadding = ImGui::GetStyle().CellPadding;
-
-        auto totalThumbnailSize = ThumbnailSize + cellPadding.x;
-
-        u32 columns = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x) / totalThumbnailSize;
-        columns = Math::Max(columns, 1u);
-        bool tableRes = ImGui::BeginTable("ContentTable", columns, tableFlags);
-
-        if (tableRes)
-        {
-            for (int i = 0; i < columns; ++i)
-            {
-                char buffer[20]{};
-                StringConverter<i32>::ToString(buffer, 0, i);
-                ImGui::TableSetupColumn(buffer, ImGuiTableColumnFlags_WidthFixed, ThumbnailSize);
-            }
-        }
-        return tableRes;
-    }
-
-    bool DrawContentItem(const ContentItemDesc& contentItemDesc)
-    {
-        FY_ASSERT(currentContentTable != U32_MAX, "missing BeginContentTable");
-
-        auto& contentTable = contentTables[currentContentTable];
-        auto  ThumbnailSize = contentTable.thumbnailSize;
-        contentTable.acceptPayloadItem = U32_MAX;
-        contentTable.beginPayloadItem = U32_MAX;
-
-        ImGui::TableNextColumn();
-
-        auto* drawList = ImGui::GetWindowDrawList();
-        auto  cursorPos = ImGui::GetCursorScreenPos();
-        cursorPos.x += 2;
-        auto table = ImGui::GetCurrentTable();
-        auto width = table->Columns.Data->WidthGiven;
-        auto contentInfoSize = ThumbnailSize + (ThumbnailSize / 2);
-        auto contentFullSize = ImVec2(width, contentInfoSize);
-        auto bottomRight = ImVec2(cursorPos.x + width, cursorPos.y + contentInfoSize);
-        auto bottomIcon = ImVec2(cursorPos.x + width, cursorPos.y + ThumbnailSize);
-
-        //        auto topIcon = ImVec2(cursorPos.x + width - 1, cursorPos.y + 13 * ImGui::GetStyle().ScaleFactor);
-
-        ImGui::ItemAdd(ImRect(cursorPos, bottomRight), contentItemDesc.ItemId);
-        ImGui::PushID(contentItemDesc.ItemId);
-        ImGui::BeginGroup();
-
-        bool windowHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows);
-        bool isHovered = ImGui::IsItemHovered();
-        bool isSelected = contentTable.selectedItem == contentItemDesc.ItemId;
-        i32  mouseCount = ImGui::GetMouseClickedCount(ImGuiMouseButton_Left);
-        bool isDoubleClicked = mouseCount >= 2 && (mouseCount % 2) == 0 && isHovered;
-        bool isEnter =
-            (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter)) || ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_KeypadEnter))) && ContentItemFocused(contentItemDesc.ItemId) &&
-            !contentTable.renamingSelected && windowHovered;
-        bool isClicked = (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)) && isHovered;
-
-        auto scaleFactor = ImGui::GetStyle().ScaleFactor;
-        auto separatorLineSize = 2 * scaleFactor;
-
-        if (isHovered)
-        {
-            contentTable.hoveredItem = contentItemDesc.ItemId;
-        }
-
-        if (contentItemDesc.TooltipText && ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort) && ImGui::BeginTooltip())
-        {
-            ImGui::TextUnformatted(contentItemDesc.TooltipText);
-            ImGui::EndTooltip();
-        }
-
-        if (contentItemDesc.ShowDetails)
-        {
-            //shadow
-            drawList->AddRect(ImVec2(cursorPos.x + 1.5 * ImGui::GetStyle().ScaleFactor, cursorPos.y + 1.5 * ImGui::GetStyle().ScaleFactor),
-                              ImVec2(bottomRight.x + 1.5 * ImGui::GetStyle().ScaleFactor, bottomRight.y + 1.5 * ImGui::GetStyle().ScaleFactor),
-                              IM_COL32(2, 4, 6, 255),
-                              6.0f, 0, 3);
-
-            drawList->AddRectFilled(cursorPos, bottomIcon, IM_COL32(20, 21, 23, 255), 6, ImDrawFlags_RoundCornersTop);
-
-            //bottom color
-            drawList->AddRectFilled(ImVec2(cursorPos.x, cursorPos.y + ThumbnailSize),
-                                    ImVec2(bottomRight.x, bottomRight.y),
-                                    IM_COL32(32, 33, 35, 255), 6, ImDrawFlags_RoundCornersBottom);
-        }
-        else if (isHovered || isSelected)
-        {
-            //shadow
-            drawList->AddRect(ImVec2(cursorPos.x + 1, cursorPos.y + 1), ImVec2(bottomRight.x + 1 * ImGui::GetStyle().ScaleFactor, bottomRight.y + 1 * ImGui::GetStyle().ScaleFactor),
-                              IM_COL32(2, 4, 6, 255),
-                              6.0f, 0, 3);
-
-            drawList->AddRectFilled(cursorPos, bottomRight,
-                                    IM_COL32(40, 41, 43, 255),
-                                    6.0f, 0);
-        }
-
-        ImVec2 oldCursor = ImGui::GetCursorPos();
-        char   str[50];
-        sprintf(str, "###invisibebutton_%d", contentItemDesc.ItemId);
-
-        ImGui::SetCursorPos(ImVec2(oldCursor.x + 4, oldCursor.y));
-        ImGui::InvisibleButton(str, ImVec2(contentFullSize.x - 4, contentFullSize.y));
-
-        if (contentItemDesc.AcceptPayload != nullptr && ImGui::BeginDragDropTarget())
-        {
-            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(contentItemDesc.AcceptPayload))
-            {
-                contentTable.acceptPayloadItem = contentItemDesc.ItemId;
-            }
-            ImGui::EndDragDropTarget();
-        }
-
-        if (contentItemDesc.DragDropType != nullptr && !isDoubleClicked && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoHoldToOpenOthers))
-        {
-            contentTable.beginPayloadItem = contentItemDesc.ItemId;
-
-            ImGui::SetDragDropPayload(contentItemDesc.DragDropType, contentItemDesc.DragDropPayload, contentItemDesc.DragDropPayloadSize);
-            ImGui::Text("%s", contentItemDesc.Label);
-            ImGui::EndDragDropSource();
-        }
-
-        ImGui::SetCursorPos(oldCursor);
-
-        ImGui::ItemSize(ImVec2{width, ThumbnailSize});
-        //drawImage(contentItemDesc.texture, {cursorPos.x, cursorPos.y, cursorPos.x + width, cursorPos.y + ThumbnailSize});
-        if (contentItemDesc.Texture)
-        {
-            DrawTexture(contentItemDesc.Texture, {
-                          (i32)cursorPos.x,
-                          (i32)cursorPos.y,
-                          (u32)(cursorPos.x + width),
-                          (u32)(cursorPos.y + ThumbnailSize)
-                      });
-        }
-
-        if (contentItemDesc.ShowDetails)
-        {
-            drawList->AddRectFilled(ImVec2(cursorPos.x, cursorPos.y - separatorLineSize + ThumbnailSize),
-                                    ImVec2(bottomRight.x + 1, cursorPos.y + ThumbnailSize),
-                                    contentItemDesc.Color != nullptr ? *contentItemDesc.Color : TextToColor(contentItemDesc.DetailsDesc), 0, 0);
-
-            if (isHovered && !isSelected)
-            {
-                drawList->AddRect(ImVec2(cursorPos.x - 1, cursorPos.y - 1), ImVec2(bottomRight.x + 1, bottomRight.y + 1), IM_COL32(90, 90, 90, 255), 6, 0, 1);
-            }
-        }
-
-        if (isSelected)
-        {
-            drawList->AddRect(ImVec2(cursorPos.x - 1, cursorPos.y - 1), ImVec2(bottomRight.x + 1, bottomRight.y + 1),
-                              ImGui::ColorConvertFloat4ToU32(ImVec4(0.26f, 0.59f, 0.98f, 1.0f)),
-                              6.0f, 0, 1);
-
-            //			drawList->AddRect(ImVec2(cursorPos.x - 1, cursorPos.y - 1), ImVec2(bottomRight.x + 1, bottomRight.y + 1),
-            //				IM_COL32(213, 124, 22, 255),
-            //				6.0f, 0, 1);
-        }
-
-        //separator size
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + separatorLineSize);
-
-        ImGui::BeginVertical(contentItemDesc.ItemId + 10, ImVec2(width, contentInfoSize - ThumbnailSize), 0.2);
-        {
-            ImGui::BeginHorizontal(contentItemDesc.ItemId + 20, ImVec2(width, 0.0f));
-
-            ImGui::Spring();
-            {
-                auto cursor = ImGui::GetCursorScreenPos();
-
-                auto textSize = ImGui::CalcTextSize(contentItemDesc.Label);
-
-                if (contentTable.renamingSelected && isSelected)
-                {
-                    auto magicNumber = 8.f;
-
-                    ImGui::SetNextItemWidth(width - magicNumber);
-                    ImGui::SetCursorScreenPos(ImVec2{cursor.x - magicNumber, cursor.y});
-
-                    if (!contentTable.renamingFocus)
-                    {
-                        contentTable.renamingStringCache = contentItemDesc.Label;
-                        ImGui::SetKeyboardFocusHere();
-                    }
-
-                    ImGui::StyleColor frameColor(ImGuiCol_FrameBg, IM_COL32(52, 53, 55, 255));
-                    InputText(40101, contentTable.renamingStringCache);
-
-                    //defer renamingFocus change, because InputText is not active in the first frame, canceling rename
-                    if (!ImGui::IsItemActive() && contentTable.renamingFocus)
-                    {
-                        if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape)))
-                        {
-                            contentTable.renamedCancelled = contentItemDesc.ItemId;
-                        }
-                        else
-                        {
-                            contentTable.renamedItem = contentItemDesc.ItemId;
-                        }
-
-                        contentTable.renamingSelected = false;
-                        contentTable.renamingFocus = false;
-                        ImGui::SetFocusID(Math::Max(contentItemDesc.ItemId, 1u), ImGui::GetCurrentWindow());
-                    }
-                    else if (!contentTable.renamingFocus)
-                    {
-                        contentTable.renamingFocus = true;
-                    }
-                }
-                else
-                {
-                    auto rect = ImVec2{cursor.x + ThumbnailSize - 20, cursor.y + (textSize.y * 2)};
-
-                    //TODO PushTextWrapPos + PushClipRect is messing with the CursorPos if the text is too large.
-                    ImGui::PushClipRect(cursor, rect, true);
-
-                    //                    ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + width - 15);
-
-                    const float textWidth = Math::Min(textSize.x, width);
-
-                    ImGui::SetNextItemWidth(textWidth);
-                    ImGui::Text("%s%s", contentItemDesc.PreLabel != nullptr ? contentItemDesc.PreLabel : "", contentItemDesc.Label);
-
-                    //                    ImGui::PopTextWrapPos();
-
-                    ImGui::PopClipRect();
-                }
-            }
-
-            ImGui::Spring();
-            ImGui::EndHorizontal();
-
-            ImGui::Spring();
-
-            if (isClicked)
-            {
-                contentTable.selectedItem = contentItemDesc.ItemId;
-                ImGui::SetFocusID(Math::Max(contentItemDesc.ItemId, 1u), ImGui::GetCurrentWindow());
-            }
-
-            if (contentItemDesc.ShowDetails)
-            {
-                ImGui::TextDisabled("%s", contentItemDesc.DetailsDesc);
-                ImGui::Spring(0.4);
-            }
-            ImGui::EndVertical();
-        }
-
-        ImGui::EndGroup();
-        ImGui::PopID();
-
-        return (isDoubleClicked || isEnter) && !contentTable.renamingSelected;
-    }
-
-    void EndContentTable()
-    {
-        ImGui::EndTable();
-        currentContentTable = U32_MAX;
-    }
-
-    void CancelRenameContentSelected(ImGuiID id)
-    {
-        ContentTable& contentTable = CurrentTable(id);
-        contentTable.renamingSelected = false;
-        contentTable.renamedItem = U32_MAX;
-        contentTable.renamingId = U32_MAX;
-        contentTable.renamingStringCache.Clear();
-        contentTable.renamingSelected = false;
-        contentTable.renamingFocus = false;
-    }
-
-    bool ContentItemHovered(ImGuiID itemId)
-    {
-        return CurrentTable().hoveredItem == itemId;
-    }
-
-    bool ContentItemSelected(ImGuiID itemId)
-    {
-        return CurrentTable().selectedItem == itemId;
-    }
-
-    void SelectContentItem(ImGuiID itemId, ImGuiID tableId)
-    {
-        if (tableId == U32_MAX)
-        {
-            CurrentTable().selectedItem = itemId;
-        }
-        else
-        {
-            CurrentTable(tableId).selectedItem = itemId;
-        }
-    }
-
-    ImGuiID GetSelectedContentItem()
-    {
-        return CurrentTable().selectedItem;
-    }
-
-    bool ContentItemFocused(ImGuiID itemId)
-    {
-        return ImGui::GetFocusID() == itemId;
-    }
-
-    void RenameContentSelected(ImGuiID id)
-    {
-        auto& contentTable = CurrentTable(id);
-        if (contentTable.selectedItem)
-        {
-            contentTable.renamingSelected = true;
-            contentTable.renamingId = contentTable.selectedItem;
-        }
-    }
-
-    bool ContentItemRenamed(ImGuiID itemId)
-    {
-        return CurrentTable().renamedItem == itemId;
-    }
-
-    bool ContentItemBeginPayload(ImGuiID itemId)
-    {
-        return CurrentTable().beginPayloadItem == itemId;
-    }
-
-    bool ContentItemAcceptPayload(ImGuiID itemId)
-    {
-        return CurrentTable().acceptPayloadItem == itemId;
-    }
-
-    bool RenamingSelected(ImGuiID itemId)
-    {
-        auto& ct = CurrentTable(itemId);
-        return ct.renamingSelected;
-    }
-
-    StringView ContentRenameString()
-    {
-        return CurrentTable().renamingStringCache;
     }
 
     void RegisterKeys()
@@ -1074,53 +691,53 @@ namespace ImGui
 
                 if (ImGui::BeginChild(10000, ImVec2(0, 0), false, ImGuiWindowFlags_AlwaysUseWindowPadding))
                 {
-                    if (ImGui::BeginContentTable(10010, zoom * 112 * style.ScaleFactor))
-                    {
-                        {
-                            ImGui::ContentItemDesc contentItem{};
-                            contentItem.ItemId = ImHashStr("None-Id");
-                            contentItem.ShowDetails = false;
-                            contentItem.Label = "None";
-                            contentItem.CanRename = false;
-
-                            if (ImGui::DrawContentItem(contentItem))
-                            {
-                                showAssetSelection = false;
-                                callback(userData, nullptr);
-                            }
-                        }
-
-                        std::function<void(TypeID typeId)> drawAssetSelection;
-                        drawAssetSelection = [&](const TypeID typeId)
-                        {
-                            // for (AssetHandler* assetHandler : AssetManager::FindAssetsByType(typeId))
-                            // {
-                            //     ImGui::ContentItemDesc contentItem{};
-                            //     contentItem.ItemId = id;
-                            //     contentItem.ShowDetails = false;
-                            //     contentItem.Label = assetHandler->GetName().CStr();
-                            //     contentItem.CanRename = false;
-                            //     //contentItem.DetailsDesc = asset->GetDisplayName().CStr();
-                            //
-                            //     if (ImGui::DrawContentItem(contentItem))
-                            //     {
-                            //         showAssetSelection = false;
-                            //         callback(userData, assetHandler->LoadInstance());
-                            //     }
-                            //     id += 5;
-                            // }
-
-                            if (TypeHandler* typeHandler = Registry::FindTypeById(typeId))
-                            {
-                                for(DerivedType derived: typeHandler->GetDerivedTypes())
-                                {
-                                    drawAssetSelection(derived.typeId);
-                                }
-                            }
-                        };
-                        drawAssetSelection(assetType);
-                        ImGui::EndContentTable();
-                    }
+                    // if (ImGui::BeginContentTable(10010, zoom * 112 * style.ScaleFactor))
+                    // {
+                    //     {
+                    //         ImGui::ContentItemDesc contentItem{};
+                    //         contentItem.ItemId = ImHashStr("None-Id");
+                    //         contentItem.ShowDetails = false;
+                    //         contentItem.Label = "None";
+                    //         contentItem.CanRename = false;
+                    //
+                    //         if (ImGui::DrawContentItem(contentItem))
+                    //         {
+                    //             showAssetSelection = false;
+                    //             callback(userData, nullptr);
+                    //         }
+                    //     }
+                    //
+                    //     std::function<void(TypeID typeId)> drawAssetSelection;
+                    //     drawAssetSelection = [&](const TypeID typeId)
+                    //     {
+                    //         // for (AssetHandler* assetHandler : AssetManager::FindAssetsByType(typeId))
+                    //         // {
+                    //         //     ImGui::ContentItemDesc contentItem{};
+                    //         //     contentItem.ItemId = id;
+                    //         //     contentItem.ShowDetails = false;
+                    //         //     contentItem.Label = assetHandler->GetName().CStr();
+                    //         //     contentItem.CanRename = false;
+                    //         //     //contentItem.DetailsDesc = asset->GetDisplayName().CStr();
+                    //         //
+                    //         //     if (ImGui::DrawContentItem(contentItem))
+                    //         //     {
+                    //         //         showAssetSelection = false;
+                    //         //         callback(userData, assetHandler->LoadInstance());
+                    //         //     }
+                    //         //     id += 5;
+                    //         // }
+                    //
+                    //         if (TypeHandler* typeHandler = Registry::FindTypeById(typeId))
+                    //         {
+                    //             for(DerivedType derived: typeHandler->GetDerivedTypes())
+                    //             {
+                    //                 drawAssetSelection(derived.typeId);
+                    //             }
+                    //         }
+                    //     };
+                    //     drawAssetSelection(assetType);
+                    //     ImGui::EndContentTable();
+                    // }
                     ImGui::EndChild();
                     ImGui::SetWindowFontScale(1);
                 }
@@ -1204,7 +821,6 @@ namespace ImGui
     void ImGuiShutdown()
     {
         drawTypes.Clear();
-        contentTables.Clear();
         fieldRenders.Clear();
         DestroyContext();
     }

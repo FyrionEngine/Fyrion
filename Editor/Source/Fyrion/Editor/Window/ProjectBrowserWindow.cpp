@@ -299,8 +299,6 @@ namespace Fyrion
                             }
 
 
-
-
                             if (childNode->absolutePath == selectedItem)
                             {
                                 //selected
@@ -480,18 +478,18 @@ namespace Fyrion
         }
 
         bool closePopup = false;
-        if (!ImGui::RenamingSelected(CONTENT_TABLE_ID + id) && ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))
-        {
-            if (menuItemContext.ExecuteHotKeys(this))
-            {
-                closePopup = true;
-            }
-
-            if (ImGui::IsMouseReleased(ImGuiMouseButton_Right))
-            {
-                ImGui::OpenPopup("project-browser-popup");
-            }
-        }
+        // if (!ImGui::RenamingSelected(CONTENT_TABLE_ID + id) && ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))
+        // {
+        //     if (menuItemContext.ExecuteHotKeys(this))
+        //     {
+        //         closePopup = true;
+        //     }
+        //
+        //     if (ImGui::IsMouseReleased(ImGuiMouseButton_Right))
+        //     {
+        //         ImGui::OpenPopup("project-browser-popup");
+        //     }
+        // }
 
         auto popupRes = ImGui::BeginPopupMenu("project-browser-popup");
         if (popupRes)

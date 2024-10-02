@@ -79,7 +79,7 @@ namespace ImGui
 
     struct ContentItemState
     {
-        bool   renamed;
+        bool   renameFinish;
         String newName;
         bool   hovered;
         bool   clicked;

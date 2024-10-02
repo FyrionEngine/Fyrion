@@ -39,6 +39,8 @@ namespace ImGui
         f32      scaleFactor = 1.0;
         ImGuiKey keys[static_cast<u32>(Key::MAX)];
 
+        usize renamingItem = 0;
+
         HashMap<usize, UniquePtr<DrawTypeContent>> drawTypes{};
         Array<FieldRendererFn>                     fieldRenders{};
         Array<AssetSelector>                       assetSelectors;
@@ -955,7 +957,7 @@ namespace ImGui
 
         auto posIni = ImVec2(cursorPos.x, cursorPos.y);
         auto posEnd = ImVec2(cursorPos.x + contentItemDesc.thumbnailSize, cursorPos.y + contentItemDesc.thumbnailSize);
-        bool hovered = ImGui::IsMouseHoveringRect(posIni, posEnd, true);
+        bool hovered = ImGui::IsMouseHoveringRect(posIni, posEnd, true) && ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows | ImGuiHoveredFlags_AllowWhenBlockedByPopup);
 
         if (hovered)
         {
@@ -992,7 +994,6 @@ namespace ImGui
         }
 
 
-
         ImGui::BeginHorizontal(contentItemDesc.id + 10, ImVec2(contentItemDesc.thumbnailSize, 0.0f));
         ImGui::Spring();
 
@@ -1010,14 +1011,27 @@ namespace ImGui
             ImGui::SetNextItemWidth(width - magicNumber);
             ImGui::SetCursorScreenPos(ImVec2{cursor.x - magicNumber, cursor.y});
 
-            ImGui::StyleColor frameColor(ImGuiCol_FrameBg, IM_COL32(52, 53, 55, 255));
-
-            ImGui::InputText(40101, renameStringCache);
-
-            if (!ImGui::IsItemActive())
+            if (renamingItem == 0)
             {
                 renameStringCache = contentItemDesc.label;
                 ImGui::SetKeyboardFocusHere();
+            }
+
+            ImGui::StyleColor frameColor(ImGuiCol_FrameBg, IM_COL32(52, 53, 55, 255));
+            ImGui::InputText(contentItemDesc.id, renameStringCache);
+
+            if (!ImGui::IsItemActive() && renamingItem != 0)
+            {
+                if (!ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape)))
+                {
+                    state.newName = renameStringCache;
+                }
+                state.renameFinish = true;
+                renamingItem = 0;
+            }
+            else if (renamingItem == 0)
+            {
+                renamingItem = contentItemDesc.id;
             }
         }
 

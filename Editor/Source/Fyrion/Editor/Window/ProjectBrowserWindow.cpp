@@ -23,7 +23,7 @@ namespace Fyrion
     {
         for (const String& package : Editor::GetOpenPackages())
         {
-            fileTreeCache.AddDirectory(package);
+            assetEditor.AddDirectory(package);
         }
 
         folderTexture = StaticContent::GetTextureFile("Content/Images/FolderIcon.png");
@@ -36,7 +36,7 @@ namespace Fyrion
 
     }
 
-    void ProjectBrowserWindow::DrawTreeNode(const FileTreeCacheNode& node)
+    void ProjectBrowserWindow::DrawTreeNode(const AssetCache& node)
     {
         if (!node.isDirectory) return;
 
@@ -102,31 +102,7 @@ namespace Fyrion
         }
     }
 
-    void ProjectBrowserWindow::SetOpenDirectory(StringView directory)
-    {
-        openDirectory = directory;
-    }
-
-    bool ProjectBrowserWindow::CheckSelectedAsset(const MenuItemEventData& eventData)
-    {
-        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
-        return !projectBrowserWindow->lastSelectedItem.Empty();
-    }
-
-
-
-    void ProjectBrowserWindow::AssetRename(const MenuItemEventData& eventData)
-    {
-        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
-        projectBrowserWindow->renamingItem = projectBrowserWindow->lastSelectedItem;
-    }
-
-    void ProjectBrowserWindow::Shutdown()
-    {
-        menuItemContext = MenuItemContext{};
-    }
-
-    void ProjectBrowserWindow::Draw(u32 id, bool& open)
+void ProjectBrowserWindow::Draw(u32 id, bool& open)
     {
 
         ImGuiStyle& style = ImGui::GetStyle();
@@ -201,6 +177,7 @@ namespace Fyrion
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 1.f * style.ScaleFactor);
 
         bool browseFolder = true;
+        bool newSelection = false;
 
         static ImGuiTableFlags flags = ImGuiTableFlags_Resizable;
 
@@ -215,7 +192,7 @@ namespace Fyrion
 
                 ImGui::BeginTreeNode();
 
-                for (const auto& package : fileTreeCache.GetDirectories())
+                for (const auto& package : assetEditor.GetDirectories())
                 {
                     DrawTreeNode(*package);
                 }
@@ -225,6 +202,7 @@ namespace Fyrion
             }
 
             //AssetHandler* newItemSelected = nullptr;
+
 
             ImGui::TableNextColumn();
             {
@@ -238,19 +216,20 @@ namespace Fyrion
 
                 ImGui::SetWindowFontScale(contentBrowserZoom);
 
-                u32 thumbnailSize = 112 * ImGui::GetStyle().ScaleFactor;
+
+                u32 thumbnailSize = (contentBrowserZoom * 112.f) * ImGui::GetStyle().ScaleFactor;
                 if (ImGui::BeginContentTable("ProjectBrowser", thumbnailSize))
                 {
                     String newOpenDirectory = "";
 
-                    if (const FileTreeCacheNode* openDirectoryNode = fileTreeCache.FindNode(openDirectory))
+                    if (const AssetCache* openDirectoryNode = assetEditor.FindNode(openDirectory))
                     {
                         for (const auto& childNode : openDirectoryNode->children)
                         {
                             ImGui::ContentItemDesc desc;
                             desc.id = reinterpret_cast<usize>(childNode.Get());
                             desc.label = childNode->fileName.CStr();
-                            desc.texture = childNode->isDirectory ? folderTexture : brickTexture;
+                            desc.texture = childNode->isDirectory ? folderTexture : fileTexture;
                             desc.renameItem = renamingItem == childNode->absolutePath;
                             desc.thumbnailSize = thumbnailSize;
                             desc.selected = selectedItems.Has(childNode->absolutePath);
@@ -266,6 +245,7 @@ namespace Fyrion
                                 }
                                 selectedItems.Emplace(childNode->absolutePath);
                                 lastSelectedItem = childNode->absolutePath;
+                                newSelection = true;
                             }
 
                             if (state.doubleClicked)
@@ -278,10 +258,12 @@ namespace Fyrion
                                 }
                             }
 
-
-                            if (state.renamed)
+                            if (state.renameFinish)
                             {
-                                childNode->fileName = state.newName;
+                                if (!state.newName.Empty())
+                                {
+                                    childNode->fileName = state.newName;
+                                }
                                 renamingItem = "";
                             }
                         }
@@ -295,147 +277,6 @@ namespace Fyrion
                     }
                 }
 
-
-                // //DirectoryAssetHandler* selectedDiretory = nullptr;
-                //
-                // if (ImGui::BeginContentTable(id + CONTENT_TABLE_ID, contentBrowserZoom * 112 * ImGui::GetStyle().ScaleFactor))
-                // {
-                //     if (const FileTreeCacheNode* openDirectoryNode = fileTreeCache.FindNode(openDirectory))
-                //     {
-                //         for (const auto& childNode : openDirectoryNode->children)
-                //         {
-                //             if (!childNode->isDirectory) continue;
-                //
-                //             ImGui::ContentItemDesc contentItem{};
-                //             contentItem.ItemId = childNode->hash;
-                //             contentItem.ShowDetails = false;
-                //             contentItem.Label = childNode->fileName.CStr();
-                //             contentItem.DragDropType = AssetDragDropType;
-                //             contentItem.AcceptPayload = AssetDragDropType;
-                //             contentItem.Texture = folderTexture;
-                //
-                //             if (ImGui::DrawContentItem(contentItem))
-                //             {
-                //                 ImGui::ContentItemSelected(U32_MAX);
-                //             }
-                //
-                //             if (ImGui::ContentItemSelected(contentItem.ItemId))
-                //             {
-                //                 //newItemSelected = asset;
-                //             }
-                //
-                //             if (ImGui::ContentItemRenamed(contentItem.ItemId))
-                //             {
-                //                 // if (ImGui::ContentRenameString() != asset->GetName())
-                //                 // {
-                //                 //     Editor::CreateTransaction()->CreateAction<RenameAssetAction>(asset, ImGui::ContentRenameString())->Commit();
-                //                 // }
-                //             }
-                //
-                //             // if (!asset->IsChildOf(assetPayload.asset) && ImGui::ContentItemAcceptPayload(contentItem.ItemId))
-                //             // {
-                //             //     Editor::CreateTransaction()->CreateAction<MoveAssetAction>(assetPayload.asset, dynamic_cast<DirectoryAssetHandler*>(asset))->Commit();
-                //             // }
-                //
-                //             // if (ImGui::ContentItemBeginPayload(contentItem.ItemId))
-                //             // {
-                //             //     assetPayload.asset = selectedItem;
-                //             //}
-                //         }
-                //
-                //         for (const auto& childNode : openDirectoryNode->children)
-                //         {
-                //             if (childNode->isDirectory) continue;
-                //
-                //             ImGui::ContentItemDesc contentItem{};
-                //             contentItem.ItemId = childNode->hash;
-                //             contentItem.ShowDetails = false;
-                //             contentItem.Label = childNode->fileName.CStr();
-                //             contentItem.DragDropType = AssetDragDropType;
-                //             contentItem.AcceptPayload = AssetDragDropType;
-                //             //contentItem.TooltipText = asset->GetPath().CStr();
-                //             contentItem.Texture = fileTexture;
-                //
-                //             // if (asset->IsModified())
-                //             // {
-                //             //     contentItem.PreLabel = "*";
-                //             // }
-                //
-                //             if (ImGui::DrawContentItem(contentItem))
-                //             {
-                //
-                //             }
-                //
-                //         }
-                //
-                //         // for (AssetHandler* assetHandler : openDirectory->GetChildren())
-                //         // {
-                //         //     if (DirectoryAssetHandler* directoryInfo = dynamic_cast<DirectoryAssetHandler*>(assetHandler); directoryInfo == nullptr)
-                //         //     {
-                //         //         ImGui::ContentItemDesc contentItem{};
-                //         //         contentItem.ItemId = reinterpret_cast<usize>(assetHandler);
-                //         //         contentItem.ShowDetails = true;
-                //         //         contentItem.Label = assetHandler->GetName().CStr();
-                //         //         contentItem.DetailsDesc = assetHandler->GetDisplayName().CStr();
-                //         //         contentItem.DragDropType = AssetDragDropType;
-                //         //         contentItem.DragDropPayload = &assetPayload;
-                //         //         contentItem.DragDropPayloadSize = sizeof(AssetPayload);
-                //         //         contentItem.TooltipText = assetHandler->GetPath().CStr();
-                //         //         contentItem.Texture = fileTexture;
-                //         //
-                //         //         if (assetHandler->IsModified())
-                //         //         {
-                //         //             contentItem.PreLabel = "*";
-                //         //         }
-                //         //
-                //         //         if (ImGui::DrawContentItem(contentItem))
-                //         //         {
-                //         //             if (SceneObjectAsset* sceneObjectAsset = dynamic_cast<SceneObjectAsset*>(assetHandler->LoadInstance()))
-                //         //             {
-                //         //                 Editor::CreateTransaction()->CreateAction<OpenSceneAction>(Editor::GetSceneEditor(), sceneObjectAsset)->Commit();
-                //         //             }
-                //         //             // else if (node->objectType == GetTypeID<GraphAsset>() || node->objectType == GetTypeID<RenderGraphAsset>())
-                //         //             // {
-                //         //             //     GraphEditorWindow::OpenGraphWindow(node->rid);
-                //         //             // }
-                //         //         }
-                //         //
-                //         //         if (ImGui::ContentItemSelected(contentItem.ItemId))
-                //         //         {
-                //         //             newItemSelected = assetHandler;
-                //         //         }
-                //         //
-                //         //         if (ImGui::ContentItemRenamed(contentItem.ItemId))
-                //         //         {
-                //         //             if (ImGui::ContentRenameString() != assetHandler->GetName())
-                //         //             {
-                //         //                 Editor::CreateTransaction()->CreateAction<RenameAssetAction>(assetHandler, ImGui::ContentRenameString())->Commit();
-                //         //             }
-                //         //         }
-                //         //
-                //         //         if (ImGui::ContentItemBeginPayload(contentItem.ItemId))
-                //         //         {
-                //         //             assetPayload.asset = selectedItem;
-                //         //         }
-                //         //     }
-                //         // }
-                //     }
-                //     ImGui::EndContentTable();
-                //
-                //     if (!ImGui::RenamingSelected(CONTENT_TABLE_ID + id) && ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))
-                //     {
-                //         if (ImGui::IsKeyPressed(ImGuiKey_Backspace) && openDirectory)
-                //         {
-                //         //    selectedDiretory = dynamic_cast<DirectoryAssetHandler*>(openDirectory->GetParent());
-                //         }
-                //     }
-                // }
-
-              //   if (selectedDiretory)
-              //   {
-              // //      SetOpenDirectory(selectedDiretory);
-              //   }
-
                 ImGui::SetWindowFontScale(1.0);
                 ImGui::EndChild();
             }
@@ -445,6 +286,12 @@ namespace Fyrion
             // {
             //     SetSelectedAsset(newItemSelected);
             // }
+        }
+
+        if (!newSelection && (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)))
+        {
+            selectedItems.Clear();
+            lastSelectedItem = "";
         }
 
         bool closePopup = false;
@@ -475,6 +322,60 @@ namespace Fyrion
         ImGui::End();
     }
 
+    void ProjectBrowserWindow::SetOpenDirectory(StringView directory)
+    {
+        openDirectory = directory;
+    }
+
+    bool ProjectBrowserWindow::CheckSelectedAsset(const MenuItemEventData& eventData)
+    {
+        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
+        return !projectBrowserWindow->lastSelectedItem.Empty();
+    }
+
+
+
+    void ProjectBrowserWindow::AssetRename(const MenuItemEventData& eventData)
+    {
+        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
+        projectBrowserWindow->renamingItem = projectBrowserWindow->lastSelectedItem;
+    }
+
+    void ProjectBrowserWindow::Shutdown()
+    {
+        menuItemContext = MenuItemContext{};
+    }
+
+    void ProjectBrowserWindow::AssetNewFolder(const MenuItemEventData& eventData)
+    {
+        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
+        projectBrowserWindow->renamingItem = projectBrowserWindow->assetEditor.CreateDirectory(projectBrowserWindow->openDirectory);
+    }
+
+    void ProjectBrowserWindow::AssetNewScene(const MenuItemEventData& eventData)
+    {
+
+    }
+
+    void ProjectBrowserWindow::AssetNewMaterial(const MenuItemEventData& eventData) {}
+    void ProjectBrowserWindow::AssetDelete(const MenuItemEventData& eventData) {}
+    void ProjectBrowserWindow::AssetShowInExplorer(const MenuItemEventData& eventData) {}
+    void ProjectBrowserWindow::AssetCopyPathToClipboard(const MenuItemEventData& eventData) {}
+    void ProjectBrowserWindow::AssetNewResourceGraph(const MenuItemEventData& eventData) {}
+    void ProjectBrowserWindow::AssetNewRenderGraph(const MenuItemEventData& eventData) {}
+
+    bool ProjectBrowserWindow::CheckCanReimport(const MenuItemEventData& eventData)
+    {
+        return false;
+    }
+
+    void ProjectBrowserWindow::AssetReimport(const MenuItemEventData& eventData) {}
+
+    void ProjectBrowserWindow::AssetNew(const MenuItemEventData& eventData)
+    {
+
+    }
+
     ProjectBrowserWindow::~ProjectBrowserWindow()
     {
         Graphics::WaitQueue();
@@ -498,7 +399,20 @@ namespace Fyrion
         Event::Bind<OnShutdown, Shutdown>();
 
         Editor::AddMenuItem(MenuItemCreation{.itemName = "Window/Project Browser", .action = OpenProjectBrowser});
+
+        AddMenuItem(MenuItemCreation{.itemName = "New Folder", .icon = ICON_FA_FOLDER, .priority = 0, .action = AssetNewFolder});
+        AddMenuItem(MenuItemCreation{.itemName = "New Scene", .icon = ICON_FA_GLOBE, .priority = 10, .action = AssetNewScene});
+        AddMenuItem(MenuItemCreation{.itemName = "New Material", .icon = ICON_FA_PAINTBRUSH, .priority = 15, .action = AssetNewMaterial});
+        AddMenuItem(MenuItemCreation{.itemName = "Delete", .icon = ICON_FA_TRASH, .priority = 20, .itemShortcut{.presKey = Key::Delete}, .action = AssetDelete, .enable = CheckSelectedAsset});
         AddMenuItem(MenuItemCreation{.itemName = "Rename", .icon = ICON_FA_PEN_TO_SQUARE, .priority = 30, .itemShortcut{.presKey = Key::F2}, .action = AssetRename, .enable = CheckSelectedAsset});
+        AddMenuItem(MenuItemCreation{.itemName = "Show in Explorer", .icon = ICON_FA_FOLDER, .priority = 40, .action = AssetShowInExplorer});
+        AddMenuItem(MenuItemCreation{.itemName = "Reimport", .icon = ICON_FA_REPEAT, .priority = 50, .action = AssetReimport, .enable = CheckCanReimport});
+        AddMenuItem(MenuItemCreation{.itemName = "Copy Path", .priority = 1000, .action = AssetCopyPathToClipboard});
+        AddMenuItem(MenuItemCreation{.itemName = "Create New Asset", .icon = ICON_FA_PLUS, .priority = 150});
+        // AddMenuItem(MenuItemCreation{.itemName = "Create New Asset/Shader", .icon = ICON_FA_BRUSH, .priority = 10, .action = AssetNew, .menuData = (VoidPtr)GetTypeID<ShaderAsset>()});
+        // AddMenuItem(MenuItemCreation{.itemName = "Create New Asset/Resource Graph", .icon = ICON_FA_DIAGRAM_PROJECT, .priority = 10, .action = AssetNewResourceGraph});
+        // AddMenuItem(MenuItemCreation{.itemName = "Create New Asset/Behavior Graph", .icon = ICON_FA_DIAGRAM_PROJECT, .priority = 20});
+        AddMenuItem(MenuItemCreation{.itemName = "Create New Asset/Render Graph", .icon = ICON_FA_DIAGRAM_PROJECT, .priority = 30, .action = AssetNewRenderGraph});
 
 
         type.Attribute<EditorWindowProperties>(EditorWindowProperties{

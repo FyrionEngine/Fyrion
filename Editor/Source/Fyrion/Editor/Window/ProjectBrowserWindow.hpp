@@ -2,12 +2,14 @@
 #include "Fyrion/Core/HashSet.hpp"
 #include "Fyrion/Editor/EditorTypes.hpp"
 #include "Fyrion/Editor/MenuItem.hpp"
-#include "Fyrion/Editor/Asset/FileTreeCache.hpp"
+#include "Fyrion/Editor/Editor/AssetEditor.hpp"
 #include "Fyrion/Graphics/GraphicsTypes.hpp"
 
 
 namespace Fyrion
 {
+    struct AssetCache;
+
     class FY_API ProjectBrowserWindow : public EditorWindow
     {
     public:
@@ -33,19 +35,30 @@ namespace Fyrion
         String                renamingItem;
         HashMap<String, bool> openTreeFolders{};
 
-        FileTreeCache fileTreeCache;
+        AssetEditor assetEditor;
 
         Texture folderTexture = {};
         Texture fileTexture = {};
         Texture brickTexture = {};
 
         void DrawPathItems();
-        void DrawTreeNode(const FileTreeCacheNode& node);
+        void DrawTreeNode(const AssetCache& node);
         void SetOpenDirectory(StringView directory);
 
 
         static bool CheckSelectedAsset(const MenuItemEventData& eventData);
         static void AssetRename(const MenuItemEventData& eventData);
         static void Shutdown();
+        static void AssetNewFolder(const MenuItemEventData& eventData);
+        static void AssetNewScene(const MenuItemEventData& eventData);
+        static void AssetNewMaterial(const MenuItemEventData& eventData);
+        static void AssetDelete(const MenuItemEventData& eventData);
+        static void AssetShowInExplorer(const MenuItemEventData& eventData);
+        static void AssetCopyPathToClipboard(const MenuItemEventData& eventData);
+        static void AssetNewResourceGraph(const MenuItemEventData& eventData);
+        static void AssetNewRenderGraph(const MenuItemEventData& eventData);
+        static bool CheckCanReimport(const MenuItemEventData& eventData);
+        static void AssetReimport(const MenuItemEventData& eventData);
+        static void AssetNew(const MenuItemEventData& eventData);
     };
 }

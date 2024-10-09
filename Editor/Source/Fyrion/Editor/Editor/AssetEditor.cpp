@@ -19,7 +19,6 @@ namespace Fyrion
         {
             return it->second.Get();
         }
-
         return nullptr;
     }
 

@@ -73,7 +73,7 @@ namespace ImGui
         StringView label;
         Texture    texture;
         bool       selected;
-        u32        thumbnailSize;
+        f32        thumbnailScale;
         bool       renameItem;
     };
 
@@ -145,7 +145,7 @@ namespace ImGui
 
     FY_API ImU32 TextToColor(const char* str);
 
-    FY_API bool             BeginContentTable(const char* id, u32 thumbnailSize);
+    FY_API bool             BeginContentTable(const char* id, f32 thumbnailScale);
     FY_API ContentItemState ContentItem(const ContentItemDesc& contentItemDesc);
     FY_API void             EndContentTable();
 

@@ -18,7 +18,6 @@ namespace Fyrion
 {
     MenuItemContext ProjectBrowserWindow::menuItemContext = {};
 
-
     void ProjectBrowserWindow::Init(u32 id, VoidPtr userData)
     {
         for (const String& package : Editor::GetOpenPackages())
@@ -27,7 +26,7 @@ namespace Fyrion
         }
 
         folderTexture = StaticContent::GetTextureFile("Content/Images/FolderIcon.png");
-        fileTexture = StaticContent::GetTextureFile("Content/Images/FileIcon.png");
+        fileTexture = StaticContent::GetTextureFile("Content/Images/file.png");
         brickTexture = StaticContent::GetTextureFile("Content/Images/brickwall.jpg");
     }
 
@@ -154,6 +153,9 @@ void ProjectBrowserWindow::Draw(u32 id, bool& open)
 
             ImGui::PopStyleColor(2);
 
+            ImGui::SetNextItemWidth(250 * style.ScaleFactor);
+            ImGui::SliderFloat("###zoom", &contentBrowserZoom, 0.4f, 5.0f, "");
+
             ImGui::SetNextItemWidth(400 * style.ScaleFactor);
             ImGui::SearchInputText(id + 20, searchString);
 
@@ -207,18 +209,17 @@ void ProjectBrowserWindow::Draw(u32 id, bool& open)
             ImGui::TableNextColumn();
             {
                 ImGui::StyleColor childBg(ImGuiCol_ChildBg, IM_COL32(27, 28, 30, 255));
-                //auto              padding = 5.f * style.ScaleFactor;
-                auto padding = 0;
-                ImGui::StyleVar   cellPadding(ImGuiStyleVar_CellPadding, ImVec2(padding, padding));
-                ImGui::StyleVar   browserWinPadding(ImGuiStyleVar_WindowPadding, ImVec2(5.f * style.ScaleFactor, 5.f * style.ScaleFactor));
+                auto            padding = 0;
+                ImGui::StyleVar cellPadding(ImGuiStyleVar_CellPadding, ImVec2(padding, padding));
+                ImGui::StyleVar itemSpacing(ImGuiStyleVar_ItemSpacing, ImVec2(contentBrowserZoom, contentBrowserZoom));
+                ImGui::StyleVar framePadding(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+                ImGui::StyleVar browserWinPadding(ImGuiStyleVar_WindowPadding, ImVec2(5.f * style.ScaleFactor, 5.f * style.ScaleFactor));
 
                 ImGui::BeginChild(52211, ImVec2(0, 0), false, ImGuiWindowFlags_AlwaysUseWindowPadding);
 
                 ImGui::SetWindowFontScale(contentBrowserZoom);
 
-
-                u32 thumbnailSize = (contentBrowserZoom * 112.f) * ImGui::GetStyle().ScaleFactor;
-                if (ImGui::BeginContentTable("ProjectBrowser", thumbnailSize))
+                if (ImGui::BeginContentTable("ProjectBrowser", contentBrowserZoom))
                 {
                     String newOpenDirectory = "";
 
@@ -229,9 +230,9 @@ void ProjectBrowserWindow::Draw(u32 id, bool& open)
                             ImGui::ContentItemDesc desc;
                             desc.id = reinterpret_cast<usize>(childNode.Get());
                             desc.label = childNode->fileName.CStr();
-                            desc.texture = childNode->isDirectory ? folderTexture : fileTexture;
+                            desc.texture = childNode->isDirectory ? folderTexture : brickTexture;
                             desc.renameItem = renamingItem == childNode->absolutePath;
-                            desc.thumbnailSize = thumbnailSize;
+                            desc.thumbnailScale = contentBrowserZoom;
                             desc.selected = selectedItems.Has(childNode->absolutePath);
 
                             ImGui::ContentItemState state = ImGui::ContentItem(desc);
@@ -332,8 +333,6 @@ void ProjectBrowserWindow::Draw(u32 id, bool& open)
         ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
         return !projectBrowserWindow->lastSelectedItem.Empty();
     }
-
-
 
     void ProjectBrowserWindow::AssetRename(const MenuItemEventData& eventData)
     {

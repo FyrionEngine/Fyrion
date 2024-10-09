@@ -925,8 +925,10 @@ namespace ImGui
 
     //content table
 
-    bool BeginContentTable(const char* tableId, u32 thumbnailSize)
+    bool BeginContentTable(const char* tableId, f32 thumbnailScale)
     {
+        u32 thumbnailSize = (thumbnailScale * 112.f) * ImGui::GetStyle().ScaleFactor;
+
         static ImGuiTableFlags tableFlags = ImGuiTableFlags_SizingFixedSame;
         u32 columns = Math::Max(static_cast<u32>((ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x) / thumbnailSize), 1u);
 
@@ -945,6 +947,9 @@ namespace ImGui
 
     ContentItemState ContentItem(const ContentItemDesc& contentItemDesc)
     {
+        ImGuiStyle& style = ImGui::GetStyle();
+        u32 thumbnailSize = (contentItemDesc.thumbnailScale * 112.f) * ImGui::GetStyle().ScaleFactor;
+
         ImGui::TableNextColumn();
         auto* drawList = ImGui::GetWindowDrawList();
         auto cursorPos = ImGui::GetCursorScreenPos();
@@ -953,10 +958,10 @@ namespace ImGui
         auto width = table->Columns.Data->WidthGiven;
 
         //texture
-        f32 imagePadding = contentItemDesc.thumbnailSize * 0.08f;
+        f32 imagePadding = thumbnailSize * 0.08f;
 
         auto posIni = ImVec2(cursorPos.x, cursorPos.y);
-        auto posEnd = ImVec2(cursorPos.x + contentItemDesc.thumbnailSize, cursorPos.y + contentItemDesc.thumbnailSize);
+        auto posEnd = ImVec2(cursorPos.x + thumbnailSize, cursorPos.y + thumbnailSize);
         bool hovered = ImGui::IsMouseHoveringRect(posIni, posEnd, true) && ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows | ImGuiHoveredFlags_AllowWhenBlockedByPopup);
 
         if (hovered)
@@ -980,71 +985,73 @@ namespace ImGui
         ImGui::DrawTexture(contentItemDesc.texture, {
                                i32(cursorPos.x + imagePadding * 2),
                                i32(cursorPos.y + imagePadding),
-                               (u32)(cursorPos.x + contentItemDesc.thumbnailSize - imagePadding * 2),
-                               (u32)(cursorPos.y + contentItemDesc.thumbnailSize - imagePadding * 3)
+                               (u32)(cursorPos.x + thumbnailSize - imagePadding * 2),
+                               (u32)(cursorPos.y + thumbnailSize - imagePadding * 3)
                            });
 
-        //rect size
-        ImGui::ItemSize(ImVec2{(f32)contentItemDesc.thumbnailSize, (f32)contentItemDesc.thumbnailSize - imagePadding * 2});
+        //rect size for texture
+        ImGui::Dummy(ImVec2{(f32)thumbnailSize, (f32)thumbnailSize - imagePadding * 3.f});
 
-        if (contentItemDesc.renameItem)
+        ImGui::BeginVertical(contentItemDesc.id + 10, ImVec2(thumbnailSize, thumbnailSize - (ImGui::GetCursorScreenPos().y - cursorPos.y)));
         {
-            //TODO how to get this magic number?
-            ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 10 * ImGui::GetStyle().ScaleFactor);
-        }
+            ImGui::Spring();
 
+            auto textSize = ImGui::CalcTextSize(contentItemDesc.label.CStr());
+            auto textPadding = textSize.y / 1.5f;
+            textSize.x = Math::Min(textSize.x, f32(thumbnailSize - textPadding));
 
-        ImGui::BeginHorizontal(contentItemDesc.id + 10, ImVec2(contentItemDesc.thumbnailSize, 0.0f));
-        ImGui::Spring();
-
-        if (!contentItemDesc.renameItem)
-        {
-            //text
-            ImGui::Text("%s", contentItemDesc.label.CStr());
-        }
-        else
-        {
-            static String renameStringCache = {};
-            static auto magicNumber = 8.f;
-            auto cursor = ImGui::GetCursorScreenPos();
-
-            ImGui::SetNextItemWidth(width - magicNumber);
-            ImGui::SetCursorScreenPos(ImVec2{cursor.x - magicNumber, cursor.y});
-
-            if (renamingItem == 0)
+            ImGui::BeginHorizontal(contentItemDesc.id + 20, ImVec2(thumbnailSize, 0.0f));
+            ImGui::Spring(1.0);
             {
-                renameStringCache = contentItemDesc.label;
-                ImGui::SetKeyboardFocusHere();
-            }
-
-            ImGui::StyleColor frameColor(ImGuiCol_FrameBg, IM_COL32(52, 53, 55, 255));
-            ImGui::InputText(contentItemDesc.id, renameStringCache);
-
-            if (!ImGui::IsItemActive() && renamingItem != 0)
-            {
-                if (!ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape)))
+                if (!contentItemDesc.renameItem)
                 {
-                    state.newName = renameStringCache;
+                    ImGui::PushClipRect(GetCursorScreenPos(), GetCursorScreenPos() + textSize, true);
+                    drawList->AddText(GetCursorScreenPos(), GetColorU32(ImGuiCol_Text), contentItemDesc.label.CStr());
+                    ImGui::PopClipRect();
+                    ImGui::Dummy(textSize);
                 }
-                state.renameFinish = true;
-                renamingItem = 0;
+                else
+                {
+                    static String renameStringCache = {};
+                    ImGui::SetNextItemWidth(width - textPadding);
+
+                    if (renamingItem == 0)
+                    {
+                        renameStringCache = contentItemDesc.label;
+                        ImGui::SetKeyboardFocusHere();
+                    }
+
+                    ImGui::StyleColor frameColor(ImGuiCol_FrameBg, IM_COL32(52, 53, 55, 255));
+                    ImGui::InputText(contentItemDesc.id, renameStringCache);
+
+                    if (!ImGui::IsItemActive() && renamingItem != 0)
+                    {
+                        if (!ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape)))
+                        {
+                            state.newName = renameStringCache;
+                        }
+                        state.renameFinish = true;
+                        renamingItem = 0;
+                    }
+                    else if (renamingItem == 0)
+                    {
+                        renamingItem = contentItemDesc.id;
+                    }
+                }
             }
-            else if (renamingItem == 0)
-            {
-                renamingItem = contentItemDesc.id;
-            }
+
+            ImGui::Spring(1.0);
+            ImGui::EndHorizontal();
+            ImGui::Spring();
         }
+        ImGui::EndVertical();
 
-        ImGui::Spring();
-        ImGui::EndHorizontal();
-
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 2 * ImGui::GetStyle().ScaleFactor);
 
         if (contentItemDesc.selected)
         {
             //selected
             drawList->AddRect(ImVec2(cursorPos.x, cursorPos.y),
-                              ImVec2(cursorPos.x + contentItemDesc.thumbnailSize, ImGui::GetCursorScreenPos().y - 1),
+                              ImVec2(cursorPos.x + thumbnailSize -1, ImGui::GetCursorScreenPos().y - 1),
                               ImGui::ColorConvertFloat4ToU32(ImVec4(0.26f, 0.59f, 0.98f, 1.0f)),
                               0.0f, 0, 2);
         }

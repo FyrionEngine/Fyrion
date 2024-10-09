@@ -14,6 +14,7 @@
 #include "Fyrion/Core/ArgParser.hpp"
 #include "IO/FileSystem.hpp"
 #include "IO/Path.hpp"
+#include "Resource/ResourceAssets.hpp"
 
 namespace Fyrion
 {
@@ -69,7 +70,7 @@ namespace Fyrion
 
     void Engine::CreateContext(const EngineContextCreation& contextCreation)
     {
-        AssetManager::LoadPackage("Fyrion", Path::Join(FileSystem::AssetFolder(), "Fyrion"));
+        ResourceAssets::LoadAssets("Fyrion", Path::Join(FileSystem::AssetFolder(), "Fyrion"));
 
         PlatformInit();
 

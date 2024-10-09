@@ -27,7 +27,7 @@ namespace Fyrion
         static MenuItemContext menuItemContext;
 
         String                searchString;
-        f32                   contentBrowserZoom = 0.8;
+        f32                   contentBrowserZoom = 1.0;     //TODO - save in some local setting
         String                openDirectory;
         String                stringCache;
         HashSet<String>       selectedItems;

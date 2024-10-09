@@ -1,5 +1,6 @@
 #pragma once
 #include "Fyrion/Core/HashSet.hpp"
+#include "Fyrion/Editor/Editor.hpp"
 #include "Fyrion/Editor/EditorTypes.hpp"
 #include "Fyrion/Editor/MenuItem.hpp"
 #include "Fyrion/Editor/Editor/AssetEditor.hpp"
@@ -8,12 +9,14 @@
 
 namespace Fyrion
 {
-    struct AssetCache;
+    struct AssetFile;
 
     class FY_API ProjectBrowserWindow : public EditorWindow
     {
     public:
         FY_BASE_TYPES(EditorWindow);
+
+        ProjectBrowserWindow() : assetEditor(Editor::GetAssetEditor()) {}
 
         void Init(u32 id, VoidPtr userData) override;
         void Draw(u32 id, bool& open) override;
@@ -24,6 +27,8 @@ namespace Fyrion
         static void RegisterType(NativeTypeHandler<ProjectBrowserWindow>& type);
 
     private:
+        AssetEditor& assetEditor;
+
         static MenuItemContext menuItemContext;
 
         String                searchString;
@@ -35,14 +40,13 @@ namespace Fyrion
         String                renamingItem;
         HashMap<String, bool> openTreeFolders{};
 
-        AssetEditor assetEditor;
 
         Texture folderTexture = {};
         Texture fileTexture = {};
         Texture brickTexture = {};
 
         void DrawPathItems();
-        void DrawTreeNode(const AssetCache& node);
+        void DrawTreeNode(const AssetFile& node);
         void SetOpenDirectory(StringView directory);
 
 

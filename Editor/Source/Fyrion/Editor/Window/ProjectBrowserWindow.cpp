@@ -20,25 +20,16 @@ namespace Fyrion
 
     void ProjectBrowserWindow::Init(u32 id, VoidPtr userData)
     {
-        for (const String& package : Editor::GetOpenPackages())
-        {
-            assetEditor.AddDirectory(package);
-        }
-
         folderTexture = StaticContent::GetTextureFile("Content/Images/FolderIcon.png");
         fileTexture = StaticContent::GetTextureFile("Content/Images/file.png");
         brickTexture = StaticContent::GetTextureFile("Content/Images/brickwall.jpg");
     }
 
-    void ProjectBrowserWindow::DrawPathItems()
-    {
+    void ProjectBrowserWindow::DrawPathItems() {}
 
-    }
-
-    void ProjectBrowserWindow::DrawTreeNode(const AssetCache& node)
+    void ProjectBrowserWindow::DrawTreeNode(const AssetFile& node)
     {
         if (!node.isDirectory) return;
-
 
         ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_None;
 
@@ -101,8 +92,9 @@ namespace Fyrion
         }
     }
 
-void ProjectBrowserWindow::Draw(u32 id, bool& open)
+    void ProjectBrowserWindow::Draw(u32 id, bool& open)
     {
+        String labelCache = "";
 
         ImGuiStyle& style = ImGui::GetStyle();
         ImVec2      pad = style.WindowPadding;
@@ -138,7 +130,7 @@ void ProjectBrowserWindow::Draw(u32 id, bool& open)
                     {
                         for (const String& path : paths)
                         {
-                          //  AssetManager::ImportAsset(openDirectory, path);
+                            //  AssetManager::ImportAsset(openDirectory, path);
                         }
                     }
                 }
@@ -209,11 +201,11 @@ void ProjectBrowserWindow::Draw(u32 id, bool& open)
             ImGui::TableNextColumn();
             {
                 ImGui::StyleColor childBg(ImGuiCol_ChildBg, IM_COL32(27, 28, 30, 255));
-                auto            padding = 0;
-                ImGui::StyleVar cellPadding(ImGuiStyleVar_CellPadding, ImVec2(padding, padding));
-                ImGui::StyleVar itemSpacing(ImGuiStyleVar_ItemSpacing, ImVec2(contentBrowserZoom, contentBrowserZoom));
-                ImGui::StyleVar framePadding(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-                ImGui::StyleVar browserWinPadding(ImGuiStyleVar_WindowPadding, ImVec2(5.f * style.ScaleFactor, 5.f * style.ScaleFactor));
+                auto              padding = 0;
+                ImGui::StyleVar   cellPadding(ImGuiStyleVar_CellPadding, ImVec2(padding, padding));
+                ImGui::StyleVar   itemSpacing(ImGuiStyleVar_ItemSpacing, ImVec2(contentBrowserZoom, contentBrowserZoom));
+                ImGui::StyleVar   framePadding(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+                ImGui::StyleVar   browserWinPadding(ImGuiStyleVar_WindowPadding, ImVec2(5.f * style.ScaleFactor, 5.f * style.ScaleFactor));
 
                 ImGui::BeginChild(52211, ImVec2(0, 0), false, ImGuiWindowFlags_AlwaysUseWindowPadding);
 
@@ -223,15 +215,31 @@ void ProjectBrowserWindow::Draw(u32 id, bool& open)
                 {
                     String newOpenDirectory = "";
 
-                    if (const AssetCache* openDirectoryNode = assetEditor.FindNode(openDirectory))
+                    if (const AssetFile* openDirectoryNode = assetEditor.FindNode(openDirectory))
                     {
-                        for (const auto& childNode : openDirectoryNode->children)
+                        for (AssetFile* childNode : openDirectoryNode->children)
                         {
+                            labelCache.Clear();
+
+                            bool renaming = renamingItem == childNode->absolutePath;
+
+                            if (!renaming && childNode->IsDirty())
+                            {
+                                labelCache = "*";
+                            }
+
+                            labelCache += childNode->fileName;
+
+                            if (!renaming)
+                            {
+                                labelCache += childNode->extension;
+                            }
+
                             ImGui::ContentItemDesc desc;
-                            desc.id = reinterpret_cast<usize>(childNode.Get());
-                            desc.label = childNode->fileName.CStr();
+                            desc.id = reinterpret_cast<usize>(childNode);
+                            desc.label = labelCache.CStr();
                             desc.texture = childNode->isDirectory ? folderTexture : brickTexture;
-                            desc.renameItem = renamingItem == childNode->absolutePath;
+                            desc.renameItem = renaming;
                             desc.thumbnailScale = contentBrowserZoom;
                             desc.selected = selectedItems.Has(childNode->absolutePath);
 
@@ -263,7 +271,7 @@ void ProjectBrowserWindow::Draw(u32 id, bool& open)
                             {
                                 if (!state.newName.Empty())
                                 {
-                                    childNode->fileName = state.newName;
+                                    assetEditor.Rename(childNode, state.newName);
                                 }
                                 renamingItem = "";
                             }
@@ -289,11 +297,6 @@ void ProjectBrowserWindow::Draw(u32 id, bool& open)
             // }
         }
 
-        if (!newSelection && (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)))
-        {
-            selectedItems.Clear();
-            lastSelectedItem = "";
-        }
 
         bool closePopup = false;
         if (renamingItem.Empty() && ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))
@@ -319,6 +322,12 @@ void ProjectBrowserWindow::Draw(u32 id, bool& open)
             }
         }
         ImGui::EndPopupMenu(popupRes);
+
+        if (!popupRes && !newSelection && (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)))
+        {
+            selectedItems.Clear();
+            lastSelectedItem = "";
+        }
 
         ImGui::End();
     }
@@ -348,17 +357,32 @@ void ProjectBrowserWindow::Draw(u32 id, bool& open)
     void ProjectBrowserWindow::AssetNewFolder(const MenuItemEventData& eventData)
     {
         ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
-        projectBrowserWindow->renamingItem = projectBrowserWindow->assetEditor.CreateDirectory(projectBrowserWindow->openDirectory);
+        String                newDirectory = projectBrowserWindow->assetEditor.CreateDirectory(projectBrowserWindow->openDirectory);
+
+        projectBrowserWindow->renamingItem = newDirectory;
+        projectBrowserWindow->selectedItems.Clear();
+        projectBrowserWindow->selectedItems.Insert(newDirectory);
+        projectBrowserWindow->lastSelectedItem = newDirectory;
     }
 
-    void ProjectBrowserWindow::AssetNewScene(const MenuItemEventData& eventData)
-    {
-
-    }
+    void ProjectBrowserWindow::AssetNewScene(const MenuItemEventData& eventData) {}
 
     void ProjectBrowserWindow::AssetNewMaterial(const MenuItemEventData& eventData) {}
     void ProjectBrowserWindow::AssetDelete(const MenuItemEventData& eventData) {}
-    void ProjectBrowserWindow::AssetShowInExplorer(const MenuItemEventData& eventData) {}
+
+    void ProjectBrowserWindow::AssetShowInExplorer(const MenuItemEventData& eventData)
+    {
+        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
+        if (!projectBrowserWindow->lastSelectedItem.Empty())
+        {
+            Platform::ShowInExplorer(projectBrowserWindow->lastSelectedItem);
+        }
+        else if (!projectBrowserWindow->openDirectory.Empty())
+        {
+            Platform::ShowInExplorer(projectBrowserWindow->openDirectory);
+        }
+    }
+
     void ProjectBrowserWindow::AssetCopyPathToClipboard(const MenuItemEventData& eventData) {}
     void ProjectBrowserWindow::AssetNewResourceGraph(const MenuItemEventData& eventData) {}
     void ProjectBrowserWindow::AssetNewRenderGraph(const MenuItemEventData& eventData) {}
@@ -370,10 +394,7 @@ void ProjectBrowserWindow::Draw(u32 id, bool& open)
 
     void ProjectBrowserWindow::AssetReimport(const MenuItemEventData& eventData) {}
 
-    void ProjectBrowserWindow::AssetNew(const MenuItemEventData& eventData)
-    {
-
-    }
+    void ProjectBrowserWindow::AssetNew(const MenuItemEventData& eventData) {}
 
     ProjectBrowserWindow::~ProjectBrowserWindow()
     {

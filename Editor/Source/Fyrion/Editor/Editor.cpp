@@ -34,8 +34,8 @@ namespace Fyrion
     {
         Array<EditorWindowStorage> editorWindowStorages{};
         Array<OpenWindowStorage>   openWindows{};
-        Array<String>              openPackages{};
-        //Array<AssetHandler*>       updatedItems{};
+        AssetEditor                assetEditor;
+        Array<AssetFile*>          updatedItems{};
 
         MenuItemContext menuContext{};
         bool            dockInitialized = false;
@@ -53,7 +53,7 @@ namespace Fyrion
         Array<SharedPtr<EditorTransaction>> undoActions{};
         Array<SharedPtr<EditorTransaction>> redoActions{};
 
-        void SaveAll();
+        void SaveAll(Span<AssetFile*> assets);
 
         void Shutdown()
         {
@@ -121,7 +121,9 @@ namespace Fyrion
 
         void SaveAll(const MenuItemEventData& eventData)
         {
-            SaveAll();
+            assetEditor.GetUpdatedAssets(updatedItems);
+            SaveAll(updatedItems);
+            updatedItems.Clear();
         }
 
         void ShowImGuiDemo(const MenuItemEventData& eventData)
@@ -266,89 +268,83 @@ namespace Fyrion
 
         void ProjectUpdate()
         {
-            // if (!updatedItems.Empty())
-            // {
-            //     bool                   open{true};
-            //     static ImGuiTableFlags flags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Resizable;
-            //     ImGuiStyle&            style = ImGui::GetStyle();
-            //     ImGui::SetNextWindowSize({600 * style.ScaleFactor, 400 * style.ScaleFactor}, ImGuiCond_Once);
-            //     ImGui::StyleColor childBg(ImGuiCol_PopupBg, IM_COL32(28, 31, 33, 255));
-            //     if (ImGui::BeginPopupModal("Save Content", &open, ImGuiWindowFlags_NoScrollbar))
-            //     {
-            //         ImGui::Text("Pending items to save");
-            //         {
-            //             ImGui::StyleColor tableBorderStyleColor(ImGuiCol_TableBorderLight, IM_COL32(0, 0, 0, 0));
-            //             ImGui::StyleColor childBg(ImGuiCol_ChildBg, IM_COL32(22, 23, 25, 255));
-            //
-            //             f32 width = ImGui::GetContentRegionAvail().x - 5;
-            //             f32 height = ImGui::GetContentRegionAvail().y;
-            //             f32 buttonHeight = 25 * style.ScaleFactor;
-            //
-            //             if (ImGui::BeginChild(455343, ImVec2(width, height - buttonHeight), false))
-            //             {
-            //                 if (ImGui::BeginTable("table-pending-to-save", 3, flags))
-            //                 {
-            //                     ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_None, 100.f * style.ScaleFactor);
-            //                     ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_None, 300.f * style.ScaleFactor);
-            //                     ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_None, 200.f * style.ScaleFactor);
-            //                     ImGui::TableHeadersRow();
-            //
-            //                     for (AssetHandler* assetHandler : updatedItems)
-            //                     {
-            //                         ImGui::TableNextRow();
-            //
-            //                         ImGui::TableSetColumnIndex(0);
-            //                         ImGui::Text("%s", assetHandler->GetName().CStr());
-            //                         ImGui::TableSetColumnIndex(1);
-            //                         ImGui::Text("%s", assetHandler->GetPath().CStr());
-            //                         ImGui::TableSetColumnIndex(2);
-            //                         ImGui::Text("%s", assetHandler->GetDisplayName().CStr());
-            //                     }
-            //                     ImGui::EndTable();
-            //                 }
-            //
-            //                 ImGui::EndChild();
-            //             }
-            //
-            //             ImGui::BeginHorizontal("#horizontal-save", ImVec2(width, buttonHeight));
-            //
-            //             ImGui::Spring(1.0f);
-            //
-            //             if (ImGui::Button("Save All"))
-            //             {
-            //                 SaveAll();
-            //                 forceClose = true;
-            //                 Engine::Shutdown();
-            //             }
-            //
-            //             if (ImGui::Button("Don't Save"))
-            //             {
-            //                 forceClose = true;
-            //                 Engine::Shutdown();
-            //             }
-            //
-            //             if (ImGui::Button("Cancel"))
-            //             {
-            //                 ImGui::CloseCurrentPopup();
-            //             }
-            //
-            //             ImGui::EndHorizontal();
-            //         }
-            //         ImGui::EndPopup();
-            //     }
-            //     else if (!updatedItems.Empty())
-            //     {
-            //         updatedItems.Clear();
-            //     }
-            // }
+            if (!updatedItems.Empty())
+            {
+                bool                   open{true};
+                static ImGuiTableFlags flags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Resizable;
+                ImGuiStyle&            style = ImGui::GetStyle();
+                ImGui::SetNextWindowSize({600 * style.ScaleFactor, 400 * style.ScaleFactor}, ImGuiCond_Once);
+                ImGui::StyleColor childBg(ImGuiCol_PopupBg, IM_COL32(28, 31, 33, 255));
+                if (ImGui::BeginPopupModal("Save Content", &open, ImGuiWindowFlags_NoScrollbar))
+                {
+                    ImGui::Text("Pending items to save");
+                    {
+                        ImGui::StyleColor tableBorderStyleColor(ImGuiCol_TableBorderLight, IM_COL32(0, 0, 0, 0));
+                        ImGui::StyleColor childBg(ImGuiCol_ChildBg, IM_COL32(22, 23, 25, 255));
+
+                        f32 width = ImGui::GetContentRegionAvail().x - 5;
+                        f32 height = ImGui::GetContentRegionAvail().y;
+                        f32 buttonHeight = 25 * style.ScaleFactor;
+
+                        if (ImGui::BeginChild(455343, ImVec2(width, height - buttonHeight), false))
+                        {
+                            if (ImGui::BeginTable("table-pending-to-save", 3, flags))
+                            {
+                                ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_None, 100.f * style.ScaleFactor);
+                                ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_None, 200.f * style.ScaleFactor);
+                                ImGui::TableHeadersRow();
+
+                                for (AssetFile* assetFile : updatedItems)
+                                {
+                                    ImGui::TableNextRow();
+
+                                    ImGui::TableSetColumnIndex(0);
+                                    ImGui::Text("%s%s", assetFile->fileName.CStr(), assetFile->extension.CStr());
+                                    ImGui::TableSetColumnIndex(1);
+                                    ImGui::Text("%s", "Unknown");
+                                }
+                                ImGui::EndTable();
+                            }
+
+                            ImGui::EndChild();
+                        }
+
+                        ImGui::BeginHorizontal("#horizontal-save", ImVec2(width, buttonHeight));
+
+                        ImGui::Spring(1.0f);
+
+                        if (ImGui::Button("Save All"))
+                        {
+                            SaveAll(updatedItems);
+                            forceClose = true;
+                            Engine::Shutdown();
+                        }
+
+                        if (ImGui::Button("Don't Save"))
+                        {
+                            forceClose = true;
+                            Engine::Shutdown();
+                        }
+
+                        if (ImGui::Button("Cancel"))
+                        {
+                            ImGui::CloseCurrentPopup();
+                        }
+
+                        ImGui::EndHorizontal();
+                    }
+                    ImGui::EndPopup();
+                }
+                else if (!updatedItems.Empty())
+                {
+                    updatedItems.Clear();
+                }
+            }
         }
 
-        void SaveAll()
+        void SaveAll(Span<AssetFile*> assets)
         {
-            // for (DirectoryAssetHandler* directory : directories)
-            // {
-            //     AssetManager::SaveOnDirectory(directory, directory->GetAbsolutePath());
-            // }
+            assetEditor.SaveAssets(assets);
         }
 
         void EditorUpdate(f64 deltaTime)
@@ -373,18 +369,14 @@ namespace Fyrion
         {
             if (forceClose) return;
 
-            //updatedItems.Clear();
+            updatedItems.Clear();
+            assetEditor.GetUpdatedAssets(updatedItems);
 
-            // for (DirectoryAssetHandler* directory : directories)
-            // {
-            //     AssetManager::GetUpdatedAssets(directory, updatedItems);
-            // }
-
-            // if (!updatedItems.Empty())
-            // {
-            //     ImGui::OpenPopup("Save Content");
-            //     *canClose = false;
-            // }
+            if (!updatedItems.Empty())
+            {
+                ImGui::OpenPopup("Save Content");
+                *canClose = false;
+            }
         }
     }
 
@@ -407,6 +399,10 @@ namespace Fyrion
         return undoActions.EmplaceBack(MakeShared<EditorTransaction>()).Get();
     }
 
+    AssetEditor& Editor::GetAssetEditor()
+    {
+        return assetEditor;
+    }
 
     void Editor::AddMenuItem(const MenuItemCreation& menuItem)
     {
@@ -434,11 +430,6 @@ namespace Fyrion
         return projectFilePath;
     }
 
-    Array<String> Editor::GetOpenPackages()
-    {
-        return openPackages;
-    }
-
     void Editor::Init(StringView projectFile)
     {
         // if (Path::Extension(projectFile) != FY_PROJECT_EXTENSION)
@@ -448,8 +439,8 @@ namespace Fyrion
 
         //projectPath = Path::Parent(projectFile);
 
-        openPackages.EmplaceBack("C:\\dev\\Fyrion\\Fyrion\\Assets\\Fyrion");
-        openPackages.EmplaceBack("C:\\dev\\Fyrion\\Projects\\Refactor");
+//        assetEditor.AddPackage("C:\\dev\\Fyrion\\Fyrion\\Assets\\Fyrion");
+        assetEditor.AddPackage("C:\\dev\\Fyrion\\Projects\\Refactor");
 
         Registry::Type<EditorWindow>();
 

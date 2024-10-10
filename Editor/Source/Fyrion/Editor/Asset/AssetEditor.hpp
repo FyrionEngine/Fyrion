@@ -1,14 +1,16 @@
 #pragma once
 #include "Fyrion/Core/Array.hpp"
 #include "Fyrion/Core/HashMap.hpp"
-#include "Fyrion/Core/Span.hpp"
 #include "Fyrion/Core/String.hpp"
 #include "Fyrion/Core/StringView.hpp"
 #include "Fyrion/Core/UUID.hpp"
+#include "Fyrion/Core/Span.hpp"
 
 
 namespace Fyrion
 {
+    struct AssetImporter;
+
     struct AssetFile
     {
         u32    hash;
@@ -23,6 +25,10 @@ namespace Fyrion
 
         Array<AssetFile*> children;
 
+        AssetFile* parent;
+
+        bool active = true;
+
         bool IsDirty() const;
     };
 
@@ -30,6 +36,7 @@ namespace Fyrion
     class AssetEditor
     {
     public:
+        void Init();
         void AddPackage(StringView directory);
 
         decltype(auto) GetDirectories() const
@@ -39,16 +46,25 @@ namespace Fyrion
 
         const AssetFile* FindNode(StringView path) const;
 
-        String CreateDirectory(StringView parentPath);
-        void   Rename(AssetFile* assetFile, StringView newName);
-        void   GetUpdatedAssets(Array<AssetFile*>& updatedAssets) const;
-        void   SaveAssets(Span<AssetFile*> assetsToSave);
+        AssetFile* CreateDirectory(AssetFile* parent);
+        AssetFile* CreateAsset(AssetFile* parent, TypeID typeId);
+        void       Rename(AssetFile* assetFile, StringView newName);
+        void       GetUpdatedAssets(Array<AssetFile*>& updatedAssets) const;
+        void       SaveAssets(Span<AssetFile*> assetsToSave);
+        void       DeleteAssets(Span<AssetFile*> assetFile);
+        String     CreateUniqueName(AssetFile* parent, StringView desiredName);
+
+        void       ImportAssets(Span<String> paths);
+        void       FilterExtensions(Array<FileFilter>& extensions);
 
         ~AssetEditor();
 
     private:
         Array<AssetFile*>           directories;
         HashMap<String, AssetFile*> assets;
+
+        Array<AssetImporter*> importers;
+        HashMap<String, AssetImporter*> extensionImporters;
 
         void UpdateCache(StringView path, AssetFile* assetFile);
     };

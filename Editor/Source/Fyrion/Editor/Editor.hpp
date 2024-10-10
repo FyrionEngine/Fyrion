@@ -3,7 +3,7 @@
 #include "Fyrion/Common.hpp"
 #include "MenuItem.hpp"
 #include "Action/EditorAction.hpp"
-#include "Editor/AssetEditor.hpp"
+#include "Asset/AssetEditor.hpp"
 
 namespace Fyrion::Editor
 {

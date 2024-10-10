@@ -2,6 +2,7 @@
 
 #include "EditorTypes.hpp"
 #include "Action/EditorAction.hpp"
+#include "Asset/AssetImporter.hpp"
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Core/Event.hpp"
 #include "Fyrion/Core/Registry.hpp"
@@ -14,6 +15,7 @@
 namespace Fyrion
 {
     void InitEditorAction();
+    void RegisterAssetTypes();
 
     struct EditorWindowStorage
     {
@@ -110,6 +112,8 @@ namespace Fyrion
             //TODO: Create a setting for that.
             // Editor::OpenDirectory(AssetManager::FindHandlerByPath<DirectoryAssetHandler>("Fyrion:/"));
             // Editor::OpenDirectory(AssetManager::LoadFromDirectory(Path::Name(projectPath), Path::Join(projectPath, "Assets")));
+
+            assetEditor.Init();
         }
 
         void CloseEngine(const MenuItemEventData& eventData)
@@ -439,11 +443,12 @@ namespace Fyrion
 
         //projectPath = Path::Parent(projectFile);
 
-//        assetEditor.AddPackage("C:\\dev\\Fyrion\\Fyrion\\Assets\\Fyrion");
+        assetEditor.AddPackage("C:\\dev\\Fyrion\\Fyrion\\Assets\\Fyrion");
         assetEditor.AddPackage("C:\\dev\\Fyrion\\Projects\\Refactor");
 
         Registry::Type<EditorWindow>();
 
+        RegisterAssetTypes();
         InitEditorAction();
 
         Registry::Type<ProjectBrowserWindow>();

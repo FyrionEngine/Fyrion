@@ -27,20 +27,20 @@ namespace Fyrion
 
     void ProjectBrowserWindow::DrawPathItems() {}
 
-    void ProjectBrowserWindow::DrawTreeNode(const AssetFile& node)
+    void ProjectBrowserWindow::DrawTreeNode(AssetFile* file)
     {
-        if (!node.isDirectory) return;
+        if (!file->isDirectory) return;
 
         ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_None;
 
-        bool openDir = openTreeFolders[node.absolutePath];
+        bool openDir = openTreeFolders[file->absolutePath];
 
         if (openDir)
         {
             ImGui::SetNextItemOpen(true);
         }
 
-        if (!openDirectory.Empty() && openDirectory == node.absolutePath)
+        if (openDirectory && openDirectory == file)
         {
             flags |= ImGuiTreeNodeFlags_Selected;
         }
@@ -55,8 +55,8 @@ namespace Fyrion
             stringCache = ICON_FA_FOLDER;
         }
 
-        stringCache.Append(" ").Append(node.fileName);
-        bool isNodeOpen = ImGui::TreeNode(node.hash, stringCache.CStr(), flags);
+        stringCache.Append(" ").Append(file->fileName);
+        bool isNodeOpen = ImGui::TreeNode(file->hash, stringCache.CStr(), flags);
 
         if (ImGui::BeginDragDropTarget())
         {
@@ -77,16 +77,16 @@ namespace Fyrion
 
         if (openDir == isNodeOpen && ImGui::IsItemClicked(ImGuiMouseButton_Left))
         {
-            SetOpenDirectory(node.absolutePath);
+            SetOpenDirectory(file);
         }
 
-        openTreeFolders[node.absolutePath] = isNodeOpen;
+        openTreeFolders[file->absolutePath] = isNodeOpen;
 
         if (isNodeOpen)
         {
-            for (const auto& childNode : node.children)
+            for (AssetFile* childNode : file->children)
             {
-                DrawTreeNode(*childNode);
+                DrawTreeNode(childNode);
             }
             ImGui::TreePop();
         }
@@ -123,15 +123,14 @@ namespace Fyrion
             if (ImGui::Button(ICON_FA_PLUS " Import"))
             {
                 Array<String> paths{};
+                Array<FileFilter> filters;
+                //assetEditor.FilterExtensions(filters);
 
-                if (Platform::OpenDialogMultiple(paths, {}, {}) == DialogResult::OK)
+                if (Platform::OpenDialogMultiple(paths, filters, {}) == DialogResult::OK)
                 {
                     if (!paths.Empty())
                     {
-                        for (const String& path : paths)
-                        {
-                            //  AssetManager::ImportAsset(openDirectory, path);
-                        }
+                        assetEditor.ImportAssets(paths);
                     }
                 }
             }
@@ -188,15 +187,12 @@ namespace Fyrion
 
                 for (const auto& package : assetEditor.GetDirectories())
                 {
-                    DrawTreeNode(*package);
+                    DrawTreeNode(package);
                 }
 
                 ImGui::EndTreeNode();
                 ImGui::EndChild();
             }
-
-            //AssetHandler* newItemSelected = nullptr;
-
 
             ImGui::TableNextColumn();
             {
@@ -213,76 +209,85 @@ namespace Fyrion
 
                 if (ImGui::BeginContentTable("ProjectBrowser", contentBrowserZoom))
                 {
-                    String newOpenDirectory = "";
+                    AssetFile* newOpenDirectory = nullptr;
 
-                    if (const AssetFile* openDirectoryNode = assetEditor.FindNode(openDirectory))
+                    if (openDirectory != nullptr)
                     {
-                        for (AssetFile* childNode : openDirectoryNode->children)
+                        for (int i = 0; i < 2; ++i)
                         {
-                            labelCache.Clear();
-
-                            bool renaming = renamingItem == childNode->absolutePath;
-
-                            if (!renaming && childNode->IsDirty())
+                            for (AssetFile* childNode : openDirectory->children)
                             {
-                                labelCache = "*";
-                            }
+                                if (!childNode->active) continue;
 
-                            labelCache += childNode->fileName;
+                                //workaround to show directories first.
+                                if (i == 0 && !childNode->isDirectory) continue;
+                                if (i == 1 && childNode->isDirectory) continue;
 
-                            if (!renaming)
-                            {
-                                labelCache += childNode->extension;
-                            }
+                                labelCache.Clear();
 
-                            ImGui::ContentItemDesc desc;
-                            desc.id = reinterpret_cast<usize>(childNode);
-                            desc.label = labelCache.CStr();
-                            desc.texture = childNode->isDirectory ? folderTexture : brickTexture;
-                            desc.renameItem = renaming;
-                            desc.thumbnailScale = contentBrowserZoom;
-                            desc.selected = selectedItems.Has(childNode->absolutePath);
+                                bool renaming = renamingItem == childNode;
 
-                            ImGui::ContentItemState state = ImGui::ContentItem(desc);
-
-                            if (state.clicked)
-                            {
-                                if (!(ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_LeftCtrl)) || ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_RightCtrl))))
+                                if (!renaming && childNode->IsDirty())
                                 {
-                                    selectedItems.Clear();
-                                    lastSelectedItem = "";
+                                    labelCache = "*";
                                 }
-                                selectedItems.Emplace(childNode->absolutePath);
-                                lastSelectedItem = childNode->absolutePath;
-                                newSelection = true;
-                            }
 
-                            if (state.doubleClicked)
-                            {
-                                if (childNode->isDirectory)
-                                {
-                                    openDirectory = childNode->absolutePath;
-                                    selectedItems.Clear();
-                                    lastSelectedItem = "";
-                                }
-                            }
+                                labelCache += childNode->fileName;
 
-                            if (state.renameFinish)
-                            {
-                                if (!state.newName.Empty())
+                                if (!renaming)
                                 {
-                                    assetEditor.Rename(childNode, state.newName);
+                                    labelCache += childNode->extension;
                                 }
-                                renamingItem = "";
+
+                                ImGui::ContentItemDesc desc;
+                                desc.id = reinterpret_cast<usize>(childNode);
+                                desc.label = labelCache.CStr();
+                                desc.texture = childNode->isDirectory ? folderTexture : brickTexture;
+                                desc.renameItem = renaming;
+                                desc.thumbnailScale = contentBrowserZoom;
+                                desc.selected = selectedItems.Has(childNode);
+
+                                ImGui::ContentItemState state = ImGui::ContentItem(desc);
+
+                                if (state.clicked)
+                                {
+                                    if (!(ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_LeftCtrl)) || ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_RightCtrl))))
+                                    {
+                                        selectedItems.Clear();
+                                        lastSelectedItem = nullptr;
+                                    }
+                                    selectedItems.Emplace(childNode);
+                                    lastSelectedItem = childNode;
+                                    newSelection = true;
+                                }
+
+                                if (state.doubleClicked)
+                                {
+                                    if (childNode->isDirectory)
+                                    {
+                                        newOpenDirectory = childNode;
+                                        selectedItems.Clear();
+                                        lastSelectedItem = nullptr;
+                                    }
+                                }
+
+                                if (state.renameFinish)
+                                {
+                                    if (!state.newName.Empty())
+                                    {
+                                        assetEditor.Rename(childNode, state.newName);
+                                    }
+                                    renamingItem = nullptr;
+                                }
                             }
                         }
                     }
 
                     ImGui::EndContentTable();
 
-                    if (!newOpenDirectory.Empty())
+                    if (newOpenDirectory)
                     {
-                        openDirectory = newOpenDirectory;
+                        SetOpenDirectory(newOpenDirectory);
                     }
                 }
 
@@ -299,7 +304,7 @@ namespace Fyrion
 
 
         bool closePopup = false;
-        if (renamingItem.Empty() && ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))
+        if (!renamingItem && ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))
         {
             if (menuItemContext.ExecuteHotKeys(this))
             {
@@ -326,21 +331,25 @@ namespace Fyrion
         if (!popupRes && !newSelection && (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)))
         {
             selectedItems.Clear();
-            lastSelectedItem = "";
+            lastSelectedItem = nullptr;
         }
 
         ImGui::End();
     }
 
-    void ProjectBrowserWindow::SetOpenDirectory(StringView directory)
+    void ProjectBrowserWindow::SetOpenDirectory(AssetFile* directory)
     {
         openDirectory = directory;
+        if (directory && directory->parent)
+        {
+            openTreeFolders[directory->parent->absolutePath] = true;
+        }
     }
 
     bool ProjectBrowserWindow::CheckSelectedAsset(const MenuItemEventData& eventData)
     {
         ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
-        return !projectBrowserWindow->lastSelectedItem.Empty();
+        return projectBrowserWindow->lastSelectedItem != nullptr;
     }
 
     void ProjectBrowserWindow::AssetRename(const MenuItemEventData& eventData)
@@ -357,7 +366,7 @@ namespace Fyrion
     void ProjectBrowserWindow::AssetNewFolder(const MenuItemEventData& eventData)
     {
         ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
-        String                newDirectory = projectBrowserWindow->assetEditor.CreateDirectory(projectBrowserWindow->openDirectory);
+        AssetFile*            newDirectory = projectBrowserWindow->assetEditor.CreateDirectory(projectBrowserWindow->openDirectory);
 
         projectBrowserWindow->renamingItem = newDirectory;
         projectBrowserWindow->selectedItems.Clear();
@@ -368,18 +377,31 @@ namespace Fyrion
     void ProjectBrowserWindow::AssetNewScene(const MenuItemEventData& eventData) {}
 
     void ProjectBrowserWindow::AssetNewMaterial(const MenuItemEventData& eventData) {}
-    void ProjectBrowserWindow::AssetDelete(const MenuItemEventData& eventData) {}
+
+    void ProjectBrowserWindow::AssetDelete(const MenuItemEventData& eventData)
+    {
+        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
+
+        Array<AssetFile*> assets;
+        assets.Reserve(projectBrowserWindow->selectedItems.Size());
+
+        for (auto it: projectBrowserWindow->selectedItems)
+        {
+            assets.EmplaceBack(it.first);
+        }
+        projectBrowserWindow->assetEditor.DeleteAssets(assets);
+    }
 
     void ProjectBrowserWindow::AssetShowInExplorer(const MenuItemEventData& eventData)
     {
         ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
-        if (!projectBrowserWindow->lastSelectedItem.Empty())
+        if (projectBrowserWindow->lastSelectedItem)
         {
-            Platform::ShowInExplorer(projectBrowserWindow->lastSelectedItem);
+            Platform::ShowInExplorer(projectBrowserWindow->lastSelectedItem->absolutePath);
         }
-        else if (!projectBrowserWindow->openDirectory.Empty())
+        else if (projectBrowserWindow->openDirectory)
         {
-            Platform::ShowInExplorer(projectBrowserWindow->openDirectory);
+            Platform::ShowInExplorer(projectBrowserWindow->openDirectory->absolutePath);
         }
     }
 

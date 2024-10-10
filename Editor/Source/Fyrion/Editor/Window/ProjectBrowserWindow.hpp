@@ -3,7 +3,7 @@
 #include "Fyrion/Editor/Editor.hpp"
 #include "Fyrion/Editor/EditorTypes.hpp"
 #include "Fyrion/Editor/MenuItem.hpp"
-#include "Fyrion/Editor/Editor/AssetEditor.hpp"
+#include "Fyrion/Editor/Asset/AssetEditor.hpp"
 #include "Fyrion/Graphics/GraphicsTypes.hpp"
 
 
@@ -32,12 +32,12 @@ namespace Fyrion
         static MenuItemContext menuItemContext;
 
         String                searchString;
-        f32                   contentBrowserZoom = 1.0;     //TODO - save in some local setting
-        String                openDirectory;
+        f32                   contentBrowserZoom = 1.0; //TODO - save in some local setting
+        AssetFile*            openDirectory = nullptr;
         String                stringCache;
-        HashSet<String>       selectedItems;
-        String                lastSelectedItem;
-        String                renamingItem;
+        HashSet<AssetFile*>   selectedItems;
+        AssetFile*            lastSelectedItem = nullptr;
+        AssetFile*            renamingItem = nullptr;
         HashMap<String, bool> openTreeFolders{};
 
 
@@ -46,8 +46,8 @@ namespace Fyrion
         Texture brickTexture = {};
 
         void DrawPathItems();
-        void DrawTreeNode(const AssetFile& node);
-        void SetOpenDirectory(StringView directory);
+        void DrawTreeNode(AssetFile* assetFile);
+        void SetOpenDirectory(AssetFile* directory);
 
 
         static bool CheckSelectedAsset(const MenuItemEventData& eventData);

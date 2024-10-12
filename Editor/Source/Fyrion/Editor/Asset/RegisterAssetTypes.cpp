@@ -1,7 +1,6 @@
 #include "AssetEditor.hpp"
-#include "AssetImporter.hpp"
+#include "AssetTypes.hpp"
 #include "Fyrion/Core/Registry.hpp"
-#include "IOs/ImportSettings.hpp"
 
 namespace Fyrion
 {
@@ -10,6 +9,7 @@ namespace Fyrion
     void RegisterAssetTypes()
     {
         Registry::Type<AssetImporter>();
+        Registry::Type<AssetHandler>();
 
         RegisterTextureIO();
     }

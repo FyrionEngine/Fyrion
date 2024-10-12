@@ -1,35 +1,33 @@
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Editor/Asset/AssetEditor.hpp"
-#include "Fyrion/Editor/Asset/AssetImporter.hpp"
+#include "Fyrion/Editor/Asset/AssetTypes.hpp"
 
 namespace Fyrion
 {
-    struct TextureIO final : AssetImporter
-    {
-        FY_BASE_TYPES(AssetImporter);
-
-        Array<String> ImportExtensions() override
-        {
-            return {".png", ".jpg", ".jpeg", ".tga", "bmp", ".hdr"};
-        }
-
-        TypeID GetImportSettings() override
-        {
-            return 0;
-        }
-
-        bool ImportAsset(StringView path, ConstPtr importSettings) override
-        {
-            //assetEditor.CreateAsset()
 
 
-            return false;
-        }
-    };
 
+
+    // Array<String> ImportExtensions()
+    // {
+    //     return {".png", ".jpg", ".jpeg", ".tga", "bmp", ".hdr"};
+    // }
+    //
+    // void ImportAsset(StringView path)
+    // {
+    //
+    // }
+    //
+    // namespace
+    // {
+    //     AssetIO textureIO = {
+    //         .ImportExtensions = ImportExtensions,
+    //         .ImportAsset = ImportAsset
+    //     };
+    // }
 
     void RegisterTextureIO()
     {
-        Registry::Type<TextureIO>();
+        //Registry::Impl(textureIO);
     }
 }

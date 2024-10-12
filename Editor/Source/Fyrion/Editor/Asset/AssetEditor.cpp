@@ -1,6 +1,6 @@
 #include "AssetEditor.hpp"
 
-#include "AssetImporter.hpp"
+#include "AssetTypes.hpp"
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
@@ -9,7 +9,6 @@
 
 namespace Fyrion
 {
-
     namespace
     {
         Array<AssetFile*>           packages;
@@ -18,29 +17,60 @@ namespace Fyrion
         Array<AssetImporter*>           importers;
         HashMap<String, AssetImporter*> extensionImporters;
 
-        void UpdateCache(StringView path, AssetFile* assetFile)
+        AssetFile* AllocateNew(StringView name)
         {
-            assets.Insert(path, assetFile);
-
-            assetFile->children.Clear();
-
-            FileStatus status = FileSystem::GetFileStatus(path);
-
-            assetFile->absolutePath = path;
-            assetFile->fileName = Path::Name(path);
-            assetFile->extension = Path::Extension(path);
-            assetFile->hash = HashInt32(HashValue(path));
-            assetFile->isDirectory = status.isDirectory;
+            AssetFile* assetFile = MemoryGlobals::GetDefaultAllocator().Alloc<AssetFile>();
+            assetFile->fileName = name;
+            assetFile->hash = HashInt32(HashValue(reinterpret_cast<usize>(assetFile)));
             assetFile->currentVersion = 1;
-            assetFile->persistedVersion = 1;
+            return assetFile;
+        }
 
-            for (const String& child : DirectoryEntries{path})
+        AssetFile* ScanForAssets(StringView path)
+        {
+            FileStatus status = FileSystem::GetFileStatus(path);
+            if (!status.exists) return nullptr;
+
+            //TODO check if exists in assets
+
+            if (status.isDirectory)
             {
-                AssetFile* childFile = MemoryGlobals::GetDefaultAllocator().Alloc<AssetFile>();
-                childFile->parent = assetFile;
-                assetFile->children.EmplaceBack(childFile);
-                UpdateCache(child, childFile);
+                AssetFile* assetFile = AllocateNew(Path::Name(path));
+                assetFile->absolutePath = path;
+                assetFile->isDirectory = true;
+                assetFile->persistedVersion = 1;
+
+                for (const String& child : DirectoryEntries{path})
+                {
+                    if (AssetFile* assetChild = ScanForAssets(child))
+                    {
+                        assetChild->parent = assetFile;
+                        assetFile->children.EmplaceBack(assetChild);
+                    }
+                }
+                assets.Insert(path, assetFile);
+                return assetFile;
             }
+
+            String extension = Path::Extension(path);
+            if (extension == ".buffer") return nullptr;
+
+            if (extension != ".info")
+            {
+                String infoFile = Path::Join(path, ".info");
+
+                //TODO load info
+
+                AssetFile* assetFile = AllocateNew(Path::Name(path));
+                assetFile->isDirectory = false;
+                assetFile->absolutePath = path;
+                assetFile->extension = Path::Extension(path);
+                assetFile->persistedVersion = 1;
+                assets.Insert(path, assetFile);
+                return assetFile;
+            }
+
+            return nullptr;
         }
     }
 
@@ -51,9 +81,10 @@ namespace Fyrion
 
     void AssetEditor::AddPackage(StringView directory)
     {
-        AssetFile* assetFile = MemoryGlobals::GetDefaultAllocator().Alloc<AssetFile>();
-        packages.EmplaceBack(assetFile);
-        UpdateCache(directory, assetFile);
+        if (AssetFile* assetFile = ScanForAssets(directory))
+        {
+            packages.EmplaceBack(assetFile);
+        }
     }
 
     AssetFile* AssetEditor::CreateDirectory(AssetFile* parent)
@@ -123,7 +154,7 @@ namespace Fyrion
             }
             else
             {
-
+                //TODO check asset IO.
             }
         }
     }
@@ -171,10 +202,8 @@ namespace Fyrion
             String extension = Path::Extension(path);
             if (auto it = extensionImporters.Find(extension))
             {
-                AssetImporter* importer = it->second;
-
-
-                importer->ImportAsset(path, nullptr);
+                AssetImporter* io = it->second;
+                io->ImportAsset(path);
             }
         }
     }
@@ -201,25 +230,29 @@ namespace Fyrion
         {
             MemoryGlobals::GetDefaultAllocator().DestroyAndFree(it.second);
         }
+
+        packages.Clear();
+        assets.Clear();
+
+        for(AssetImporter* io : importers)
+        {
+            MemoryGlobals::GetDefaultAllocator().DestroyAndFree(io);
+        }
+
+        importers.Clear();
+        extensionImporters.Clear();
     }
 
     void AssetEditorInit()
     {
         Event::Bind<OnShutdown, AssetEditorShutdown>();
 
-        //TODO - reload
-        TypeHandler*      assetImporterType = Registry::FindType<AssetImporter>();
-        Span<DerivedType> derivedTypes = assetImporterType->GetDerivedTypes();
-        for (const DerivedType& derivedType : derivedTypes)
+        importers = Registry::InstantiateDerived<AssetImporter>();
+        for(AssetImporter* importer: importers)
         {
-            if (TypeHandler* type = Registry::FindTypeById(derivedType.typeId))
+            for (const String& extension : importer->ImportExtensions())
             {
-                AssetImporter* assetImporter = type->Cast<AssetImporter>(type->NewInstance());
-                for (const String& extension : assetImporter->ImportExtensions())
-                {
-                    extensionImporters.Insert(extension, assetImporter);
-                }
-                importers.EmplaceBack(assetImporter);
+                extensionImporters.Insert(extension, importer);
             }
         }
     }

@@ -1224,5 +1224,28 @@ namespace Fyrion
             using DecompType = MemberFunctionTemplateDecomposer<Func, FuncType>;
             return DecompType::CreateHandler(NewFunction(DecompType::MakeCreation(name)));
         }
+
+        template<typename T>
+        Array<T*> InstantiateDerived()
+        {
+            Array<T*> ret;
+
+            if (TypeHandler* baseTypeHandler = FindType<T>())
+            {
+                Span<DerivedType> derivedTypes = baseTypeHandler->GetDerivedTypes();
+                for (const DerivedType& derivedType : derivedTypes)
+                {
+                    if (TypeHandler* type = FindTypeById(derivedType.typeId))
+                    {
+                        if (T* instance = type->Cast<T>(type->NewInstance()))
+                        {
+                            ret.EmplaceBack(instance);
+                        }
+                    }
+                }
+            }
+            return ret;
+        }
+
     }
 }

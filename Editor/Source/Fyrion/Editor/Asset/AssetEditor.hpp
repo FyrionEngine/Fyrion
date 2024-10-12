@@ -9,8 +9,6 @@
 
 namespace Fyrion
 {
-    struct AssetImporter;
-
     struct AssetFile
     {
         u32    hash;

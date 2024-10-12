@@ -2,7 +2,7 @@
 
 #include "EditorTypes.hpp"
 #include "Action/EditorAction.hpp"
-#include "Asset/AssetImporter.hpp"
+#include "Asset/AssetTypes.hpp"
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Core/Event.hpp"
 #include "Fyrion/Core/Registry.hpp"

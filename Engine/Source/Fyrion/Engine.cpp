@@ -70,7 +70,7 @@ namespace Fyrion
 
     void Engine::CreateContext(const EngineContextCreation& contextCreation)
     {
-        Repository::LoadPackage(Path::Join(FileSystem::AssetFolder(), "Fyrion"));
+        //Repository::LoadPackage(Path::Join(FileSystem::AssetFolder(), "Fyrion"));
 
         PlatformInit();
 

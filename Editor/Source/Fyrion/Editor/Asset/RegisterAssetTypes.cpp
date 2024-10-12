@@ -9,7 +9,6 @@ namespace Fyrion
 
     void RegisterAssetTypes()
     {
-        Registry::Type<AssetEditor>();
         Registry::Type<AssetImporter>();
 
         RegisterTextureIO();

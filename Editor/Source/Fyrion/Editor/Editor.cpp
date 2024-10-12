@@ -16,6 +16,7 @@ namespace Fyrion
 {
     void InitEditorAction();
     void RegisterAssetTypes();
+    void AssetEditorInit();
 
     struct EditorWindowStorage
     {
@@ -36,7 +37,6 @@ namespace Fyrion
     {
         Array<EditorWindowStorage> editorWindowStorages{};
         Array<OpenWindowStorage>   openWindows{};
-        AssetEditor                assetEditor;
         Array<AssetFile*>          updatedItems{};
 
         MenuItemContext menuContext{};
@@ -113,7 +113,7 @@ namespace Fyrion
             // Editor::OpenDirectory(AssetManager::FindHandlerByPath<DirectoryAssetHandler>("Fyrion:/"));
             // Editor::OpenDirectory(AssetManager::LoadFromDirectory(Path::Name(projectPath), Path::Join(projectPath, "Assets")));
 
-            assetEditor.Init();
+            AssetEditorInit();
         }
 
         void CloseEngine(const MenuItemEventData& eventData)
@@ -125,7 +125,7 @@ namespace Fyrion
 
         void SaveAll(const MenuItemEventData& eventData)
         {
-            assetEditor.GetUpdatedAssets(updatedItems);
+            AssetEditor::GetUpdatedAssets(updatedItems);
             SaveAll(updatedItems);
             updatedItems.Clear();
         }
@@ -348,7 +348,7 @@ namespace Fyrion
 
         void SaveAll(Span<AssetFile*> assets)
         {
-            assetEditor.SaveAssets(assets);
+            AssetEditor::SaveAssets(assets);
         }
 
         void EditorUpdate(f64 deltaTime)
@@ -374,7 +374,7 @@ namespace Fyrion
             if (forceClose) return;
 
             updatedItems.Clear();
-            assetEditor.GetUpdatedAssets(updatedItems);
+            AssetEditor::GetUpdatedAssets(updatedItems);
 
             if (!updatedItems.Empty())
             {
@@ -401,11 +401,6 @@ namespace Fyrion
     {
         redoActions.Clear();
         return undoActions.EmplaceBack(MakeShared<EditorTransaction>()).Get();
-    }
-
-    AssetEditor& Editor::GetAssetEditor()
-    {
-        return assetEditor;
     }
 
     void Editor::AddMenuItem(const MenuItemCreation& menuItem)
@@ -443,8 +438,8 @@ namespace Fyrion
 
         //projectPath = Path::Parent(projectFile);
 
-        assetEditor.AddPackage("C:\\dev\\Fyrion\\Fyrion\\Assets\\Fyrion");
-        assetEditor.AddPackage("C:\\dev\\Fyrion\\Projects\\Refactor");
+        AssetEditor::AddPackage("C:\\dev\\Fyrion\\Fyrion\\Assets\\Fyrion");
+        AssetEditor::AddPackage("C:\\dev\\Fyrion\\Projects\\Refactor");
 
         Registry::Type<EditorWindow>();
 

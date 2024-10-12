@@ -130,7 +130,7 @@ namespace Fyrion
                 {
                     if (!paths.Empty())
                     {
-                        assetEditor.ImportAssets(paths);
+                        AssetEditor::ImportAssets(paths);
                     }
                 }
             }
@@ -185,7 +185,7 @@ namespace Fyrion
 
                 ImGui::BeginTreeNode();
 
-                for (const auto& package : assetEditor.GetDirectories())
+                for (const auto& package : AssetEditor::GetPackages())
                 {
                     DrawTreeNode(package);
                 }
@@ -275,7 +275,7 @@ namespace Fyrion
                                 {
                                     if (!state.newName.Empty())
                                     {
-                                        assetEditor.Rename(childNode, state.newName);
+                                        AssetEditor::Rename(childNode, state.newName);
                                     }
                                     renamingItem = nullptr;
                                 }
@@ -366,7 +366,7 @@ namespace Fyrion
     void ProjectBrowserWindow::AssetNewFolder(const MenuItemEventData& eventData)
     {
         ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
-        AssetFile*            newDirectory = projectBrowserWindow->assetEditor.CreateDirectory(projectBrowserWindow->openDirectory);
+        AssetFile*            newDirectory = AssetEditor::CreateDirectory(projectBrowserWindow->openDirectory);
 
         projectBrowserWindow->renamingItem = newDirectory;
         projectBrowserWindow->selectedItems.Clear();
@@ -389,7 +389,8 @@ namespace Fyrion
         {
             assets.EmplaceBack(it.first);
         }
-        projectBrowserWindow->assetEditor.DeleteAssets(assets);
+
+        AssetEditor::DeleteAssets(assets);
     }
 
     void ProjectBrowserWindow::AssetShowInExplorer(const MenuItemEventData& eventData)

@@ -13,35 +13,5 @@ namespace Fyrion
     namespace
     {
         HashMap<UUID, SharedPtr<Asset>> assetsByUUID;
-
-        void LoadAssetFile(StringView path)
-        {
-            if (FileSystem::GetFileStatus(path).isDirectory)
-            {
-                for (const auto& entry : DirectoryEntries{path})
-                {
-                    LoadAssetFile(entry);
-                }
-            }
-
-            String extension = Path::Extension(path);
-            if (extension == FY_META_EXTENSION)
-            {
-
-            }
-        }
-
-        void LoadDirectoryPackage(StringView name, StringView path)
-        {
-            LoadAssetFile(path);
-        }
-    }
-
-    void AssetManager::LoadPackage(StringView name, StringView path)
-    {
-        if (FileSystem::GetFileStatus(path).isDirectory)
-        {
-            LoadDirectoryPackage(name, path);
-        }
     }
 }

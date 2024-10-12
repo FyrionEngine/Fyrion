@@ -16,8 +16,6 @@ namespace Fyrion
     public:
         FY_BASE_TYPES(EditorWindow);
 
-        ProjectBrowserWindow() : assetEditor(Editor::GetAssetEditor()) {}
-
         void Init(u32 id, VoidPtr userData) override;
         void Draw(u32 id, bool& open) override;
         ~ProjectBrowserWindow() override;
@@ -27,8 +25,6 @@ namespace Fyrion
         static void RegisterType(NativeTypeHandler<ProjectBrowserWindow>& type);
 
     private:
-        AssetEditor& assetEditor;
-
         static MenuItemContext menuItemContext;
 
         String                searchString;

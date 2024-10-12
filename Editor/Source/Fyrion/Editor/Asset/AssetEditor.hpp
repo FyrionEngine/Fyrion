@@ -33,39 +33,18 @@ namespace Fyrion
     };
 
 
-    class AssetEditor
+    namespace AssetEditor
     {
-    public:
-        void Init();
-        void AddPackage(StringView directory);
-
-        decltype(auto) GetDirectories() const
-        {
-            return directories;
-        }
-
-        const AssetFile* FindNode(StringView path) const;
-
-        AssetFile* CreateDirectory(AssetFile* parent);
-        AssetFile* CreateAsset(AssetFile* parent, TypeID typeId);
-        void       Rename(AssetFile* assetFile, StringView newName);
-        void       GetUpdatedAssets(Array<AssetFile*>& updatedAssets) const;
-        void       SaveAssets(Span<AssetFile*> assetsToSave);
-        void       DeleteAssets(Span<AssetFile*> assetFile);
-        String     CreateUniqueName(AssetFile* parent, StringView desiredName);
-
-        void       ImportAssets(Span<String> paths);
-        void       FilterExtensions(Array<FileFilter>& extensions);
-
-        ~AssetEditor();
-
-    private:
-        Array<AssetFile*>           directories;
-        HashMap<String, AssetFile*> assets;
-
-        Array<AssetImporter*> importers;
-        HashMap<String, AssetImporter*> extensionImporters;
-
-        void UpdateCache(StringView path, AssetFile* assetFile);
-    };
+        FY_API void             AddPackage(StringView directory);
+        FY_API Span<AssetFile*> GetPackages();
+        FY_API AssetFile*       CreateDirectory(AssetFile* parent);
+        FY_API AssetFile*       CreateAsset(AssetFile* parent, TypeID typeId);
+        FY_API void             Rename(AssetFile* assetFile, StringView newName);
+        FY_API void             GetUpdatedAssets(Array<AssetFile*>& updatedAssets);
+        FY_API void             SaveAssets(Span<AssetFile*> assetsToSave);
+        FY_API void             DeleteAssets(Span<AssetFile*> assetFile);
+        FY_API String           CreateUniqueName(AssetFile* parent, StringView desiredName);
+        FY_API void             ImportAssets(Span<String> paths);
+        FY_API void             FilterExtensions(Array<FileFilter>& extensions);
+    }
 }

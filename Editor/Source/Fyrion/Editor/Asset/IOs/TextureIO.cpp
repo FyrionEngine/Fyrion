@@ -18,7 +18,7 @@ namespace Fyrion
             return 0;
         }
 
-        bool ImportAsset(AssetEditor& assetEditor, StringView path, ConstPtr importSettings) override
+        bool ImportAsset(StringView path, ConstPtr importSettings) override
         {
             //assetEditor.CreateAsset()
 

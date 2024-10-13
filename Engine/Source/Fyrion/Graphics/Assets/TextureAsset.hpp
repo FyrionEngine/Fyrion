@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Fyrion/Common.hpp"
+#include "Fyrion/Core/StreamBuffer.hpp"
 
 namespace Fyrion
 {
@@ -9,6 +10,6 @@ namespace Fyrion
     public:
 
     private:
-
+        StreamBuffer textureData;
     };
 }

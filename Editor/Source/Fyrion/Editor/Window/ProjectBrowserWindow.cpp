@@ -270,9 +270,10 @@ namespace Fyrion
                                         newOpenDirectory = childNode;
                                         selectedItems.Clear();
                                         lastSelectedItem = nullptr;
-                                    } else
+                                    }
+                                    else if (childNode->handler)
                                     {
-                                        Scene* scene = static_cast<Scene*>(Repository::Load(childNode->uuid));
+                                        childNode->handler->OpenAsset(childNode);
                                     }
                                 }
 

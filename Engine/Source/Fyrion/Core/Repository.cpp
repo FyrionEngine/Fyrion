@@ -12,7 +12,7 @@ namespace Fyrion
             TypeHandler*                 typeHandler;
             VoidPtr                      instance;
             VoidPtr                      loaderData;
-            Repository::FnResourceLoader loader;
+            FnResourceLoader loader;
         };
 
         HashMap<UUID, Storage> resources;

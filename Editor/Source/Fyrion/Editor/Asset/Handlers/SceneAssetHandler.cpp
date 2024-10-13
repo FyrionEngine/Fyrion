@@ -17,6 +17,11 @@ namespace Fyrion
         {
             return GetTypeID<Scene>();
         }
+
+        void OpenAsset(AssetFile* assetFile) override
+        {
+            //Scene* scene = static_cast<Scene*>(Repository::Load(assetFile->uuid));
+        }
     };
 
     void RegisterSceneAssetHandler()

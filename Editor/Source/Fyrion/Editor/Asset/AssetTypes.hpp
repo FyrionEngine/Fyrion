@@ -21,5 +21,6 @@ namespace Fyrion
         virtual TypeID     GetAssetTypeID() = 0;
         virtual void       Save(StringView newPath, AssetFile* assetFile) = 0;
         virtual void       Load(AssetFile* assetFile, TypeHandler* typeHandler, VoidPtr instance) = 0;
+        virtual void       OpenAsset(AssetFile* assetFile) = 0;
     };
 }

@@ -1,7 +1,6 @@
 #pragma once
 #include "AssetTypes.hpp"
 #include "Fyrion/Core/Array.hpp"
-#include "Fyrion/Core/HashMap.hpp"
 #include "Fyrion/Core/String.hpp"
 #include "Fyrion/Core/StringView.hpp"
 #include "Fyrion/Core/UUID.hpp"

@@ -153,6 +153,7 @@ namespace Fyrion
             newAsset->persistedVersion = 0;
             newAsset->parent = parent;
             newAsset->uuid = UUID::RandomUUID();
+            newAsset->handler = it->second;
             assets.Insert(newAsset->absolutePath, newAsset);
 
             parent->children.EmplaceBack(newAsset);
@@ -203,6 +204,13 @@ namespace Fyrion
                 }
                 else if (auto it = handlersByExtension.Find(assetFile->extension))
                 {
+
+                    String infoFile = Path::Join(newAbsolutePath, ".info");
+                    JsonAssetWriter writer;
+                    ArchiveObject   root = writer.CreateObject();
+                    writer.WriteString(root, "uuid", assetFile->uuid.ToString());
+                    FileSystem::SaveFileAsString(infoFile, JsonAssetWriter::Stringify(root));
+
                     AssetHandler* handler = it->second;
                     handler->Save(newAbsolutePath, assetFile);
                 }
@@ -210,7 +218,8 @@ namespace Fyrion
                 assetFile->absolutePath = newAbsolutePath;
                 assets.Insert(newAbsolutePath, assetFile);
                 assetFile->persistedVersion = assetFile->currentVersion;
-            } else
+            }
+            else
             {
                 //TODO delete assets
             }

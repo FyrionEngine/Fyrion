@@ -141,8 +141,6 @@ namespace Fyrion
             glfwSetDropCallback(window, DropCallback);
         }
 
-    Fyrion: //Textures/FyrionLogo.png
-
         ApplyDarkStyle(window);
 
         glfwShowWindow(window);

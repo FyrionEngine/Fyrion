@@ -89,6 +89,8 @@ namespace Fyrion
 
     AssetFile* AssetEditor::CreateDirectory(AssetFile* parent)
     {
+        FY_ASSERT(parent, "parent cannot be null");
+
         AssetFile* newDirectory = MemoryGlobals::GetDefaultAllocator().Alloc<AssetFile>();
 
         newDirectory->fileName = CreateUniqueName(parent, "New Folder");

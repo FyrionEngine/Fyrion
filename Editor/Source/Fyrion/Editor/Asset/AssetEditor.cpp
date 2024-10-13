@@ -17,6 +17,9 @@ namespace Fyrion
         Array<AssetImporter*>           importers;
         HashMap<String, AssetImporter*> extensionImporters;
 
+        Array<AssetHandler*>           handlers;
+        HashMap<String, AssetHandler*> extensionHandlers;
+
         AssetFile* AllocateNew(StringView name)
         {
             AssetFile* assetFile = MemoryGlobals::GetDefaultAllocator().Alloc<AssetFile>();
@@ -154,9 +157,12 @@ namespace Fyrion
                 assets.Insert(newAbsolutePath, assetFile);
                 assetFile->persistedVersion = assetFile->currentVersion;
             }
-            else
+            else if (auto it = extensionHandlers.Find(assetFile->extension))
             {
-                //TODO check asset IO.
+                //save info
+                //save asset
+                AssetHandler* handler = it->second;
+                handler->Save(assetFile);
             }
         }
     }
@@ -243,6 +249,8 @@ namespace Fyrion
 
         importers.Clear();
         extensionImporters.Clear();
+
+        handlers.Clear();
     }
 
     void AssetEditorInit()
@@ -250,11 +258,22 @@ namespace Fyrion
         Event::Bind<OnShutdown, AssetEditorShutdown>();
 
         importers = Registry::InstantiateDerived<AssetImporter>();
+
         for(AssetImporter* importer: importers)
         {
             for (const String& extension : importer->ImportExtensions())
             {
                 extensionImporters.Insert(extension, importer);
+            }
+        }
+
+        handlers = Registry::InstantiateDerived<AssetHandler>();
+
+        for(AssetHandler* handler: handlers)
+        {
+            if (StringView extension = handler->Extension(); !extension.Empty())
+            {
+                extensionHandlers.Insert(extension, handler);
             }
         }
     }

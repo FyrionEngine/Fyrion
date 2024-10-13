@@ -4,10 +4,6 @@
 
 namespace Fyrion
 {
-
-
-
-
     // Array<String> ImportExtensions()
     // {
     //     return {".png", ".jpg", ".jpeg", ".tga", "bmp", ".hdr"};

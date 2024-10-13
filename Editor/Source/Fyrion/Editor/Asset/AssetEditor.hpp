@@ -1,4 +1,5 @@
 #pragma once
+#include "AssetTypes.hpp"
 #include "Fyrion/Core/Array.hpp"
 #include "Fyrion/Core/HashMap.hpp"
 #include "Fyrion/Core/String.hpp"
@@ -16,7 +17,8 @@ namespace Fyrion
         String extension;
         String absolutePath;
         bool   isDirectory;
-        UUID   assetId;
+        UUID   uuid;
+        TypeID type;
 
         u64 currentVersion;
         u64 persistedVersion;
@@ -24,6 +26,8 @@ namespace Fyrion
         Array<AssetFile*> children;
 
         AssetFile* parent;
+
+        AssetHandler* handler;
 
         bool active = true;
 

@@ -3,6 +3,7 @@
 #include "AssetTypes.hpp"
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Core/Registry.hpp"
+#include "Fyrion/Core/Repository.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
 #include "Fyrion/IO/FileTypes.hpp"
 #include "Fyrion/IO/Path.hpp"
@@ -18,7 +19,8 @@ namespace Fyrion
         HashMap<String, AssetImporter*> extensionImporters;
 
         Array<AssetHandler*>           handlers;
-        HashMap<String, AssetHandler*> extensionHandlers;
+        HashMap<String, AssetHandler*> handlersByExtension;
+        HashMap<TypeID, AssetHandler*> handlersByTypeID;
 
         AssetFile* AllocateNew(StringView name)
         {
@@ -60,15 +62,35 @@ namespace Fyrion
 
             if (extension != ".info")
             {
-                String infoFile = Path::Join(path, ".info");
-
-                //TODO load info
-
                 AssetFile* assetFile = AllocateNew(Path::Name(path));
                 assetFile->isDirectory = false;
                 assetFile->absolutePath = path;
                 assetFile->extension = Path::Extension(path);
                 assetFile->persistedVersion = 1;
+
+                String infoFile = Path::Join(path, ".info");
+                if (FileSystem::GetFileStatus(infoFile).exists)
+                {
+                    JsonAssetReader jsonAssetReader(FileSystem::ReadFileAsString(infoFile));
+                    ArchiveObject   root = jsonAssetReader.ReadObject();
+
+                    assetFile->uuid = UUID::FromString(jsonAssetReader.ReadString(root, "uuid"));
+                }
+                else
+                {
+                    assetFile->uuid = UUID::RandomUUID();
+                }
+
+                if (auto it = handlersByExtension.Find(assetFile->extension))
+                {
+                    assetFile->handler = it->second;
+                    Repository::Register(assetFile->uuid, it->second->GetAssetTypeID(), false, assetFile, [](VoidPtr loaderData, VoidPtr instance, TypeHandler* typeHandler)
+                    {
+                        AssetFile* assetFile = static_cast<AssetFile*>(loaderData);
+                        assetFile->handler->Load(assetFile, typeHandler, instance);
+                    });
+                }
+
                 assets.Insert(path, assetFile);
                 return assetFile;
             }
@@ -112,6 +134,33 @@ namespace Fyrion
 
     AssetFile* AssetEditor::CreateAsset(AssetFile* parent, TypeID typeId)
     {
+        FY_ASSERT(parent, "parent cannot be null");
+
+        if (auto it = handlersByTypeID.Find(typeId))
+        {
+            TypeHandler* typeHandler = Registry::FindTypeById(typeId);
+
+            AssetFile* newAsset = MemoryGlobals::GetDefaultAllocator().Alloc<AssetFile>();
+
+            String assetName = String("New ").Append(typeHandler->GetSimpleName());
+
+            newAsset->fileName = CreateUniqueName(parent, assetName);
+            newAsset->extension = it->second->Extension();
+            newAsset->absolutePath = Path::Join(parent->absolutePath, newAsset->fileName, newAsset->extension);
+            newAsset->hash = HashInt32(HashValue(newAsset->absolutePath));
+            newAsset->isDirectory = false;
+            newAsset->currentVersion = 1;
+            newAsset->persistedVersion = 0;
+            newAsset->parent = parent;
+            newAsset->uuid = UUID::RandomUUID();
+            assets.Insert(newAsset->absolutePath, newAsset);
+
+            parent->children.EmplaceBack(newAsset);
+
+            Repository::Register(newAsset->uuid, it->second->GetAssetTypeID(), true, nullptr, nullptr);
+
+            return newAsset;
+        }
         return nullptr;
     }
 
@@ -138,8 +187,8 @@ namespace Fyrion
         {
             if (assetFile->active)
             {
+                String newAbsolutePath = Path::Join(assetFile->parent->absolutePath, assetFile->fileName, assetFile->extension);
                 assets.Erase(assetFile->absolutePath);
-                String newAbsolutePath = Path::Join(Path::Parent(assetFile->absolutePath), assetFile->fileName, assetFile->extension);
 
                 if (assetFile->isDirectory)
                 {
@@ -152,21 +201,18 @@ namespace Fyrion
                         FileSystem::CreateDirectory(newAbsolutePath);
                     }
                 }
+                else if (auto it = handlersByExtension.Find(assetFile->extension))
+                {
+                    AssetHandler* handler = it->second;
+                    handler->Save(newAbsolutePath, assetFile);
+                }
 
                 assetFile->absolutePath = newAbsolutePath;
                 assets.Insert(newAbsolutePath, assetFile);
                 assetFile->persistedVersion = assetFile->currentVersion;
-            }
-            else if (auto it = extensionHandlers.Find(assetFile->extension))
+            } else
             {
-                //save info
-
-
-
-
-                //save asset
-                AssetHandler* handler = it->second;
-                handler->Save(assetFile);
+                //TODO delete assets
             }
         }
     }
@@ -222,7 +268,7 @@ namespace Fyrion
 
     void AssetEditor::FilterExtensions(Array<FileFilter>& extensions)
     {
-        for(auto& it: extensionImporters)
+        for (auto& it : extensionImporters)
         {
             extensions.EmplaceBack(FileFilter{
                 .name = it.first.CStr(),
@@ -238,7 +284,7 @@ namespace Fyrion
 
     void AssetEditorShutdown()
     {
-        for(auto& it: assets)
+        for (auto& it : assets)
         {
             MemoryGlobals::GetDefaultAllocator().DestroyAndFree(it.second);
         }
@@ -246,7 +292,7 @@ namespace Fyrion
         packages.Clear();
         assets.Clear();
 
-        for(AssetImporter* io : importers)
+        for (AssetImporter* io : importers)
         {
             MemoryGlobals::GetDefaultAllocator().DestroyAndFree(io);
         }
@@ -263,7 +309,7 @@ namespace Fyrion
 
         importers = Registry::InstantiateDerived<AssetImporter>();
 
-        for(AssetImporter* importer: importers)
+        for (AssetImporter* importer : importers)
         {
             for (const String& extension : importer->ImportExtensions())
             {
@@ -273,11 +319,16 @@ namespace Fyrion
 
         handlers = Registry::InstantiateDerived<AssetHandler>();
 
-        for(AssetHandler* handler: handlers)
+        for (AssetHandler* handler : handlers)
         {
             if (StringView extension = handler->Extension(); !extension.Empty())
             {
-                extensionHandlers.Insert(extension, handler);
+                handlersByExtension.Insert(extension, handler);
+            }
+
+            if (TypeID typeId = handler->GetAssetTypeID(); typeId != 0)
+            {
+                handlersByTypeID.Insert(typeId, handler);
             }
         }
     }

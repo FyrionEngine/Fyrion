@@ -4,7 +4,6 @@
 #include "Allocator.hpp"
 #include "Hash.hpp"
 #include "Format.hpp"
-#include "Serialization.hpp"
 
 
 namespace Fyrion
@@ -919,8 +918,6 @@ namespace Fyrion
     template<usize BufferSize>
     using BufferString = BasicString<char, BufferSize>;
     using String = BasicString<char, FY_STRING_BUFFER_SIZE>;
-
-    FY_ARCHIVE_TYPE_IMPL(String, String);
 }
 
 template<>

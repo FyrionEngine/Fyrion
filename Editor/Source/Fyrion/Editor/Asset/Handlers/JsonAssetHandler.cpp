@@ -1,23 +1,37 @@
 
-
-#include "Fyrion/Editor/Asset/AssetTypes.hpp"
+#include "JsonAssetHandler.hpp"
+#include "Fyrion/Core/Repository.hpp"
+#include "Fyrion/Editor/Asset/AssetEditor.hpp"
+#include "Fyrion/IO/FileSystem.hpp"
+#include "Fyrion/IO/Path.hpp"
 
 namespace Fyrion
 {
-    struct JsonAssetHandler : AssetHandler
+    void JsonAssetHandler::Save(StringView newPath, AssetFile* assetFile)
     {
-        FY_BASE_TYPES(AssetHandler);
-
-        StringView Extension() override
         {
-            return ".asset";
+            String infoFile = Path::Join(newPath, ".info");
+            JsonAssetWriter writer;
+            ArchiveObject   root = writer.CreateObject();
+            writer.WriteString(root, "uuid", assetFile->uuid.ToString());
+            FileSystem::SaveFileAsString(infoFile, JsonAssetWriter::Stringify(root));
         }
 
-        void Save(AssetFile* assetFile) override
         {
-            //ArchiveWriter archiveWriter;
+            VoidPtr      asset = Repository::Load(assetFile->uuid);
+            TypeHandler* typeHandler = Repository::GetTypeHandler(assetFile->uuid);
 
-           // Serialization::Serialize()
+            JsonAssetWriter writer;
+            if (ArchiveObject assetArchive = Serialization::Serialize(typeHandler, writer, asset))
+            {
+                FileSystem::SaveFileAsString(newPath, JsonAssetWriter::Stringify(assetArchive));
+            }
         }
-    };
+    }
+
+    void JsonAssetHandler::Load(AssetFile* assetFile, TypeHandler* typeHandler, VoidPtr instance)
+    {
+        JsonAssetReader reader(FileSystem::ReadFileAsString(assetFile->absolutePath));
+        Serialization::Deserialize(typeHandler, reader, reader.ReadObject(), instance);
+    }
 }

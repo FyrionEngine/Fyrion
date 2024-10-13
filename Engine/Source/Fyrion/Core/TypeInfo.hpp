@@ -19,19 +19,26 @@ namespace Fyrion
 {
     typedef void (* FnExtractApi)(VoidPtr pointer);
 
+
+    struct ArchiveFuncs
+    {
+        FnArchiveWrite ArchiveWrite;
+        FnArchiveRead  ArchiveRead;
+        FnArchiveAdd   ArchiveAdd;
+        FnArchiveGet   ArchiveGet;
+    };
+
+
     struct TypeInfo
     {
-        TypeID         typeId;
-        usize          size;
-        usize          alignment;
-        bool           isTriviallyCopyable;
-        bool           isEnum;
-        TypeID         apiId;
-        FnExtractApi   extractApi;
-        FnArchiveWrite archiveWrite;
-        FnArchiveRead  archiveRead;
-        FnArchiveAdd   archiveAdd;
-        FnArchiveGet   archiveGet;
+        TypeID       typeId;
+        usize        size;
+        usize        alignment;
+        bool         isTriviallyCopyable;
+        bool         isEnum;
+        TypeID       apiId;
+        FnExtractApi extractApi;
+        ArchiveFuncs archive;
     };
 
     template <typename Type>
@@ -114,22 +121,22 @@ namespace Fyrion
 
         if constexpr (ArchiveType<Type>::hasArchiveImpl)
         {
-            typeInfo.archiveWrite = [](ArchiveWriter& writer, ArchiveObject object, StringView name, ConstPtr value)
+            typeInfo.archive.ArchiveWrite = [](ArchiveWriter& writer, ArchiveObject object, StringView name, ConstPtr value)
             {
                 ArchiveType<Type>::Write(writer, object, name, static_cast<const Type *>(value));
             };
 
-            typeInfo.archiveRead = [](ArchiveReader& reader, ArchiveObject object, StringView name, VoidPtr value)
+            typeInfo.archive.ArchiveRead = [](ArchiveReader& reader, ArchiveObject object, StringView name, VoidPtr value)
             {
                 ArchiveType<Type>::Read(reader, object, name, static_cast<Type*>(value));
             };
 
-            typeInfo.archiveAdd = [](ArchiveWriter& writer, ArchiveObject array, ConstPtr value)
+            typeInfo.archive.ArchiveAdd = [](ArchiveWriter& writer, ArchiveObject array, ConstPtr value)
             {
                 ArchiveType<Type>::Add(writer, array, static_cast<const Type*>(value));
             };
 
-            typeInfo.archiveGet = [](ArchiveReader& reader, ArchiveObject array, VoidPtr value)
+            typeInfo.archive.ArchiveGet = [](ArchiveReader& reader, ArchiveObject array, VoidPtr value)
             {
                 ArchiveType<Type>::Get(reader, array, static_cast<Type*>(value));
             };

@@ -3,6 +3,7 @@
 #include "imgui_internal.h"
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Core/Registry.hpp"
+#include "Fyrion/Core/Repository.hpp"
 #include "Fyrion/Core/StaticContent.hpp"
 #include "Fyrion/Editor/Editor.hpp"
 #include "Fyrion/Graphics/Graphics.hpp"
@@ -11,6 +12,7 @@
 #include "Fyrion/IO/FileSystem.hpp"
 #include "Fyrion/IO/Path.hpp"
 #include "Fyrion/Platform/Platform.hpp"
+#include "Fyrion/Scene/Scene.hpp"
 
 #define CONTENT_TABLE_ID 500
 
@@ -268,6 +270,9 @@ namespace Fyrion
                                         newOpenDirectory = childNode;
                                         selectedItems.Clear();
                                         lastSelectedItem = nullptr;
+                                    } else
+                                    {
+                                        Scene* scene = static_cast<Scene*>(Repository::Load(childNode->uuid));
                                     }
                                 }
 
@@ -374,7 +379,18 @@ namespace Fyrion
         projectBrowserWindow->lastSelectedItem = newDirectory;
     }
 
-    void ProjectBrowserWindow::AssetNewScene(const MenuItemEventData& eventData) {}
+    void ProjectBrowserWindow::AssetNewScene(const MenuItemEventData& eventData)
+    {
+        ProjectBrowserWindow* projectBrowserWindow = static_cast<ProjectBrowserWindow*>(eventData.drawData);
+
+        if (AssetFile* newAsset = AssetEditor::CreateAsset(projectBrowserWindow->openDirectory, GetTypeID<Scene>()))
+        {
+            projectBrowserWindow->renamingItem = newAsset;
+            projectBrowserWindow->selectedItems.Clear();
+            projectBrowserWindow->selectedItems.Insert(newAsset);
+            projectBrowserWindow->lastSelectedItem = newAsset;
+        }
+    }
 
     void ProjectBrowserWindow::AssetNewMaterial(const MenuItemEventData& eventData) {}
 

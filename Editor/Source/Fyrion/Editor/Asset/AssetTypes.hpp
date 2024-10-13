@@ -1,5 +1,6 @@
 #pragma once
 #include "Fyrion/Core/Array.hpp"
+#include "Fyrion/Core/Registry.hpp"
 
 namespace Fyrion
 {
@@ -15,8 +16,10 @@ namespace Fyrion
 
     struct FY_API AssetHandler
     {
-        virtual ~AssetHandler() = default;
+        virtual            ~AssetHandler() = default;
         virtual StringView Extension() = 0;
-        virtual void Save(AssetFile * assetFile) = 0;
+        virtual TypeID     GetAssetTypeID() = 0;
+        virtual void       Save(StringView newPath, AssetFile* assetFile) = 0;
+        virtual void       Load(AssetFile* assetFile, TypeHandler* typeHandler, VoidPtr instance) = 0;
     };
 }

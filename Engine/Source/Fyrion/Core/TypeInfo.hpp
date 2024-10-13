@@ -18,9 +18,6 @@ constexpr auto Fyrion_StrippedTypeName()
 namespace Fyrion
 {
     typedef void (* FnExtractApi)(VoidPtr pointer);
-    typedef usize (*FnStringSize)(ConstPtr pointer);
-    typedef usize (*FnToString)(ConstPtr pointer, char* buffer);
-    typedef void (* FnFromString)(VoidPtr pointer, const StringView& stringView);
 
     struct TypeInfo
     {
@@ -31,9 +28,6 @@ namespace Fyrion
         bool           isEnum;
         TypeID         apiId;
         FnExtractApi   extractApi;
-        FnStringSize   stringSize;
-        FnToString     toString;
-        FnFromString   fromString;
         FnArchiveWrite archiveWrite;
         FnArchiveRead  archiveRead;
         FnArchiveAdd   archiveAdd;
@@ -117,24 +111,6 @@ namespace Fyrion
             .apiId = TypeApiInfo<Traits::RemoveAll<Type>>::GetApiId(),
             .extractApi = TypeApiInfo<Traits::RemoveAll<Type>>::ExtractApi,
         };
-
-        if constexpr (StringConverter<Type>::hasConverter)
-        {
-            typeInfo.stringSize = [](ConstPtr pointer)
-            {
-                return StringConverter<Type>::Size(*static_cast<const Traits::RemoveAll<Type>*>(pointer));
-            };
-
-            typeInfo.toString = [](ConstPtr pointer, char* buffer)
-            {
-                return StringConverter<Type>::ToString(buffer, 0, *static_cast<const Traits::RemoveAll<Type>*>(pointer));
-            };
-
-            typeInfo.fromString = [](VoidPtr pointer, const StringView& stringView)
-            {
-                StringConverter<Type>::FromString(stringView.Data(), stringView.Size(), *static_cast<Traits::RemoveAll<Type>*>(pointer));
-            };
-        }
 
         if constexpr (ArchiveType<Type>::hasArchiveImpl)
         {

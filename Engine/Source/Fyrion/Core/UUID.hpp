@@ -3,7 +3,6 @@
 #include "Fyrion/Common.hpp"
 #include "Random.hpp"
 #include "Algorithm.hpp"
-#include "StringConverter.hpp"
 #include "StringView.hpp"
 
 namespace Fyrion
@@ -92,7 +91,50 @@ namespace Fyrion
 				count++;
 			});
 			return uuid;
-		};
+		}
+
+		String ToString() const
+		{
+			String result;
+			result.Resize(36);
+
+			constexpr static char  digits[]     = "0123456789abcdef";
+			constexpr static i32   base         = 16;
+
+			auto firstValueStr = firstValue;
+			i32 i = 17;
+			do
+			{
+				if (i != 8 && i != 13)
+				{
+					result[i] = digits[firstValueStr % base];
+					firstValueStr = firstValueStr / base;
+				}
+				else
+				{
+					result[i] = '-';
+				}
+				i--;
+			} while (i > -1);
+			result[18] = '-';
+			auto secondValueStr = this->secondValue;
+			i = 35;
+			do
+			{
+				if (i != 23)
+				{
+					result[i] = digits[secondValueStr % base];
+					secondValueStr = secondValueStr / base;
+				}
+				else
+				{
+					result[i] = '-';
+				}
+				i--;
+			} while (i > 18);
+
+			return result;
+		}
 
 		inline bool operator==(const UUID& uuid) const
 		{
@@ -120,60 +162,7 @@ namespace Fyrion
 		}
 	};
 
-	template<>
-	struct StringConverter<UUID>
-	{
-		constexpr static bool  hasConverter = true;
-		constexpr static usize bufferCount  = 36;
-		constexpr static char  digits[]     = "0123456789abcdef";
-		constexpr static i32   base         = 16;
 
-		static usize Size(const UUID& value)
-		{
-			return bufferCount;
-		}
-
-		static void FromString(const char* str, usize size, UUID& value)
-		{
-			value = UUID::FromString(StringView{str, size});
-		}
-
-		static usize ToString(char* buffer, usize pos, const UUID& value)
-		{
-			auto firstValue = value.firstValue;
-			i32 i = 17;
-			do
-			{
-				if (i != 8 && i != 13)
-				{
-					buffer[pos + i] = digits[firstValue % base];
-					firstValue = firstValue / base;
-				}
-				else
-				{
-					buffer[pos + i] = '-';
-				}
-				i--;
-			} while (i > -1);
-			buffer[pos + 18] = '-';
-			auto secondValue = value.secondValue;
-			i = 35;
-			do
-			{
-				if (i != 23)
-				{
-					buffer[pos + i] = digits[secondValue % base];
-					secondValue = secondValue / base;
-				}
-				else
-				{
-					buffer[pos + i] = '-';
-				}
-				i--;
-			} while (i > 18);
-			return bufferCount;
-		}
-	};
 
 	template <>
 	struct ArchiveType<UUID>
@@ -184,7 +173,7 @@ namespace Fyrion
 		{
 			if (*value)
 			{
-				writer.WriteString(object, name, ToString(*value));
+				writer.WriteString(object, name, value->ToString());
 			}
 		}
 		static void Read(ArchiveReader& reader, ArchiveObject object, StringView name, UUID* value)
@@ -194,7 +183,7 @@ namespace Fyrion
 
 		static void Add(ArchiveWriter& writer, ArchiveObject array, const UUID* value)
 		{
-			writer.AddString(array, ToString(*value));
+			writer.AddString(array, value->ToString());
 		}
 
 		static void Get(ArchiveReader& reader, ArchiveObject item, UUID* value)

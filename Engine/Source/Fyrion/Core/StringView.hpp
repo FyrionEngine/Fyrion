@@ -2,7 +2,6 @@
 
 #include "Fyrion/Common.hpp"
 #include "Hash.hpp"
-#include "StringConverter.hpp"
 #include "Format.hpp"
 
 namespace Fyrion
@@ -484,31 +483,6 @@ namespace Fyrion
                 hash = *it + (hash << 6) + (hash << 16) - hash;
             }
             return hash;
-        }
-    };
-
-    template<>
-    struct StringConverter<BasicStringView<char>>
-    {
-        typedef char Element;
-
-        constexpr static bool hasConverter = true;
-        constexpr static usize bufferCount = 0;
-
-        static usize Size(const BasicStringView<Element>& stringView)
-        {
-            return stringView.Size();
-        }
-
-        static usize ToString(char* buffer, usize pos, const BasicStringView<Element>& value)
-        {
-            StrCopy(buffer, pos, value.begin(), value.Size());
-            return value.Size();
-        }
-
-        static void FromString(const char* str, usize size, BasicStringView<Element>& value)
-        {
-
         }
     };
 }

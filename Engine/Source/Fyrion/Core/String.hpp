@@ -3,7 +3,6 @@
 #include "Fyrion/Common.hpp"
 #include "Allocator.hpp"
 #include "Hash.hpp"
-#include "StringConverter.hpp"
 #include "Format.hpp"
 #include "Serialization.hpp"
 
@@ -84,27 +83,6 @@ namespace Fyrion
         void Swap(BasicString& other);
 
         usize Find(char s) const;
-
-		template<typename Type>
-		BasicString& Append(const Type& value)
-		{
-			static_assert(StringConverter<Type>::hasConverter, "[StringConverter] type has no converter");
-			if constexpr (StringConverter<Type>::bufferCount > 0)
-			{
-				char buffer[StringConverter<Type>::bufferCount];
-				auto size = StringConverter<Type>::ToString(buffer, 0, value);
-				Append(buffer, buffer + size);
-			}
-			else
-			{
-				auto initialSize = Size();
-				auto newSize = Size() + StringConverter<Type>::Size(value);
-				Resize(newSize);
-				StringConverter<Type>::ToString(begin() + initialSize, 0, value);
-				m_size = newSize | (m_size & c_longFlag);
-			}
-			return *this;
-		}
 
     private:
         static constexpr usize c_longFlag = ((usize) 1) << (sizeof(usize) * 8 - 1);
@@ -938,45 +916,9 @@ namespace Fyrion
         }
     };
 
-
-	template<usize BufferSize>
-	struct StringConverter<BasicString<char, BufferSize>>
-	{
-		constexpr static bool  hasConverter = true;
-		constexpr static usize bufferCount  = 0;
-
-		static usize Size(const BasicString<char, BufferSize>& string)
-		{
-			return string.Size();
-		}
-
-		static usize ToString(char* buffer, usize pos, const BasicString<char, BufferSize>& string)
-		{
-			StrCopy(buffer + pos, string.CStr(), string.Size());
-			return string.Size();
-		}
-
-		static void FromString(const char* str, usize size, BasicString<char, BufferSize>& string)
-		{
-			string.Clear();
-			string.Resize(size);
-			StrCopy(string.begin(), str, size);
-		}
-	};
-
     template<usize BufferSize>
     using BufferString = BasicString<char, BufferSize>;
     using String = BasicString<char, FY_STRING_BUFFER_SIZE>;
-
-    template<typename T>
-    String ToString(const T& value)
-    {
-        static_assert(StringConverter<T>::hasConverter);
-        usize size = StringConverter<T>::Size(value);
-        String string(size);
-        StringConverter<T>::ToString(string.begin(), 0, value);
-        return string;
-    }
 
     FY_ARCHIVE_TYPE_IMPL(String, String);
 }

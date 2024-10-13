@@ -438,7 +438,7 @@ namespace Fyrion
 
         //projectPath = Path::Parent(projectFile);
 
-        AssetEditor::AddPackage("C:\\dev\\FyrionEngine\\Fyrion\\Assets\\Fyrion");
+        AssetEditor::AddPackage("C:\\dev\\FyrionEngine\\v0\\Fyrion\\Assets\\Fyrion");
         AssetEditor::AddPackage("C:\\dev\\FyrionEngine\\Projects\\Refactor");
 
         Registry::Type<EditorWindow>();

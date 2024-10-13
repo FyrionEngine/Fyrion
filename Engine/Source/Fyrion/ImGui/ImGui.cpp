@@ -938,7 +938,7 @@ namespace ImGui
             for (int i = 0; i < columns; ++i)
             {
                 char buffer[20]{};
-                StringConverter<i32>::ToString(buffer, 0, i);
+                sprintf(buffer,"%ld", i);
                 TableSetupColumn(buffer, ImGuiTableColumnFlags_WidthFixed, thumbnailSize);
             }
         }

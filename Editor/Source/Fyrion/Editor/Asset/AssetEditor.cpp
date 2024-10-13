@@ -160,6 +160,10 @@ namespace Fyrion
             else if (auto it = extensionHandlers.Find(assetFile->extension))
             {
                 //save info
+
+
+
+
                 //save asset
                 AssetHandler* handler = it->second;
                 handler->Save(assetFile);

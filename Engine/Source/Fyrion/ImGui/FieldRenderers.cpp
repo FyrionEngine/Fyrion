@@ -233,11 +233,14 @@ namespace Fyrion
     // }
 
 
-    void DrawVecField(const String compName, const char* fieldName, float& value, bool* hasChanged, u32 color = 0, f32 speed = 0.005f)
+    void DrawVecField(const char* fieldName, float& value, bool* hasChanged, u32 color = 0, f32 speed = 0.005f)
     {
         ImGui::TableNextColumn();
-        String id = "##" + ToString(reinterpret_cast<usize>(&value));
-        ImGui::BeginHorizontal(ImHashStr(id.CStr()));
+
+        char buffer[20]{};
+        sprintf(buffer,"##%llu", reinterpret_cast<usize>(&value));
+
+        ImGui::BeginHorizontal(ImHashStr(buffer));
         ImGui::Text("%s", fieldName);
         ImGui::Spring();
         ImGui::SetNextItemWidth(-1);
@@ -245,7 +248,7 @@ namespace Fyrion
         {
             ImGui::PushStyleColor(ImGuiCol_Border, color);
         }
-        if (ImGui::InputFloat(id.CStr(), &value))
+        if (ImGui::InputFloat(buffer, &value))
         {
             if (hasChanged)
             {
@@ -265,14 +268,13 @@ namespace Fyrion
     {
         if (typeInfo.typeId != GetTypeID<Vec3>()) return false;
 
-        f32    speed = 0.005f;
-        String compName = ToString(reinterpret_cast<usize>(value));
+        f32 speed = 0.005f;
         Vec3&  vec3 = *static_cast<Vec3*>(value);
         if (ImGui::BeginTable("##vec3-table", 3))
         {
-            DrawVecField(compName, "X", vec3.x, hasChanged, IM_COL32(138, 46, 61, 255), speed);
-            DrawVecField(compName, "Y", vec3.y, hasChanged, IM_COL32(87, 121, 26, 255), speed);
-            DrawVecField(compName, "Z", vec3.z, hasChanged, IM_COL32(43, 86, 138, 255), speed);
+            DrawVecField("X", vec3.x, hasChanged, IM_COL32(138, 46, 61, 255), speed);
+            DrawVecField("Y", vec3.y, hasChanged, IM_COL32(87, 121, 26, 255), speed);
+            DrawVecField("Z", vec3.z, hasChanged, IM_COL32(43, 86, 138, 255), speed);
             ImGui::EndTable();
         }
         return true;
@@ -283,12 +285,11 @@ namespace Fyrion
         if (typeInfo.typeId != GetTypeID<Vec2>()) return false;
 
         f32    speed = 0.005f;
-        String compName = ToString(reinterpret_cast<usize>(value));
         Vec2&  vec3 = *static_cast<Vec2*>(value);
         if (ImGui::BeginTable("##vec3-table", 2))
         {
-            DrawVecField(compName, "X", vec3.x, hasChanged, IM_COL32(138, 46, 61, 255), speed);
-            DrawVecField(compName, "Y", vec3.y, hasChanged, IM_COL32(87, 121, 26, 255), speed);
+            DrawVecField("X", vec3.x, hasChanged, IM_COL32(138, 46, 61, 255), speed);
+            DrawVecField("Y", vec3.y, hasChanged, IM_COL32(87, 121, 26, 255), speed);
             ImGui::EndTable();
         }
         return true;
@@ -453,7 +454,6 @@ namespace Fyrion
         static int rotationMode = 0;
 
         f32    speed = 0.005f;
-        String compName = ToString(reinterpret_cast<usize>(value));
         Quat&  quat = *static_cast<Quat*>(value);
 
         if (rotationMode == 0)
@@ -463,9 +463,9 @@ namespace Fyrion
 
             if (ImGui::BeginTable("##vec3-table", 3))
             {
-                DrawVecField(compName, "X", euler.x, &vecHasChanged, IM_COL32(138, 46, 61, 255), speed);
-                DrawVecField(compName, "Y", euler.y, &vecHasChanged, IM_COL32(87, 121, 26, 255), speed);
-                DrawVecField(compName, "Z", euler.z, &vecHasChanged, IM_COL32(43, 86, 138, 255), speed);
+                DrawVecField( "X", euler.x, &vecHasChanged, IM_COL32(138, 46, 61, 255), speed);
+                DrawVecField( "Y", euler.y, &vecHasChanged, IM_COL32(87, 121, 26, 255), speed);
+                DrawVecField( "Z", euler.z, &vecHasChanged, IM_COL32(43, 86, 138, 255), speed);
                 ImGui::EndTable();
             }
 
@@ -479,10 +479,10 @@ namespace Fyrion
         {
             if (ImGui::BeginTable("##quat-table", 4))
             {
-                DrawVecField(compName, "X", quat.x, hasChanged, IM_COL32(138, 46, 61, 255), speed);
-                DrawVecField(compName, "Y", quat.y, hasChanged, IM_COL32(87, 121, 26, 255), speed);
-                DrawVecField(compName, "Z", quat.z, hasChanged, IM_COL32(43, 86, 138, 255), speed);
-                DrawVecField(compName, "W", quat.w, hasChanged, IM_COL32(84, 74, 119, 255), speed);
+                DrawVecField("X", quat.x, hasChanged, IM_COL32(138, 46, 61, 255), speed);
+                DrawVecField("Y", quat.y, hasChanged, IM_COL32(87, 121, 26, 255), speed);
+                DrawVecField("Z", quat.z, hasChanged, IM_COL32(43, 86, 138, 255), speed);
+                DrawVecField("W", quat.w, hasChanged, IM_COL32(84, 74, 119, 255), speed);
                 ImGui::EndTable();
             }
         }

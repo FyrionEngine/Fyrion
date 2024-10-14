@@ -19,12 +19,7 @@ namespace Fyrion
         IncludeNullOrEmptyValues = 1 << 1
     };
 
-    struct StreamView
-    {
-
-    };
-
-    ENUM_FLAGS(SerializationOptions, u32);
+    ENUM_FLAGS(SerializationOptions, u32)
 
     struct ArchiveWriter
     {
@@ -39,7 +34,7 @@ namespace Fyrion
         virtual void       WriteFloat(ArchiveObject object, const StringView& name, f64 value) = 0;
         virtual void       WriteString(ArchiveObject object, const StringView& name, const StringView& value) = 0;
         virtual void       WriteValue(ArchiveObject object, const StringView& name, ArchiveObject value) = 0;
-
+        virtual ConstPtr   WriteStream(ArchiveObject object, const StringView& name, Span<u8> data) = 0;
 
         virtual void AddBool(ArchiveObject array, bool value) = 0;
         virtual void AddInt(ArchiveObject array, i64 value) = 0;
@@ -72,7 +67,7 @@ namespace Fyrion
         virtual bool          GetBool(ArchiveObject object) = 0;
     };
 
-    typedef void (*FnArchiveWrite)(ArchiveWriter& writer, ArchiveObject object, StringView name, ConstPtr value);
+    typedef void (*FnArchiveWrite)(ArchiveWriter& writer, ArchiveObject object, StringView name, VoidPtr value);
     typedef void (*FnArchiveRead)(ArchiveReader& reader, ArchiveObject object, StringView name, VoidPtr value);
     typedef void (*FnArchiveAdd)(ArchiveWriter& writer, ArchiveObject array, ConstPtr value);
     typedef void (*FnArchiveGet)(ArchiveReader& reader, ArchiveObject item, VoidPtr value);
@@ -112,7 +107,7 @@ namespace Fyrion
         { \
             *value =  reader.Get##Name(item); \
         } \
-    };
+    }
 
     FY_ARCHIVE_TYPE_IMPL(Int, i8);
     FY_ARCHIVE_TYPE_IMPL(Int, i16);
@@ -178,12 +173,13 @@ namespace Fyrion
         ArchiveObject CreateObject() override;
         ArchiveObject CreateArray() override;
 
-        void WriteBool(ArchiveObject object, const StringView& name, bool value) override;
-        void WriteInt(ArchiveObject object, const StringView& name, i64 value) override;
-        void WriteUInt(ArchiveObject object, const StringView& name, u64 value) override;
-        void WriteFloat(ArchiveObject object, const StringView& name, f64 value) override;
-        void WriteString(ArchiveObject object, const StringView& name, const StringView& value) override;
-        void WriteValue(ArchiveObject object, const StringView& name, ArchiveObject value) override;
+        void     WriteBool(ArchiveObject object, const StringView& name, bool value) override;
+        void     WriteInt(ArchiveObject object, const StringView& name, i64 value) override;
+        void     WriteUInt(ArchiveObject object, const StringView& name, u64 value) override;
+        void     WriteFloat(ArchiveObject object, const StringView& name, f64 value) override;
+        void     WriteString(ArchiveObject object, const StringView& name, const StringView& value) override;
+        void     WriteValue(ArchiveObject object, const StringView& name, ArchiveObject value) override;
+        ConstPtr WriteStream(ArchiveObject object, const StringView& name, Span<u8> data) override;
 
 
         void AddBool(ArchiveObject array, bool value) override;

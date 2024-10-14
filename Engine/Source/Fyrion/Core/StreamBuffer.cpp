@@ -37,4 +37,9 @@ namespace Fyrion
         type.Field<&StreamBuffer::offset>("offset");
         type.Field<&StreamBuffer::size>("size");
     }
+
+    void StreamBuffer::FlushInMemoryData(ConstPtr data)
+    {
+        inMemoryData.Clear();
+    }
 }

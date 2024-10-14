@@ -282,6 +282,11 @@ namespace Fyrion
         yyjson_mut_doc_free(doc);
     }
 
+    ConstPtr JsonAssetWriter::WriteStream(ArchiveObject object, const StringView& name, Span<u8> data)
+    {
+        return nullptr;
+    }
+
 
     JsonAssetReader::JsonAssetReader(StringView data)
     {

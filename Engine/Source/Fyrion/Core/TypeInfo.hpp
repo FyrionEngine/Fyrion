@@ -121,9 +121,9 @@ namespace Fyrion
 
         if constexpr (ArchiveType<Type>::hasArchiveImpl)
         {
-            typeInfo.archive.ArchiveWrite = [](ArchiveWriter& writer, ArchiveObject object, StringView name, ConstPtr value)
+            typeInfo.archive.ArchiveWrite = [](ArchiveWriter& writer, ArchiveObject object, StringView name, VoidPtr value)
             {
-                ArchiveType<Type>::Write(writer, object, name, static_cast<const Type *>(value));
+                ArchiveType<Type>::Write(writer, object, name, static_cast<Type*>(value));
             };
 
             typeInfo.archive.ArchiveRead = [](ArchiveReader& reader, ArchiveObject object, StringView name, VoidPtr value)

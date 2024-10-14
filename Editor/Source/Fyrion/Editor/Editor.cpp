@@ -115,8 +115,8 @@ namespace Fyrion
             // Editor::OpenDirectory(AssetManager::LoadFromDirectory(Path::Name(projectPath), Path::Join(projectPath, "Assets")));
 
             AssetEditorInit();
-            AssetEditor::AddPackage("C:\\dev\\FyrionEngine\\v0\\Fyrion\\Assets\\Fyrion");
-            AssetEditor::AddPackage("C:\\dev\\FyrionEngine\\Projects\\Refactor");
+            AssetEditor::AddPackage("C:\\dev\\Fyrion\\Fyrion\\Assets\\Fyrion");
+            AssetEditor::AddPackage("C:\\dev\\Fyrion\\Projects\\Refactor");
         }
 
         void CloseEngine(const MenuItemEventData& eventData)

@@ -4,6 +4,7 @@
 #include "String.hpp"
 #include "Fyrion/Common.hpp"
 #include "Fyrion/Core/StringView.hpp"
+#include "Fyrion/IO/FileTypes.hpp"
 
 typedef struct yyjson_mut_doc yyjson_mut_doc;
 typedef struct yyjson_mut_val yyjson_mut_val;
@@ -28,13 +29,13 @@ namespace Fyrion
         virtual ArchiveObject CreateObject() = 0;
         virtual ArchiveObject CreateArray() = 0;
 
-        virtual void       WriteBool(ArchiveObject object, const StringView& name, bool value) = 0;
-        virtual void       WriteInt(ArchiveObject object, const StringView& name, i64 value) = 0;
-        virtual void       WriteUInt(ArchiveObject object, const StringView& name, u64 value) = 0;
-        virtual void       WriteFloat(ArchiveObject object, const StringView& name, f64 value) = 0;
-        virtual void       WriteString(ArchiveObject object, const StringView& name, const StringView& value) = 0;
-        virtual void       WriteValue(ArchiveObject object, const StringView& name, ArchiveObject value) = 0;
-        virtual ConstPtr   WriteStream(ArchiveObject object, const StringView& name, Span<u8> data) = 0;
+        virtual void  WriteBool(ArchiveObject object, const StringView& name, bool value) = 0;
+        virtual void  WriteInt(ArchiveObject object, const StringView& name, i64 value) = 0;
+        virtual void  WriteUInt(ArchiveObject object, const StringView& name, u64 value) = 0;
+        virtual void  WriteFloat(ArchiveObject object, const StringView& name, f64 value) = 0;
+        virtual void  WriteString(ArchiveObject object, const StringView& name, const StringView& value) = 0;
+        virtual void  WriteValue(ArchiveObject object, const StringView& name, ArchiveObject value) = 0;
+        virtual usize WriteStream(ArchiveObject object, const StringView& name, Span<u8> data) = 0;
 
         virtual void AddBool(ArchiveObject array, bool value) = 0;
         virtual void AddInt(ArchiveObject array, i64 value) = 0;
@@ -110,16 +111,27 @@ namespace Fyrion
     }
 
     FY_ARCHIVE_TYPE_IMPL(Int, i8);
+
     FY_ARCHIVE_TYPE_IMPL(Int, i16);
+
     FY_ARCHIVE_TYPE_IMPL(Int, i32);
+
     FY_ARCHIVE_TYPE_IMPL(Int, i64);
+
     FY_ARCHIVE_TYPE_IMPL(UInt, u8);
+
     FY_ARCHIVE_TYPE_IMPL(UInt, u16);
+
     FY_ARCHIVE_TYPE_IMPL(UInt, u32);
+
     FY_ARCHIVE_TYPE_IMPL(UInt, u64);
+
     FY_ARCHIVE_TYPE_IMPL(Float, f32);
+
     FY_ARCHIVE_TYPE_IMPL(Float, f64);
+
     FY_ARCHIVE_TYPE_IMPL(Bool, bool);
+
     FY_ARCHIVE_TYPE_IMPL(String, String);
 
 
@@ -132,7 +144,7 @@ namespace Fyrion
     }
 
     template <typename T>
-    struct ArchiveType<T,  Traits::EnableIf<Traits::IsEnum<T>>>
+    struct ArchiveType<T, Traits::EnableIf<Traits::IsEnum<T>>>
     {
         constexpr static bool hasArchiveImpl = true;
 
@@ -140,6 +152,7 @@ namespace Fyrion
         {
             Serialization::WriteEnum(GetTypeID<T>(), writer, object, name, static_cast<i64>(*value));
         }
+
         static void Read(ArchiveReader& reader, ArchiveObject object, StringView name, T* value)
         {
             i64 intValue = 0;
@@ -167,7 +180,7 @@ namespace Fyrion
         FY_NO_COPY_CONSTRUCTOR(JsonAssetWriter);
         FY_BASE_TYPES(ArchiveWriter);
 
-        JsonAssetWriter(SerializationOptions serializationOptions = SerializationOptions::None);
+        JsonAssetWriter(SerializationOptions serializationOptions = SerializationOptions::None, OutputFileStream* fileStream = nullptr);
         ~JsonAssetWriter() override;
 
         ArchiveObject CreateObject() override;
@@ -196,6 +209,7 @@ namespace Fyrion
     private:
         SerializationOptions serializationOptions = SerializationOptions::None;
         yyjson_mut_doc*      doc = nullptr;
+        OutputFileStream*    fileStream = nullptr;
     };
 
 

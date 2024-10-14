@@ -12,24 +12,35 @@ namespace Fyrion
         {
             return inMemoryData;
         }
-        Array<u8> bufferData = FileSystem::ReadFileAsByteArray(bufferFile);
-        if (!bufferData.Empty())
-        {
-            Array<u8> ret;
-            ret.Insert(ret.begin(), bufferData.begin() + offset, bufferData.begin() + offset + size);
-            return ret;
-        }
+        // Array<u8> bufferData = FileSystem::ReadFileAsByteArray(bufferFile);
+        // if (!bufferData.Empty())
+        // {
+        //     Array<u8> ret;
+        //     ret.Insert(ret.begin(), bufferData.begin() + offset, bufferData.begin() + offset + size);
+        //     return ret;
+        // }
         return {};
     }
 
     void StreamBuffer::Store(Span<u8> data)
     {
         inMemoryData = data;
+        size = data.Size();
     }
 
     Span<u8> StreamBuffer::GetInMemoryData() const
     {
         return inMemoryData;
+    }
+
+    usize StreamBuffer::GetOffset() const
+    {
+        return offset;
+    }
+
+    usize StreamBuffer::GetSize() const
+    {
+        return size;
     }
 
     void StreamBuffer::RegisterType(NativeTypeHandler<StreamBuffer>& type)

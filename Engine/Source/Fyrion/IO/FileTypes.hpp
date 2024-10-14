@@ -90,7 +90,7 @@ namespace Fyrion
     class FY_API OutputFileStream
     {
     public:
-        void  Open(StringView file);
+        OutputFileStream(StringView file);
         usize Write(u8* data, usize size);
         void  Close();
 
@@ -98,6 +98,7 @@ namespace Fyrion
 
     private:
         String file;
+        bool streamOpen = false;
         std::ofstream stream;
         usize streamSize = 0;
     };

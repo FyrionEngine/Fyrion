@@ -96,15 +96,19 @@ namespace Fyrion
         }
     }
 
-
-    void  OutputFileStream::Open(StringView file)
+    OutputFileStream::OutputFileStream(StringView file) : file(file)
     {
-        this->file = file;
-        stream.open(file.CStr(), std::ios::out|std::ios::binary);
+
     }
 
     usize OutputFileStream::Write(u8* data, usize size)
     {
+        if (!streamOpen)
+        {
+            streamOpen = true;
+            stream.open(file.CStr(), std::ios::out|std::ios::binary);
+        }
+
         auto offset = streamSize;
         stream.write(reinterpret_cast<const char*>(data), size);
         streamSize += size;

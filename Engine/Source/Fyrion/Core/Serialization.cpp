@@ -171,7 +171,7 @@ namespace Fyrion
         };
     }
 
-    JsonAssetWriter::JsonAssetWriter(SerializationOptions serializationOptions) : serializationOptions(serializationOptions)
+    JsonAssetWriter::JsonAssetWriter(SerializationOptions serializationOptions, OutputFileStream* fileStream) : serializationOptions(serializationOptions), fileStream(fileStream)
     {
         doc = yyjson_mut_doc_new(&alloc);
     }
@@ -284,6 +284,10 @@ namespace Fyrion
 
     ConstPtr JsonAssetWriter::WriteStream(ArchiveObject object, const StringView& name, Span<u8> data)
     {
+        if (fileStream)
+        {
+            usize offset = fileStream->Write(data.begin(), data.Size());
+        }
         return nullptr;
     }
 

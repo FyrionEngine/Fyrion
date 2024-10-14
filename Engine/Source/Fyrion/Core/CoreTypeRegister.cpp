@@ -2,6 +2,7 @@
 #include "Color.hpp"
 #include "Math.hpp"
 #include "Registry.hpp"
+#include "StreamBuffer.hpp"
 #include "UUID.hpp"
 
 namespace Fyrion
@@ -46,6 +47,11 @@ namespace Fyrion
         extent.Field<&Extent::width>("width");
         extent.Field<&Extent::height>("height");
 
+        auto extent3D = Registry::Type<Extent3D>();
+        extent3D.Field<&Extent3D::width>("width");
+        extent3D.Field<&Extent3D::height>("height");
+        extent3D.Field<&Extent3D::depth>("depth");
+
         auto vec2 = Registry::Type<Vec2>();
         vec2.Field<&Vec2::x>("x");
         vec2.Field<&Vec2::y>("y");
@@ -70,6 +76,9 @@ namespace Fyrion
         auto aabb = Registry::Type<AABB>();
         aabb.Field<&AABB::min>("min");
         aabb.Field<&AABB::max>("max");
+
+
+        Registry::Type<StreamBuffer>();
     }
 
 

@@ -62,4 +62,23 @@ namespace Fyrion
         }
         return nullptr;
     }
+
+    void RepositoryShutdown()
+    {
+        for(auto it: resources)
+        {
+            if (it.second.instance && it.second.typeHandler)
+            {
+                it.second.typeHandler->Destroy(it.second.instance);
+            }
+        }
+        resources.Clear();
+    }
+
+    void RepositoryInit()
+    {
+        RepositoryShutdown();
+    }
+
+
 }

@@ -3,4 +3,4 @@ add_library(FyrionEditor SHARED ${FYRION_EDITOR_SOURCES})
 
 target_include_directories(FyrionEditor PUBLIC Source)
 
-target_link_libraries(FyrionEditor PUBLIC FyrionEngine)
+target_link_libraries(FyrionEditor PUBLIC FyrionEngine stb)

@@ -11,7 +11,7 @@ namespace Fyrion
         virtual ~AssetImporter() = default;
 
         virtual Array<String> ImportExtensions() = 0;
-        virtual void          ImportAsset(StringView path) = 0;
+        virtual void          ImportAsset(AssetFile* parent, StringView path) = 0;
     };
 
     struct FY_API AssetHandler

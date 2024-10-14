@@ -1,10 +1,11 @@
 #include "Serialization.hpp"
 #include "Registry.hpp"
+#include "StreamBuffer.hpp"
 #include "yyjson.h"
 
 namespace Fyrion
 {
-    ArchiveObject Serialization::Serialize(const TypeHandler* typeHandler, ArchiveWriter& writer, ConstPtr instance)
+    ArchiveObject Serialization::Serialize(const TypeHandler* typeHandler, ArchiveWriter& writer, VoidPtr instance)
     {
         if (typeHandler == nullptr || instance == nullptr) return {};
 
@@ -21,7 +22,7 @@ namespace Fyrion
             {
                 ArchiveObject array = writer.CreateArray();
 
-                ConstPtr arrayPtr = field->GetFieldPointer(instance);
+                VoidPtr arrayPtr = field->GetFieldPointer(instance);
                 ArrayApi arrayApi{};
                 typeInfo.extractApi(&arrayApi);
                 usize    size = arrayApi.size(arrayPtr);
@@ -44,7 +45,7 @@ namespace Fyrion
                 {
                     for (usize i = 0; i < size; ++i)
                     {
-                        if (ArchiveObject value = Serialize(itemHandler, writer, arrayApi.getConst(arrayPtr, i)))
+                        if (ArchiveObject value = Serialize(itemHandler, writer, arrayApi.get(arrayPtr, i)))
                         {
                             writer.AddValue(array, value);
                             empty = false;

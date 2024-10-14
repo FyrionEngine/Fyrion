@@ -1,5 +1,7 @@
 #pragma once
 
+#include <fstream>
+
 #include "Fyrion/Common.hpp"
 #include "Fyrion/Core/String.hpp"
 #include "Fyrion/Core/StringView.hpp"
@@ -81,5 +83,22 @@ namespace Fyrion
         {
             return DirIterator{};
         }
+    };
+
+
+    //TODO
+    class FY_API OutputFileStream
+    {
+    public:
+        void  Open(StringView file);
+        usize Write(u8* data, usize size);
+        void  Close();
+
+        StringView GetFile() const;
+
+    private:
+        String file;
+        std::ofstream stream;
+        usize streamSize = 0;
     };
 }

@@ -5,8 +5,8 @@
 
 namespace Fyrion
 {
-    void RegisterTextureIO();
     void RegisterSceneAssetHandler();
+    void RegisterTextureAssetHandler();
 
     void RegisterAssetTypes()
     {
@@ -14,7 +14,7 @@ namespace Fyrion
         Registry::Type<AssetHandler>();
         Registry::Type<JsonAssetHandler>();
 
-        RegisterTextureIO();
         RegisterSceneAssetHandler();
+        RegisterTextureAssetHandler();
     }
 }

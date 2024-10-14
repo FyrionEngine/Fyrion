@@ -39,13 +39,13 @@ namespace Fyrion
         FY_API void             AddPackage(StringView directory);
         FY_API Span<AssetFile*> GetPackages();
         FY_API AssetFile*       CreateDirectory(AssetFile* parent);
-        FY_API AssetFile*       CreateAsset(AssetFile* parent, TypeID typeId);
+        FY_API AssetFile*       CreateAsset(AssetFile* parent, TypeID typeId, StringView suggestedName = "");
         FY_API void             Rename(AssetFile* assetFile, StringView newName);
         FY_API void             GetUpdatedAssets(Array<AssetFile*>& updatedAssets);
         FY_API void             SaveAssets(Span<AssetFile*> assetsToSave);
         FY_API void             DeleteAssets(Span<AssetFile*> assetFile);
         FY_API String           CreateUniqueName(AssetFile* parent, StringView desiredName);
-        FY_API void             ImportAssets(Span<String> paths);
+        FY_API void             ImportAssets(AssetFile* parent, Span<String> paths);
         FY_API void             FilterExtensions(Array<FileFilter>& extensions);
     }
 }

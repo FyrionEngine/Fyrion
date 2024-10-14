@@ -101,7 +101,7 @@ namespace Fyrion
         ImGuiStyle& style = ImGui::GetStyle();
         ImVec2      pad = style.WindowPadding;
 
-        bool readOnly = false;
+        bool readOnly = openDirectory == nullptr;
 
         ImGui::StyleVar windowPadding(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         ImGui::StyleVar cellPadding(ImGuiStyleVar_CellPadding, ImVec2(0, 0));
@@ -132,7 +132,7 @@ namespace Fyrion
                 {
                     if (!paths.Empty())
                     {
-                        AssetEditor::ImportAssets(paths);
+                        AssetEditor::ImportAssets(openDirectory, paths);
                     }
                 }
             }

@@ -30,6 +30,8 @@ namespace Fyrion
     void            ShaderManagerInit();
     void            ShaderManagerShutdown();
     void            InputInit();
+    void            RepositoryInit();
+    void            RepositoryShutdown();
 
 
     namespace
@@ -64,6 +66,7 @@ namespace Fyrion
         args.Parse(argc, argv);
 
         TypeRegister();
+        RepositoryInit();
         InputInit();
         ShaderManagerInit();
     }
@@ -182,6 +185,8 @@ namespace Fyrion
         Graphics::WaitQueue();
 
         onShutdownHandler.Invoke();
+
+        RepositoryShutdown();
 
         Graphics::DestroySwapchain(swapchain);
         Platform::DestroyWindow(window);

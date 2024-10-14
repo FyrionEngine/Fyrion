@@ -11,6 +11,7 @@
 #include "Fyrion/IO/FileSystem.hpp"
 #include "Fyrion/IO/Path.hpp"
 #include "Window/ProjectBrowserWindow.hpp"
+#include "Window/TextureViewWindow.hpp"
 
 namespace Fyrion
 {
@@ -446,6 +447,7 @@ namespace Fyrion
         InitEditorAction();
 
         Registry::Type<ProjectBrowserWindow>();
+        Registry::Type<TextureViewWindow>();
 
         Event::Bind<OnInit, &InitEditor>();
         Event::Bind<OnUpdate, &EditorUpdate>();

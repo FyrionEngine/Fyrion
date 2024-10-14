@@ -2,6 +2,7 @@
 
 #include "AssetTypes.hpp"
 #include "Fyrion/Engine.hpp"
+#include "Fyrion/Core/Logger.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Core/Repository.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
@@ -21,6 +22,8 @@ namespace Fyrion
         Array<AssetHandler*>           handlers;
         HashMap<String, AssetHandler*> handlersByExtension;
         HashMap<TypeID, AssetHandler*> handlersByTypeID;
+
+        Logger& logger = Logger::GetLogger("Fyrion::AssetEditor");
 
         AssetFile* AllocateNew(StringView name)
         {
@@ -132,21 +135,22 @@ namespace Fyrion
         return newDirectory;
     }
 
-    AssetFile* AssetEditor::CreateAsset(AssetFile* parent, TypeID typeId)
+    AssetFile* AssetEditor::CreateAsset(AssetFile* parent, TypeID typeId, StringView suggestedName)
     {
         FY_ASSERT(parent, "parent cannot be null");
 
         if (auto it = handlersByTypeID.Find(typeId))
         {
             TypeHandler* typeHandler = Registry::FindTypeById(typeId);
+            String       assetName = suggestedName.Empty() ? String("New ").Append(typeHandler->GetSimpleName()) : String(suggestedName);
+            String       absolutePath = Path::Join(parent->absolutePath, assetName, it->second->Extension());
+
+            //TODO find if absolutePath exists.
 
             AssetFile* newAsset = MemoryGlobals::GetDefaultAllocator().Alloc<AssetFile>();
-
-            String assetName = String("New ").Append(typeHandler->GetSimpleName());
-
             newAsset->fileName = CreateUniqueName(parent, assetName);
             newAsset->extension = it->second->Extension();
-            newAsset->absolutePath = Path::Join(parent->absolutePath, newAsset->fileName, newAsset->extension);
+            newAsset->absolutePath = absolutePath;
             newAsset->hash = HashInt32(HashValue(newAsset->absolutePath));
             newAsset->isDirectory = false;
             newAsset->currentVersion = 1;
@@ -262,7 +266,7 @@ namespace Fyrion
         return finalName;
     }
 
-    void AssetEditor::ImportAssets(Span<String> paths)
+    void AssetEditor::ImportAssets(AssetFile* parent, Span<String> paths)
     {
         for (const String& path : paths)
         {
@@ -270,7 +274,7 @@ namespace Fyrion
             if (auto it = extensionImporters.Find(extension))
             {
                 AssetImporter* io = it->second;
-                io->ImportAsset(path);
+                io->ImportAsset(parent, path);
             }
         }
     }
@@ -330,6 +334,8 @@ namespace Fyrion
 
         for (AssetHandler* handler : handlers)
         {
+            logger.Debug("registered asset handler for extension {} ", handler->Extension());
+
             if (StringView extension = handler->Extension(); !extension.Empty())
             {
                 handlersByExtension.Insert(extension, handler);

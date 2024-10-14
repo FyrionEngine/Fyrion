@@ -1,6 +1,7 @@
 #include "Graphics.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "GraphicsTypes.hpp"
+#include "Assets/TextureAsset.hpp"
 
 namespace Fyrion
 {
@@ -37,8 +38,9 @@ namespace Fyrion
         Registry::Type<ShaderAsset>();
 
         Registry::Type<MeshAsset>();
-        Registry::Type<MaterialAsset>();
         Registry::Type<MeshPrimitive>();
+
+        Registry::Type<TextureAsset>();
 
         auto bufferUsage = Registry::Type<BufferUsage>();
         bufferUsage.Value<BufferUsage::VertexBuffer>("VertexBuffer");

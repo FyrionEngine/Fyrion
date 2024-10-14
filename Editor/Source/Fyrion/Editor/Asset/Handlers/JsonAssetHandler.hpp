@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Fyrion/Core/Repository.hpp"
-#include "Fyrion/Editor/Asset/AssetEditor.hpp"
 #include "Fyrion/Editor/Asset/AssetTypes.hpp"
 
 namespace Fyrion

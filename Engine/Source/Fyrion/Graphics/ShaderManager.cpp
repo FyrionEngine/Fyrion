@@ -14,7 +14,6 @@
 #include "Assets/ShaderAsset.hpp"
 #include "Fyrion/Core/Logger.hpp"
 #include "dxc/dxcapi.h"
-#include "Fyrion/Asset/AssetManager.hpp"
 #include "Fyrion/Core/HashMap.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
 

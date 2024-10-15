@@ -1,6 +1,5 @@
 #include "Serialization.hpp"
 #include "Registry.hpp"
-#include "StreamBuffer.hpp"
 #include "yyjson.h"
 
 namespace Fyrion
@@ -171,7 +170,7 @@ namespace Fyrion
         };
     }
 
-    JsonAssetWriter::JsonAssetWriter(SerializationOptions serializationOptions, OutputFileStream* fileStream) : serializationOptions(serializationOptions), fileStream(fileStream)
+    JsonAssetWriter::JsonAssetWriter(SerializationOptions serializationOptions) : serializationOptions(serializationOptions)
     {
         doc = yyjson_mut_doc_new(&alloc);
     }
@@ -281,16 +280,6 @@ namespace Fyrion
     {
         yyjson_mut_doc_free(doc);
     }
-
-    ConstPtr JsonAssetWriter::WriteStream(ArchiveObject object, const StringView& name, Span<u8> data)
-    {
-        if (fileStream)
-        {
-            usize offset = fileStream->Write(data.begin(), data.Size());
-        }
-        return nullptr;
-    }
-
 
     JsonAssetReader::JsonAssetReader(StringView data)
     {

@@ -164,6 +164,13 @@ namespace Fyrion
         return read(linuxFileHandler->handler, data, size);
     }
 
+    u64 FileSystem::ReadFileAt(FileHandler fileHandler, VoidPtr data, usize size, usize offset)
+    {
+        //https://stackoverflow.com/questions/19780919/read-write-from-file-descriptor-at-offset
+        LinuxFileHandler* linuxFileHandler = static_cast<LinuxFileHandler*>(fileHandler.handler);
+        return pread(linuxFileHandler->handler, data, size, offset);
+    }
+
     FileHandler FileSystem::CreateFileMapping(FileHandler fileHandler, AccessMode accessMode, usize size)
     {
         return FileHandler{};

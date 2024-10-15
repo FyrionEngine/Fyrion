@@ -26,7 +26,7 @@ namespace Fyrion
 
         void OpenAsset(AssetFile* assetFile) override
         {
-            TextureAsset* textureAsset = Repository::Load<TextureAsset>(assetFile->uuid);
+            TextureAsset* textureAsset = Assets::Load<TextureAsset>(assetFile->uuid);
             TextureViewWindow::Open(textureAsset->GetTexture());
         }
     };
@@ -43,10 +43,9 @@ namespace Fyrion
 
         void ImportAsset(AssetFile* parent, StringView path) override
         {
-            //TODO hdr textures;
+            AssetFile* assetFile = AssetEditor::CreateAsset(parent, GetTypeID<TextureAsset>(), Path::Name(path));
 
-            AssetFile*    assethFile = AssetEditor::CreateAsset(parent, GetTypeID<TextureAsset>(), Path::Name(path));
-            TextureAsset* textureAsset = Repository::Load<TextureAsset>(assethFile->uuid);
+            TextureAsset* textureAsset = Assets::Load<TextureAsset>(assetFile->uuid);
 
             i32 imageWidth{};
             i32 imageHeight{};

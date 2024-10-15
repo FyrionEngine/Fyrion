@@ -1,0 +1,95 @@
+#include "Asset.hpp"
+
+#include "Fyrion/Core/HashMap.hpp"
+#include "Fyrion/Core/Registry.hpp"
+
+namespace Fyrion
+{
+    namespace
+    {
+        struct AssetCache
+        {
+            UUID         uuid;
+            AssetLoader* loader;
+            Asset*       instance;
+        };
+
+        HashMap<UUID, AssetCache> assetCache = {};
+    }
+
+    UUID Asset::GetUUID() const
+    {
+        return uuid;
+    }
+
+    StringView Asset::GetName() const
+    {
+        return name;
+    }
+
+    TypeHandler* Asset::GetTypeHandler() const
+    {
+        return typeHandler;
+    }
+
+    OutputFileStream Asset::CreateStream() const
+    {
+        return loader->CreateStream();
+    }
+
+    Array<u8> Asset::LoadStream(usize offset, usize size) const
+    {
+        return loader->LoadStream(offset, size);
+    }
+
+    void Asset::SetName(StringView name)
+    {
+        this->name = name;
+    }
+
+    void Asset::SetTypeHandler(TypeHandler* typeHandler)
+    {
+        this->typeHandler = typeHandler;
+    }
+
+    //---------------assets------------
+
+    void AssetsShutdown()
+    {
+        for(auto it : assetCache)
+        {
+            if (it.second.instance)
+            {
+                it.second.instance->GetTypeHandler()->Destroy(it.second.instance);
+                it.second.instance = nullptr;
+            }
+        }
+        assetCache.Clear();
+    }
+
+    void Assets::Create(UUID uuid, AssetLoader* loader)
+    {
+        assetCache.Emplace(uuid, AssetCache{
+                               .uuid = uuid,
+                               .loader = loader,
+                               .instance = nullptr
+                           });
+    }
+
+    Asset* Assets::Load(UUID uuid)
+    {
+        if (auto it = assetCache.Find(uuid))
+        {
+            if(!it->second.instance && it->second.loader)
+            {
+                it->second.instance = it->second.loader->LoadAsset();
+                FY_ASSERT(it->second.instance, "instance not created");
+                FY_ASSERT(it->second.instance->typeHandler, "type handler must be provided");
+                it->second.instance->loader = it->second.loader;
+                it->second.instance->uuid = it->second.uuid;
+            }
+            return it->second.instance;
+        }
+        return nullptr;
+    }
+}

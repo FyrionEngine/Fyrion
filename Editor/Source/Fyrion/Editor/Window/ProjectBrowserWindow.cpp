@@ -3,7 +3,6 @@
 #include "imgui_internal.h"
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Core/Registry.hpp"
-#include "Fyrion/Core/Repository.hpp"
 #include "Fyrion/Core/StaticContent.hpp"
 #include "Fyrion/Editor/Editor.hpp"
 #include "Fyrion/Graphics/Graphics.hpp"

@@ -2,7 +2,6 @@
 #include "Color.hpp"
 #include "Math.hpp"
 #include "Registry.hpp"
-#include "StreamBuffer.hpp"
 #include "UUID.hpp"
 
 namespace Fyrion
@@ -76,9 +75,6 @@ namespace Fyrion
         auto aabb = Registry::Type<AABB>();
         aabb.Field<&AABB::min>("min");
         aabb.Field<&AABB::max>("max");
-
-
-        Registry::Type<StreamBuffer>();
     }
 
 

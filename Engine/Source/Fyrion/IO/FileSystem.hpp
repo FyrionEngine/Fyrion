@@ -23,6 +23,7 @@ namespace Fyrion::FileSystem
     FY_API u64         GetFileSize(FileHandler fileHandler);
     FY_API u64         WriteFile(FileHandler fileHandler, ConstPtr data, usize size);
     FY_API u64         ReadFile(FileHandler fileHandler, VoidPtr data, usize size);
+    FY_API u64         ReadFileAt(FileHandler fileHandler, VoidPtr data, usize size, usize offset);
     FY_API void        CloseFile(FileHandler fileHandler);
     FY_API FileHandler CreateFileMapping(FileHandler fileHandler, AccessMode accessMode, usize size);
     FY_API VoidPtr     MapViewOfFile(FileHandler fileHandler);

@@ -1,8 +1,6 @@
 #include "Launcher.hpp"
 
 #include "Fyrion/Engine.hpp"
-#include "Fyrion/Asset/AssetManager.hpp"
-#include "Fyrion/Asset/Asset.hpp"
 #include "Fyrion/ImGui/IconsFontAwesome6.h"
 #include "Fyrion/ImGui/ImGui.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
@@ -135,7 +133,6 @@ namespace Fyrion
                     {
                         if (FileSystem::GetFileStatus(path).exists)
                         {
-                            projectLauncherSettings->SetModified();
                             projectLauncherSettings->recentProjects.EmplaceBack(path);
                             projectFilePath = path;
                             Engine::Shutdown();
@@ -355,7 +352,6 @@ namespace Fyrion
                         {
                             projectLauncherSettings->defaultPath = newProjectPath;
                             projectLauncherSettings->recentProjects.EmplaceBack(projectFilePath);
-                            projectLauncherSettings->SetModified();
                             Engine::Shutdown();
                         }
                     }
@@ -396,7 +392,6 @@ namespace Fyrion
                 if (auto it = FindFirst(projectLauncherSettings->recentProjects.begin(), projectLauncherSettings->recentProjects.end(), selectedProject))
                 {
                     projectLauncherSettings->recentProjects.Erase(it);
-                    projectLauncherSettings->SetModified();
                 }
             }
         }
@@ -442,7 +437,7 @@ namespace Fyrion
 
         //settingsDir = AssetManager::LoadFromDirectory("Settings", settingsFolder);
 
-        projectLauncherSettings = AssetManager::LoadByPath<ProjectLauncherSettings>("Settings://ProjectLauncherSettings.fy_asset");
+        projectLauncherSettings = Assets::LoadByPath<ProjectLauncherSettings>("Settings://ProjectLauncherSettings.fy_asset");
         if (projectLauncherSettings == nullptr)
         {
             // projectLauncherSettings = AssetManager::Create<ProjectLauncherSettings>({

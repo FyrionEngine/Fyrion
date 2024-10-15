@@ -19,19 +19,24 @@ namespace Fyrion
         this->extent = {width, height, 1};
 
         usize sizeInBytes = width * height * 4; //TODO check Format.
-        this->textureData.Store({bytes, sizeInBytes});
+
+        OutputFileStream stream = CreateStream();
+        stream.Write(bytes, sizeInBytes);
+        stream.Close();
     }
 
     Texture TextureAsset::GetTexture()
     {
         if (!texture)
         {
+            usize sizeInBytes = extent.width * extent.height * 4; //TODO check Format.
+
             texture = Graphics::CreateTexture(TextureCreation{
                 .extent = extent,
                 .format = format,
             });
 
-            Array<u8> data = textureData.Load();
+            Array<u8> data = LoadStream(0, sizeInBytes);
 
             TextureDataRegion region{
                 .extent = extent,
@@ -51,6 +56,6 @@ namespace Fyrion
     {
         type.Field<&TextureAsset::extent>("extent");
         type.Field<&TextureAsset::format>("format");
-        type.Field<&TextureAsset::textureData>("textureData");
+       // type.Field<&TextureAsset::textureData>("textureData");
     }
 }

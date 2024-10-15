@@ -8,13 +8,9 @@
 #include "Fyrion/Graphics/GraphicsTypes.hpp"
 #include "Fyrion/Graphics/Graphics.hpp"
 #include "TypeRegister.hpp"
-#include "Asset/AssetManager.hpp"
-#include "Core/Repository.hpp"
-#include "Core/StaticContent.hpp"
+#include "Fyrion/Core/StaticContent.hpp"
 #include "Fyrion/ImGui/ImGui.hpp"
 #include "Fyrion/Core/ArgParser.hpp"
-#include "IO/FileSystem.hpp"
-#include "IO/Path.hpp"
 
 namespace Fyrion
 {
@@ -30,8 +26,7 @@ namespace Fyrion
     void            ShaderManagerInit();
     void            ShaderManagerShutdown();
     void            InputInit();
-    void            RepositoryInit();
-    void            RepositoryShutdown();
+    void            AssetsShutdown();
 
 
     namespace
@@ -66,7 +61,6 @@ namespace Fyrion
         args.Parse(argc, argv);
 
         TypeRegister();
-        RepositoryInit();
         InputInit();
         ShaderManagerInit();
     }
@@ -186,7 +180,7 @@ namespace Fyrion
 
         onShutdownHandler.Invoke();
 
-        RepositoryShutdown();
+        AssetsShutdown();
 
         Graphics::DestroySwapchain(swapchain);
         Platform::DestroyWindow(window);

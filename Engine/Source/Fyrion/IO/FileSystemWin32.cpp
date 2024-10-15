@@ -140,10 +140,12 @@ namespace Fyrion
     {
         DWORD dwShareMode = 0;
         DWORD dwDesiredAccess = 0;
+    	DWORD flags = 0;
         if (accessMode == AccessMode::ReadOnly)
         {
             dwDesiredAccess = GENERIC_READ;
             dwShareMode = OPEN_EXISTING;
+        	flags = FILE_FLAG_OVERLAPPED;
         }
 
         if (accessMode == AccessMode::WriteOnly)
@@ -158,7 +160,7 @@ namespace Fyrion
             dwShareMode = CREATE_NEW;
         }
 
-        HANDLE hout = CreateFile(path.CStr(), dwDesiredAccess, 0, nullptr, dwShareMode, FILE_ATTRIBUTE_NORMAL, nullptr);
+        HANDLE hout = CreateFile(path.CStr(), dwDesiredAccess, 0, nullptr, dwShareMode, FILE_ATTRIBUTE_NORMAL, &flags);
         if (hout == INVALID_HANDLE_VALUE)
         {
             return FileHandler{};
@@ -185,9 +187,22 @@ namespace Fyrion
 
     u64 FileSystem::ReadFile(FileHandler fileHandler, VoidPtr data, usize size)
     {
+    	OVERLAPPED overlapped = {};
+
         DWORD nRead;
-        ::ReadFile(fileHandler.handler, data, size, &nRead, nullptr);
+        ::ReadFile(fileHandler.handler, data, size, &nRead, &overlapped);
         return nRead;
+    }
+
+	u64 FileSystem::ReadFileAt(FileHandler fileHandler, VoidPtr data, usize size, usize offset)
+    {
+    	OVERLAPPED overlapped{};
+    	overlapped.Offset = LOWORD(offset);
+    	overlapped.OffsetHigh = HIWORD(offset);
+
+    	DWORD nRead;
+    	::ReadFile(fileHandler.handler, data, size, &nRead, &overlapped);
+    	return nRead;
     }
 
 	FileHandler FileSystem::CreateFileMapping(FileHandler fileHandler, AccessMode accessMode, usize size)

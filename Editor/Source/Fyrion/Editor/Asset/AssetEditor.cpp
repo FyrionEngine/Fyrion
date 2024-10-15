@@ -4,7 +4,6 @@
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Core/Logger.hpp"
 #include "Fyrion/Core/Registry.hpp"
-#include "Fyrion/Core/Repository.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
 #include "Fyrion/IO/FileTypes.hpp"
 #include "Fyrion/IO/Path.hpp"
@@ -87,11 +86,7 @@ namespace Fyrion
                 if (auto it = handlersByExtension.Find(assetFile->extension))
                 {
                     assetFile->handler = it->second;
-                    Repository::Register(assetFile->uuid, it->second->GetAssetTypeID(), false, assetFile, [](VoidPtr loaderData, VoidPtr instance, TypeHandler* typeHandler)
-                    {
-                        AssetFile* assetFile = static_cast<AssetFile*>(loaderData);
-                        assetFile->handler->Load(assetFile, typeHandler, instance);
-                    });
+                    Assets::Create(assetFile->uuid, assetFile);
                 }
 
                 assets.Insert(path, assetFile);
@@ -105,6 +100,39 @@ namespace Fyrion
     bool AssetFile::IsDirty() const
     {
         return currentVersion > persistedVersion;
+    }
+
+    Asset* AssetFile::LoadAsset()
+    {
+        if (TypeHandler* typeHandler = Registry::FindTypeById(handler->GetAssetTypeID()))
+        {
+            Asset* asset = typeHandler->Cast<Asset>(typeHandler->NewInstance());
+            asset->SetName(fileName);
+            asset->SetTypeHandler(typeHandler);
+            handler->Load(this, typeHandler, asset);
+            return asset;
+        }
+        return nullptr;
+    }
+
+    Array<u8> AssetFile::LoadStream(usize offset, usize size)
+    {
+        String bufferFile = Path::Join(absolutePath, ".buffer");
+
+        Array<u8> arr;
+        arr.Resize(size);
+
+        FileHandler file = FileSystem::OpenFile(bufferFile, AccessMode::ReadOnly);
+        FileSystem::ReadFileAt(file, arr.Data(), size, offset);
+        FileSystem::CloseFile(file);
+
+        return arr;
+    }
+
+    OutputFileStream AssetFile::CreateStream()
+    {
+        String bufferFile = Path::Join(absolutePath, ".buffer");
+        return OutputFileStream(bufferFile);
     }
 
     void AssetEditor::AddPackage(StringView directory)
@@ -162,7 +190,7 @@ namespace Fyrion
 
             parent->children.EmplaceBack(newAsset);
 
-            Repository::Register(newAsset->uuid, it->second->GetAssetTypeID(), true, nullptr, nullptr);
+            Assets::Create(newAsset->uuid, newAsset);
 
             return newAsset;
         }

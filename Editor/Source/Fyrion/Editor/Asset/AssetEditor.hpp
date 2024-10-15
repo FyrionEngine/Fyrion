@@ -5,11 +5,12 @@
 #include "Fyrion/Core/StringView.hpp"
 #include "Fyrion/Core/UUID.hpp"
 #include "Fyrion/Core/Span.hpp"
+#include "Fyrion/IO/Asset.hpp"
 
 
 namespace Fyrion
 {
-    struct AssetFile
+    struct AssetFile : AssetLoader
     {
         u32    hash;
         String fileName;
@@ -17,7 +18,6 @@ namespace Fyrion
         String absolutePath;
         bool   isDirectory;
         UUID   uuid;
-        TypeID type;
 
         u64 currentVersion;
         u64 persistedVersion;
@@ -31,6 +31,10 @@ namespace Fyrion
         bool active = true;
 
         bool IsDirty() const;
+
+        Asset*           LoadAsset() override;
+        Array<u8>        LoadStream(usize offset, usize size) override;
+        OutputFileStream CreateStream() override;
     };
 
 

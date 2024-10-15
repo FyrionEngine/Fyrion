@@ -85,20 +85,13 @@ namespace Fyrion
         }
     };
 
-
-    //TODO
     class FY_API OutputFileStream
     {
     public:
         OutputFileStream(StringView file);
         usize Write(u8* data, usize size);
         void  Close();
-
-        StringView GetFile() const;
-
     private:
-        String file;
-        bool streamOpen = false;
         std::ofstream stream;
         usize streamSize = 0;
     };

@@ -35,7 +35,6 @@ namespace Fyrion
         virtual void  WriteFloat(ArchiveObject object, const StringView& name, f64 value) = 0;
         virtual void  WriteString(ArchiveObject object, const StringView& name, const StringView& value) = 0;
         virtual void  WriteValue(ArchiveObject object, const StringView& name, ArchiveObject value) = 0;
-        virtual usize WriteStream(ArchiveObject object, const StringView& name, Span<u8> data) = 0;
 
         virtual void AddBool(ArchiveObject array, bool value) = 0;
         virtual void AddInt(ArchiveObject array, i64 value) = 0;
@@ -180,20 +179,18 @@ namespace Fyrion
         FY_NO_COPY_CONSTRUCTOR(JsonAssetWriter);
         FY_BASE_TYPES(ArchiveWriter);
 
-        JsonAssetWriter(SerializationOptions serializationOptions = SerializationOptions::None, OutputFileStream* fileStream = nullptr);
+        JsonAssetWriter(SerializationOptions serializationOptions = SerializationOptions::None);
         ~JsonAssetWriter() override;
 
         ArchiveObject CreateObject() override;
         ArchiveObject CreateArray() override;
 
-        void     WriteBool(ArchiveObject object, const StringView& name, bool value) override;
-        void     WriteInt(ArchiveObject object, const StringView& name, i64 value) override;
-        void     WriteUInt(ArchiveObject object, const StringView& name, u64 value) override;
-        void     WriteFloat(ArchiveObject object, const StringView& name, f64 value) override;
-        void     WriteString(ArchiveObject object, const StringView& name, const StringView& value) override;
-        void     WriteValue(ArchiveObject object, const StringView& name, ArchiveObject value) override;
-        ConstPtr WriteStream(ArchiveObject object, const StringView& name, Span<u8> data) override;
-
+        void WriteBool(ArchiveObject object, const StringView& name, bool value) override;
+        void WriteInt(ArchiveObject object, const StringView& name, i64 value) override;
+        void WriteUInt(ArchiveObject object, const StringView& name, u64 value) override;
+        void WriteFloat(ArchiveObject object, const StringView& name, f64 value) override;
+        void WriteString(ArchiveObject object, const StringView& name, const StringView& value) override;
+        void WriteValue(ArchiveObject object, const StringView& name, ArchiveObject value) override;
 
         void AddBool(ArchiveObject array, bool value) override;
         void AddInt(ArchiveObject array, i64 value) override;
@@ -209,7 +206,6 @@ namespace Fyrion
     private:
         SerializationOptions serializationOptions = SerializationOptions::None;
         yyjson_mut_doc*      doc = nullptr;
-        OutputFileStream*    fileStream = nullptr;
     };
 
 

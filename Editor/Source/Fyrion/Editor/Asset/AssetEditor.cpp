@@ -4,6 +4,7 @@
 
 #include "AssetTypes.hpp"
 #include "Fyrion/Engine.hpp"
+#include "Fyrion/Core/HashSet.hpp"
 #include "Fyrion/Core/Logger.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Graphics/Graphics.hpp"
@@ -17,9 +18,9 @@ namespace Fyrion
 {
     namespace
     {
-        Array<AssetFile*>           packages;
-        AssetFile*                  project;
-        HashMap<String, AssetFile*> assets;
+        Array<AssetFile*>   packages;
+        AssetFile*          project;
+        HashSet<AssetFile*> assets;
 
         Array<AssetImporter*>           importers;
         HashMap<String, AssetImporter*> extensionImporters;
@@ -67,7 +68,7 @@ namespace Fyrion
                         assetFile->children.EmplaceBack(assetChild);
                     }
                 }
-                assets.Insert(path, assetFile);
+                assets.Insert(assetFile);
                 return assetFile;
             }
 
@@ -101,7 +102,7 @@ namespace Fyrion
                     Assets::Create(assetFile->uuid, assetFile);
                 }
 
-                assets.Insert(path, assetFile);
+                assets.Insert(assetFile);
                 return assetFile;
             }
 
@@ -112,6 +113,17 @@ namespace Fyrion
     bool AssetFile::IsDirty() const
     {
         return currentVersion > persistedVersion;
+    }
+
+    void AssetFile::RemoveFromParent()
+    {
+        if (parent)
+        {
+            if (auto it = FindFirst(parent->children.begin(), parent->children.end(), this))
+            {
+                parent->children.Erase(it);
+            }
+        }
     }
 
     Asset* AssetFile::LoadAsset()
@@ -204,9 +216,36 @@ namespace Fyrion
         return fileTexture;
     }
 
-    void AssetFile::Destroy(bool removeFromParent)
+    void AssetFile::MoveTo(AssetFile* newParent)
     {
-        assets.Erase(absolutePath);
+        RemoveFromParent();
+
+        parent = newParent;
+        newParent->children.EmplaceBack(this);
+
+        currentVersion++;
+    }
+
+    bool AssetFile::IsChildOf(AssetFile* item) const
+    {
+        if (parent != nullptr)
+        {
+            if (parent == item)
+            {
+                return true;
+            }
+
+            if (parent->IsChildOf(item))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void AssetFile::Destroy()
+    {
+        assets.Erase(this);
 
         String infoFile = Path::Join(absolutePath, ".info");
         String bufferFile = Path::Join(absolutePath, ".buffer");
@@ -217,21 +256,15 @@ namespace Fyrion
         FileSystem::Remove(absolutePath);
         FileSystem::Remove(thumbnail);
 
-        if (parent && removeFromParent)
-        {
-            if (auto it = FindFirst(parent->children.begin(), parent->children.end(), this))
-            {
-                parent->children.Erase(it);
-            }
-        }
-
         if (isDirectory)
         {
             for (AssetFile* file : children)
             {
-                file->Destroy(false);
+                file->Destroy();
             }
         }
+
+        logger.Debug("asset {} destroyed ", absolutePath);
 
         MemoryGlobals::GetDefaultAllocator().DestroyAndFree(this);
     }
@@ -276,7 +309,6 @@ namespace Fyrion
             FileSystem::CreateDirectory(assetFolder);
         }
 
-
         if (AssetFile* assetFile = ScanForAssets(assetFolder))
         {
             assetFile->fileName = name;
@@ -297,7 +329,8 @@ namespace Fyrion
         newDirectory->currentVersion = 1;
         newDirectory->persistedVersion = 0;
         newDirectory->parent = parent;
-        assets.Insert(newDirectory->absolutePath, newDirectory);
+
+        assets.Insert(newDirectory);
 
         parent->children.EmplaceBack(newDirectory);
 
@@ -327,11 +360,13 @@ namespace Fyrion
             newAsset->parent = parent;
             newAsset->uuid = UUID::RandomUUID();
             newAsset->handler = it->second;
-            assets.Insert(newAsset->absolutePath, newAsset);
+            assets.Insert(newAsset);
 
             parent->children.EmplaceBack(newAsset);
 
             Assets::Create(newAsset->uuid, newAsset);
+
+            logger.Debug("asset {} created on {} ", assetName, parent->absolutePath);
 
             return newAsset;
         }
@@ -348,9 +383,9 @@ namespace Fyrion
     {
         for (auto& it : assets)
         {
-            if (it.second->IsDirty())
+            if (it.first->IsDirty())
             {
-                updatedAssets.EmplaceBack(it.second);
+                updatedAssets.EmplaceBack(it.first);
             }
         }
     }
@@ -362,40 +397,57 @@ namespace Fyrion
             if (assetFile->active)
             {
                 String newAbsolutePath = Path::Join(assetFile->parent->absolutePath, assetFile->fileName, assetFile->extension);
-                assets.Erase(assetFile->absolutePath);
+                bool moved = newAbsolutePath != assetFile->absolutePath;
 
                 if (assetFile->isDirectory)
                 {
                     if (FileSystem::GetFileStatus(assetFile->absolutePath).exists)
                     {
-                        FileSystem::Rename(assetFile->absolutePath, newAbsolutePath);
+                        if (assetFile->absolutePath != newAbsolutePath)
+                        {
+                            FileSystem::Rename(assetFile->absolutePath, newAbsolutePath);
+                        }
                     }
                     else
                     {
                         FileSystem::CreateDirectory(newAbsolutePath);
                     }
                 }
-                else if (auto it = handlersByExtension.Find(assetFile->extension))
+                else
                 {
-                    String          infoFile = Path::Join(newAbsolutePath, ".info");
-                    JsonAssetWriter writer;
-                    ArchiveObject   root = writer.CreateObject();
-                    writer.WriteString(root, "uuid", assetFile->uuid.ToString());
-                    FileSystem::SaveFileAsString(infoFile, JsonAssetWriter::Stringify(root));
+                    if (moved)
+                    {
+                        String oldBufferFile = Path::Join(assetFile->absolutePath, ".buffer");
+                        String newBufferFile = Path::Join(newAbsolutePath, ".buffer");
+                        FileSystem::Rename(oldBufferFile, newBufferFile);
 
-                    AssetHandler* handler = it->second;
-                    handler->Save(newAbsolutePath, assetFile);
+                        FileSystem::Remove(Path::Join(assetFile->absolutePath, ".info"));
+                        FileSystem::Remove(assetFile->absolutePath);
+                    }
+
+                    if (auto it = handlersByExtension.Find(assetFile->extension))
+                    {
+                        String          infoFile = Path::Join(newAbsolutePath, ".info");
+                        JsonAssetWriter writer;
+                        ArchiveObject   root = writer.CreateObject();
+                        writer.WriteString(root, "uuid", assetFile->uuid.ToString());
+                        FileSystem::SaveFileAsString(infoFile, JsonAssetWriter::Stringify(root));
+
+                        AssetHandler* handler = it->second;
+                        handler->Save(newAbsolutePath, assetFile);
+                    }
+
+                    if (!assetFile->tempBuffer.Empty())
+                    {
+                        String newBufferFile = Path::Join(newAbsolutePath, ".buffer");
+                        FileSystem::Rename(assetFile->tempBuffer, newBufferFile);
+                        assetFile->tempBuffer.Clear();
+                    }
                 }
 
-                if (!assetFile->tempBuffer.Empty())
-                {
-                    String newBufferFile = Path::Join(newAbsolutePath, ".buffer");
-                    FileSystem::Rename(assetFile->tempBuffer, newBufferFile);
-                    assetFile->tempBuffer.Clear();
-                }
+                logger.Debug("asset updated from path {} to path {} ", assetFile->absolutePath, newAbsolutePath);
 
                 assetFile->absolutePath = newAbsolutePath;
-                assets.Insert(newAbsolutePath, assetFile);
                 assetFile->persistedVersion = assetFile->currentVersion;
             }
             else
@@ -411,6 +463,7 @@ namespace Fyrion
         {
             asset->active = false;
             asset->currentVersion++;
+            asset->RemoveFromParent();
         }
     }
 
@@ -483,7 +536,7 @@ namespace Fyrion
 
         for (auto& it : assets)
         {
-            MemoryGlobals::GetDefaultAllocator().DestroyAndFree(it.second);
+            MemoryGlobals::GetDefaultAllocator().DestroyAndFree(it.first);
         }
 
         packages.Clear();

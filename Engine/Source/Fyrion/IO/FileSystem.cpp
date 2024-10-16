@@ -44,6 +44,11 @@ namespace Fyrion
 
     bool FileSystem::Rename(const StringView& oldName, const StringView& newName)
     {
+        if (!GetFileStatus(Path::Parent(newName)).exists)
+        {
+            CreateDirectory(Path::Parent(newName));
+        }
+
         std::error_code ec{};
         fs::rename(oldName.CStr(), newName.CStr(), ec);
         return ec.value() == 0;

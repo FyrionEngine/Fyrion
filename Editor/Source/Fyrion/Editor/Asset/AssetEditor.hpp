@@ -33,18 +33,21 @@ namespace Fyrion
         bool active = true;
 
         bool IsDirty() const;
+        void RemoveFromParent();
 
         Texture thumbnail = {};
-        bool   thumbnailVerified = false;
+        bool    thumbnailVerified = false;
 
-        Asset*           LoadAsset() override;
-        Array<u8>        LoadStream(usize offset, usize size) override;
+        Asset*    LoadAsset() override;
+        Array<u8> LoadStream(usize offset, usize size) override;
 
         OutputFileStream CreateStream();
 
-        Texture          GetThumbnail();
+        Texture GetThumbnail();
 
-        void             Destroy(bool removeFromParent = true);
+        void MoveTo(AssetFile* newParent);
+        bool IsChildOf(AssetFile* item) const;
+        void Destroy();
 
         ~AssetFile() override;
     };

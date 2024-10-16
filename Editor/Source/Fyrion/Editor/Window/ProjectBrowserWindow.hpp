@@ -34,6 +34,7 @@ namespace Fyrion
         AssetFile*            lastSelectedItem = nullptr;
         AssetFile*            renamingItem = nullptr;
         HashMap<String, bool> openTreeFolders{};
+        bool                  newSelection = false;
 
         void DrawPathItems();
         void DrawTreeNode(AssetFile* assetFile);

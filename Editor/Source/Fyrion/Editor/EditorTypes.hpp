@@ -4,6 +4,9 @@
 #include "Fyrion/Core/Event.hpp"
 #include "Fyrion/Core/Hash.hpp"
 
+
+#define FY_ASSET_PAYLOAD "fy-asset-payload"
+
 namespace Fyrion
 {
 
@@ -28,11 +31,6 @@ namespace Fyrion
     {
         DockPosition dockPosition{};
         bool createOnInit{};
-    };
-
-    struct AssetPayload
-    {
-        //AssetHandler* asset;
     };
 
 

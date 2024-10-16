@@ -56,20 +56,37 @@ namespace Fyrion
 
         if (ImGui::BeginDragDropTarget())
         {
-            // if (assetPayload.asset != nullptr && !directory->IsChildOf(assetPayload.asset) && ImGui::AcceptDragDropPayload(AssetDragDropType))
-            // {
-            //     Editor::CreateTransaction()->CreateAction<MoveAssetAction>(assetPayload.asset, directory)->Commit();
-            // }
+            bool canAcceptDragDrop = false;
+
+            for(auto& it: selectedItems)
+            {
+                if (!file->IsChildOf(it.first))
+                {
+                    canAcceptDragDrop = true;
+                    break;
+                }
+            }
+
+            if (canAcceptDragDrop && ImGui::AcceptDragDropPayload(FY_ASSET_PAYLOAD))
+            {
+                for (auto& it : selectedItems)
+                {
+                    if (!file->IsChildOf(it.first))
+                    {
+                        it.first->MoveTo(file);
+                    }
+                }
+            }
+
             ImGui::EndDragDropTarget();
         }
 
-        // if (assetHandler->GetParent() != nullptr && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoDisableHover | ImGuiDragDropFlags_SourceNoHoldToOpenOthers))
-        // {
-        //     assetPayload.asset = assetHandler;
-        //     ImGui::SetDragDropPayload(AssetDragDropType, &assetPayload, sizeof(AssetPayload));
-        //     ImGui::Text("%s", assetHandler->GetName().CStr());
-        //     ImGui::EndDragDropSource();
-        // }
+        if (file->parent != nullptr && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoDisableHover | ImGuiDragDropFlags_SourceNoHoldToOpenOthers))
+        {
+            ImGui::SetDragDropPayload(FY_ASSET_PAYLOAD, nullptr, 0);
+            ImGui::Text("%s", file->fileName.CStr());
+            ImGui::EndDragDropSource();
+        }
 
         if (openDir == isNodeOpen && ImGui::IsItemClicked(ImGuiMouseButton_Left))
         {
@@ -166,7 +183,6 @@ namespace Fyrion
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 1.f * style.ScaleFactor);
 
         bool browseFolder = true;
-        bool newSelection = false;
 
         static ImGuiTableFlags flags = ImGuiTableFlags_Resizable;
 
@@ -208,6 +224,8 @@ namespace Fyrion
                 if (ImGui::BeginContentTable("ProjectBrowser", contentBrowserZoom))
                 {
                     AssetFile* newOpenDirectory = nullptr;
+
+                    AssetFile* moveAssetsTo = nullptr;
 
                     if (openDirectory != nullptr)
                     {
@@ -282,23 +300,22 @@ namespace Fyrion
                                     renamingItem = nullptr;
                                 }
 
-                                ImGui::SetCursorScreenPos(state.screenStartPos);
+                                ImGui::SetCursorScreenPos(ImVec2(state.screenStartPos.x + 3 * style.ScaleFactor, state.screenStartPos.y + 3 * style.ScaleFactor));
                                 ImGui::PushID(desc.id + 678);
-                                ImGui::InvisibleButton("", state.size);
+                                ImGui::InvisibleButton("", ImVec2(state.size.x - 7 * style.ScaleFactor, state.size.y - 6 * style.ScaleFactor));
 
                                 if (assetFile->isDirectory && ImGui::BeginDragDropTarget())
                                 {
-                                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("zzzzzzz"))
+                                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(FY_ASSET_PAYLOAD))
                                     {
-                                        int a = 0;
-                                        //   contentTable.acceptPayloadItem = contentItemDesc.ItemId;
+                                        moveAssetsTo = assetFile;
                                     }
                                     ImGui::EndDragDropTarget();
                                 }
 
                                 if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoHoldToOpenOthers))
                                 {
-                                    ImGui::SetDragDropPayload("zzzzzzz", nullptr, 0);
+                                    ImGui::SetDragDropPayload(FY_ASSET_PAYLOAD, nullptr, 0);
                                     ImGui::Text("%s", desc.label.CStr());
                                     ImGui::EndDragDropSource();
                                 }
@@ -316,17 +333,22 @@ namespace Fyrion
                     {
                         SetOpenDirectory(newOpenDirectory);
                     }
+
+                    if (moveAssetsTo)
+                    {
+                        for(auto& it: selectedItems)
+                        {
+                            it.first->MoveTo(moveAssetsTo);
+                        }
+                        selectedItems.Clear();
+                        lastSelectedItem = nullptr;
+                    }
                 }
 
                 ImGui::SetWindowFontScale(1.0);
                 ImGui::EndChild();
             }
             ImGui::EndTable();
-
-            // if (newItemSelected != selectedItem)
-            // {
-            //     SetSelectedAsset(newItemSelected);
-            // }
         }
 
 
@@ -361,11 +383,18 @@ namespace Fyrion
             lastSelectedItem = nullptr;
         }
 
+        newSelection = false;
+
         ImGui::End();
     }
 
     void ProjectBrowserWindow::SetOpenDirectory(AssetFile* directory)
     {
+        selectedItems.Clear();
+        selectedItems.Emplace(directory);
+        lastSelectedItem = directory;
+        newSelection = true;
+
         openDirectory = directory;
         if (directory && directory->parent)
         {

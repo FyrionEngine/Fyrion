@@ -1,5 +1,7 @@
 #include "AssetEditor.hpp"
 
+#include <thread>
+
 #include "AssetTypes.hpp"
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Core/Logger.hpp"
@@ -9,12 +11,14 @@
 #include "Fyrion/IO/FileTypes.hpp"
 #include "Fyrion/IO/Path.hpp"
 #include "Fyrion/Core/StaticContent.hpp"
+#include "Fyrion/Editor/Editor.hpp"
 
 namespace Fyrion
 {
     namespace
     {
         Array<AssetFile*>           packages;
+        AssetFile*                  project;
         HashMap<String, AssetFile*> assets;
 
         Array<AssetImporter*>           importers;
@@ -26,6 +30,9 @@ namespace Fyrion
 
         Texture folderTexture = {};
         Texture fileTexture = {};
+
+        String tempFolder = {};
+        String bufferTempFolder = {};
 
         Logger& logger = Logger::GetLogger("Fyrion::AssetEditor");
 
@@ -122,7 +129,7 @@ namespace Fyrion
 
     Array<u8> AssetFile::LoadStream(usize offset, usize size)
     {
-        String bufferFile = Path::Join(absolutePath, ".buffer");
+        String bufferFile = tempBuffer.Empty() ? Path::Join(absolutePath, ".buffer") : tempBuffer;
 
         Array<u8> arr;
         arr.Resize(size);
@@ -136,8 +143,8 @@ namespace Fyrion
 
     OutputFileStream AssetFile::CreateStream()
     {
-        String bufferFile = Path::Join(absolutePath, ".buffer");
-        return OutputFileStream(bufferFile);
+        tempBuffer = Path::Join(bufferTempFolder, uuid.ToString(), ".buffer");
+        return OutputFileStream(tempBuffer);
     }
 
     Texture AssetFile::GetThumbnail()
@@ -147,28 +154,46 @@ namespace Fyrion
             return folderTexture;
         }
 
-        if (!thumbnailVerified)
+        if (!thumbnailVerified && handler)
         {
-            String cachePath = Path::Join("C:\\dev\\Fyrion\\Temp", uuid.ToString(), ".thumbnail");
-            if (FileSystem::GetFileStatus(cachePath).exists)
-            {
-                Image image(128, 128, 4);
-                image.data = FileSystem::ReadFileAsByteArray(cachePath);
-                thumbnail = Graphics::CreateTextureFromImage(image);
-            }
-            else
-            {
-                if (Image image = handler->GenerateThumbnail(this); !image.Empty())
-                {
-                    if (FileHandler fileHandler = FileSystem::OpenFile(cachePath, AccessMode::WriteOnly))
-                    {
-                        FileSystem::WriteFile(fileHandler, image.GetData().Data(), image.GetData().Size());
-                        FileSystem::CloseFile(fileHandler);
-                    }
-                    thumbnail = Graphics::CreateTextureFromImage(image);
-                }
-            }
             thumbnailVerified = true;
+
+            String thumbnailFolders = Path::Join(tempFolder, "Thumbnails");
+            if (!FileSystem::GetFileStatus(thumbnailFolders).exists)
+            {
+                FileSystem::CreateDirectory(thumbnailFolders);
+            }
+
+            std::thread thread = std::thread([&]
+            {
+                String cachePath = Path::Join(tempFolder, "Thumbnails", uuid.ToString(), ".image");
+                if (FileSystem::GetFileStatus(cachePath).exists)
+                {
+                    Image image(128, 128, 4);
+                    image.data = FileSystem::ReadFileAsByteArray(cachePath);
+
+                    Editor::ExecuteOnMainThread([image, this]
+                    {
+                        thumbnail = Graphics::CreateTextureFromImage(image);
+                    });
+                }
+                else
+                {
+                    if (Image image = handler->GenerateThumbnail(this); !image.Empty())
+                    {
+                        if (FileHandler fileHandler = FileSystem::OpenFile(cachePath, AccessMode::WriteOnly))
+                        {
+                            FileSystem::WriteFile(fileHandler, image.GetData().Data(), image.GetData().Size());
+                            FileSystem::CloseFile(fileHandler);
+                        }
+                        Editor::ExecuteOnMainThread([image, this]
+                        {
+                            thumbnail = Graphics::CreateTextureFromImage(image);
+                        });
+                    }
+                }
+            });
+            thread.detach();
         }
 
         if (thumbnail)
@@ -179,6 +204,38 @@ namespace Fyrion
         return fileTexture;
     }
 
+    void AssetFile::Destroy(bool removeFromParent)
+    {
+        assets.Erase(absolutePath);
+
+        String infoFile = Path::Join(absolutePath, ".info");
+        String bufferFile = Path::Join(absolutePath, ".buffer");
+        String thumbnail = Path::Join(tempFolder, "Thumbnails", uuid.ToString(), ".image");
+
+        FileSystem::Remove(infoFile);
+        FileSystem::Remove(bufferFile);
+        FileSystem::Remove(absolutePath);
+        FileSystem::Remove(thumbnail);
+
+        if (parent && removeFromParent)
+        {
+            if (auto it = FindFirst(parent->children.begin(), parent->children.end(), this))
+            {
+                parent->children.Erase(it);
+            }
+        }
+
+        if (isDirectory)
+        {
+            for (AssetFile* file : children)
+            {
+                file->Destroy(false);
+            }
+        }
+
+        MemoryGlobals::GetDefaultAllocator().DestroyAndFree(this);
+    }
+
     AssetFile::~AssetFile()
     {
         if (thumbnail)
@@ -187,11 +244,43 @@ namespace Fyrion
         }
     }
 
-    void AssetEditor::AddPackage(StringView directory)
+    void AssetEditor::AddPackage(StringView name, StringView directory)
     {
-        if (AssetFile* assetFile = ScanForAssets(directory))
+        String assetFolder = Path::Join(directory, "Assets");
+        if (AssetFile* assetFile = ScanForAssets(assetFolder))
         {
+            assetFile->fileName = name;
             packages.EmplaceBack(assetFile);
+        }
+    }
+
+    void AssetEditor::SetProject(StringView name, StringView directory)
+    {
+        tempFolder = Path::Join(directory, "Temp");
+        if (!FileSystem::GetFileStatus(tempFolder).exists)
+        {
+            FileSystem::CreateDirectory(tempFolder);
+        }
+
+        bufferTempFolder = Path::Join(tempFolder, "Buffers");
+        if (FileSystem::GetFileStatus(bufferTempFolder).exists)
+        {
+            FileSystem::Remove(bufferTempFolder);
+        }
+        FileSystem::CreateDirectory(bufferTempFolder);
+
+        String assetFolder = Path::Join(directory, "Assets");
+
+        if (!FileSystem::GetFileStatus(assetFolder).exists)
+        {
+            FileSystem::CreateDirectory(assetFolder);
+        }
+
+
+        if (AssetFile* assetFile = ScanForAssets(assetFolder))
+        {
+            assetFile->fileName = name;
+            project = assetFile;
         }
     }
 
@@ -288,8 +377,7 @@ namespace Fyrion
                 }
                 else if (auto it = handlersByExtension.Find(assetFile->extension))
                 {
-
-                    String infoFile = Path::Join(newAbsolutePath, ".info");
+                    String          infoFile = Path::Join(newAbsolutePath, ".info");
                     JsonAssetWriter writer;
                     ArchiveObject   root = writer.CreateObject();
                     writer.WriteString(root, "uuid", assetFile->uuid.ToString());
@@ -299,13 +387,20 @@ namespace Fyrion
                     handler->Save(newAbsolutePath, assetFile);
                 }
 
+                if (!assetFile->tempBuffer.Empty())
+                {
+                    String newBufferFile = Path::Join(newAbsolutePath, ".buffer");
+                    FileSystem::Rename(assetFile->tempBuffer, newBufferFile);
+                    assetFile->tempBuffer.Clear();
+                }
+
                 assetFile->absolutePath = newAbsolutePath;
                 assets.Insert(newAbsolutePath, assetFile);
                 assetFile->persistedVersion = assetFile->currentVersion;
             }
             else
             {
-                //TODO delete assets
+                assetFile->Destroy();
             }
         }
     }
@@ -373,6 +468,11 @@ namespace Fyrion
     Span<AssetFile*> AssetEditor::GetPackages()
     {
         return packages;
+    }
+
+    AssetFile* AssetEditor::GetProject()
+    {
+        return project;
     }
 
     void AssetEditorShutdown()

@@ -17,6 +17,7 @@ namespace Fyrion
         String fileName;
         String extension;
         String absolutePath;
+        String tempBuffer;
         bool   isDirectory;
         UUID   uuid;
 
@@ -38,9 +39,12 @@ namespace Fyrion
 
         Asset*           LoadAsset() override;
         Array<u8>        LoadStream(usize offset, usize size) override;
-        OutputFileStream CreateStream() override;
+
+        OutputFileStream CreateStream();
 
         Texture          GetThumbnail();
+
+        void             Destroy(bool removeFromParent = true);
 
         ~AssetFile() override;
     };
@@ -48,8 +52,10 @@ namespace Fyrion
 
     namespace AssetEditor
     {
-        FY_API void             AddPackage(StringView directory);
+        FY_API void             AddPackage(StringView name, StringView directory);
+        FY_API void             SetProject(StringView name, StringView directory);
         FY_API Span<AssetFile*> GetPackages();
+        FY_API AssetFile*       GetProject();
         FY_API AssetFile*       CreateDirectory(AssetFile* parent);
         FY_API AssetFile*       CreateAsset(AssetFile* parent, TypeID typeId, StringView suggestedName = "");
         FY_API void             Rename(AssetFile* assetFile, StringView newName);

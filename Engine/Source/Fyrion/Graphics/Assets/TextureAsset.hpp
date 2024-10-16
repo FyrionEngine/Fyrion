@@ -13,7 +13,7 @@ namespace Fyrion
         FY_BASE_TYPES(Asset);
 
         ~TextureAsset();
-        void SetData(u8* bytes, u32 width, u32 height, Format format);
+        void SetProperties(u32 width, u32 height, Format format);
 
         Texture GetTexture();
         Image GetImage() const;

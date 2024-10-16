@@ -13,16 +13,10 @@ namespace Fyrion
         }
     }
 
-    void TextureAsset::SetData(u8* bytes, u32 width, u32 height, Format format)
+    void TextureAsset::SetProperties(u32 width, u32 height, Format format)
     {
         this->format = format;
         this->extent = {width, height, 1};
-
-        usize sizeInBytes = width * height * 4; //TODO check Format.
-
-        OutputFileStream stream = CreateStream();
-        stream.Write(bytes, sizeInBytes);
-        stream.Close();
     }
 
     Texture TextureAsset::GetTexture()

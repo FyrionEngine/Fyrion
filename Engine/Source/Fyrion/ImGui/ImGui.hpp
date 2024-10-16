@@ -84,6 +84,8 @@ namespace ImGui
         bool   hovered;
         bool   clicked;
         bool   doubleClicked;
+        ImVec2 screenStartPos;
+        ImVec2 size;
     };
 
     typedef bool (*FieldRendererFn)(DrawTypeContent* context, const TypeInfo& typeInfo, VoidPtr value, bool* hasChanged);

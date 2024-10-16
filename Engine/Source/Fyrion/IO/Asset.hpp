@@ -16,7 +16,6 @@ namespace Fyrion
         UUID             GetUUID() const;
         StringView       GetName() const;
         TypeHandler*     GetTypeHandler() const;
-        OutputFileStream CreateStream() const;
         Array<u8>        LoadStream(usize offset, usize size) const;
 
         void             SetName(StringView name);
@@ -36,7 +35,6 @@ namespace Fyrion
 
         virtual Asset*           LoadAsset() = 0;
         virtual Array<u8>        LoadStream(usize offset, usize size) = 0;
-        virtual OutputFileStream CreateStream() = 0;
     };
 
     class FY_API Assets

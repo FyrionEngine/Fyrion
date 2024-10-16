@@ -32,11 +32,6 @@ namespace Fyrion
         return typeHandler;
     }
 
-    OutputFileStream Asset::CreateStream() const
-    {
-        return loader->CreateStream();
-    }
-
     Array<u8> Asset::LoadStream(usize offset, usize size) const
     {
         return loader->LoadStream(offset, size);

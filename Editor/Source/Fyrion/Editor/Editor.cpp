@@ -1,5 +1,7 @@
 #include "Editor.hpp"
 
+#include <mutex>
+
 #include "EditorTypes.hpp"
 #include "Action/EditorAction.hpp"
 #include "Asset/AssetTypes.hpp"
@@ -36,9 +38,12 @@ namespace Fyrion
 
     namespace
     {
-        Array<EditorWindowStorage> editorWindowStorages{};
-        Array<OpenWindowStorage>   openWindows{};
-        Array<AssetFile*>          updatedItems{};
+        Array<EditorWindowStorage>   editorWindowStorages{};
+        Array<OpenWindowStorage>     openWindows{};
+        Array<AssetFile*>            updatedItems{};
+
+        std::mutex                   callsMutex;
+        Array<std::function<void()>> calls{};
 
         MenuItemContext menuContext{};
         bool            dockInitialized = false;
@@ -81,6 +86,9 @@ namespace Fyrion
 
             redoActions.Clear();
             redoActions.ShrinkToFit();
+
+            calls.Clear();
+            calls.ShrinkToFit();
         }
 
         void InitEditor()
@@ -110,13 +118,9 @@ namespace Fyrion
                 });
             }
 
-            //TODO: Create a setting for that.
-            // Editor::OpenDirectory(AssetManager::FindHandlerByPath<DirectoryAssetHandler>("Fyrion:/"));
-            // Editor::OpenDirectory(AssetManager::LoadFromDirectory(Path::Name(projectPath), Path::Join(projectPath, "Assets")));
-
             AssetEditorInit();
-            AssetEditor::AddPackage("C:\\dev\\Fyrion\\Fyrion\\Assets\\Fyrion");
-            AssetEditor::AddPackage("C:\\dev\\Fyrion\\Projects\\Refactor");
+            AssetEditor::AddPackage("Fyrion", "C:\\dev\\Fyrion\\Fyrion");
+            AssetEditor::SetProject("Refactor", "C:\\dev\\Fyrion\\Projects\\Refactor");
         }
 
         void CloseEngine(const MenuItemEventData& eventData)
@@ -356,6 +360,17 @@ namespace Fyrion
 
         void EditorUpdate(f64 deltaTime)
         {
+            Array<std::function<void()>> callsMoved;
+            {
+                std::unique_lock lock(callsMutex);
+                callsMoved = Traits::Move(calls);
+            }
+
+            for(const auto& func: callsMoved)
+            {
+                func();
+            }
+
             ImGuiStyle& style = ImGui::GetStyle();
             ImGui::CreateDockSpace(dockSpaceId);
             InitDockSpace();
@@ -430,6 +445,12 @@ namespace Fyrion
         // FileSystem::SaveFileAsString(projectFilePath, JsonAssetWriter::Stringify(object));
 
         return projectFilePath;
+    }
+
+    void Editor::ExecuteOnMainThread(std::function<void()> func)
+    {
+        std::unique_lock lock(callsMutex);
+        calls.EmplaceBack(func);
     }
 
     void Editor::Init(StringView projectFile)

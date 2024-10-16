@@ -18,6 +18,7 @@ namespace Fyrion
 
     void ProjectBrowserWindow::Init(u32 id, VoidPtr userData)
     {
+        openDirectory = AssetEditor::GetProject();
     }
 
     void ProjectBrowserWindow::DrawPathItems() {}
@@ -185,6 +186,8 @@ namespace Fyrion
                     DrawTreeNode(package);
                 }
 
+                DrawTreeNode(AssetEditor::GetProject());
+
                 ImGui::EndTreeNode();
                 ImGui::EndChild();
             }
@@ -278,6 +281,31 @@ namespace Fyrion
                                     }
                                     renamingItem = nullptr;
                                 }
+
+                                ImGui::SetCursorScreenPos(state.screenStartPos);
+                                ImGui::PushID(desc.id + 678);
+                                ImGui::InvisibleButton("", state.size);
+
+                                if (assetFile->isDirectory && ImGui::BeginDragDropTarget())
+                                {
+                                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("zzzzzzz"))
+                                    {
+                                        int a = 0;
+                                        //   contentTable.acceptPayloadItem = contentItemDesc.ItemId;
+                                    }
+                                    ImGui::EndDragDropTarget();
+                                }
+
+                                if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoHoldToOpenOthers))
+                                {
+                                    ImGui::SetDragDropPayload("zzzzzzz", nullptr, 0);
+                                    ImGui::Text("%s", desc.label.CStr());
+                                    ImGui::EndDragDropSource();
+                                }
+
+                                ImGui::SetCursorScreenPos(state.screenStartPos);
+
+                                ImGui::PopID();
                             }
                         }
                     }

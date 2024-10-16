@@ -1,5 +1,7 @@
 #include "Graphics.hpp"
 
+#include <mutex>
+
 #include "Fyrion/Core/FixedArray.hpp"
 #include "Fyrion/Core/Image.hpp"
 #include "Fyrion/Graphics/Device/RenderDevice.hpp"
@@ -18,6 +20,7 @@ namespace Fyrion
         SharedPtr<RenderDevice> renderDevice = {};
         Sampler                 defaultSampler = {};
         Texture                 defaultTexture = {};
+        std::mutex mutex;
     }
 
     void GraphicsInit()

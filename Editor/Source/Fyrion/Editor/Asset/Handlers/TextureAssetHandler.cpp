@@ -60,7 +60,13 @@ namespace Fyrion
             i32 imageChannels{};
             u8* bytes = stbi_load(path.CStr(), &imageWidth, &imageHeight, &imageChannels, 4);
 
-            textureAsset->SetData(bytes, imageWidth, imageHeight, Format::RGBA);
+            usize sizeInBytes = imageWidth * imageHeight * 4; //TODO check Format.
+
+            OutputFileStream stream = assetFile->CreateStream();
+            stream.Write(bytes, sizeInBytes);
+            stream.Close();
+
+            textureAsset->SetProperties(imageWidth, imageHeight, Format::RGBA);
 
             stbi_image_free(bytes);
         }

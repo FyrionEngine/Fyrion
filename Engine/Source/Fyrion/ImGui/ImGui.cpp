@@ -952,7 +952,7 @@ namespace ImGui
 
         ImGui::TableNextColumn();
         auto* drawList = ImGui::GetWindowDrawList();
-        auto cursorPos = ImGui::GetCursorScreenPos();
+        auto screenCursorPos = ImGui::GetCursorScreenPos();
 
         auto table = ImGui::GetCurrentTable();
         auto width = table->Columns.Data->WidthGiven;
@@ -960,13 +960,12 @@ namespace ImGui
         //texture
         f32 imagePadding = thumbnailSize * 0.08f;
 
-        auto posIni = ImVec2(cursorPos.x, cursorPos.y);
-        auto posEnd = ImVec2(cursorPos.x + thumbnailSize, cursorPos.y + thumbnailSize);
-        bool hovered = ImGui::IsMouseHoveringRect(posIni, posEnd, true) && ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows | ImGuiHoveredFlags_AllowWhenBlockedByPopup);
+        auto posEnd = ImVec2(screenCursorPos.x + thumbnailSize, screenCursorPos.y + thumbnailSize);
+        bool hovered = ImGui::IsMouseHoveringRect(screenCursorPos, posEnd, true) && ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows | ImGuiHoveredFlags_AllowWhenBlockedByPopup);
 
         if (hovered)
         {
-            drawList->AddRectFilled(posIni,
+            drawList->AddRectFilled(screenCursorPos,
                                     posEnd,
                                     IM_COL32(40, 41, 43, 255),
                                     0.0f);
@@ -980,19 +979,21 @@ namespace ImGui
             .hovered = hovered,
             .clicked = isClicked,
             .doubleClicked = isDoubleClicked,
+            .screenStartPos = screenCursorPos,
+            .size = ImVec2(thumbnailSize, thumbnailSize)
         };
 
         ImGui::DrawTexture(contentItemDesc.texture, {
-                               i32(cursorPos.x + imagePadding * 2),
-                               i32(cursorPos.y + imagePadding),
-                               (u32)(cursorPos.x + thumbnailSize - imagePadding * 2),
-                               (u32)(cursorPos.y + thumbnailSize - imagePadding * 3)
+                               i32(screenCursorPos.x + imagePadding * 2),
+                               i32(screenCursorPos.y + imagePadding),
+                               (u32)(screenCursorPos.x + thumbnailSize - imagePadding * 2),
+                               (u32)(screenCursorPos.y + thumbnailSize - imagePadding * 3)
                            });
 
         //rect size for texture
         ImGui::Dummy(ImVec2{(f32)thumbnailSize, (f32)thumbnailSize - imagePadding * 3.f});
 
-        ImGui::BeginVertical(contentItemDesc.id + 10, ImVec2(thumbnailSize, thumbnailSize - (ImGui::GetCursorScreenPos().y - cursorPos.y)));
+        ImGui::BeginVertical(contentItemDesc.id + 10, ImVec2(thumbnailSize, thumbnailSize - (ImGui::GetCursorScreenPos().y - screenCursorPos.y)));
         {
             ImGui::Spring();
 
@@ -1050,8 +1051,8 @@ namespace ImGui
         if (contentItemDesc.selected)
         {
             //selected
-            drawList->AddRect(ImVec2(cursorPos.x, cursorPos.y),
-                              ImVec2(cursorPos.x + thumbnailSize -1, ImGui::GetCursorScreenPos().y - 1),
+            drawList->AddRect(ImVec2(screenCursorPos.x, screenCursorPos.y),
+                              ImVec2(screenCursorPos.x + thumbnailSize -1, ImGui::GetCursorScreenPos().y - 1),
                               ImGui::ColorConvertFloat4ToU32(ImVec4(0.26f, 0.59f, 0.98f, 1.0f)),
                               0.0f, 0, 2);
         }

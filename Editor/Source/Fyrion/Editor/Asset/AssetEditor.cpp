@@ -4,9 +4,11 @@
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Core/Logger.hpp"
 #include "Fyrion/Core/Registry.hpp"
+#include "Fyrion/Graphics/Graphics.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
 #include "Fyrion/IO/FileTypes.hpp"
 #include "Fyrion/IO/Path.hpp"
+#include "Fyrion/Core/StaticContent.hpp"
 
 namespace Fyrion
 {
@@ -21,6 +23,9 @@ namespace Fyrion
         Array<AssetHandler*>           handlers;
         HashMap<String, AssetHandler*> handlersByExtension;
         HashMap<TypeID, AssetHandler*> handlersByTypeID;
+
+        Texture folderTexture = {};
+        Texture fileTexture = {};
 
         Logger& logger = Logger::GetLogger("Fyrion::AssetEditor");
 
@@ -133,6 +138,53 @@ namespace Fyrion
     {
         String bufferFile = Path::Join(absolutePath, ".buffer");
         return OutputFileStream(bufferFile);
+    }
+
+    Texture AssetFile::GetThumbnail()
+    {
+        if (isDirectory)
+        {
+            return folderTexture;
+        }
+
+        if (!thumbnailVerified)
+        {
+            String cachePath = Path::Join("C:\\dev\\Fyrion\\Temp", uuid.ToString(), ".thumbnail");
+            if (FileSystem::GetFileStatus(cachePath).exists)
+            {
+                Image image(128, 128, 4);
+                image.data = FileSystem::ReadFileAsByteArray(cachePath);
+                thumbnail = Graphics::CreateTextureFromImage(image);
+            }
+            else
+            {
+                if (Image image = handler->GenerateThumbnail(this); !image.Empty())
+                {
+                    if (FileHandler fileHandler = FileSystem::OpenFile(cachePath, AccessMode::WriteOnly))
+                    {
+                        FileSystem::WriteFile(fileHandler, image.GetData().Data(), image.GetData().Size());
+                        FileSystem::CloseFile(fileHandler);
+                    }
+                    thumbnail = Graphics::CreateTextureFromImage(image);
+                }
+            }
+            thumbnailVerified = true;
+        }
+
+        if (thumbnail)
+        {
+            return thumbnail;
+        }
+
+        return fileTexture;
+    }
+
+    AssetFile::~AssetFile()
+    {
+        if (thumbnail)
+        {
+            Graphics::DestroyTexture(thumbnail);
+        }
     }
 
     void AssetEditor::AddPackage(StringView directory)
@@ -325,6 +377,10 @@ namespace Fyrion
 
     void AssetEditorShutdown()
     {
+        Graphics::WaitQueue();
+        Graphics::DestroyTexture(folderTexture);
+        Graphics::DestroyTexture(fileTexture);
+
         for (auto& it : assets)
         {
             MemoryGlobals::GetDefaultAllocator().DestroyAndFree(it.second);
@@ -374,5 +430,8 @@ namespace Fyrion
                 handlersByTypeID.Insert(typeId, handler);
             }
         }
+
+        folderTexture = StaticContent::GetTextureFile("Content/Images/FolderIcon.png");
+        fileTexture = StaticContent::GetTextureFile("Content/Images/file.png");
     }
 }

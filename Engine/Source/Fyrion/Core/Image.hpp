@@ -119,6 +119,8 @@ namespace Fyrion
             return color;
         }
 
+        void Resize(u32 width, u32 height);
+
         Array<T> data;
     private:
         u32      width = 0;

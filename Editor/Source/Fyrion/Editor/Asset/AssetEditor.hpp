@@ -5,6 +5,7 @@
 #include "Fyrion/Core/StringView.hpp"
 #include "Fyrion/Core/UUID.hpp"
 #include "Fyrion/Core/Span.hpp"
+#include "Fyrion/Graphics/GraphicsTypes.hpp"
 #include "Fyrion/IO/Asset.hpp"
 
 
@@ -32,9 +33,16 @@ namespace Fyrion
 
         bool IsDirty() const;
 
+        Texture thumbnail = {};
+        bool   thumbnailVerified = false;
+
         Asset*           LoadAsset() override;
         Array<u8>        LoadStream(usize offset, usize size) override;
         OutputFileStream CreateStream() override;
+
+        Texture          GetThumbnail();
+
+        ~AssetFile() override;
     };
 
 

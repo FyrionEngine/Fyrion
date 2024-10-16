@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Fyrion/Core/Image.hpp"
 #include "Fyrion/Graphics/GraphicsTypes.hpp"
 
 namespace Fyrion::Graphics
@@ -9,6 +10,7 @@ namespace Fyrion::Graphics
     FY_API RenderPass      CreateRenderPass(const RenderPassCreation& renderPassCreation);
     FY_API Buffer          CreateBuffer(const BufferCreation& bufferCreation);
     FY_API Texture         CreateTexture(const TextureCreation& textureCreation);
+    FY_API Texture         CreateTextureFromImage(const Image& image);
     FY_API TextureView     CreateTextureView(const TextureViewCreation& textureViewCreation);
     FY_API Sampler         CreateSampler(const SamplerCreation& samplerCreation);
     FY_API PipelineState   CreateGraphicsPipelineState(const GraphicsPipelineCreation& graphicsPipelineCreation);

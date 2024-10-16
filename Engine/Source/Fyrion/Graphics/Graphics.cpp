@@ -99,6 +99,27 @@ namespace Fyrion
         return renderDevice->CreateTexture(textureCreation);
     }
 
+    Texture Graphics::CreateTextureFromImage(const Image& image)
+    {
+        Texture texture = CreateTexture(TextureCreation{
+            .extent = {image.GetWidth(), image.GetHeight(), 1},
+            .format = Format::RGBA,
+        });
+
+        TextureDataRegion region{
+            .extent = {image.GetWidth(), image.GetHeight(), 1},
+        };
+
+        UpdateTextureData(TextureDataInfo{
+            .texture = texture,
+            .data = image.GetData().Data(),
+            .size = image.GetData().Size(),
+            .regions = {&region, 1}
+        });
+
+        return texture;
+    }
+
     TextureView Graphics::CreateTextureView(const TextureViewCreation& textureViewCreation)
     {
         return renderDevice->CreateTextureView(textureViewCreation);

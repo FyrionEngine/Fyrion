@@ -3,13 +3,10 @@
 #include "imgui_internal.h"
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Core/Registry.hpp"
-#include "Fyrion/Core/StaticContent.hpp"
 #include "Fyrion/Editor/Editor.hpp"
-#include "Fyrion/Graphics/Graphics.hpp"
 #include "Fyrion/ImGui/IconsFontAwesome6.h"
 #include "Fyrion/ImGui/ImGui.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
-#include "Fyrion/IO/Path.hpp"
 #include "Fyrion/Platform/Platform.hpp"
 #include "Fyrion/Scene/Scene.hpp"
 
@@ -21,9 +18,6 @@ namespace Fyrion
 
     void ProjectBrowserWindow::Init(u32 id, VoidPtr userData)
     {
-        folderTexture = StaticContent::GetTextureFile("Content/Images/FolderIcon.png");
-        fileTexture = StaticContent::GetTextureFile("Content/Images/file.png");
-        brickTexture = StaticContent::GetTextureFile("Content/Images/brickwall.jpg");
     }
 
     void ProjectBrowserWindow::DrawPathItems() {}
@@ -216,37 +210,37 @@ namespace Fyrion
                     {
                         for (int i = 0; i < 2; ++i)
                         {
-                            for (AssetFile* childNode : openDirectory->children)
+                            for (AssetFile* assetFile : openDirectory->children)
                             {
-                                if (!childNode->active) continue;
+                                if (!assetFile->active) continue;
 
                                 //workaround to show directories first.
-                                if (i == 0 && !childNode->isDirectory) continue;
-                                if (i == 1 && childNode->isDirectory) continue;
+                                if (i == 0 && !assetFile->isDirectory) continue;
+                                if (i == 1 && assetFile->isDirectory) continue;
 
                                 labelCache.Clear();
 
-                                bool renaming = renamingItem == childNode;
+                                bool renaming = renamingItem == assetFile;
 
-                                if (!renaming && childNode->IsDirty())
+                                if (!renaming && assetFile->IsDirty())
                                 {
                                     labelCache = "*";
                                 }
 
-                                labelCache += childNode->fileName;
+                                labelCache += assetFile->fileName;
 
                                 if (!renaming)
                                 {
-                                    labelCache += childNode->extension;
+                                    labelCache += assetFile->extension;
                                 }
 
                                 ImGui::ContentItemDesc desc;
-                                desc.id = reinterpret_cast<usize>(childNode);
+                                desc.id = reinterpret_cast<usize>(assetFile);
                                 desc.label = labelCache.CStr();
-                                desc.texture = childNode->isDirectory ? folderTexture : brickTexture;
+                                desc.texture = assetFile->GetThumbnail();
                                 desc.renameItem = renaming;
                                 desc.thumbnailScale = contentBrowserZoom;
-                                desc.selected = selectedItems.Has(childNode);
+                                desc.selected = selectedItems.Has(assetFile);
 
                                 ImGui::ContentItemState state = ImGui::ContentItem(desc);
 
@@ -257,22 +251,22 @@ namespace Fyrion
                                         selectedItems.Clear();
                                         lastSelectedItem = nullptr;
                                     }
-                                    selectedItems.Emplace(childNode);
-                                    lastSelectedItem = childNode;
+                                    selectedItems.Emplace(assetFile);
+                                    lastSelectedItem = assetFile;
                                     newSelection = true;
                                 }
 
                                 if (state.doubleClicked)
                                 {
-                                    if (childNode->isDirectory)
+                                    if (assetFile->isDirectory)
                                     {
-                                        newOpenDirectory = childNode;
+                                        newOpenDirectory = assetFile;
                                         selectedItems.Clear();
                                         lastSelectedItem = nullptr;
                                     }
-                                    else if (childNode->handler)
+                                    else if (assetFile->handler)
                                     {
-                                        childNode->handler->OpenAsset(childNode);
+                                        assetFile->handler->OpenAsset(assetFile);
                                     }
                                 }
 
@@ -280,7 +274,7 @@ namespace Fyrion
                                 {
                                     if (!state.newName.Empty())
                                     {
-                                        AssetEditor::Rename(childNode, state.newName);
+                                        AssetEditor::Rename(assetFile, state.newName);
                                     }
                                     renamingItem = nullptr;
                                 }
@@ -434,14 +428,6 @@ namespace Fyrion
     void ProjectBrowserWindow::AssetReimport(const MenuItemEventData& eventData) {}
 
     void ProjectBrowserWindow::AssetNew(const MenuItemEventData& eventData) {}
-
-    ProjectBrowserWindow::~ProjectBrowserWindow()
-    {
-        Graphics::WaitQueue();
-        Graphics::DestroyTexture(folderTexture);
-        Graphics::DestroyTexture(fileTexture);
-        Graphics::DestroyTexture(brickTexture);
-    }
 
     void ProjectBrowserWindow::OpenProjectBrowser(const MenuItemEventData& eventData)
     {

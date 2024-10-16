@@ -29,6 +29,14 @@ namespace Fyrion
             TextureAsset* textureAsset = Assets::Load<TextureAsset>(assetFile->uuid);
             TextureViewWindow::Open(textureAsset->GetTexture());
         }
+
+        Image GenerateThumbnail(AssetFile* assetFile) override
+        {
+            TextureAsset* textureAsset = Assets::Load<TextureAsset>(assetFile->uuid);
+            Image image = textureAsset->GetImage();
+            image.Resize(128, 128);
+            return image;
+        }
     };
 
 

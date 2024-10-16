@@ -22,6 +22,11 @@ namespace Fyrion
         {
             //Scene* scene = static_cast<Scene*>(Repository::Load(assetFile->uuid));
         }
+
+        Image GenerateThumbnail(AssetFile* assetFile) override
+        {
+            return {};
+        }
     };
 
     void RegisterSceneAssetHandler()

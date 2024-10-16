@@ -16,6 +16,7 @@ namespace Fyrion
         void SetData(u8* bytes, u32 width, u32 height, Format format);
 
         Texture GetTexture();
+        Image GetImage() const;
 
         static void RegisterType(NativeTypeHandler<TextureAsset>& type);
 

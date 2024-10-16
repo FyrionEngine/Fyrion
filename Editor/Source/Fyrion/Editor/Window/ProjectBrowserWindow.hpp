@@ -18,7 +18,6 @@ namespace Fyrion
 
         void Init(u32 id, VoidPtr userData) override;
         void Draw(u32 id, bool& open) override;
-        ~ProjectBrowserWindow() override;
 
         static void OpenProjectBrowser(const MenuItemEventData& eventData);
         static void AddMenuItem(const MenuItemCreation& menuItem);
@@ -35,11 +34,6 @@ namespace Fyrion
         AssetFile*            lastSelectedItem = nullptr;
         AssetFile*            renamingItem = nullptr;
         HashMap<String, bool> openTreeFolders{};
-
-
-        Texture folderTexture = {};
-        Texture fileTexture = {};
-        Texture brickTexture = {};
 
         void DrawPathItems();
         void DrawTreeNode(AssetFile* assetFile);

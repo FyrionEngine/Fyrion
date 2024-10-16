@@ -52,6 +52,14 @@ namespace Fyrion
         return texture;
     }
 
+    Image TextureAsset::GetImage() const
+    {
+        usize sizeInBytes = extent.width * extent.height * 4; //TODO check Format.
+        Image image(extent.width, extent.height, 4);
+        image.data =  LoadStream(0, sizeInBytes);
+        return image;
+    }
+
     void TextureAsset::RegisterType(NativeTypeHandler<TextureAsset>& type)
     {
         type.Field<&TextureAsset::extent>("extent");

@@ -1,5 +1,7 @@
 #include "JsonAssetHandler.hpp"
 #include "Fyrion/Core/Registry.hpp"
+#include "Fyrion/Editor/Editor.hpp"
+#include "Fyrion/Editor/Scene/SceneEditor.hpp"
 #include "Fyrion/Scene/Scene.hpp"
 
 namespace Fyrion
@@ -20,7 +22,7 @@ namespace Fyrion
 
         void OpenAsset(AssetFile* assetFile) override
         {
-            //Scene* scene = static_cast<Scene*>(Repository::Load(assetFile->uuid));
+            Editor::GetSceneEditor().SetActiveScene(Assets::Load<Scene>(assetFile->uuid));
         }
 
         Image GenerateThumbnail(AssetFile* assetFile) override

@@ -3,6 +3,7 @@
 #include "Fyrion/Common.hpp"
 #include "Random.hpp"
 #include "Algorithm.hpp"
+#include "Serialization.hpp"
 #include "StringView.hpp"
 
 namespace Fyrion
@@ -162,33 +163,19 @@ namespace Fyrion
 		}
 	};
 
-
-
 	template <>
 	struct ArchiveType<UUID>
 	{
 		constexpr static bool hasArchiveImpl = true;
 
-		static void Write(ArchiveWriter& writer, ArchiveObject object, StringView name, const UUID* value)
+		static ArchiveValue ToValue(ArchiveWriter& writer, const UUID& value)
 		{
-			if (*value)
-			{
-				writer.WriteString(object, name, value->ToString());
-			}
-		}
-		static void Read(ArchiveReader& reader, ArchiveObject object, StringView name, UUID* value)
-		{
-			*value = UUID::FromString(reader.ReadString(object, name));
+			return writer.StringValue(value.ToString());
 		}
 
-		static void Add(ArchiveWriter& writer, ArchiveObject array, const UUID* value)
+		static void FromValue(ArchiveReader& reader, ArchiveValue archiveValue, UUID& typeValue)
 		{
-			writer.AddString(array, value->ToString());
-		}
-
-		static void Get(ArchiveReader& reader, ArchiveObject item, UUID* value)
-		{
-			*value = UUID::FromString(reader.GetString(item));
+			typeValue = UUID::FromString(reader.StringValue(archiveValue));
 		}
 	};
 

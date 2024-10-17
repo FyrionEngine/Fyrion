@@ -4,76 +4,31 @@
 #include "StringView.hpp"
 #include "TypeApiInfo.hpp"
 #include "String.hpp"
-#include "Serialization.hpp"
+#include "TypeID.hpp"
 
-template <typename Type>
-constexpr auto Fyrion_StrippedTypeName()
-{
-    Fyrion::StringView prettyFunction = FY_PRETTY_FUNCTION;
-    Fyrion::usize      first = prettyFunction.FindFirstNotOf(' ', prettyFunction.FindFirstOf(FY_PRETTY_FUNCTION_PREFIX) + 1);
-    Fyrion::StringView value = prettyFunction.Substr(first, prettyFunction.FindLastOf(FY_PRETTY_FUNCTION_SUFFIX) - first);
-    return value;
-}
 
 namespace Fyrion
 {
     typedef void (* FnExtractApi)(VoidPtr pointer);
 
+    struct ArchiveWriter;
+    struct ArchiveReader;
 
-    struct ArchiveFuncs
-    {
-        FnArchiveWrite ArchiveWrite;
-        FnArchiveRead  ArchiveRead;
-        FnArchiveAdd   ArchiveAdd;
-        FnArchiveGet   ArchiveGet;
-    };
-
+    typedef ArchiveValue (*FnArchiveToValue)(ArchiveWriter& writer, ConstPtr value);
+    typedef void         (*FnArchiveFromValue)(ArchiveReader& reader, ArchiveValue value, VoidPtr retValue);
 
     struct TypeInfo
     {
-        TypeID       typeId;
-        usize        size;
-        usize        alignment;
-        bool         isTriviallyCopyable;
-        bool         isEnum;
-        TypeID       apiId;
-        FnExtractApi extractApi;
-        ArchiveFuncs archive;
+        TypeID             typeId;
+        usize              size;
+        usize              alignment;
+        bool               isTriviallyCopyable;
+        bool               isEnum;
+        TypeID             apiId;
+        FnExtractApi       extractApi;
+        FnArchiveToValue   archiveToValue;
+        FnArchiveFromValue archiveFromValue;
     };
-
-    template <typename Type>
-    struct TypeIDGen
-    {
-        static constexpr auto GetTypeName()
-        {
-            StringView typeName = Fyrion_StrippedTypeName<Type>();
-
-            usize space = typeName.FindFirstOf(' ');
-            if (space != StringView::s_npos)
-            {
-                return typeName.Substr(space + 1);
-            }
-            return typeName;
-        }
-
-        constexpr static TypeID GetTypeID()
-        {
-            constexpr TypeID typeId = Hash<StringView>::Value(Fyrion_StrippedTypeName<Type>());
-            return typeId;
-        }
-    };
-
-    template <typename Type>
-    constexpr static TypeID GetTypeID()
-    {
-        return TypeIDGen<Traits::RemoveAll<Type>>::GetTypeID();
-    }
-
-    template <typename Type>
-    constexpr static StringView GetTypeName()
-    {
-        return TypeIDGen<Traits::RemoveAll<Type>>::GetTypeName();
-    }
 
     template <typename Type>
     constexpr static usize GetTypeSize()
@@ -121,24 +76,14 @@ namespace Fyrion
 
         if constexpr (ArchiveType<Type>::hasArchiveImpl)
         {
-            typeInfo.archive.ArchiveWrite = [](ArchiveWriter& writer, ArchiveObject object, StringView name, VoidPtr value)
+            typeInfo.archiveToValue = [](ArchiveWriter& writer, ConstPtr value)
             {
-                ArchiveType<Type>::Write(writer, object, name, static_cast<Type*>(value));
+                return ArchiveType<Type>::ToValue(writer, *static_cast<const Type*>(value));
             };
 
-            typeInfo.archive.ArchiveRead = [](ArchiveReader& reader, ArchiveObject object, StringView name, VoidPtr value)
+            typeInfo.archiveFromValue = [](ArchiveReader& reader, ArchiveValue value, VoidPtr retValue)
             {
-                ArchiveType<Type>::Read(reader, object, name, static_cast<Type*>(value));
-            };
-
-            typeInfo.archive.ArchiveAdd = [](ArchiveWriter& writer, ArchiveObject array, ConstPtr value)
-            {
-                ArchiveType<Type>::Add(writer, array, static_cast<const Type*>(value));
-            };
-
-            typeInfo.archive.ArchiveGet = [](ArchiveReader& reader, ArchiveObject array, VoidPtr value)
-            {
-                ArchiveType<Type>::Get(reader, array, static_cast<Type*>(value));
+                ArchiveType<Type>::FromValue(reader, value, *static_cast<Type*>(retValue));
             };
         }
 

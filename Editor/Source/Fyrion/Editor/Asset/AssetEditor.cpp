@@ -86,10 +86,9 @@ namespace Fyrion
                 String infoFile = Path::Join(path, ".info");
                 if (FileSystem::GetFileStatus(infoFile).exists)
                 {
-                    JsonAssetReader jsonAssetReader(FileSystem::ReadFileAsString(infoFile));
-                    ArchiveObject   root = jsonAssetReader.ReadObject();
-
-                    assetFile->uuid = UUID::FromString(jsonAssetReader.ReadString(root, "uuid"));
+                    JsonArchiveReader jsonAssetReader(FileSystem::ReadFileAsString(infoFile));
+                    ArchiveValue root = jsonAssetReader.GetRootObject();
+                    assetFile->uuid = UUID::FromString(jsonAssetReader.StringValue(jsonAssetReader.GetObjectValue(root, "uuid")));
                 }
                 else
                 {
@@ -427,11 +426,12 @@ namespace Fyrion
 
                     if (auto it = handlersByExtension.Find(assetFile->extension))
                     {
-                        String          infoFile = Path::Join(newAbsolutePath, ".info");
-                        JsonAssetWriter writer;
-                        ArchiveObject   root = writer.CreateObject();
-                        writer.WriteString(root, "uuid", assetFile->uuid.ToString());
-                        FileSystem::SaveFileAsString(infoFile, JsonAssetWriter::Stringify(root));
+                        String            infoFile = Path::Join(newAbsolutePath, ".info");
+                        JsonArchiveWriter writer;
+
+                        ArchiveValue root = writer.CreateObject();
+                        writer.AddToObject(root, "uuid", writer.StringValue(assetFile->uuid.ToString()));
+                        FileSystem::SaveFileAsString(infoFile, JsonArchiveWriter::Stringify(root));
 
                         AssetHandler* handler = it->second;
                         handler->Save(newAbsolutePath, assetFile);

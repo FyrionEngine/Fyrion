@@ -12,7 +12,9 @@
 #include "Fyrion/ImGui/Lib/imgui_internal.h"
 #include "Fyrion/IO/FileSystem.hpp"
 #include "Fyrion/IO/Path.hpp"
+#include "Scene/SceneEditor.hpp"
 #include "Window/ProjectBrowserWindow.hpp"
+#include "Window/SceneTreeWindow.hpp"
 #include "Window/TextureViewWindow.hpp"
 
 namespace Fyrion
@@ -60,6 +62,8 @@ namespace Fyrion
 
         Array<SharedPtr<EditorTransaction>> undoActions{};
         Array<SharedPtr<EditorTransaction>> redoActions{};
+
+        SceneEditor sceneEditor{};
 
         void SaveAll(Span<AssetFile*> assets);
 
@@ -426,6 +430,11 @@ namespace Fyrion
         menuContext.AddMenuItem(menuItem);
     }
 
+    SceneEditor& Editor::GetSceneEditor()
+    {
+        return sceneEditor;
+    }
+
     String Editor::CreateProject(StringView newProjectPath, StringView projectName)
     {
         String fullProjectPath = Path::Join(newProjectPath, projectName);
@@ -469,6 +478,7 @@ namespace Fyrion
 
         Registry::Type<ProjectBrowserWindow>();
         Registry::Type<TextureViewWindow>();
+        Registry::Type<SceneTreeWindow>();
 
         Event::Bind<OnInit, &InitEditor>();
         Event::Bind<OnUpdate, &EditorUpdate>();

@@ -55,7 +55,14 @@ namespace Fyrion
 
     #define FY_BASE_TYPES(...) using Bases = BaseTypes<__VA_ARGS__>
 
-    constexpr const char* SceneTreePayload = "scene-tree-payload";
+
+    FY_HANDLER(ArchiveValue);
+
+    template <typename T, typename Enable = void>
+    struct ArchiveType
+    {
+        constexpr static bool hasArchiveImpl = false;
+    };
 }
 
 inline void* operator new(Fyrion::usize, Fyrion::PlaceHolder, Fyrion::VoidPtr ptr)

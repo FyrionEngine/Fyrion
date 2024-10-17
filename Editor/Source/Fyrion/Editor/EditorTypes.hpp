@@ -6,9 +6,14 @@
 
 
 #define FY_ASSET_PAYLOAD "fy-asset-payload"
+#define FY_GAME_OBJECT_PAYLOAD "fy-game-object-payload"
+
 
 namespace Fyrion
 {
+    class GameObject;
+
+    using OnGameObjectSelection = EventType<"Fyrion::Editor::OnGameObjectSelection"_h, void(GameObject*)>;
 
     enum class DockPosition
     {

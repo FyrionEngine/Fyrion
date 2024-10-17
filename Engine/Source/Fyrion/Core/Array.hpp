@@ -6,6 +6,8 @@
 #include "TypeInfo.hpp"
 #include <initializer_list>
 
+#include "Serialization.hpp"
+
 namespace Fyrion
 {
     template <typename T>
@@ -596,6 +598,35 @@ namespace Fyrion
         static constexpr TypeID GetApiId()
         {
             return GetTypeID<ArrayApi>();
+        }
+    };
+
+
+    template <typename T>
+    struct ArchiveType<Array<T>>
+    {
+        constexpr static bool hasArchiveImpl = true;
+
+        static ArchiveValue ToValue(ArchiveWriter& writer, const Array<T>& value)
+        {
+            ArchiveValue array = writer.CreateArray();
+            for (const T& vl : value)
+            {
+                if constexpr (ArchiveType<T>::hasArchiveImpl)
+                {
+                    writer.AddToArray(array, ArchiveType<T>::ToValue(writer, vl));
+                }
+                else
+                {
+                    writer.AddToArray(array, Serialization::Serialize(GetTypeID<T>(), writer, &vl));
+                }
+            }
+            return array;
+        }
+
+        static void FromValue(ArchiveReader& reader, ArchiveValue archiveValue, Array<T>& typeValue)
+        {
+            //typeValue = UUID::FromString(reader.StringValue(archiveValue));
         }
     };
 }

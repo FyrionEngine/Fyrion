@@ -7,6 +7,7 @@
 #include "Fyrion/Core/Span.hpp"
 #include "Fyrion/Graphics/GraphicsTypes.hpp"
 #include "Fyrion/IO/Asset.hpp"
+#include "Fyrion/IO/FileTypes.hpp"
 
 
 namespace Fyrion

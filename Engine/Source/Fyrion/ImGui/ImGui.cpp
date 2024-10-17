@@ -963,6 +963,10 @@ namespace ImGui
         auto posEnd = ImVec2(screenCursorPos.x + thumbnailSize, screenCursorPos.y + thumbnailSize);
         bool hovered = ImGui::IsMouseHoveringRect(screenCursorPos, posEnd, true) && ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows | ImGuiHoveredFlags_AllowWhenBlockedByPopup);
 
+        i32  mouseCount = ImGui::GetMouseClickedCount(ImGuiMouseButton_Left);
+        bool isDoubleClicked = mouseCount >= 2 && (mouseCount % 2) == 0 && hovered;
+        bool isClicked = (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)) && hovered;
+
         if (hovered)
         {
             drawList->AddRectFilled(screenCursorPos,
@@ -970,10 +974,6 @@ namespace ImGui
                                     IM_COL32(40, 41, 43, 255),
                                     0.0f);
         }
-
-        i32  mouseCount = ImGui::GetMouseClickedCount(ImGuiMouseButton_Left);
-        bool isDoubleClicked = mouseCount >= 2 && (mouseCount % 2) == 0 && hovered;
-        bool isClicked = (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)) && hovered;
 
         ContentItemState state = ContentItemState{
             .hovered = hovered,

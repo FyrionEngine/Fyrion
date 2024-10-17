@@ -7,6 +7,11 @@
 #include "Action/EditorAction.hpp"
 #include "Asset/AssetEditor.hpp"
 
+namespace Fyrion
+{
+    class SceneEditor;
+}
+
 namespace Fyrion::Editor
 {
     FY_API void               Init(StringView projectFile);
@@ -14,6 +19,7 @@ namespace Fyrion::Editor
     FY_API void               OpenWindow(TypeID windowType, VoidPtr initUserData = nullptr);
     FY_API EditorTransaction* CreateTransaction();
     FY_API String             CreateProject(StringView newProjectPath, StringView projectName);
+    FY_API SceneEditor&       GetSceneEditor();
 
     FY_API void               ExecuteOnMainThread(std::function<void()> func);
 

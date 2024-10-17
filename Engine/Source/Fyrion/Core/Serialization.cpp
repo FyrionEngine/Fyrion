@@ -4,148 +4,8 @@
 
 namespace Fyrion
 {
-    ArchiveObject Serialization::Serialize(const TypeHandler* typeHandler, ArchiveWriter& writer, VoidPtr instance)
-    {
-        if (typeHandler == nullptr || instance == nullptr) return {};
 
-        const ArchiveObject object = writer.CreateObject();
-        for (FieldHandler* field : typeHandler->GetFields())
-        {
-            const TypeInfo& typeInfo = field->GetFieldInfo().typeInfo;
-
-            if (FnArchiveWrite archiveWrite = typeInfo.archive.ArchiveWrite)
-            {
-                archiveWrite(writer, object, field->GetName(), field->GetFieldPointer(instance));
-            }
-            else if (typeInfo.apiId == GetTypeID<ArrayApi>())
-            {
-                ArchiveObject array = writer.CreateArray();
-
-                VoidPtr arrayPtr = field->GetFieldPointer(instance);
-                ArrayApi arrayApi{};
-                typeInfo.extractApi(&arrayApi);
-                usize    size = arrayApi.size(arrayPtr);
-                TypeInfo itemInfo = arrayApi.getTypeInfo();
-
-                bool empty = true;
-
-                if (FnArchiveAdd archiveAdd = itemInfo.archive.ArchiveAdd)
-                {
-                    for (usize i = 0; i < size; ++i)
-                    {
-                        if (ConstPtr value = arrayApi.getConst(arrayPtr, i))
-                        {
-                            archiveAdd(writer, array, value);
-                            empty = false;
-                        }
-                    }
-                }
-                else if (TypeHandler* itemHandler = Registry::FindTypeById(itemInfo.typeId))
-                {
-                    for (usize i = 0; i < size; ++i)
-                    {
-                        if (ArchiveObject value = Serialize(itemHandler, writer, arrayApi.get(arrayPtr, i)))
-                        {
-                            writer.AddValue(array, value);
-                            empty = false;
-                        }
-                    }
-                }
-
-                if (!empty)
-                {
-                    writer.WriteValue(object, field->GetName(), array);
-                }
-            }
-            else if (const TypeHandler* fieldType = Registry::FindTypeById(typeInfo.typeId))
-            {
-                writer.WriteValue(object, field->GetName(), Serialize(fieldType, writer, field->GetFieldPointer(instance)));
-            }
-        }
-        return object;
-    }
-
-    void Serialization::Deserialize(const TypeHandler* typeHandler, ArchiveReader& reader, ArchiveObject object, VoidPtr instance)
-    {
-        if (typeHandler == nullptr || instance == nullptr) return;
-
-        for (FieldHandler* field : typeHandler->GetFields())
-        {
-            const TypeInfo& typeInfo = field->GetFieldInfo().typeInfo;
-
-            if (FnArchiveRead archiveRead = typeInfo.archive.ArchiveRead)
-            {
-                archiveRead(reader, object, field->GetName(), field->GetFieldPointer(instance));
-            }
-            else if (typeInfo.apiId == GetTypeID<ArrayApi>())
-            {
-                VoidPtr arrPtr = field->GetFieldPointer(instance);
-
-                ArrayApi arrayApi{};
-                typeInfo.extractApi(&arrayApi);
-
-                arrayApi.clear(arrPtr);
-
-                ArchiveObject arr = reader.ReadObject(object, field->GetName());
-                usize         size = reader.ArrSize(arr);
-                TypeInfo      itemInfo = arrayApi.getTypeInfo();
-                ArchiveObject item{};
-
-                if (FnArchiveGet archiveGet = itemInfo.archive.ArchiveGet)
-                {
-                    for (usize i = 0; i < size; ++i)
-                    {
-                        item = reader.Next(arr, item);
-                        archiveGet(reader, item, arrayApi.pushNew(arrPtr));
-                    }
-                }
-                else if (TypeHandler* itemHandler = Registry::FindTypeById(itemInfo.typeId))
-                {
-                    for (usize i = 0; i < size; ++i)
-                    {
-                        item = reader.Next(arr, item);
-                        Deserialize(itemHandler, reader, item, arrayApi.pushNew(arrPtr));
-                    }
-                }
-            }
-            else if (const TypeHandler* fieldType = Registry::FindTypeById(typeInfo.typeId))
-            {
-                if (!field->GetFieldInfo().isPointer)
-                {
-                    Deserialize(fieldType, reader, reader.ReadObject(object, field->GetName()), field->GetFieldPointer(instance));
-                }
-            }
-        }
-    }
-
-    void Serialization::WriteEnum(TypeID typeId, ArchiveWriter& writer, ArchiveObject object, StringView name, i64 value)
-    {
-        if (TypeHandler* typeHandler = Registry::FindTypeById(typeId))
-        {
-            if (ValueHandler* valueHandler = typeHandler->FindValueByCode(value))
-            {
-                writer.WriteString(object, name, valueHandler->GetDesc());
-            }
-        }
-    }
-
-    bool Serialization::ReadEnum(TypeID typeId, ArchiveReader& reader, ArchiveObject object, StringView name, i64& value)
-    {
-        if (TypeHandler* typeHandler = Registry::FindTypeById(typeId))
-        {
-            if (StringView desc = reader.ReadString(object, name); !desc.Empty())
-            {
-                if (ValueHandler* valueHandler = typeHandler->FindValueByName(desc))
-                {
-                    value = valueHandler->GetCode();
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-        namespace
+    namespace
     {
         VoidPtr Malloc(VoidPtr ctx, usize size)
         {
@@ -170,90 +30,62 @@ namespace Fyrion
         };
     }
 
-    JsonAssetWriter::JsonAssetWriter(SerializationOptions serializationOptions) : serializationOptions(serializationOptions)
+    JsonArchiveWriter::JsonArchiveWriter(SerializationOptions serializationOptions) : serializationOptions(serializationOptions)
     {
         doc = yyjson_mut_doc_new(&alloc);
     }
 
-    ArchiveObject JsonAssetWriter::CreateObject()
+    JsonArchiveWriter::~JsonArchiveWriter()
+    {
+        yyjson_mut_doc_free(doc);
+    }
+
+    ArchiveValue JsonArchiveWriter::CreateObject()
     {
         return {yyjson_mut_obj(doc)};
     }
 
-    ArchiveObject JsonAssetWriter::CreateArray()
+    ArchiveValue JsonArchiveWriter::CreateArray()
     {
         return {yyjson_mut_arr(doc)};
     }
 
-    void JsonAssetWriter::WriteBool(ArchiveObject object, const StringView& name, bool value)
+    ArchiveValue JsonArchiveWriter::BoolValue(bool value)
     {
-        yyjson_mut_obj_add_bool(doc, static_cast<yyjson_mut_val*>(object.handler), name.CStr(), value);
+        return {yyjson_mut_bool(doc, value)};
     }
 
-    void JsonAssetWriter::WriteInt(ArchiveObject object, const StringView& name, i64 value)
+    ArchiveValue JsonArchiveWriter::IntValue(i64 value)
     {
-        yyjson_mut_obj_add_int(doc, static_cast<yyjson_mut_val*>(object.handler), name.CStr(), value);
+        return {yyjson_mut_uint(doc, value)};
     }
 
-    void JsonAssetWriter::WriteUInt(ArchiveObject object, const StringView& name, u64 value)
+    ArchiveValue JsonArchiveWriter::UIntValue(u64 value)
     {
-        // char buffer[20];
-        // usize size = StringConverter<u64>::ToString(buffer, 0, value);
-        // yyjson_mut_obj_add_strncpy(doc, static_cast<yyjson_mut_val*>(object.handler), name.CStr(), buffer, size);
-        yyjson_mut_obj_add_uint(doc, static_cast<yyjson_mut_val*>(object.handler), name.CStr(), value);
+        return {yyjson_mut_uint(doc, value)};
     }
 
-    void JsonAssetWriter::WriteFloat(ArchiveObject object, const StringView& name, f64 value)
+    ArchiveValue JsonArchiveWriter::FloatValue(f64 value)
     {
-        yyjson_mut_obj_add_real(doc, static_cast<yyjson_mut_val*>(object.handler), name.CStr(), value);
+        return {yyjson_mut_real(doc, value)};
     }
 
-    void JsonAssetWriter::WriteString(ArchiveObject object, const StringView& name, const StringView& value)
+    ArchiveValue JsonArchiveWriter::StringValue(StringView value)
     {
-        yyjson_mut_obj_add_strncpy(doc, static_cast<yyjson_mut_val*>(object.handler), name.CStr(), value.CStr(), value.Size());
+        return {yyjson_mut_strcpy(doc, value.CStr())};
     }
 
-    void JsonAssetWriter::WriteValue(ArchiveObject object, const StringView& name, ArchiveObject value)
+    void JsonArchiveWriter::AddToObject(ArchiveValue object, StringView name, ArchiveValue value)
     {
         yyjson_mut_obj_add_val(doc, static_cast<yyjson_mut_val*>(object.handler), name.CStr(), static_cast<yyjson_mut_val*>(value.handler));
     }
 
-    void JsonAssetWriter::AddBool(ArchiveObject array, bool value)
-    {
-        yyjson_mut_arr_add_bool(doc, static_cast<yyjson_mut_val*>(array.handler), value);
-    }
-
-    void JsonAssetWriter::AddInt(ArchiveObject array, i64 value)
-    {
-        yyjson_mut_arr_add_int(doc, static_cast<yyjson_mut_val*>(array.handler), value);
-    }
-
-    void JsonAssetWriter::AddUInt(ArchiveObject array, u64 value)
-    {
-        yyjson_mut_arr_add_uint(doc, static_cast<yyjson_mut_val*>(array.handler), value);
-    }
-
-    void JsonAssetWriter::AddFloat(ArchiveObject array, f64 value)
-    {
-        yyjson_mut_arr_add_real(doc, static_cast<yyjson_mut_val*>(array.handler), value);
-    }
-
-    void JsonAssetWriter::AddString(ArchiveObject array, const StringView& value)
-    {
-        yyjson_mut_arr_add_strncpy(doc, static_cast<yyjson_mut_val*>(array.handler), value.CStr(), value.Size());
-    }
-
-    void JsonAssetWriter::AddValue(ArchiveObject array, ArchiveObject value)
+    void JsonArchiveWriter::AddToArray(ArchiveValue array, ArchiveValue value)
     {
         yyjson_mut_arr_add_val(static_cast<yyjson_mut_val*>(array.handler), static_cast<yyjson_mut_val*>(value.handler));
     }
 
-    bool JsonAssetWriter::HasOpt(SerializationOptions option)
-    {
-        return serializationOptions && option;
-    }
-
-    String JsonAssetWriter::Stringify(ArchiveObject object)
+    String JsonArchiveWriter::Stringify(ArchiveValue object)
     {
         if (!object) return {};
 
@@ -272,91 +104,90 @@ namespace Fyrion
         {
             FY_ASSERT(false, "error");
         }
-
         return {};
     }
 
-    JsonAssetWriter::~JsonAssetWriter()
-    {
-        yyjson_mut_doc_free(doc);
-    }
 
-    JsonAssetReader::JsonAssetReader(StringView data)
+    JsonArchiveReader::JsonArchiveReader(StringView string)
     {
-        FY_ASSERT(!data.Empty(), "data cannot be empty");
+        FY_ASSERT(!string.Empty(), "data cannot be empty");
         const yyjson_read_flag flg = {};
         yyjson_read_err        err;
-        doc = yyjson_read_opts(const_cast<char*>(data.begin()), data.Size(), flg, &alloc, &err);
+        doc = yyjson_read_opts(const_cast<char*>(string.begin()), string.Size(), flg, &alloc, &err);
         if (err.code != 0)
         {
             FY_ASSERT(false, "error");
         }
     }
 
-    ArchiveObject JsonAssetReader::ReadObject()
+    JsonArchiveReader::~JsonArchiveReader()
     {
-        return {yyjson_doc_get_root(doc)};
+        yyjson_doc_free(doc);
     }
 
-    bool JsonAssetReader::ReadBool(ArchiveObject object, const StringView& name)
+    bool JsonArchiveReader::BoolValue(ArchiveValue value)
     {
-        if (yyjson_val* val = yyjson_obj_getn(static_cast<yyjson_val*>(object.handler), name.CStr(), name.Size()))
+        if(value)
         {
-            return yyjson_get_bool(val);
+            return yyjson_get_bool(static_cast<yyjson_val*>(value.handler));
         }
         return false;
     }
 
-    i64 JsonAssetReader::ReadInt(ArchiveObject object, const StringView& name)
+    i64 JsonArchiveReader::IntValue(ArchiveValue value)
     {
-        if (yyjson_val* val = yyjson_obj_getn(static_cast<yyjson_val*>(object.handler), name.CStr(), name.Size()))
+        if (value)
         {
-            return yyjson_get_int(val);
+            return yyjson_get_int(static_cast<yyjson_val*>(value.handler));
         }
         return 0;
     }
 
-    u64 JsonAssetReader::ReadUInt(ArchiveObject object, const StringView& name)
+    u64 JsonArchiveReader::UIntValue(ArchiveValue value)
     {
-        if (yyjson_val* val = yyjson_obj_getn(static_cast<yyjson_val*>(object.handler), name.CStr(), name.Size()))
+        if (value)
         {
-            return yyjson_get_uint(val);
+            return yyjson_get_uint(static_cast<yyjson_val*>(value.handler));
         }
         return 0;
     }
 
-    StringView JsonAssetReader::ReadString(ArchiveObject object, const StringView& name)
+    f64 JsonArchiveReader::FloatValue(ArchiveValue value)
     {
-        if (yyjson_val* val = yyjson_obj_getn(static_cast<yyjson_val*>(object.handler), name.CStr(), name.Size()))
+        if (value)
         {
-            return yyjson_get_str(val);
+            return yyjson_get_real(static_cast<yyjson_val*>(value.handler));
         }
-        return {};
+        return 0.0;
     }
 
-    f64 JsonAssetReader::ReadFloat(ArchiveObject object, const StringView& name)
+    StringView JsonArchiveReader::StringValue(ArchiveValue value)
     {
-        if (yyjson_val* val = yyjson_obj_getn(static_cast<yyjson_val*>(object.handler), name.CStr(), name.Size()))
+        if (value)
         {
-            return yyjson_get_real(val);
+            return StringView{yyjson_get_str(static_cast<yyjson_val*>(value.handler))};
         }
-        return 0.0f;
+        return "";
     }
 
-    ArchiveObject JsonAssetReader::ReadObject(ArchiveObject object, const StringView& name)
+    ArchiveValue JsonArchiveReader::GetRootObject()
     {
-        yyjson_val* val = yyjson_obj_getn(static_cast<yyjson_val*>(object.handler), name.CStr(), name.Size());
-        return {val};
+        return {yyjson_doc_get_root(doc)};
     }
 
-    usize JsonAssetReader::ArrSize(ArchiveObject object)
+    ArchiveValue JsonArchiveReader::GetObjectValue(ArchiveValue object, StringView name)
     {
-        return yyjson_arr_size(static_cast<yyjson_val*>(object.handler));
+        return {yyjson_obj_getn(static_cast<yyjson_val*>(object.handler), name.CStr(), name.Size())};
     }
 
-    ArchiveObject JsonAssetReader::Next(ArchiveObject object, ArchiveObject item)
+    usize JsonArchiveReader::ArraySize(ArchiveValue array)
     {
-        yyjson_val* arr = static_cast<yyjson_val*>(object.handler);
+        return yyjson_arr_size(static_cast<yyjson_val*>(array.handler));
+    }
+
+    ArchiveValue JsonArchiveReader::ArrayNext(ArchiveValue array, ArchiveValue item)
+    {
+        yyjson_val* arr = static_cast<yyjson_val*>(array.handler);
         if (item.handler == nullptr)
         {
             return {yyjson_arr_get_first(arr)};
@@ -365,33 +196,93 @@ namespace Fyrion
         return {unsafe_yyjson_get_next(static_cast<yyjson_val*>(item.handler))};
     }
 
-    i64 JsonAssetReader::GetInt(ArchiveObject object)
+    ArchiveValue Serialization::Serialize(TypeID typeId, ArchiveWriter& writer, ConstPtr instance)
     {
-        return yyjson_get_int(static_cast<yyjson_val*>(object.handler));
+        return Serialize(Registry::FindTypeById(typeId), writer, instance);
     }
 
-    u64 JsonAssetReader::GetUInt(ArchiveObject object)
+    ArchiveValue Serialization::Serialize(const TypeHandler* typeHandler, ArchiveWriter& writer, ConstPtr instance)
     {
-        return yyjson_get_uint(static_cast<yyjson_val*>(object.handler));
+        if (typeHandler == nullptr || instance == nullptr) return {};
+
+        if (typeHandler->GetTypeInfo().archiveToValue)
+        {
+            return typeHandler->GetTypeInfo().archiveToValue(writer, instance);
+        }
+
+        ArchiveValue object = writer.CreateObject();
+
+        for (FieldHandler* field : typeHandler->GetFields())
+        {
+            if (field->GetFieldInfo().typeInfo.archiveToValue)
+            {
+                if (ArchiveValue value = field->GetFieldInfo().typeInfo.archiveToValue(writer, field->GetFieldPointer(instance)))
+                {
+                    writer.AddToObject(object, field->GetName(), value);
+                }
+            }
+            else if (const TypeHandler* fieldTypeHandler = Registry::FindTypeById(field->GetFieldInfo().typeInfo.typeId))
+            {
+                if (ArchiveValue value = Serialize(fieldTypeHandler, writer, field->GetFieldPointer(instance)))
+                {
+                    writer.AddToObject(object, field->GetName(), value);
+                }
+            }
+        }
+
+        return object;
     }
 
-    StringView JsonAssetReader::GetString(ArchiveObject object)
+    void Serialization::Deserialize(const TypeHandler* typeHandler, ArchiveReader& reader, ArchiveValue object, VoidPtr instance)
     {
-        return yyjson_get_str(static_cast<yyjson_val*>(object.handler));
+        if (typeHandler == nullptr || instance == nullptr) return;
+
+        if (typeHandler->GetTypeInfo().archiveFromValue)
+        {
+            typeHandler->GetTypeInfo().archiveFromValue(reader, object, instance);
+            return;
+        }
+
+        for (FieldHandler* field : typeHandler->GetFields())
+        {
+            ArchiveValue value = reader.GetObjectValue(object, field->GetName());
+
+            if (field->GetFieldInfo().typeInfo.archiveFromValue)
+            {
+                field->GetFieldInfo().typeInfo.archiveFromValue(reader, value, field->GetFieldPointer(instance));
+            }
+            else if (const TypeHandler* fieldTypeHandler = Registry::FindTypeById(field->GetFieldInfo().typeInfo.typeId))
+            {
+                Deserialize(fieldTypeHandler, reader, value, field->GetFieldPointer(instance));
+            }
+        }
     }
 
-    f64 JsonAssetReader::GetFloat(ArchiveObject object)
+    void Serialization::Deserialize(TypeID typeId, ArchiveReader& reader, ArchiveValue object, VoidPtr instance)
     {
-        return yyjson_get_real(static_cast<yyjson_val*>(object.handler));
+        Deserialize(Registry::FindTypeById(typeId), reader, object, instance);
     }
 
-    bool JsonAssetReader::GetBool(ArchiveObject object)
+    ArchiveValue Serialization::EnumToValue(TypeID typeId, ArchiveWriter& writer, i64 value)
     {
-        return yyjson_get_bool(static_cast<yyjson_val*>(object.handler));
+        if (const TypeHandler* typeHandler = Registry::FindTypeById(typeId))
+        {
+            if (ValueHandler* valueHandler = typeHandler->FindValueByCode(value))
+            {
+                return writer.StringValue(valueHandler->GetDesc());
+            }
+        }
+        return {};
     }
 
-    JsonAssetReader::~JsonAssetReader()
+    void Serialization::ValueToEnum(TypeID typeId, ArchiveReader& reader, ArchiveValue archiveValue, i64& value)
     {
-        yyjson_doc_free(doc);
+        if (const TypeHandler* typeHandler = Registry::FindTypeById(typeId))
+        {
+            if (ValueHandler* valueHandler = typeHandler->FindValueByName(reader.StringValue(archiveValue)))
+            {
+                value = valueHandler->GetCode();
+            }
+        }
     }
 }

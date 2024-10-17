@@ -4,8 +4,23 @@
 
 namespace Fyrion
 {
+    ArchiveValue Scene::Serialize(ArchiveWriter& writer) const
+    {
+        return {};
+    }
+
+    void Scene::Deserialize(ArchiveReader& reader, ArchiveValue value)
+    {
+
+    }
+
     void Scene::RegisterType(NativeTypeHandler<Scene>& type)
     {
-        type.Field<&Scene::testStr>("testStr");
+
+    }
+
+    GameObject& Scene::GetRootObject()
+    {
+        return root;
     }
 }

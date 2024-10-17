@@ -2,6 +2,7 @@
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Editor/Editor.hpp"
 #include "Fyrion/Editor/Scene/SceneEditor.hpp"
+#include "Fyrion/IO/Path.hpp"
 #include "Fyrion/Scene/Scene.hpp"
 
 namespace Fyrion
@@ -22,7 +23,7 @@ namespace Fyrion
 
         void OpenAsset(AssetFile* assetFile) override
         {
-            Editor::GetSceneEditor().SetActiveScene(Assets::Load<Scene>(assetFile->uuid));
+            Editor::GetSceneEditor().SetScene(assetFile);
         }
 
         Image GenerateThumbnail(AssetFile* assetFile) override

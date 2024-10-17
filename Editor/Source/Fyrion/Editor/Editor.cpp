@@ -14,6 +14,7 @@
 #include "Fyrion/IO/Path.hpp"
 #include "Scene/SceneEditor.hpp"
 #include "Window/ProjectBrowserWindow.hpp"
+#include "Window/PropertiesWindow.hpp"
 #include "Window/SceneTreeWindow.hpp"
 #include "Window/TextureViewWindow.hpp"
 
@@ -388,6 +389,8 @@ namespace Fyrion
             DrawMenu();
             ImGui::End();
 
+            sceneEditor.DoUpdate();
+
             ProjectUpdate();
         }
 
@@ -479,6 +482,7 @@ namespace Fyrion
         Registry::Type<ProjectBrowserWindow>();
         Registry::Type<TextureViewWindow>();
         Registry::Type<SceneTreeWindow>();
+        Registry::Type<PropertiesWindow>();
 
         Event::Bind<OnInit, &InitEditor>();
         Event::Bind<OnUpdate, &EditorUpdate>();

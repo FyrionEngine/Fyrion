@@ -2,6 +2,7 @@
 
 #include "GameObject.hpp"
 #include "Fyrion/Common.hpp"
+#include "Fyrion/Core/HashMap.hpp"
 #include "Fyrion/IO/Asset.hpp"
 
 namespace Fyrion
@@ -18,8 +19,16 @@ namespace Fyrion
         ArchiveValue Serialize(ArchiveWriter& writer) const;
         void         Deserialize(ArchiveReader& reader, ArchiveValue value);
 
+        void DestroyGameObject(GameObject* gameObject);
+
+        void FlushQueues();
+        void DoUpdate();
+
+        friend class GameObject;
     private:
-        GameObject root = {this};
+        GameObject                 root = {this};
+        Array<GameObject*>         queueToDestroy;
+        HashMap<UUID, GameObject*> objectsById;
     };
 
 

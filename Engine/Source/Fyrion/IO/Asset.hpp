@@ -13,17 +13,14 @@ namespace Fyrion
     class FY_API Asset
     {
     public:
-        UUID             GetUUID() const;
-        StringView       GetName() const;
-        TypeHandler*     GetTypeHandler() const;
-        Array<u8>        LoadStream(usize offset, usize size) const;
-
-        void             SetName(StringView name);
-        void             SetTypeHandler(TypeHandler* typeHandler);
+        UUID         GetUUID() const;
+        TypeHandler* GetTypeHandler() const;
+        Array<u8>    LoadStream(usize offset, usize size) const;
+        void         SetTypeHandler(TypeHandler* typeHandler);
 
         friend class Assets;
+
     private:
-        String       name;
         UUID         uuid;
         TypeHandler* typeHandler = nullptr;
         AssetLoader* loader = nullptr;
@@ -31,10 +28,10 @@ namespace Fyrion
 
     struct FY_API AssetLoader
     {
-        virtual           ~AssetLoader() = default;
+        virtual ~AssetLoader() = default;
 
-        virtual Asset*           LoadAsset() = 0;
-        virtual Array<u8>        LoadStream(usize offset, usize size) = 0;
+        virtual Asset*    LoadAsset() = 0;
+        virtual Array<u8> LoadStream(usize offset, usize size) = 0;
     };
 
     class FY_API Assets

@@ -39,6 +39,7 @@ namespace Fyrion
         bool         renamingFocus{};
         bool         renamingSelected{};
         String       renamingStringCache{};
+        bool         newObjectIsSelected = false;
 
         void        CheckDragDropAsset();
 

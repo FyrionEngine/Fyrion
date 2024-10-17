@@ -130,7 +130,6 @@ namespace Fyrion
         if (TypeHandler* typeHandler = Registry::FindTypeById(handler->GetAssetTypeID()))
         {
             Asset* asset = typeHandler->Cast<Asset>(typeHandler->NewInstance());
-            asset->SetName(fileName);
             asset->SetTypeHandler(typeHandler);
             handler->Load(this, typeHandler, asset);
             return asset;

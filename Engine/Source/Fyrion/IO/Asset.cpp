@@ -22,11 +22,6 @@ namespace Fyrion
         return uuid;
     }
 
-    StringView Asset::GetName() const
-    {
-        return name;
-    }
-
     TypeHandler* Asset::GetTypeHandler() const
     {
         return typeHandler;
@@ -35,11 +30,6 @@ namespace Fyrion
     Array<u8> Asset::LoadStream(usize offset, usize size) const
     {
         return loader->LoadStream(offset, size);
-    }
-
-    void Asset::SetName(StringView name)
-    {
-        this->name = name;
     }
 
     void Asset::SetTypeHandler(TypeHandler* typeHandler)

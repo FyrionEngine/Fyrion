@@ -28,7 +28,7 @@ namespace Fyrion
         stringCache.Clear();
         stringCache += root ? ICON_FA_CUBES : ICON_FA_CUBE;
         stringCache += " ";
-        stringCache += gameObject.GetName();
+        stringCache += root ? StringView{sceneEditor.GetAssetFile()->fileName} : gameObject.GetName();
 
         bool isSelected = sceneEditor.IsSelected(gameObject);
 
@@ -131,7 +131,7 @@ namespace Fyrion
 
         if (ImGui::IsMouseReleased(ImGuiMouseButton_Right) && isHovered)
         {
-            //entityIsSelected = true;
+            newObjectIsSelected = true;
         }
 
         ImGui::TableNextColumn();
@@ -152,7 +152,7 @@ namespace Fyrion
 
     void SceneTreeWindow::Draw(u32 id, bool& open)
     {
-        // entityIsSelected = false;
+        newObjectIsSelected = false;
         // skipDragDrop = false;
 
         auto& style = ImGui::GetStyle();
@@ -197,7 +197,7 @@ namespace Fyrion
                     ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 35 * style.ScaleFactor);
                     ImGui::TableHeadersRow();
 
-                    if (Scene* scene = sceneEditor.GetActiveScene())
+                    if (Scene* scene = sceneEditor.GetScene())
                     {
                         ImGui::BeginTreeNode();
                         DrawGameObject(scene->GetRootObject());
@@ -223,11 +223,11 @@ namespace Fyrion
 
             if (ImGui::IsMouseReleased(ImGuiMouseButton_Right))
             {
-                // if (!entityIsSelected)
-                // {
-                //     sceneEditor.ClearSelection();
-                //     renamingSelected = false;
-                // }
+                if (!newObjectIsSelected)
+                {
+                    sceneEditor.ClearSelection();
+                    renamingSelected = false;
+                }
                 openPopup = true;
             }
         }

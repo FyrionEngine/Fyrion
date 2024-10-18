@@ -4,16 +4,6 @@
 
 namespace Fyrion
 {
-    ArchiveValue Scene::Serialize(ArchiveWriter& writer) const
-    {
-        return {};
-    }
-
-    void Scene::Deserialize(ArchiveReader& reader, ArchiveValue value)
-    {
-
-    }
-
     void Scene::DestroyGameObject(GameObject* gameObject)
     {
         queueToDestroy.EmplaceBack(gameObject);
@@ -30,18 +20,26 @@ namespace Fyrion
 
     void Scene::DoUpdate()
     {
-
-
         FlushQueues();
-    }
-
-    void Scene::RegisterType(NativeTypeHandler<Scene>& type)
-    {
-
     }
 
     GameObject& Scene::GetRootObject()
     {
         return root;
+    }
+
+    ArchiveValue Scene::Serialize(ArchiveWriter& writer) const
+    {
+        return {};
+    }
+
+    void Scene::Deserialize(ArchiveReader& reader, ArchiveValue value)
+    {
+
+    }
+
+    void Scene::RegisterType(NativeTypeHandler<Scene>& type)
+    {
+
     }
 }

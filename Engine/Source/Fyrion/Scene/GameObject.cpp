@@ -1,5 +1,7 @@
 #include "GameObject.hpp"
 #include "Scene.hpp"
+#include "Component/Component.hpp"
+#include "Fyrion/Core/Registry.hpp"
 
 namespace Fyrion
 {
@@ -80,6 +82,56 @@ namespace Fyrion
         if (auto it = FindFirst(children.begin(), children.end(), gameObject))
         {
             children.Erase(it);
+        }
+    }
+
+    Component* GameObject::GetComponent(TypeID typeId) const
+    {
+        for (Component* component : components)
+        {
+            if (component->typeId == typeId)
+            {
+                return component;
+            }
+        }
+        return nullptr;
+    }
+
+    void GameObject::GetComponentsOfType(TypeID typeId, Array<Component*> arrComponents) const
+    {
+        arrComponents.Clear();
+        for (Component* component : components)
+        {
+            if (component->typeId == typeId)
+            {
+                arrComponents.EmplaceBack(component);
+            }
+        }
+    }
+
+    Component* GameObject::AddComponent(TypeID typeId)
+    {
+        if (TypeHandler* typeHandler = Registry::FindTypeById(typeId))
+        {
+            Component* component = typeHandler->Cast<Component>(typeHandler->NewInstance());
+            component->gameObject = this;
+            component->typeId = typeId;
+            components.EmplaceBack(component);
+
+            return component;
+        }
+        return nullptr;
+    }
+
+    void GameObject::RemoveComponent(Component* component)
+    {
+        if (auto it = FindFirst(components.begin(), components.end(), component))
+        {
+            if (TypeHandler* typeHandler = Registry::FindTypeById(component->typeId))
+            {
+                typeHandler->Destroy(component);
+            }
+            components.Erase(it);
         }
     }
 

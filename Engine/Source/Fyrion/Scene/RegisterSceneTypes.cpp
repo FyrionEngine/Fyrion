@@ -1,5 +1,7 @@
 #include "Scene.hpp"
 #include "GameObject.hpp"
+#include "Component/Component.hpp"
+#include "Component/TransformComponent.hpp"
 #include "Fyrion/Core/Registry.hpp"
 
 namespace Fyrion
@@ -8,5 +10,7 @@ namespace Fyrion
     {
         Registry::Type<Scene>();
         Registry::Type<GameObject>();
+        Registry::Type<Component>();
+        Registry::Type<TransformComponent>();
     }
 }

@@ -2,6 +2,7 @@
 
 #include "Fyrion/Common.hpp"
 #include "Fyrion/Core/Array.hpp"
+#include "Fyrion/Core/HashMap.hpp"
 #include "Fyrion/Core/Span.hpp"
 #include "Fyrion/Core/String.hpp"
 #include "Fyrion/Core/StringView.hpp"
@@ -10,6 +11,7 @@
 namespace Fyrion
 {
     class Scene;
+    class Component;
 
     class FY_API GameObject
     {
@@ -25,15 +27,21 @@ namespace Fyrion
         UUID        GetUUID() const;
 
         GameObject*       GetPrototype() const;
-        Span<GameObject*> GetChildren() const;
 
-        GameObject* CreateChild();
-        GameObject* CreateChildWithUUID(UUID uuid);
-        void        RemoveChild(GameObject* gameObject);
+        GameObject*       CreateChild();
+        GameObject*       CreateChildWithUUID(UUID uuid);
+        Span<GameObject*> GetChildren() const;
+        void              RemoveChild(GameObject* gameObject);
+
+        Component* GetComponent(TypeID typeId) const;
+        void       GetComponentsOfType(TypeID typeId, Array<Component*> arrComponents) const;
+        Component* AddComponent(TypeID typeId);
+        void       RemoveComponent(Component* component);
 
         void Destroy();
 
         friend class Scene;
+
     private:
         GameObject(Scene* scene);
         GameObject(Scene* scene, GameObject* parent);
@@ -44,5 +52,7 @@ namespace Fyrion
         UUID        uuid;
 
         Array<GameObject*> children;
+
+        Array<Component*> components;
     };
 }

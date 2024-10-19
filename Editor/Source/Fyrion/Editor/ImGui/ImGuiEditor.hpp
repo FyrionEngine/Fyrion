@@ -90,4 +90,6 @@ namespace ImGui
     FY_API bool             BeginContentTable(const char* id, f32 thumbnailScale);
     FY_API ContentItemState ContentItem(const ContentItemDesc& contentItemDesc);
     FY_API void             EndContentTable();
+
+    FY_API void TextWithLabel(StringView label, StringView text);
 }

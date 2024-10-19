@@ -17,6 +17,7 @@ namespace Fyrion
         u32    hash;
         String fileName;
         String extension;
+        String path;
         String absolutePath;
         String tempBuffer;
         bool   isDirectory;
@@ -49,6 +50,8 @@ namespace Fyrion
         void MoveTo(AssetFile* newParent);
         bool IsChildOf(AssetFile* item) const;
         void Destroy();
+
+        void UpdatePath();
 
         ~AssetFile() override;
     };

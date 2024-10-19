@@ -39,11 +39,13 @@ namespace Fyrion
     public:
         static void   Create(UUID uuid, AssetLoader* loader);
         static Asset* Load(UUID uuid);
+        static Asset* LoadByPath(StringView path);
+        static void   SetPath(UUID uuid, StringView path);
 
         template <typename T>
         static T* LoadByPath(StringView path)
         {
-            return nullptr;
+            return static_cast<T*>(LoadByPath(path));
         }
 
         template <typename T>

@@ -7,6 +7,7 @@ namespace Fyrion
 {
     void RegisterSceneAssetHandler();
     void RegisterTextureAssetHandler();
+    void RegisterShaderAssetHandlers();
 
     void RegisterAssetTypes()
     {
@@ -16,5 +17,6 @@ namespace Fyrion
 
         RegisterSceneAssetHandler();
         RegisterTextureAssetHandler();
+        RegisterShaderAssetHandlers();
     }
 }

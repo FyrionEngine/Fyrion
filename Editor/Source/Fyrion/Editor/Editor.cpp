@@ -47,6 +47,7 @@ namespace Fyrion
         Array<EditorWindowStorage>   editorWindowStorages{};
         Array<OpenWindowStorage>     openWindows{};
         Array<AssetFile*>            updatedItems{};
+        bool                         shouldOpenPopup = false;
 
         std::mutex                   callsMutex;
         Array<std::function<void()>> calls{};
@@ -291,6 +292,13 @@ namespace Fyrion
         {
             if (!updatedItems.Empty())
             {
+
+                if (shouldOpenPopup)
+                {
+                    ImGui::OpenPopup("Save Content");
+                    shouldOpenPopup = false;
+                }
+
                 bool                   open{true};
                 static ImGuiTableFlags flags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Resizable;
                 ImGuiStyle&            style = ImGui::GetStyle();
@@ -410,8 +418,8 @@ namespace Fyrion
 
             if (!updatedItems.Empty())
             {
-                ImGui::OpenPopup("Save Content");
                 *canClose = false;
+                shouldOpenPopup = true;
             }
         }
     }

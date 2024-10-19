@@ -321,6 +321,19 @@ namespace Fyrion
                                     ImGui::EndDragDropSource();
                                 }
 
+                                if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal) && ImGui::BeginTooltip())
+                                {
+                                    ImGui::TextUnformatted(labelCache.CStr());
+                                    ImGui::Separator();
+
+
+                                    ImGui::TextWithLabel("Relative Path: ", assetFile->path);
+                                    ImGui::TextWithLabel("UUID: ", assetFile->uuid.ToString());
+
+
+                                    ImGui::EndTooltip();
+                                }
+
                                 ImGui::SetCursorScreenPos(state.screenStartPos);
 
                                 ImGui::PopID();

@@ -6,6 +6,7 @@
 #include "Graphics.hpp"
 #include "Fyrion/Core/Logger.hpp"
 #include "Fyrion/IO/Asset.hpp"
+#include "Fyrion/Graphics/Assets/ShaderAsset.hpp"
 
 
 namespace Fyrion

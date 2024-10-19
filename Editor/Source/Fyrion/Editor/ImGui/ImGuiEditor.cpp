@@ -428,3 +428,10 @@ void ImGui::EndContentTable()
 {
     ImGui::EndTable();
 }
+
+void ImGui::TextWithLabel(StringView label, StringView text)
+{
+    ImGui::TextDisabled(label.CStr());
+    ImGui::SameLine();
+    ImGui::Text(text.CStr());
+}

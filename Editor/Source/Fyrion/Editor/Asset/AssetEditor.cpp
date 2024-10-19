@@ -259,6 +259,8 @@ namespace Fyrion
         parent = newParent;
         newParent->children.EmplaceBack(this);
 
+        UpdatePath();
+
         currentVersion++;
     }
 
@@ -305,6 +307,16 @@ namespace Fyrion
         MemoryGlobals::GetDefaultAllocator().DestroyAndFree(this);
     }
 
+    void AssetFile::UpdatePath()
+    {
+        path = parent->path + "/" + fileName + extension;
+        Assets::SetPath(uuid, path);
+        for(AssetFile* child : children)
+        {
+            child->UpdatePath();
+        }
+    }
+
     AssetFile::~AssetFile()
     {
         if (thumbnail)
@@ -320,6 +332,12 @@ namespace Fyrion
         {
             assetFile->fileName = name;
             packages.EmplaceBack(assetFile);
+
+            assetFile->path = String{name} + ":/";
+            for(AssetFile* child : assetFile->children)
+            {
+                child->UpdatePath();
+            }
         }
     }
 
@@ -349,6 +367,12 @@ namespace Fyrion
         {
             assetFile->fileName = name;
             project = assetFile;
+
+            assetFile->path = String{name} + ":/";
+            for(AssetFile* child : assetFile->children)
+            {
+                child->UpdatePath();
+            }
         }
     }
 
@@ -413,6 +437,7 @@ namespace Fyrion
     void AssetEditor::Rename(AssetFile* assetFile, StringView newName)
     {
         assetFile->fileName = newName;
+        assetFile->UpdatePath();
         assetFile->currentVersion++;
     }
 

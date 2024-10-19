@@ -15,6 +15,7 @@ namespace Fyrion
         };
 
         HashMap<UUID, AssetCache> assetCache = {};
+        HashMap<String, UUID> assetsByPath = {};
     }
 
     UUID Asset::GetUUID() const
@@ -50,6 +51,7 @@ namespace Fyrion
             }
         }
         assetCache.Clear();
+        assetsByPath.Clear();
     }
 
     void Assets::Create(UUID uuid, AssetLoader* loader)
@@ -76,5 +78,19 @@ namespace Fyrion
             return it->second.instance;
         }
         return nullptr;
+    }
+
+    Asset* Assets::LoadByPath(StringView path)
+    {
+        if (auto it = assetsByPath.Find(path))
+        {
+            return Load(it->second);
+        }
+        return nullptr;
+    }
+
+    void Assets::SetPath(UUID uuid, StringView path)
+    {
+        assetsByPath.Insert(path, uuid);
     }
 }

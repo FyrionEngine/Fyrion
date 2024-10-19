@@ -22,28 +22,14 @@ using namespace Fyrion;
 namespace Fyrion
 {
     RenderDevice& GetRenderDevice();
-    void          RegisterFieldRenderers();
 }
 
 namespace ImGui
 {
-    struct AssetSelector
-    {
-        TypeID                  assetId;
-        VoidPtr                 userData;
-        FnAssetSelectorCallback callback;
-    };
-
     namespace
     {
         f32      scaleFactor = 1.0;
         ImGuiKey keys[static_cast<u32>(Key::MAX)];
-
-        usize renamingItem = 0;
-
-        HashMap<usize, UniquePtr<DrawTypeContent>> drawTypes{};
-        Array<FieldRendererFn>                     fieldRenders{};
-        Array<AssetSelector>                       assetSelectors;
     }
 
     struct InputTextCallback_UserData
@@ -637,127 +623,9 @@ namespace ImGui
 
         Platform::ImGuiInit(window);
         GetRenderDevice().ImGuiInit(swapchain);
-
-        RegisterFieldRenderers();
     }
 
-    void DrawAssetSelection(bool& showAssetSelection, TypeID assetType, VoidPtr userData, FnAssetSelectorCallback callback)
-    {
-        auto& style = ImGui::GetStyle();
-        auto& io = ImGui::GetIO();
 
-        static String searchResoruceString = "";
-        static bool   popupOpen = false;
-
-        auto originalPadding = ImGui::GetStyle().WindowPadding;
-
-        ImGui::StyleVar windowPadding(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-
-        if (!popupOpen)
-        {
-            popupOpen = true;
-            ImGui::OpenPopup("Assets");
-
-            ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-            ImGui::SetNextWindowSize(ImVec2(960 * ImGui::GetStyle().ScaleFactor, 540 * ImGui::GetStyle().ScaleFactor), ImGuiCond_Appearing);
-        }
-
-        if (ImGui::BeginPopupModal("Assets", &showAssetSelection))
-        {
-            {
-                ImGui::StyleVar windowPadding2(ImGuiStyleVar_WindowPadding, originalPadding);
-                ImGui::BeginChild(1000, ImVec2(0, (25 * style.ScaleFactor) + originalPadding.y), false, ImGuiWindowFlags_AlwaysUseWindowPadding | ImGuiWindowFlags_NoScrollbar);
-
-                ImGui::SetNextItemWidth(-1);
-                ImGui::SearchInputText(12471247, searchResoruceString);
-                ImGui::EndChild();
-            }
-
-            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + originalPadding.y);
-            auto  p1 = ImGui::GetCursorScreenPos();
-            auto  p2 = ImVec2(ImGui::GetContentRegionAvail().x + p1.x, p1.y);
-            auto* drawList = ImGui::GetWindowDrawList();
-            drawList->AddLine(p1, p2, ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_Separator]), 1.f * style.ScaleFactor);
-            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 1.f * style.ScaleFactor);
-
-            {
-                ImGui::StyleColor childBg(ImGuiCol_ChildBg, IM_COL32(22, 23, 25, 255));
-                ImGui::StyleVar   windowPadding2(ImGuiStyleVar_WindowPadding, originalPadding);
-
-                static f32 zoom = 0.8;
-
-                ImGui::SetWindowFontScale(zoom);
-
-                u32 id = 100000;
-
-                if (ImGui::BeginChild(10000, ImVec2(0, 0), false, ImGuiWindowFlags_AlwaysUseWindowPadding))
-                {
-                    // if (ImGui::BeginContentTable(10010, zoom * 112 * style.ScaleFactor))
-                    // {
-                    //     {
-                    //         ImGui::ContentItemDesc contentItem{};
-                    //         contentItem.ItemId = ImHashStr("None-Id");
-                    //         contentItem.ShowDetails = false;
-                    //         contentItem.Label = "None";
-                    //         contentItem.CanRename = false;
-                    //
-                    //         if (ImGui::DrawContentItem(contentItem))
-                    //         {
-                    //             showAssetSelection = false;
-                    //             callback(userData, nullptr);
-                    //         }
-                    //     }
-                    //
-                    //     std::function<void(TypeID typeId)> drawAssetSelection;
-                    //     drawAssetSelection = [&](const TypeID typeId)
-                    //     {
-                    //         // for (AssetHandler* assetHandler : AssetManager::FindAssetsByType(typeId))
-                    //         // {
-                    //         //     ImGui::ContentItemDesc contentItem{};
-                    //         //     contentItem.ItemId = id;
-                    //         //     contentItem.ShowDetails = false;
-                    //         //     contentItem.Label = assetHandler->GetName().CStr();
-                    //         //     contentItem.CanRename = false;
-                    //         //     //contentItem.DetailsDesc = asset->GetDisplayName().CStr();
-                    //         //
-                    //         //     if (ImGui::DrawContentItem(contentItem))
-                    //         //     {
-                    //         //         showAssetSelection = false;
-                    //         //         callback(userData, assetHandler->LoadInstance());
-                    //         //     }
-                    //         //     id += 5;
-                    //         // }
-                    //
-                    //         if (TypeHandler* typeHandler = Registry::FindTypeById(typeId))
-                    //         {
-                    //             for(DerivedType derived: typeHandler->GetDerivedTypes())
-                    //             {
-                    //                 drawAssetSelection(derived.typeId);
-                    //             }
-                    //         }
-                    //     };
-                    //     drawAssetSelection(assetType);
-                    //     ImGui::EndContentTable();
-                    // }
-                    ImGui::EndChild();
-                    ImGui::SetWindowFontScale(1);
-                }
-            }
-
-            ImGui::EndPopup();
-        }
-
-        if (ImGui::IsKeyDown(ImGuiKey_Escape))
-        {
-            showAssetSelection = false;
-        }
-
-        if (!showAssetSelection)
-        {
-            searchResoruceString.Clear();
-            popupOpen = false;
-        }
-    }
 
     void BeginFrame(Window window, f64 deltaTime)
     {
@@ -765,53 +633,9 @@ namespace ImGui
         Platform::ImGuiNewFrame();
         ImGui::NewFrame();
         ImGuizmo::BeginFrame();
-
-        if (!assetSelectors.Empty())
-        {
-            AssetSelector& selector = assetSelectors.Back();
-
-            bool show = true;
-            DrawAssetSelection(show, selector.assetId, selector.userData, selector.callback);
-            if (!show)
-            {
-                assetSelectors.PopBack();
-            }
-        }
-
-        u64 frame = Engine::GetFrame();
-
-        Array<u64> toErase{};
-        for (auto& it : drawTypes)
-        {
-            if (it.second->hasChanged)
-            {
-                if (it.second->desc.callback)
-                {
-                    it.second->desc.callback(it.second->desc, it.second->instance);
-                }
-                it.second->hasChanged = false;
-            }
-
-            if (it.second->lastFrameUsage + 60 < frame)
-            {
-                if (!it.second->readOnly)
-                {
-                    it.second->desc.typeHandler->Destroy(it.second->instance);
-                }
-                toErase.EmplaceBack(it.first);
-            }
-        }
-
-        for (u64 id : toErase)
-        {
-            drawTypes.Erase(id);
-        }
     }
 
-    void ShowAssetSelector(TypeID assetId, VoidPtr userData, FnAssetSelectorCallback callback)
-    {
-        assetSelectors.EmplaceBack(assetId, userData, callback);
-    }
+
 
     void Render(RenderCommands& renderCommands)
     {
@@ -821,8 +645,6 @@ namespace ImGui
 
     void ImGuiShutdown()
     {
-        drawTypes.Clear();
-        fieldRenders.Clear();
         DestroyContext();
     }
 
@@ -831,237 +653,9 @@ namespace ImGui
         return keys[static_cast<usize>(key)];
     }
 
-    void AddFieldRenderer(FieldRendererFn fieldRendererFn)
+    bool CurrentTableHovered()
     {
-        fieldRenders.EmplaceBack(fieldRendererFn);
-    }
-
-    Span<FieldRendererFn> GetFieldRenderers()
-    {
-        return fieldRenders;
-    }
-
-    void DrawType(const ImGui::DrawTypeDesc& desc)
-    {
-        bool readOnly = desc.flags & ImGuiDrawTypeFlags_ReadOnly;
-
-        auto it = drawTypes.Find(desc.itemId);
-
-        if (it != drawTypes.end() && it->second->desc.typeHandler->GetTypeInfo().typeId != desc.typeHandler->GetTypeInfo().typeId)
-        {
-            if (!it->second->readOnly && it->second->instance != nullptr)
-            {
-                it->second->desc.typeHandler->Destroy(it->second->instance);
-            }
-            drawTypes.Erase(it);
-        }
-
-        if (it == drawTypes.end())
-        {
-            it = drawTypes.Emplace(
-                desc.itemId,
-                MakeUnique<DrawTypeContent>(
-                    DrawTypeContent{
-                        .desc = desc,
-                        .instance = !readOnly ? desc.typeHandler->NewInstance() : const_cast<VoidPtr>(desc.instance),
-                        .readOnly = readOnly,
-                        .tableRender = true
-                    })).first;
-
-            desc.typeHandler->DeepCopy(desc.instance, it->second->instance);
-        }
-
-        DrawTypeContent* content = it->second.Get();
-        content->idCount = 15000;
-
-        content->lastFrameUsage = Engine::GetFrame();
-
-        if (!content->desc.typeHandler->GetFields().Empty())
-        {
-            if (BeginTable("##component-table", 2))
-            {
-                TableSetupColumn("Label", ImGuiTableColumnFlags_WidthStretch, 0.6f);
-                TableSetupColumn("Item", ImGuiTableColumnFlags_WidthStretch);
-
-                for (FieldHandler* field : content->desc.typeHandler->GetFields())
-                {
-                    if (!field->HasAttribute<UIProperty>()) continue;
-                    content->activeFieldHandler = field;
-
-                    BeginDisabled(readOnly);
-
-                    TableNextColumn();
-                    AlignTextToFramePadding();
-
-                    String formattedName = FormatName(field->GetName());
-                    Text("%s", formattedName.CStr());
-                    TableNextColumn();
-
-
-                    VoidPtr fieldPointer = field->GetFieldPointer(content->instance);
-                    for (FieldRendererFn render : fieldRenders)
-                    {
-                        render(content, field->GetFieldInfo().typeInfo, fieldPointer, &content->hasChanged);
-                    }
-
-                    EndDisabled();
-                }
-                EndTable();
-            }
-        }
-    }
-
-    void ClearDrawData(VoidPtr ptr, bool clearActiveId)
-    {
-        if (auto it = drawTypes.Find(reinterpret_cast<usize>(ptr)))
-        {
-            it->second->desc.typeHandler->DeepCopy(it->second->desc.instance, it->second->instance);
-        }
-        if (clearActiveId)
-        {
-            ImGui::ClearActiveID();
-        }
-    }
-
-    //content table
-
-    bool BeginContentTable(const char* tableId, f32 thumbnailScale)
-    {
-        u32 thumbnailSize = (thumbnailScale * 112.f) * ImGui::GetStyle().ScaleFactor;
-
-        static ImGuiTableFlags tableFlags = ImGuiTableFlags_SizingFixedSame;
-        u32 columns = Math::Max(static_cast<u32>((ImGui::GetContentRegionAvail().x - ImGui::GetStyle().WindowPadding.x) / thumbnailSize), 1u);
-
-        bool ret = ImGui::BeginTable(tableId, columns, tableFlags);
-        if (ret)
-        {
-            for (int i = 0; i < columns; ++i)
-            {
-                char buffer[20]{};
-                sprintf(buffer,"%ld", i);
-                TableSetupColumn(buffer, ImGuiTableColumnFlags_WidthFixed, thumbnailSize);
-            }
-        }
-        return ret;
-    }
-
-    ContentItemState ContentItem(const ContentItemDesc& contentItemDesc)
-    {
-        ImGuiStyle& style = ImGui::GetStyle();
-        u32 thumbnailSize = (contentItemDesc.thumbnailScale * 112.f) * ImGui::GetStyle().ScaleFactor;
-
-        ImGui::TableNextColumn();
-        auto* drawList = ImGui::GetWindowDrawList();
-        auto screenCursorPos = ImGui::GetCursorScreenPos();
-
-        auto table = ImGui::GetCurrentTable();
-        auto width = table->Columns.Data->WidthGiven;
-
-        //texture
-        f32 imagePadding = thumbnailSize * 0.08f;
-
-        auto posEnd = ImVec2(screenCursorPos.x + thumbnailSize, screenCursorPos.y + thumbnailSize);
-        bool hovered = ImGui::IsMouseHoveringRect(screenCursorPos, posEnd, true) && ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows | ImGuiHoveredFlags_AllowWhenBlockedByPopup);
-
-        i32  mouseCount = ImGui::GetMouseClickedCount(ImGuiMouseButton_Left);
-        bool isDoubleClicked = mouseCount >= 2 && (mouseCount % 2) == 0 && hovered;
-        bool isClicked = (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)) && hovered;
-
-        if (hovered)
-        {
-            drawList->AddRectFilled(screenCursorPos,
-                                    posEnd,
-                                    IM_COL32(40, 41, 43, 255),
-                                    0.0f);
-        }
-
-        ContentItemState state = ContentItemState{
-            .hovered = hovered,
-            .clicked = isClicked,
-            .doubleClicked = isDoubleClicked,
-            .screenStartPos = screenCursorPos,
-            .size = ImVec2(thumbnailSize, thumbnailSize)
-        };
-
-        ImGui::DrawTexture(contentItemDesc.texture, {
-                               i32(screenCursorPos.x + imagePadding * 2),
-                               i32(screenCursorPos.y + imagePadding),
-                               (u32)(screenCursorPos.x + thumbnailSize - imagePadding * 2),
-                               (u32)(screenCursorPos.y + thumbnailSize - imagePadding * 3)
-                           });
-
-        //rect size for texture
-        ImGui::Dummy(ImVec2{(f32)thumbnailSize, (f32)thumbnailSize - imagePadding * 3.f});
-
-        ImGui::BeginVertical(contentItemDesc.id + 10, ImVec2(thumbnailSize, thumbnailSize - (ImGui::GetCursorScreenPos().y - screenCursorPos.y)));
-        {
-            ImGui::Spring();
-
-            auto textSize = ImGui::CalcTextSize(contentItemDesc.label.CStr());
-            auto textPadding = textSize.y / 1.5f;
-            textSize.x = Math::Min(textSize.x, f32(thumbnailSize - textPadding));
-
-            ImGui::BeginHorizontal(contentItemDesc.id + 20, ImVec2(thumbnailSize, 0.0f));
-            ImGui::Spring(1.0);
-            {
-                if (!contentItemDesc.renameItem)
-                {
-                    ImGui::PushClipRect(GetCursorScreenPos(), GetCursorScreenPos() + textSize, true);
-                    drawList->AddText(GetCursorScreenPos(), GetColorU32(ImGuiCol_Text), contentItemDesc.label.CStr());
-                    ImGui::PopClipRect();
-                    ImGui::Dummy(textSize);
-                }
-                else
-                {
-                    static String renameStringCache = {};
-                    ImGui::SetNextItemWidth(width - textPadding);
-
-                    if (renamingItem == 0)
-                    {
-                        renameStringCache = contentItemDesc.label;
-                        ImGui::SetKeyboardFocusHere();
-                    }
-
-                    ImGui::StyleColor frameColor(ImGuiCol_FrameBg, IM_COL32(52, 53, 55, 255));
-                    ImGui::InputText(contentItemDesc.id, renameStringCache);
-
-                    if (!ImGui::IsItemActive() && renamingItem != 0)
-                    {
-                        if (!ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape)))
-                        {
-                            state.newName = renameStringCache;
-                        }
-                        state.renameFinish = true;
-                        renamingItem = 0;
-                    }
-                    else if (renamingItem == 0)
-                    {
-                        renamingItem = contentItemDesc.id;
-                    }
-                }
-            }
-
-            ImGui::Spring(1.0);
-            ImGui::EndHorizontal();
-            ImGui::Spring();
-        }
-        ImGui::EndVertical();
-
-
-        if (contentItemDesc.selected)
-        {
-            //selected
-            drawList->AddRect(ImVec2(screenCursorPos.x, screenCursorPos.y),
-                              ImVec2(screenCursorPos.x + thumbnailSize -1, ImGui::GetCursorScreenPos().y - 1),
-                              ImGui::ColorConvertFloat4ToU32(ImVec4(0.26f, 0.59f, 0.98f, 1.0f)),
-                              0.0f, 0, 2);
-        }
-
-        return state;
-    }
-
-    void EndContentTable()
-    {
-        ImGui::EndTable();
+         auto currentTable = ImGui::GetCurrentTable();
+        return currentTable && ImGui::TableGetHoveredRow() == currentTable->CurrentRow;
     }
 }

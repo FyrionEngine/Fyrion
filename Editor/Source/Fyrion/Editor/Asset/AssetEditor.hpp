@@ -69,5 +69,7 @@ namespace Fyrion
         FY_API String           CreateUniqueName(AssetFile* parent, StringView desiredName);
         FY_API void             ImportAssets(AssetFile* parent, Span<String> paths);
         FY_API void             FilterExtensions(Array<FileFilter>& extensions);
+        FY_API Span<AssetFile*> GetAssetsOfType(TypeID typeId);
+        FY_API AssetFile*       FindAssetFileByUUID(UUID uuid);
     }
 }

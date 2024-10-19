@@ -1,9 +1,9 @@
-#include "IconsFontAwesome6.h"
-#include "ImGui.hpp"
+#include "ImGuiEditor.hpp"
+#include "Fyrion/ImGui/IconsFontAwesome6.h"
+#include "Fyrion/ImGui/ImGui.hpp"
 #include "Fyrion/Core/Attributes.hpp"
 #include "Fyrion/Core/Color.hpp"
 #include "Fyrion/Core/Registry.hpp"
-#include "Lib/imgui_internal.h"
 
 namespace Fyrion
 {
@@ -192,45 +192,52 @@ namespace Fyrion
         VoidPtr fieldValue;
     };
 
-    // bool DrawAssetField(ImGui::DrawTypeContent* context, const TypeInfo& typeInfo, VoidPtr value, bool* hasChanged)
-    // {
-    //     if (typeInfo.apiId != GetTypeID<AssetApi>()) return false;
-    //
-    //     AssetApi assetApi{};
-    //     typeInfo.extractApi(&assetApi);
-    //
-    //     //TODO check if that's a pointer
-    //     Asset* asset = assetApi.castAsset(value);
-    //     String name = asset ? asset->GetHandler()->GetName() : "";
-    //
-    //     ImGui::SetNextItemWidth(-22 * ImGui::GetStyle().ScaleFactor);
-    //
-    //     ImGui::PushID(context->ReserveID());
-    //
-    //     ImGui::InputText(context->ReserveID(), name, ImGuiInputTextFlags_ReadOnly);
-    //     ImGui::SameLine(0, 0);
-    //     auto size = ImGui::GetItemRectSize();
-    //     if (ImGui::Button(ICON_FA_CIRCLE_DOT, ImVec2{size.y, size.y}))
-    //     {
-    //         static DrawAssetFieldUserData data{};
-    //         data.context = context;
-    //         data.typeInfo = typeInfo;
-    //         data.fieldValue = value;
-    //
-    //         ImGui::ShowAssetSelector(typeInfo.typeId, &data, [](VoidPtr userData, Asset* asset)
-    //         {
-    //             DrawAssetFieldUserData* data = static_cast<DrawAssetFieldUserData*>(userData);
-    //
-    //             AssetApi assetApi{};
-    //             data->typeInfo.extractApi(&assetApi);
-    //             assetApi.setAsset(data->fieldValue, asset);
-    //             data->context->hasChanged = true;
-    //         });
-    //     }
-    //     ImGui::PopID();
-    //
-    //     return true;
-    // }
+    bool DrawAssetField(ImGui::DrawTypeContent* context, const TypeInfo& typeInfo, VoidPtr value, bool* hasChanged)
+    {
+        if (typeInfo.apiId != GetTypeID<AssetApi>()) return false;
+
+        AssetApi assetApi{};
+        typeInfo.extractApi(&assetApi);
+
+        //TODO check if that's a pointer
+        String name = "";
+        Asset* asset = assetApi.CastAsset(value);
+        if (asset)
+        {
+            if (AssetFile* assetFile = AssetEditor::FindAssetFileByUUID(asset->GetUUID()))
+            {
+                name = assetFile->fileName;
+            }
+        }
+
+        ImGui::SetNextItemWidth(-22 * ImGui::GetStyle().ScaleFactor);
+
+        ImGui::PushID(context->ReserveID());
+
+        ImGui::InputText(context->ReserveID(), name, ImGuiInputTextFlags_ReadOnly);
+        ImGui::SameLine(0, 0);
+        auto size = ImGui::GetItemRectSize();
+        if (ImGui::Button(ICON_FA_CIRCLE_DOT, ImVec2{size.y, size.y}))
+        {
+            static DrawAssetFieldUserData data{};
+            data.context = context;
+            data.typeInfo = typeInfo;
+            data.fieldValue = value;
+
+            ImGui::ShowAssetSelector(typeInfo.typeId, &data, [](VoidPtr userData, AssetFile* asset)
+            {
+                DrawAssetFieldUserData* data = static_cast<DrawAssetFieldUserData*>(userData);
+
+                AssetApi assetApi{};
+                data->typeInfo.extractApi(&assetApi);
+                assetApi.SetAsset(data->fieldValue, asset != nullptr ? Assets::Load(asset->uuid) : nullptr);
+                data->context->hasChanged = true;
+            });
+        }
+        ImGui::PopID();
+
+        return true;
+    }
 
 
     void DrawVecField(const char* fieldName, float& value, bool* hasChanged, u32 color = 0, f32 speed = 0.005f)
@@ -240,7 +247,7 @@ namespace Fyrion
         char buffer[20]{};
         sprintf(buffer,"##%llu", reinterpret_cast<usize>(&value));
 
-        ImGui::BeginHorizontal(ImHashStr(buffer));
+        ImGui::BeginHorizontal(buffer);
         ImGui::Text("%s", fieldName);
         ImGui::Spring();
         ImGui::SetNextItemWidth(-1);
@@ -489,8 +496,7 @@ namespace Fyrion
 
         if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
         {
-            auto currentTable = ImGui::GetCurrentTable();
-            if (currentTable && ImGui::TableGetHoveredRow() == currentTable->CurrentRow)
+            if (ImGui::CurrentTableHovered())
             {
                 ImGui::OpenPopup("open-rotation-mode-popup");
             }
@@ -526,5 +532,6 @@ namespace Fyrion
         AddFieldRenderer(QuatRenderer);
         AddFieldRenderer(DrawArrayField);
         AddFieldRenderer(EnumRenderer);
+        AddFieldRenderer(DrawAssetField);
     }
 }

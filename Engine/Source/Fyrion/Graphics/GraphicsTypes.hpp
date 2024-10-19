@@ -11,7 +11,7 @@
 namespace Fyrion
 {
     class ShaderAsset;
-    class MeshAsset;
+    //class MeshAsset;
 
     FY_HANDLER(Adapter);
     FY_HANDLER(Swapchain);

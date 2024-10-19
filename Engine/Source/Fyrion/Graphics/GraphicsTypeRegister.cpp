@@ -35,9 +35,9 @@ namespace Fyrion
         Registry::Type<Buffer>();
         Registry::Type<Texture>();
         Registry::Type<RenderGraphEdge>();
-        Registry::Type<ShaderAsset>();
+//        Registry::Type<ShaderAsset>();
 
-        Registry::Type<MeshAsset>();
+//        Registry::Type<MeshAsset>();
         Registry::Type<MeshPrimitive>();
 
         Registry::Type<TextureAsset>();

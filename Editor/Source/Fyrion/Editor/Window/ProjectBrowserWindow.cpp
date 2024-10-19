@@ -4,6 +4,7 @@
 #include "Fyrion/Engine.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "Fyrion/Editor/Editor.hpp"
+#include "Fyrion/Editor/ImGui/ImGuiEditor.hpp"
 #include "Fyrion/ImGui/IconsFontAwesome6.h"
 #include "Fyrion/ImGui/ImGui.hpp"
 #include "Fyrion/IO/FileSystem.hpp"

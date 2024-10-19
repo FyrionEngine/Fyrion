@@ -52,4 +52,34 @@ namespace Fyrion
             return static_cast<T*>(Load(uuid));
         }
     };
+
+
+    struct AssetApi
+    {
+        Asset* (*CastAsset)(VoidPtr ptr);
+        void (*SetAsset)(VoidPtr ptr, Asset* asset);
+    };
+
+    template <typename T>
+    struct TypeApiInfo<T, Traits::EnableIf<Traits::IsBaseOf<Asset, T>>>
+    {
+        static void ExtractApi(VoidPtr pointer)
+        {
+            AssetApi* api = static_cast<AssetApi*>(pointer);
+            api->CastAsset = [](VoidPtr ptr)
+            {
+                return static_cast<Asset*>(*static_cast<T**>(ptr));
+            };
+
+            api->SetAsset = [](VoidPtr ptr, Asset* asset)
+            {
+                *static_cast<T**>(ptr) = static_cast<T*>(asset);
+            };
+        }
+
+        static constexpr TypeID GetApiId()
+        {
+            return GetTypeID<AssetApi>();
+        }
+    };
 }

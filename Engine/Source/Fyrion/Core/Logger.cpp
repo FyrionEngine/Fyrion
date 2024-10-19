@@ -6,6 +6,8 @@
 #include <chrono>
 #include <algorithm>
 
+#include "StringUtils.hpp"
+
 namespace Fyrion
 {
     namespace
@@ -73,8 +75,10 @@ namespace Fyrion
 
         BufferString<1024> buffer{};
 
+        String strYear = ToString(tm.tm_year + 1900);
+
         buffer = "[";
-        buffer.Append(tm.tm_year + 1900);
+        buffer.Append(StringView{strYear});
         buffer.Append("-");
         Pad2(buffer, tm.tm_mon + 1);
         buffer.Append("-");

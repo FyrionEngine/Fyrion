@@ -12,15 +12,17 @@
 #include "Fyrion/IO/FileTypes.hpp"
 #include "Fyrion/IO/Path.hpp"
 #include "Fyrion/Core/StaticContent.hpp"
+#include "Fyrion/Core/StringUtils.hpp"
 #include "Fyrion/Editor/Editor.hpp"
 
 namespace Fyrion
 {
     namespace
     {
-        Array<AssetFile*>   packages;
-        AssetFile*          project;
-        HashSet<AssetFile*> assets;
+        Array<AssetFile*>                  packages;
+        AssetFile*                         project;
+        HashMap<UUID, AssetFile*>          assets;
+        HashMap<TypeID, Array<AssetFile*>> assetsByType;
 
         Array<AssetImporter*>           importers;
         HashMap<String, AssetImporter*> extensionImporters;
@@ -46,6 +48,41 @@ namespace Fyrion
             return assetFile;
         }
 
+        void AddAssetFile(AssetFile* assetFile)
+        {
+            //assetsByType
+            if (assetFile->handler && assetFile->handler->GetAssetTypeID() != 0)
+            {
+                auto it = assetsByType.Find(assetFile->handler->GetAssetTypeID());
+                if (it == assetsByType.end())
+                {
+                    it = assetsByType.Emplace(assetFile->handler->GetAssetTypeID(), Array<AssetFile*>{}).first;
+                }
+                it->second.EmplaceBack(assetFile);
+            }
+
+            assets.Insert(assetFile->uuid, assetFile);
+        }
+
+        void RemoveAssetFile(AssetFile* assetFile)
+        {
+            if (assetFile->handler && assetFile->handler->GetAssetTypeID() != 0)
+            {
+                auto it = assetsByType.Find(assetFile->handler->GetAssetTypeID());
+                if (it == assetsByType.end())
+                {
+                    it = assetsByType.Emplace(assetFile->handler->GetAssetTypeID(), Array<AssetFile*>{}).first;
+                }
+
+                if (auto itAsset = FindFirst(it->second.begin(), it->second.end(), assetFile))
+                {
+                    it->second.Erase(itAsset);
+                }
+            }
+
+            assets.Erase(assetFile->uuid);
+        }
+
         AssetFile* ScanForAssets(StringView path)
         {
             FileStatus status = FileSystem::GetFileStatus(path);
@@ -59,6 +96,7 @@ namespace Fyrion
                 assetFile->absolutePath = path;
                 assetFile->isDirectory = true;
                 assetFile->persistedVersion = 1;
+                assetFile->uuid = UUID::RandomUUID();
 
                 for (const String& child : DirectoryEntries{path})
                 {
@@ -68,7 +106,7 @@ namespace Fyrion
                         assetFile->children.EmplaceBack(assetChild);
                     }
                 }
-                assets.Insert(assetFile);
+                AddAssetFile(assetFile);
                 return assetFile;
             }
 
@@ -87,7 +125,7 @@ namespace Fyrion
                 if (FileSystem::GetFileStatus(infoFile).exists)
                 {
                     JsonArchiveReader jsonAssetReader(FileSystem::ReadFileAsString(infoFile));
-                    ArchiveValue root = jsonAssetReader.GetRootObject();
+                    ArchiveValue      root = jsonAssetReader.GetRootObject();
                     assetFile->uuid = UUID::FromString(jsonAssetReader.StringValue(jsonAssetReader.GetObjectValue(root, "uuid")));
                 }
                 else
@@ -101,7 +139,7 @@ namespace Fyrion
                     Assets::Create(assetFile->uuid, assetFile);
                 }
 
-                assets.Insert(assetFile);
+                AddAssetFile(assetFile);
                 return assetFile;
             }
 
@@ -243,7 +281,7 @@ namespace Fyrion
 
     void AssetFile::Destroy()
     {
-        assets.Erase(this);
+        RemoveAssetFile(this);
 
         String infoFile = Path::Join(absolutePath, ".info");
         String bufferFile = Path::Join(absolutePath, ".buffer");
@@ -327,8 +365,9 @@ namespace Fyrion
         newDirectory->currentVersion = 1;
         newDirectory->persistedVersion = 0;
         newDirectory->parent = parent;
+        newDirectory->uuid = UUID::RandomUUID();
 
-        assets.Insert(newDirectory);
+        AddAssetFile(newDirectory);
 
         parent->children.EmplaceBack(newDirectory);
 
@@ -358,7 +397,7 @@ namespace Fyrion
             newAsset->parent = parent;
             newAsset->uuid = UUID::RandomUUID();
             newAsset->handler = it->second;
-            assets.Insert(newAsset);
+            AddAssetFile(newAsset);
 
             parent->children.EmplaceBack(newAsset);
 
@@ -381,9 +420,9 @@ namespace Fyrion
     {
         for (auto& it : assets)
         {
-            if (it.first->IsDirty())
+            if (it.second->IsDirty())
             {
-                updatedAssets.EmplaceBack(it.first);
+                updatedAssets.EmplaceBack(it.second);
             }
         }
     }
@@ -395,7 +434,7 @@ namespace Fyrion
             if (assetFile->active)
             {
                 String newAbsolutePath = Path::Join(assetFile->parent->absolutePath, assetFile->fileName, assetFile->extension);
-                bool moved = newAbsolutePath != assetFile->absolutePath;
+                bool   moved = newAbsolutePath != assetFile->absolutePath;
 
                 if (assetFile->isDirectory)
                 {
@@ -482,7 +521,7 @@ namespace Fyrion
                 {
                     finalName = desiredName;
                     finalName += " (";
-                    finalName.Append(++count);
+                    finalName.Append(ToString(++count));
                     finalName += ")";
                     nameFound = false;
                     break;
@@ -535,10 +574,11 @@ namespace Fyrion
 
         for (auto& it : assets)
         {
-            MemoryGlobals::GetDefaultAllocator().DestroyAndFree(it.first);
+            MemoryGlobals::GetDefaultAllocator().DestroyAndFree(it.second);
         }
 
         packages.Clear();
+        assetsByType.Clear();
         assets.Clear();
 
         for (AssetImporter* io : importers)
@@ -550,6 +590,25 @@ namespace Fyrion
         extensionImporters.Clear();
 
         handlers.Clear();
+    }
+
+    Span<AssetFile*> AssetEditor::GetAssetsOfType(TypeID typeId)
+    {
+        auto it = assetsByType.Find(typeId);
+        if (it != assetsByType.end())
+        {
+            return it->second;
+        }
+        return {};
+    }
+
+    AssetFile* AssetEditor::FindAssetFileByUUID(UUID uuid)
+    {
+        if (auto it = assets.Find(uuid))
+        {
+            return it->second;
+        }
+        return nullptr;
     }
 
     void AssetEditorInit()

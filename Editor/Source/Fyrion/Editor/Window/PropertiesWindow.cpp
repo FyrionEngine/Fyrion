@@ -2,6 +2,7 @@
 
 #include "Fyrion/Core/StringUtils.hpp"
 #include "Fyrion/Editor/Editor.hpp"
+#include "Fyrion/Editor/ImGui/ImGuiEditor.hpp"
 #include "Fyrion/ImGui/IconsFontAwesome6.h"
 #include "Fyrion/ImGui/ImGui.hpp"
 
@@ -135,7 +136,7 @@ namespace Fyrion
                     .itemId = reinterpret_cast<usize>(component),
                     .typeHandler = typeHandler,
                     .instance = component,
-                    .flags = readOnly ? ImGuiDrawTypeFlags_ReadOnly : 0u,
+                    .flags = readOnly ? ImGui::ImGuiDrawTypeFlags_ReadOnly : 0u,
                     .userData = this,
                     .callback = [](ImGui::DrawTypeDesc& desc, VoidPtr newValue)
                     {

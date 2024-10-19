@@ -23,6 +23,9 @@ namespace Fyrion
     void InitEditorAction();
     void RegisterAssetTypes();
     void AssetEditorInit();
+    void ImGuiUpdate();
+    void ImGuiShutdown();
+    void RegisterFieldRenderers();
 
     struct EditorWindowStorage
     {
@@ -79,6 +82,8 @@ namespace Fyrion
                     openWindow.typeHandler->Destroy(openWindow.instance);
                 }
             }
+
+            ImGuiShutdown();
 
             openWindows.Clear();
             openWindows.ShrinkToFit();
@@ -376,6 +381,8 @@ namespace Fyrion
                 func();
             }
 
+            ImGuiUpdate();
+
             ImGuiStyle& style = ImGui::GetStyle();
             ImGui::CreateDockSpace(dockSpaceId);
             InitDockSpace();
@@ -478,6 +485,7 @@ namespace Fyrion
 
         RegisterAssetTypes();
         InitEditorAction();
+        RegisterFieldRenderers();
 
         Registry::Type<ProjectBrowserWindow>();
         Registry::Type<TextureViewWindow>();

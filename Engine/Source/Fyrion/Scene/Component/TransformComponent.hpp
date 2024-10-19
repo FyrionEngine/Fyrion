@@ -13,19 +13,19 @@ namespace Fyrion
         FY_FINLINE void SetPosition(const Vec3& position)
         {
             this->position = position;
-            //OnChange();
+            UpdateTransform();
         }
 
         FY_FINLINE void SetRotation(const Quat& rotation)
         {
             this->rotation = rotation;
-            //OnChange();
+            UpdateTransform();
         }
 
         FY_FINLINE void SetScale(const Vec3& scale)
         {
             this->scale = scale;
-            //OnChange();
+            UpdateTransform();
         }
 
         FY_FINLINE void SetTransform(const Vec3& position, const Quat& rotation, const Vec3& scale)
@@ -33,6 +33,7 @@ namespace Fyrion
             this->position = position;
             this->rotation = rotation;
             this->scale = scale;
+            UpdateTransform();
         }
 
         FY_FINLINE void SetTransform(const Transform& transform)
@@ -70,6 +71,8 @@ namespace Fyrion
             return {position, rotation, scale};
         }
 
+        void OnChange() override;
+
         static void RegisterType(NativeTypeHandler<TransformComponent>& type);
 
     private:
@@ -77,5 +80,8 @@ namespace Fyrion
         Quat rotation{0, 0, 0, 1};
         Vec3 scale{1, 1, 1};
         Mat4 worldTransform{1.0};
+
+        void UpdateTransform();
+        void UpdateTransform(const TransformComponent* parentTransform);
     };
 }

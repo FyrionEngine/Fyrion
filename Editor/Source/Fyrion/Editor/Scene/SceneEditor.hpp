@@ -4,14 +4,10 @@
 #include "Fyrion/Editor/EditorTypes.hpp"
 #include "Fyrion/Scene/Scene.hpp"
 
-
-namespace Fyrion {
-    class Component;
-}
-
 namespace Fyrion
 {
     struct AssetFile;
+    class Component;
 
     class SceneEditor
     {
@@ -31,6 +27,7 @@ namespace Fyrion
         void       AddComponent(GameObject* gameObject, TypeHandler* typeHandler);
         void       ResetComponent(GameObject* gameObject, Component* component);
         void       RemoveComponent(GameObject* gameObject, Component* component);
+        void       UpdateComponent(GameObject* gameObject, Component* instance, Component* newValue);
 
         void DoUpdate();
 

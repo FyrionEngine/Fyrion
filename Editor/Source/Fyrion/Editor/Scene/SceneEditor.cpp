@@ -1,6 +1,7 @@
 #include "SceneEditor.hpp"
 
 #include "Fyrion/Editor/Asset/AssetEditor.hpp"
+#include "Fyrion/Scene/Component/Component.hpp"
 
 namespace Fyrion
 {
@@ -44,6 +45,22 @@ namespace Fyrion
 
     bool SceneEditor::IsParentOfSelected(GameObject& object) const
     {
+        for (const auto& it : selectedObjects)
+        {
+            GameObject* parent = it.first->GetParent();
+            if (parent)
+            {
+                if (parent == &object)
+                {
+                    return true;
+                }
+
+                if (IsParentOfSelected(*parent))
+                {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -64,9 +81,33 @@ namespace Fyrion
 
     void SceneEditor::CreateGameObject()
     {
-        GameObject* gameObject = scene->GetRootObject().CreateChild();
-        gameObject->SetName("GameObject");
+        if (scene == nullptr) return;
 
+
+        if (selectedObjects.Empty())
+        {
+            GameObject* gameObject = scene->GetRootObject().CreateChild();
+            gameObject->SetName("Object");
+            SelectObject(*gameObject);
+        } else
+        {
+            Array<GameObject*> newObjects;
+            newObjects.Reserve(selectedObjects.Size());
+
+            for(auto it: selectedObjects)
+            {
+                GameObject* gameObject = it.first->CreateChild();
+                gameObject->SetName("Object");
+                newObjects.EmplaceBack(gameObject);
+            }
+
+            ClearSelection();
+
+            for(GameObject* object : newObjects)
+            {
+                SelectObject(*object);
+            }
+        }
         assetFile->currentVersion++;
     }
 
@@ -77,7 +118,7 @@ namespace Fyrion
 
     void SceneEditor::AddComponent(GameObject* gameObject, TypeHandler* typeHandler)
     {
-
+        gameObject->AddComponent(typeHandler->GetTypeInfo().typeId);
     }
 
     void SceneEditor::ResetComponent(GameObject* gameObject, Component* component)
@@ -87,7 +128,16 @@ namespace Fyrion
 
     void SceneEditor::RemoveComponent(GameObject* gameObject, Component* component)
     {
+        gameObject->RemoveComponent(component);
+    }
 
+    void SceneEditor::UpdateComponent(GameObject* gameObject, Component* instance, Component* newValue)
+    {
+        if (TypeHandler* typeHandler = Registry::FindTypeById(newValue->typeId))
+        {
+            typeHandler->Copy(newValue, instance);
+            instance->OnChange();
+        }
     }
 
     void SceneEditor::DoUpdate()

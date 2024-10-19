@@ -306,8 +306,8 @@ namespace Fyrion
                         {
                             if (ImGui::BeginTable("table-pending-to-save", 3, flags))
                             {
-                                ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_None, 100.f * style.ScaleFactor);
-                                ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_None, 200.f * style.ScaleFactor);
+                                ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_None, 200.f * style.ScaleFactor);
+                                ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_None, 400.f * style.ScaleFactor);
                                 ImGui::TableHeadersRow();
 
                                 for (AssetFile* assetFile : updatedItems)

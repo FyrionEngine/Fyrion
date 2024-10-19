@@ -109,24 +109,33 @@ namespace Fyrion
     {
         for (int i = 0; i < paramsCount; ++i)
         {
-            m_params.EmplaceBack(i, params[i]);
+            this->params.EmplaceBack(i, params[i]);
         }
     }
 
     VoidPtr ConstructorHandler::NewInstance(Allocator& allocator, VoidPtr* params)
     {
-        if (m_newInstanceFn)
+        if (newInstanceFn)
         {
-            return m_newInstanceFn(this, allocator, params);
+            return newInstanceFn(this, allocator, params);
+        }
+        return nullptr;
+    }
+
+    Object* ConstructorHandler::NewObject(Allocator& allocator, VoidPtr* params)
+    {
+        if (newInstanceFn)
+        {
+            return newObjectFn(this, allocator, params);
         }
         return nullptr;
     }
 
     void ConstructorHandler::Construct(VoidPtr memory, VoidPtr* params)
     {
-        if (m_placementNewFn)
+        if (placementNewFn)
         {
-            m_placementNewFn(this, memory, params);
+            placementNewFn(this, memory, params);
         }
     }
 
@@ -538,18 +547,23 @@ namespace Fyrion
         valueHandler.m_fnUpdate = fnUpdate;
     }
 
-    ConstructorBuilder::ConstructorBuilder(ConstructorHandler& constructorHandler) : m_constructorHandler(constructorHandler)
+    ConstructorBuilder::ConstructorBuilder(ConstructorHandler& constructorHandler) : constructorHandler(constructorHandler)
     {
     }
 
     void ConstructorBuilder::SetPlacementNewFn(ConstructorHandler::PlacementNewFn placementNew)
     {
-        m_constructorHandler.m_placementNewFn = placementNew;
+        constructorHandler.placementNewFn = placementNew;
     }
 
     void ConstructorBuilder::SetNewInstanceFn(ConstructorHandler::NewInstanceFn newInstance)
     {
-        m_constructorHandler.m_newInstanceFn = newInstance;
+        constructorHandler.newInstanceFn = newInstance;
+    }
+
+    void ConstructorBuilder::SetNewObjectFn(ConstructorHandler::NewObjectFn newObject)
+    {
+        constructorHandler.newObjectFn = newObject;
     }
 
     FieldBuilder::FieldBuilder(FieldHandler& fieldHandler) : fieldHandler(fieldHandler)

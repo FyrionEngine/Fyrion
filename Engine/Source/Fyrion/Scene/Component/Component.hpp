@@ -6,13 +6,18 @@ namespace Fyrion
 {
     class GameObject;
 
-    class FY_API Component
+    class FY_API Component : public Object
     {
     public:
         friend class GameObject;
 
-    private:
-        TypeID      typeId = 0;
+        virtual void OnInit() {}
+        virtual void OnNotify(u64 type) {}
+        virtual void OnChange() {}
+
         GameObject* gameObject = nullptr;
+        TypeID      typeId = 0;
+
+        static void RegisterType(NativeTypeHandler<Component>& type);
     };
 }

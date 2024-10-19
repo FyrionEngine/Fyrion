@@ -171,17 +171,20 @@ namespace Fyrion
     public:
         typedef void (*PlacementNewFn)(ConstructorHandler* handler, VoidPtr memory, VoidPtr* params);
         typedef VoidPtr (*NewInstanceFn)(ConstructorHandler* handler, Allocator& allocator, VoidPtr* params);
+        typedef Object* (*NewObjectFn)(ConstructorHandler* handler, Allocator& allocator, VoidPtr* params);
 
         ConstructorHandler(FieldInfo* params,usize paramsCount);
 
         VoidPtr     NewInstance(Allocator& allocator, VoidPtr* params);
+        Object*     NewObject(Allocator& allocator, VoidPtr* params);
         void        Construct(VoidPtr memory, VoidPtr* params);
 
         friend class ConstructorBuilder;
     private:
-        PlacementNewFn      m_placementNewFn;
-        NewInstanceFn       m_newInstanceFn;
-        Array<ParamHandler> m_params{};
+        PlacementNewFn      placementNewFn;
+        NewInstanceFn       newInstanceFn;
+        NewObjectFn         newObjectFn;
+        Array<ParamHandler> params{};
     };
 
     class FY_API FieldHandler : public AttributeHandler
@@ -374,6 +377,34 @@ namespace Fyrion
         }
 
         template<typename ...Args>
+        Object* NewObject(Args&& ...args) const
+        {
+            return NewObject(MemoryGlobals::GetDefaultAllocator(), Traits::Forward<Args>(args)...);
+        }
+
+        Object* NewObject(Allocator& allocator = MemoryGlobals::GetDefaultAllocator()) const
+        {
+            if (ConstructorHandler* constructor = FindConstructor(nullptr, 0))
+            {
+                return constructor->NewObject(allocator, nullptr);
+            }
+            return nullptr;
+        }
+
+        template<typename ...Args>
+        Object* NewObject(Allocator& allocator, Args&& ...args) const
+        {
+            TypeID ids[] = {GetTypeID<Args>()...,};
+
+            if (ConstructorHandler* constructor = FindConstructor(ids, sizeof...(args)))
+            {
+                VoidPtr params[] = {&args...};
+                return constructor->NewObject(allocator, params);
+            }
+            return nullptr;
+        }
+
+        template<typename ...Args>
         VoidPtr NewInstance(Args&& ...args) const
         {
             return NewInstance(MemoryGlobals::GetDefaultAllocator(), Traits::Forward<Args>(args)...);
@@ -439,12 +470,13 @@ namespace Fyrion
     class FY_API ConstructorBuilder
     {
     private:
-        ConstructorHandler& m_constructorHandler;
+        ConstructorHandler& constructorHandler;
     public:
         ConstructorBuilder(ConstructorHandler& constructorHandler);
 
         void SetPlacementNewFn(ConstructorHandler::PlacementNewFn placementNew);
         void SetNewInstanceFn(ConstructorHandler::NewInstanceFn newInstance);
+        void SetNewObjectFn(ConstructorHandler::NewObjectFn newObject);
     };
 
     class FY_API FieldBuilder
@@ -659,6 +691,7 @@ namespace Fyrion
         explicit NativeConstructorHandler(ConstructorBuilder constructorBuilder) : m_constructorHandler(constructorBuilder)
         {
             constructorBuilder.SetNewInstanceFn(&NewInstanceImpl);
+            constructorBuilder.SetNewObjectFn(NewObjectImpl);
             constructorBuilder.SetPlacementNewFn(PlacementNewImpl);
         }
 
@@ -666,35 +699,46 @@ namespace Fyrion
         ConstructorBuilder m_constructorHandler;
 
         template<typename ...Vals>
-        static void Eval(VoidPtr memory, VoidPtr* params, Traits::IndexSequence<>, Vals&& ...vals)
+        static void Eval(Owner* owner, VoidPtr* params, Traits::IndexSequence<>, Vals&& ...vals)
         {
             if constexpr (Traits::IsAggregate<Owner>)
             {
-                new(PlaceHolder(), memory) Owner{Traits::Forward<Vals>(vals)...};
+                new(PlaceHolder(), owner) Owner{Traits::Forward<Vals>(vals)...};
             }
             else
             {
-                new(PlaceHolder(), memory) Owner(Traits::Forward<Vals>(vals)...);
+                new(PlaceHolder(), owner) Owner(Traits::Forward<Vals>(vals)...);
             }
         }
 
         template<typename T, typename ...Tp, usize I, usize... Is, typename ...Vls>
-        static void Eval(VoidPtr memory, VoidPtr* params, Traits::IndexSequence<I, Is...> seq, Vls&& ...vls)
+        static void Eval(Owner* owner, VoidPtr* params, Traits::IndexSequence<I, Is...> seq, Vls&& ...vls)
         {
-            return Eval<Tp...>(memory, params, Traits::IndexSequence<Is...>(), Traits::Forward<Vls>(vls)..., *static_cast<T*>(params[I]));
+            return Eval<Tp...>(owner, params, Traits::IndexSequence<Is...>(), Traits::Forward<Vls>(vls)..., *static_cast<T*>(params[I]));
         }
 
         static void PlacementNewImpl(ConstructorHandler* handler, VoidPtr memory, VoidPtr* params)
         {
             const usize size = sizeof...(Args);
-            Eval<Args...>(memory, params, Traits::MakeIntegerSequence<usize, size>{});
+            Eval<Args...>(static_cast<Owner*>(memory), params, Traits::MakeIntegerSequence<usize, size>{});
         }
 
         static VoidPtr NewInstanceImpl(ConstructorHandler* handler, Allocator& allocator, VoidPtr* params)
         {
-            VoidPtr ptr = allocator.MemAlloc(sizeof(Owner), alignof(Owner));
+            Owner* ptr = static_cast<Owner*>(allocator.MemAlloc(sizeof(Owner), alignof(Owner)));
             PlacementNewImpl(handler, ptr, params);
             return ptr;
+        }
+
+        static Object* NewObjectImpl(ConstructorHandler* handler, Allocator& allocator, VoidPtr* params)
+        {
+            if constexpr (Traits::IsBaseOf<Object, Owner>)
+            {
+                Owner* ptr = static_cast<Owner*>(allocator.MemAlloc(sizeof(Owner), alignof(Owner)));
+                PlacementNewImpl(handler, ptr, params);
+                return ptr;
+            }
+            return nullptr;
         }
     };
 

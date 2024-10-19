@@ -113,7 +113,7 @@ namespace Fyrion
     {
         if (TypeHandler* typeHandler = Registry::FindTypeById(typeId))
         {
-            Component* component = typeHandler->Cast<Component>(typeHandler->NewInstance());
+            Component* component = static_cast<Component*>(typeHandler->NewObject());
             component->gameObject = this;
             component->typeId = typeId;
             components.EmplaceBack(component);
@@ -132,6 +132,19 @@ namespace Fyrion
                 typeHandler->Destroy(component);
             }
             components.Erase(it);
+        }
+    }
+
+    Span<Component*> GameObject::GetComponents() const
+    {
+        return components;
+    }
+
+    void GameObject::Notify(i64 notification)
+    {
+        for (Component* component : components)
+        {
+            component->OnNotify(notification);
         }
     }
 

@@ -33,12 +33,20 @@ namespace Fyrion
         Span<GameObject*> GetChildren() const;
         void              RemoveChild(GameObject* gameObject);
 
-        Component* GetComponent(TypeID typeId) const;
-        void       GetComponentsOfType(TypeID typeId, Array<Component*> arrComponents) const;
-        Component* AddComponent(TypeID typeId);
-        void       RemoveComponent(Component* component);
+        Component*       GetComponent(TypeID typeId) const;
+        void             GetComponentsOfType(TypeID typeId, Array<Component*> arrComponents) const;
+        Component*       AddComponent(TypeID typeId);
+        void             RemoveComponent(Component* component);
+        Span<Component*> GetComponents() const;
 
+        void Notify(i64 notification);
         void Destroy();
+
+        template<typename T>
+        T* GetComponent()
+        {
+            return static_cast<T*>(GetComponent(GetTypeID<T>()));
+        }
 
         friend class Scene;
 

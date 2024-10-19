@@ -63,6 +63,11 @@ namespace Fyrion
     {
         constexpr static bool hasArchiveImpl = false;
     };
+
+    struct Object
+    {
+        virtual ~Object() = default;
+    };
 }
 
 inline void* operator new(Fyrion::usize, Fyrion::PlaceHolder, Fyrion::VoidPtr ptr)

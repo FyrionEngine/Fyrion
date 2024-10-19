@@ -115,39 +115,41 @@ namespace Fyrion
 
         bool openComponentSettings = false;
 
-        // for (Component* component : object.GetComponents())
-        // {
-        //     bool propClicked = false;
-        //     bool open = ImGui::CollapsingHeaderProps(HashValue(reinterpret_cast<usize>(component)), FormatName(component->typeHandler->GetSimpleName()).CStr(), &propClicked);
-        //     if (propClicked)
-        //     {
-        //         openComponentSettings = true;
-        //         selectedComponent = component;
-        //     }
-        //
-        //     if (open)
-        //     {
-        //         ImGui::BeginDisabled(object.GetPrototype() != nullptr && !object.IsComponentOverride(component));
-        //         ImGui::Indent();
-        //         ImGui::DrawType(ImGui::DrawTypeDesc{
-        //             .itemId = reinterpret_cast<usize>(component),
-        //             .typeHandler = component->typeHandler,
-        //             .instance = component,
-        //             .flags = readOnly ? ImGuiDrawTypeFlags_ReadOnly : 0u,
-        //             .userData = this,
-        //             .callback = [](ImGui::DrawTypeDesc& desc, VoidPtr newValue)
-        //             {
-        //                 PropertiesWindow* propertiesWindow = static_cast<PropertiesWindow*>(desc.userData);
-        //
-        //                 propertiesWindow->sceneEditor.UpdateComponent(propertiesWindow->selectedObject,
-        //                                                               static_cast<Component*>(desc.instance),
-        //                                                               static_cast<Component*>(newValue));
-        //             },
-        //         });
-        //         ImGui::Unindent();
-        //         ImGui::EndDisabled();
-        //     }
-        // }
+        for (Component* component : gameObject->GetComponents())
+        {
+            TypeHandler* typeHandler = Registry::FindTypeById(component->typeId);
+
+            bool propClicked = false;
+            bool open = ImGui::CollapsingHeaderProps(HashValue(reinterpret_cast<usize>(component)), FormatName(typeHandler->GetSimpleName()).CStr(), &propClicked);
+            if (propClicked)
+            {
+                openComponentSettings = true;
+                selectedComponent = component;
+            }
+
+            if (open)
+            {
+                // ImGui::BeginDisabled(object.GetPrototype() != nullptr && !object.IsComponentOverride(component));
+                ImGui::Indent();
+                ImGui::DrawType(ImGui::DrawTypeDesc{
+                    .itemId = reinterpret_cast<usize>(component),
+                    .typeHandler = typeHandler,
+                    .instance = component,
+                    .flags = readOnly ? ImGuiDrawTypeFlags_ReadOnly : 0u,
+                    .userData = this,
+                    .callback = [](ImGui::DrawTypeDesc& desc, VoidPtr newValue)
+                    {
+                        PropertiesWindow* propertiesWindow = static_cast<PropertiesWindow*>(desc.userData);
+
+                        propertiesWindow->sceneEditor.UpdateComponent(propertiesWindow->selectedObject,
+                                                                      static_cast<Component*>(desc.instance),
+                                                                      static_cast<Component*>(newValue));
+                    },
+                });
+                ImGui::Unindent();
+                // ImGui::EndDisabled();
+            }
+        }
 
         if (addComponent)
         {

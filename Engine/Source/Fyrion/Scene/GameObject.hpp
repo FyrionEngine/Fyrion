@@ -39,6 +39,9 @@ namespace Fyrion
         void             RemoveComponent(Component* component);
         Span<Component*> GetComponents() const;
 
+        ArchiveValue Serialize(ArchiveWriter& writer) const;
+        void         Deserialize(ArchiveReader& reader, ArchiveValue value);
+
         void Notify(i64 notification);
         void Destroy();
 

@@ -1,4 +1,5 @@
 #include "JsonAssetHandler.hpp"
+#include "Fyrion/Editor/Asset/AssetEditor.hpp"
 #include "Fyrion/Graphics/Assets/MaterialAsset.hpp"
 
 namespace Fyrion
@@ -19,7 +20,7 @@ namespace Fyrion
 
         void OpenAsset(AssetFile* assetFile) override
         {
-
+            MaterialAsset* materialAsset = Assets::Load<MaterialAsset>(assetFile->uuid);
         }
 
         Image GenerateThumbnail(AssetFile* assetFile) override

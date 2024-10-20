@@ -56,6 +56,28 @@ namespace Fyrion
         }
     };
 
+    template <typename T>
+    struct ArchiveType<T*, Traits::EnableIf<Traits::IsBaseOf<Asset, T>>>
+    {
+        constexpr static bool hasArchiveImpl = true;
+
+        static ArchiveValue ToValue(ArchiveWriter& writer, const T* value)
+        {
+            if (value)
+            {
+                return ArchiveType<UUID>::ToValue(writer, value->GetUUID());
+            }
+            return {};
+        }
+
+        static void FromValue(ArchiveReader& reader, ArchiveValue archiveValue, T*& typeValue)
+        {
+            UUID uuid = {};
+            ArchiveType<UUID>::FromValue(reader, archiveValue, uuid);
+            typeValue = Assets::Load<T>(uuid);
+        }
+    };
+
 
     struct AssetApi
     {

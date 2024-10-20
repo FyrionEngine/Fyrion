@@ -50,6 +50,10 @@ namespace Fyrion
 
     UUID GameObject::GetUUID() const
     {
+        if (parent == nullptr)
+        {
+            return scene->GetUUID();
+        }
         return uuid;
     }
 
@@ -138,6 +142,107 @@ namespace Fyrion
     Span<Component*> GameObject::GetComponents() const
     {
         return components;
+    }
+
+    ArchiveValue GameObject::Serialize(ArchiveWriter& writer) const
+    {
+        if (!GetUUID())
+        {
+            return {};
+        }
+
+        ArchiveValue object = writer.CreateObject();
+
+        if (!name.Empty())
+        {
+            writer.AddToObject(object, "name", writer.StringValue(name));
+        }
+
+        if (uuid)
+        {
+            writer.AddToObject(object, "uuid", writer.StringValue(uuid.ToString()));
+        }
+
+        ArchiveValue childrenArr{};
+
+        for (GameObject* child : children)
+        {
+            if (ArchiveValue valueChild = child->Serialize(writer))
+            {
+                if (!childrenArr)
+                {
+                    childrenArr = writer.CreateArray();
+                }
+                writer.AddToArray(childrenArr, valueChild);
+            }
+        }
+
+        if (childrenArr)
+        {
+            writer.AddToObject(object, "children", childrenArr);
+        }
+
+        ArchiveValue componentArr{};
+
+        for (const Component* component : components)
+        {
+            TypeHandler* typeHandler = Registry::FindTypeById(component->typeId);
+
+            ArchiveValue componentValue = Serialization::Serialize(typeHandler, writer, component);
+            writer.AddToObject(componentValue, "_type", writer.StringValue(typeHandler->GetName()));
+            if (!componentArr)
+            {
+                componentArr = writer.CreateArray();
+            }
+            writer.AddToArray(componentArr, componentValue);
+        }
+
+        if (componentArr)
+        {
+            writer.AddToObject(object, "components", componentArr);
+        }
+
+        return object;
+    }
+
+    void GameObject::Deserialize(ArchiveReader& reader, ArchiveValue value)
+    {
+        if (StringView name = reader.StringValue(reader.GetObjectValue(value, "name")); !name.Empty())
+        {
+            SetName(name);
+        }
+
+        ArchiveValue arrChildren = reader.GetObjectValue(value, "children");
+        usize arrChildrenSize = reader.ArraySize(arrChildren);
+
+        ArchiveValue vlChildren{};
+        for (usize c = 0; c < arrChildrenSize; ++c)
+        {
+            vlChildren = reader.ArrayNext(arrChildren, vlChildren);
+            UUID uuid = UUID::FromString(reader.StringValue(reader.GetObjectValue(vlChildren, "uuid")));
+
+            GameObject* child = CreateChildWithUUID(uuid);
+            child->Deserialize(reader, vlChildren);
+        }
+
+        ArchiveValue arrComponent = reader.GetObjectValue(value, "components");
+        usize arrComponentSize = reader.ArraySize(arrComponent);
+
+
+        ArchiveValue vlComponent{};
+        for (usize c = 0; c < arrComponentSize; ++c)
+        {
+            vlComponent = reader.ArrayNext(arrComponent, vlComponent);
+            if (StringView typeName = reader.StringValue(reader.GetObjectValue(vlComponent, "_type")); !typeName.Empty())
+            {
+                TypeHandler* typeHandler = Registry::FindTypeByName(typeName);
+                if (typeHandler)
+                {
+                    Component* component = AddComponent(typeHandler->GetTypeInfo().typeId);
+                    Serialization::Deserialize(typeHandler, reader, vlComponent, component);
+                }
+            }
+        }
     }
 
     void GameObject::Notify(i64 notification)

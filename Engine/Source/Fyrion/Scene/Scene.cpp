@@ -30,12 +30,14 @@ namespace Fyrion
 
     ArchiveValue Scene::Serialize(ArchiveWriter& writer) const
     {
-        return {};
+        ArchiveValue sceneValue = writer.CreateObject();
+        writer.AddToObject(sceneValue, "root", root.Serialize(writer));
+        return sceneValue;
     }
 
     void Scene::Deserialize(ArchiveReader& reader, ArchiveValue value)
     {
-
+        root.Deserialize(reader, reader.GetObjectValue(value, "root"));
     }
 
     void Scene::RegisterType(NativeTypeHandler<Scene>& type)

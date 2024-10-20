@@ -101,11 +101,10 @@ namespace Fyrion
     }
 
 
-
     inline String ToString(i64 value)
     {
         char buffer[20]{};
-        i32 size = sprintf(buffer,"##%llu", value);
+        i32 size = sprintf(buffer,"%llu", value);
         return {buffer, static_cast<usize>(size)};
     }
 

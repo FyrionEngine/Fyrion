@@ -7,6 +7,7 @@
 #include "Fyrion/Editor/Window/TextureViewWindow.hpp"
 #include "Fyrion/Graphics/Assets/TextureAsset.hpp"
 #include "Fyrion/IO/Path.hpp"
+#include "TextureAssetHandler.hpp"
 
 namespace Fyrion
 {
@@ -40,7 +41,7 @@ namespace Fyrion
     };
 
 
-    struct TextureImporter : AssetImporter
+    struct TextureAssetImporter : AssetImporter
     {
         FY_BASE_TYPES(AssetImporter);
 
@@ -77,7 +78,25 @@ namespace Fyrion
 
     void RegisterTextureAssetHandler()
     {
-        Registry::Type<TextureImporter>();
+        Registry::Type<TextureAssetImporter>();
         Registry::Type<TextureAssetHandler>();
+    }
+
+    void TextureImporter::ImportTexture(AssetFile* assetFile, TextureAsset* textureAsset, Span<const u8> imageBuffer)
+    {
+        i32 imageWidth{};
+        i32 imageHeight{};
+        i32 imageChannels{};
+        u8* bytes = stbi_load_from_memory(imageBuffer.Data(), imageBuffer.Size(), &imageWidth, &imageHeight, &imageChannels, 4);
+
+        usize sizeInBytes = imageWidth * imageHeight * 4; //TODO check Format.
+
+        OutputFileStream stream = assetFile->CreateStream();
+        stream.Write(bytes, sizeInBytes);
+        stream.Close();
+
+        textureAsset->SetProperties(imageWidth, imageHeight, Format::RGBA);
+
+        stbi_image_free(bytes);
     }
 }

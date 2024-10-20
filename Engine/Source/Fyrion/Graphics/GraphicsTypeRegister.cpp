@@ -1,6 +1,7 @@
 #include "Graphics.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "GraphicsTypes.hpp"
+#include "Assets/MeshAsset.hpp"
 #include "Assets/TextureAsset.hpp"
 #include "Assets/ShaderAsset.hpp"
 
@@ -38,7 +39,7 @@ namespace Fyrion
         Registry::Type<RenderGraphEdge>();
         Registry::Type<ShaderAsset>();
 
-//        Registry::Type<MeshAsset>();
+        Registry::Type<MeshAsset>();
         Registry::Type<MeshPrimitive>();
 
         Registry::Type<TextureAsset>();

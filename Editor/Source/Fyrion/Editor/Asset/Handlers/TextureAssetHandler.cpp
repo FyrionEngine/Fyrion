@@ -49,7 +49,7 @@ namespace Fyrion
             return {".png", ".jpg", ".jpeg", ".tga", "bmp", ".hdr"};
         }
 
-        void ImportAsset(AssetFile* parent, StringView path) override
+        bool ImportAsset(AssetFile* parent, StringView path) override
         {
             AssetFile* assetFile = AssetEditor::CreateAsset(parent, GetTypeID<TextureAsset>(), Path::Name(path));
 
@@ -69,6 +69,8 @@ namespace Fyrion
             textureAsset->SetProperties(imageWidth, imageHeight, Format::RGBA);
 
             stbi_image_free(bytes);
+
+            return true;
         }
     };
 

@@ -5,7 +5,7 @@
 
 namespace Fyrion
 {
-    class TransformComponent : public Component
+    class FY_API TransformComponent : public Component
     {
     public:
         FY_BASE_TYPES(Component);

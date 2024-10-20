@@ -89,6 +89,19 @@ namespace Fyrion
         }
     }
 
+    GameObject* GameObject::FindChildByName(StringView name) const
+    {
+        for (GameObject* child : children)
+        {
+            if (child->name == name)
+            {
+                return child;
+            }
+        }
+
+        return nullptr;
+    }
+
     Component* GameObject::GetComponent(TypeID typeId) const
     {
         for (Component* component : components)

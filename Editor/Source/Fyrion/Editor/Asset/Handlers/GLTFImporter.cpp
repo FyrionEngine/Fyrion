@@ -10,6 +10,10 @@
 #include "Fyrion/Graphics/Assets/TextureAsset.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
 #include "Fyrion/IO/Path.hpp"
+#include "Fyrion/Scene/GameObject.hpp"
+#include "Fyrion/Scene/Scene.hpp"
+#include "Fyrion/Scene/Component/RenderComponent.hpp"
+#include "Fyrion/Scene/Component/TransformComponent.hpp"
 
 namespace Fyrion
 {
@@ -261,6 +265,67 @@ namespace Fyrion
             return meshAsset;
         }
 
+        static void LoadGltfNode(const ImportedMeshMap& meshMap, GameObject* parent, cgltf_node* node, u32& meshCount)
+        {
+            String nodeName = node->name != nullptr ? String{node->name}.Append("_").Append(ToString(meshCount++)) : String("MeshNode_").Append(ToString(meshCount++));
+
+            GameObject* object = parent->FindChildByName(nodeName);
+            if (object == nullptr)
+            {
+                object = parent->CreateChildWithUUID(UUID::RandomUUID());
+                object->SetName(nodeName);
+
+                object->AddComponent<TransformComponent>();
+                object->AddComponent<RenderComponent>();
+            }
+
+            if (node->mesh)
+            {
+                if (auto it = meshMap.Find(reinterpret_cast<usize>(node->mesh)))
+                {
+                    RenderComponent* meshRender = object->GetComponent<RenderComponent>();
+                    meshRender->SetMesh(it->second);
+                }
+            }
+
+            //TODO : import camera and lights
+
+            Vec3 position{0, 0, 0};
+            Quat rotation{0, 0, 0, 1};
+            Vec3 scale{1, 1, 1};
+
+            if (node->has_translation)
+            {
+                position = Vec3{node->translation[0], node->translation[1], node->translation[2]};
+            }
+
+            if (node->has_rotation)
+            {
+                rotation = Quat{node->rotation[0], node->rotation[1], node->rotation[2], node->rotation[3]};
+            }
+
+            if (node->has_scale)
+            {
+                scale = Vec3{node->scale[0], node->scale[1], node->scale[2]};
+            }
+
+            if (node->has_matrix)
+            {
+                Mat4 mat = MakeMat4(node->matrix);
+                position = Math::GetTranslation(mat);
+                scale = Math::GetScale(mat);
+                rotation = Math::GetQuaternion(mat);
+            }
+
+            TransformComponent* transformComponent = object->GetComponent<TransformComponent>();
+            transformComponent->SetTransform(position, rotation, scale);
+
+            for (u32 c = 0; c < node->children_count; ++c)
+            {
+                LoadGltfNode(meshMap, object, node->children[c], meshCount);
+            }
+        }
+
         bool ImportAsset(AssetFile* parent, StringView path) override
         {
             cgltf_options options = {};
@@ -393,6 +458,27 @@ namespace Fyrion
             {
                 MeshAsset* meshAsset = LoadGltfMesh(parent, materialMap, data, data->meshes[m], m);
                 meshMap.Insert(reinterpret_cast<usize>(&data->meshes[m]), meshAsset);
+            }
+
+            if (data->scenes_count > 0)
+            {
+                AssetFile* assetFile = AssetEditor::CreateAsset(parent, GetTypeID<Scene>(), Path::Name(path));
+                Scene* scene = Assets::Load<Scene>(assetFile->uuid);
+
+                if (scene->GetRootObject().GetComponent<TransformComponent>() == nullptr)
+                {
+                    scene->GetRootObject().AddComponent<TransformComponent>();
+                }
+
+                u32 meshCount = 0;
+                for (u32 c = 0; c < data->scenes_count; ++c)
+                {
+                    cgltf_scene& gltfScene = data->scenes[c];
+                    for (u32 n = 0; n < gltfScene.nodes_count; ++n)
+                    {
+                        LoadGltfNode(meshMap, &scene->GetRootObject(), gltfScene.nodes[n], meshCount);
+                    }
+                }
             }
 
             cgltf_free(data);

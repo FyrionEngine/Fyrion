@@ -626,7 +626,26 @@ namespace Fyrion
 
         static void FromValue(ArchiveReader& reader, ArchiveValue archiveValue, Array<T>& typeValue)
         {
-            //typeValue = UUID::FromString(reader.StringValue(archiveValue));
+            usize size = reader.ArraySize(archiveValue);
+            typeValue.Reserve(size);
+
+            ArchiveValue value = {};
+
+            for (usize i = 0; i < size; ++i)
+            {
+                T instance{};
+                value = reader.ArrayNext(archiveValue, value);
+
+                if constexpr (ArchiveType<T>::hasArchiveImpl)
+                {
+                    ArchiveType<T>::FromValue(reader, value, instance);
+                }
+                else
+                {
+                    Serialization::Deserialize(GetTypeID<T>(), reader, value, &instance);
+                }
+                typeValue.EmplaceBack(instance);
+            }
         }
     };
 }

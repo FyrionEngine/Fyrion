@@ -1,6 +1,7 @@
 #include "SceneEditor.hpp"
 
 #include "Fyrion/Editor/Asset/AssetEditor.hpp"
+#include "Fyrion/Editor/ImGui/ImGuiEditor.hpp"
 #include "Fyrion/Scene/Component/Component.hpp"
 
 namespace Fyrion
@@ -119,6 +120,7 @@ namespace Fyrion
     void SceneEditor::AddComponent(GameObject* gameObject, TypeHandler* typeHandler)
     {
         gameObject->AddComponent(typeHandler->GetTypeInfo().typeId);
+        assetFile->currentVersion++;
     }
 
     void SceneEditor::ResetComponent(GameObject* gameObject, Component* component)
@@ -129,6 +131,7 @@ namespace Fyrion
     void SceneEditor::RemoveComponent(GameObject* gameObject, Component* component)
     {
         gameObject->RemoveComponent(component);
+        assetFile->currentVersion++;
     }
 
     void SceneEditor::UpdateComponent(GameObject* gameObject, Component* instance, Component* newValue)
@@ -137,6 +140,9 @@ namespace Fyrion
         {
             typeHandler->Copy(newValue, instance);
             instance->OnChange();
+
+            ImGui::ClearDrawData(instance);
+            assetFile->currentVersion++;
         }
     }
 

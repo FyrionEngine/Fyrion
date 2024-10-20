@@ -32,6 +32,7 @@ namespace Fyrion
         GameObject*       CreateChildWithUUID(UUID uuid);
         Span<GameObject*> GetChildren() const;
         void              RemoveChild(GameObject* gameObject);
+        GameObject*       FindChildByName(StringView name) const;
 
         Component*       GetComponent(TypeID typeId) const;
         void             GetComponentsOfType(TypeID typeId, Array<Component*> arrComponents) const;
@@ -49,6 +50,12 @@ namespace Fyrion
         T* GetComponent()
         {
             return static_cast<T*>(GetComponent(GetTypeID<T>()));
+        }
+
+        template<typename T>
+        T* AddComponent()
+        {
+            return static_cast<T*>(AddComponent(GetTypeID<T>()));
         }
 
         friend class Scene;

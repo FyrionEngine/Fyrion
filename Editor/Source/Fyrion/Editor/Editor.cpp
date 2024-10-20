@@ -26,6 +26,8 @@ namespace Fyrion
     void ImGuiUpdate();
     void ImGuiShutdown();
     void RegisterFieldRenderers();
+    void ShaderManagerInit();
+    void ShaderManagerShutdown();
 
     struct EditorWindowStorage
     {
@@ -85,6 +87,7 @@ namespace Fyrion
             }
 
             ImGuiShutdown();
+            ShaderManagerShutdown();
 
             openWindows.Clear();
             openWindows.ShrinkToFit();
@@ -488,6 +491,8 @@ namespace Fyrion
         // }
 
         //projectPath = Path::Parent(projectFile);
+
+        ShaderManagerInit();
 
         Registry::Type<EditorWindow>();
 

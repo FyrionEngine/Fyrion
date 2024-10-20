@@ -11,10 +11,11 @@
 #include <iostream>
 
 #include "spirv_reflect.h"
-#include "Assets/ShaderAsset.hpp"
 #include "Fyrion/Core/Logger.hpp"
 #include "dxc/dxcapi.h"
 #include "Fyrion/Core/HashMap.hpp"
+#include "Fyrion/Editor/Asset/AssetEditor.hpp"
+#include "Fyrion/Graphics/Assets/ShaderAsset.hpp"
 #include "Fyrion/IO/FileSystem.hpp"
 
 #define SHADER_MODEL "6_7"
@@ -45,7 +46,7 @@ namespace Fyrion
         ShaderAsset*  shader{};
         IDxcBlobEncoding* blobEncoding{};
 
-        IncludeHandler(ShaderAsset*  asset) : shader(asset) {}
+        IncludeHandler(ShaderAsset* asset) : shader(asset) {}
 
         static String FormatFilePath(LPCWSTR pFilename)
         {
@@ -85,26 +86,34 @@ namespace Fyrion
         HRESULT STDMETHODCALLTYPE LoadSource(LPCWSTR pFilename, IDxcBlob** ppIncludeSource) override
         {
             String includePath = FormatFilePath(pFilename);
+
             //check if that's a path
-            // if (StringView(includePath).FindFirstOf("://") == nPos)
-            // {
-            //     if (shader && shader->GetHandler()->GetParent() != nullptr)
-            //     {
-            //         includePath = String(shader->GetHandler()->GetParent()->GetPath()).Append("/").Append(includePath);
-            //     }
-            // }
-            //
-            // ShaderAsset* shaderInclude = AssetManager::LoadByPath<ShaderAsset>(includePath);
-            // if (!shaderInclude)
-            // {
-            //     return S_FALSE;
-            // }
-            //
-            // String source = FileSystem::ReadFileAsString(shaderInclude->GetHandler()->GetAbsolutePath());
-            // utils->CreateBlob(source.CStr(), source.Size(), CP_UTF8, &blobEncoding);
-            // *ppIncludeSource = blobEncoding;
-            //
-            // shaderInclude->AddShaderDependency(shader);
+            if (StringView(includePath).FindFirstOf("://") == nPos)
+            {
+                AssetFile* assetFile = AssetEditor::FindAssetFileByUUID(shader->GetUUID());
+                if (assetFile && assetFile->parent != nullptr)
+                {
+                    includePath = String(assetFile->parent->path).Append("/").Append(includePath);
+                }
+            }
+
+            ShaderAsset* shaderInclude = Assets::LoadByPath<ShaderAsset>(includePath);
+            if (!shaderInclude)
+            {
+                return S_FALSE;
+            }
+
+            AssetFile* includeAssetFile = AssetEditor::FindAssetFileByUUID(shaderInclude->GetUUID());
+            if (!includeAssetFile)
+            {
+                return S_FALSE;
+            }
+
+            String source = FileSystem::ReadFileAsString(includeAssetFile->absolutePath);
+            utils->CreateBlob(source.CStr(), source.Size(), CP_UTF8, &blobEncoding);
+            *ppIncludeSource = blobEncoding;
+
+            shaderInclude->AddShaderDependency(shader);
 
             return S_OK;
         }

@@ -77,6 +77,25 @@ namespace Fyrion
             }
             return it->second.instance;
         }
+         return nullptr;
+    }
+
+    Asset* Assets::Reload(UUID uuid)
+    {
+        if (auto it = assetCache.Find(uuid))
+        {
+            if(it->second.instance)
+            {
+                it->second.instance->GetTypeHandler()->Destroy(it->second.instance);
+            }
+
+            it->second.instance = it->second.loader->LoadAsset();
+            FY_ASSERT(it->second.instance, "instance not created");
+            FY_ASSERT(it->second.instance->typeHandler, "type handler must be provided");
+            it->second.instance->loader = it->second.loader;
+            it->second.instance->uuid = it->second.uuid;
+            return it->second.instance;
+        }
         return nullptr;
     }
 

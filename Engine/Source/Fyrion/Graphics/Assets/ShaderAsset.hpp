@@ -1,15 +1,24 @@
 #pragma once
 
 #include "Fyrion/Common.hpp"
+#include "Fyrion/Core/HashSet.hpp"
 #include "Fyrion/Graphics/GraphicsTypes.hpp"
 #include "Fyrion/IO/Asset.hpp"
 
 
 namespace Fyrion
 {
-    class FY_API ShaderAsset : public Asset
+    enum class ShaderAssetType
     {
-    public:
+        None,
+        Include,
+        Graphics,
+        Compute,
+        Raytrace
+    };
+
+    struct FY_API ShaderAsset : public Asset
+    {
         FY_BASE_TYPES(Asset);
 
         void AddPipelineDependency(PipelineState pipelineState);
@@ -17,14 +26,13 @@ namespace Fyrion
         void AddBindingSetDependency(BindingSet* bindingSet);
         void RemoveBindingSetDependency(BindingSet* bindingSet);
 
-        const ShaderInfo& GetShaderInfo() const;
-
-        bool                  IsCompiled() const;
-        Span<ShaderStageInfo> GetStages() const;
-        Array<u8>             GetBytes() const;
-
-    private:
         ShaderInfo             shaderInfo;
         Array<ShaderStageInfo> stages{};
+        Array<u8>              bytes{};
+        ShaderAssetType        type = ShaderAssetType::None;
+
+        Array<PipelineState>  pipelineDependencies{};
+        HashSet<ShaderAsset*> shaderDependencies{};
+        HashSet<BindingSet*>  bindingSetDependencies{};
     };
 }

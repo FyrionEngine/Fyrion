@@ -25,13 +25,10 @@ add_library(FyrionEngine SHARED ${FYRION_ENGINE_SOURCES})
 
 target_include_directories(FyrionEngine PUBLIC Source)
 target_include_directories(FyrionEngine PUBLIC Source/Fyrion/ImGui/Lib)
-target_include_directories(FyrionEngine PRIVATE ThirdParty/dxc/include)
 
 target_compile_definitions(FyrionEngine PUBLIC FMT_LIB_EXPORT=1)
 
-target_link_libraries(FyrionEngine PRIVATE mimalloc glfw vma volk vulkan-sdk freetype nfd SPIRV-Reflect cpptrace::cpptrace yyjson stb cgltf mikktspace FyrionContent::RS)
-
-add_binary_file(FyrionEngine ThirdParty/dxc dxcompiler)
+target_link_libraries(FyrionEngine PRIVATE mimalloc glfw vma volk vulkan-sdk freetype nfd cpptrace::cpptrace yyjson stb cgltf mikktspace FyrionContent::RS)
 
 ##tests
 file(GLOB_RECURSE FYRION_ENGINE_TESTS_SOURCES Test/*.hpp Test/*.cpp Test/*.h Test/*.c)

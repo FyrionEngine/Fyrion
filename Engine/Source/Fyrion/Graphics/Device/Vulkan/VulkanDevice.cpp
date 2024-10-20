@@ -931,15 +931,9 @@ namespace Fyrion
         bool invalidPass = creation.attachments.Empty() && !creation.renderPass && !creation.pipelineState && creation.depthFormat == Format::Undefined;
         FY_ASSERT(!invalidPass, "creation needs attachments or renderpass or pipelineState");
 
-        //shader not valid.
-        if(!shader->IsCompiled())
-        {
-            return {};
-        }
 
-        Array<u8>              bytes = shader->GetBytes();
-        Span<ShaderStageInfo> stages = shader->GetStages();
-        ShaderInfo            shaderInfo = shader->GetShaderInfo();
+        Span<ShaderStageInfo> stages = shader->stages;
+        ShaderInfo            shaderInfo = shader->shaderInfo;
 
 
         VulkanPipelineState* vulkanPipelineState;
@@ -973,8 +967,8 @@ namespace Fyrion
             const ShaderStageInfo& shaderStageAsset = stages[i];
 
             Span<u8> data = Span<u8>{
-                bytes.begin() + shaderStageAsset.offset,
-                bytes.begin() + shaderStageAsset.offset + shaderStageAsset.size
+                shader->bytes.begin() + shaderStageAsset.offset,
+                shader->bytes.begin() + shaderStageAsset.offset + shaderStageAsset.size
             };
 
             VkShaderModuleCreateInfo createInfo{VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
@@ -1247,15 +1241,10 @@ namespace Fyrion
         ShaderAsset* shader = creation.shader;
         FY_ASSERT(shader, "shader is null");
 
-        //shader not valid.
-        if(!shader->IsCompiled())
-        {
-            return {};
-        }
 
-        Array<u8>        bytes = shader->GetBytes();
-        ShaderStageInfo& stage = shader->GetStages()[0];
-        ShaderInfo       shaderInfo = shader->GetShaderInfo();
+
+        ShaderStageInfo& stage = shader->stages[0];
+        ShaderInfo       shaderInfo = shader->shaderInfo;
 
         VkShaderModule shaderModule{};
         VulkanPipelineState* vulkanPipelineState;
@@ -1277,8 +1266,8 @@ namespace Fyrion
         vulkanPipelineState->bindingPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
 
         VkShaderModuleCreateInfo createInfo{VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
-        createInfo.codeSize = bytes.Size();
-        createInfo.pCode = reinterpret_cast<const u32*>(bytes.Data());
+        createInfo.codeSize = shader->bytes.Size();
+        createInfo.pCode = reinterpret_cast<const u32*>(shader->bytes.Data());
         vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule);
 
         Vulkan::CreatePipelineLayout(device, shaderInfo.descriptors, shaderInfo.pushConstants, &vulkanPipelineState->layout);

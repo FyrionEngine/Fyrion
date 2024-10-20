@@ -39,6 +39,7 @@ namespace Fyrion
     public:
         static void   Create(UUID uuid, AssetLoader* loader);
         static Asset* Load(UUID uuid);
+        static Asset* Reload(UUID uuid);
         static Asset* LoadByPath(StringView path);
         static void   SetPath(UUID uuid, StringView path);
 

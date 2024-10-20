@@ -3,28 +3,23 @@
 
 namespace Fyrion
 {
-    void ShaderAsset::AddPipelineDependency(PipelineState pipelineState) {}
-    void ShaderAsset::AddShaderDependency(ShaderAsset* shaderAsset) {}
-    void ShaderAsset::AddBindingSetDependency(BindingSet* bindingSet) {}
-    void ShaderAsset::RemoveBindingSetDependency(BindingSet* bindingSet) {}
-
-    const ShaderInfo& ShaderAsset::GetShaderInfo() const
+    void ShaderAsset::AddPipelineDependency(PipelineState pipelineState)
     {
-        return shaderInfo;
+        pipelineDependencies.EmplaceBack(pipelineState);
     }
 
-    bool ShaderAsset::IsCompiled() const
+    void ShaderAsset::AddShaderDependency(ShaderAsset* shaderAsset)
     {
-        return false;
+        shaderDependencies.Emplace(shaderAsset);
     }
 
-    Span<ShaderStageInfo> ShaderAsset::GetStages() const
+    void ShaderAsset::AddBindingSetDependency(BindingSet* bindingSet)
     {
-        return stages;
+        bindingSetDependencies.Insert(bindingSet);
     }
 
-    Array<u8> ShaderAsset::GetBytes() const
+    void ShaderAsset::RemoveBindingSetDependency(BindingSet* bindingSet)
     {
-        return {};
+        bindingSetDependencies.Erase(bindingSet);
     }
 }

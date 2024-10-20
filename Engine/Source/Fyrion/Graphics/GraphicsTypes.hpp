@@ -10,7 +10,7 @@
 
 namespace Fyrion
 {
-    class ShaderAsset;
+    struct ShaderAsset;
     //class MeshAsset;
 
     FY_HANDLER(Adapter);
@@ -375,15 +375,6 @@ namespace Fyrion
         bool               anisotropyEnable = true;
         BorderColor        borderColor{BorderColor::IntOpaqueBlack};
         SamplerMipmapMode  samplerMipmapMode = SamplerMipmapMode::Linear;
-    };
-
-    struct ShaderCreation
-    {
-        ShaderAsset*  asset{};
-        StringView    source{};
-        StringView    entryPoint{};
-        ShaderStage   shaderStage{};
-        RenderApiType renderApi{};
     };
 
     struct VertexInputAttribute

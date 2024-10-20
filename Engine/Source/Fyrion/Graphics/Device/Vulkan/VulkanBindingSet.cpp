@@ -9,7 +9,7 @@ namespace Fyrion
 {
     VulkanBindingSet::VulkanBindingSet(ShaderAsset* shaderAsset, VulkanDevice& vulkanDevice) : vulkanDevice(vulkanDevice),
                                                                                                shaderAsset(shaderAsset),
-                                                                                               descriptorLayouts(shaderAsset->GetShaderInfo().descriptors)
+                                                                                               descriptorLayouts(shaderAsset->shaderInfo.descriptors)
     {
         shaderAsset->AddBindingSetDependency(this);
         LoadInfo();

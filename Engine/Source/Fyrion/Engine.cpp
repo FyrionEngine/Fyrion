@@ -23,8 +23,6 @@ namespace Fyrion
     void            GraphicsShutdown();
     void            RegistryShutdown();
     void            EventShutdown();
-    void            ShaderManagerInit();
-    void            ShaderManagerShutdown();
     void            InputInit();
     void            AssetsShutdown();
 
@@ -62,7 +60,6 @@ namespace Fyrion
 
         TypeRegister();
         InputInit();
-        ShaderManagerInit();
     }
 
     void Engine::CreateContext(const EngineContextCreation& contextCreation)
@@ -243,7 +240,6 @@ namespace Fyrion
 
     void Engine::Destroy()
     {
-        ShaderManagerShutdown();
         RegistryShutdown();
         EventShutdown();
     }

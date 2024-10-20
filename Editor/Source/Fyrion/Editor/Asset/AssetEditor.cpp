@@ -431,6 +431,7 @@ namespace Fyrion
 
             return newAsset;
         }
+        FY_ASSERT(false, "handler not found");
         return nullptr;
     }
 

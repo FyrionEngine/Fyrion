@@ -41,6 +41,7 @@ namespace Fyrion
 
         Registry::Type<MeshAsset>();
         Registry::Type<MeshPrimitive>();
+        Registry::Type<MaterialAsset>();
 
         Registry::Type<TextureAsset>();
 

@@ -32,6 +32,33 @@ namespace Fyrion
             return {".gltf", ".glb"};
         }
 
+        static TextureAsset* FindTexture(StringView assetPath, const ImportedTextureMap& textureMap, cgltf_texture* texture)
+        {
+            if (texture->image->uri != nullptr)
+            {
+                String texturePath = Path::Join(assetPath, StringView{texture->image->uri});
+
+                // TextureAsset* textureAsset = AssetManager::LoadByPath<TextureAsset>(texturePath);
+                // if (textureAsset == nullptr)
+                // {
+                //     // textureAsset = AssetDatabase::Create<TextureAsset>();
+                //     // textureAsset->SetPath(texturePath);
+                //     logger.Error("texture {} not found", texture->image->uri);
+                // }
+                //
+                // return textureAsset;
+
+                return nullptr;
+            }
+
+            if (auto it = textureMap.Find(reinterpret_cast<usize>(texture)))
+            {
+                return it->second;
+            }
+
+            return nullptr;
+        }
+
         MeshAsset* LoadGltfMesh(AssetFile* parent, ImportedMaterialMap& materialMap, cgltf_data* data, cgltf_mesh& gltfMesh, u32 index)
         {
             String name = gltfMesh.name != nullptr ? gltfMesh.name : String{"Mesh_"}.Append(ToString(index));
@@ -311,6 +338,55 @@ namespace Fyrion
 
                     textureMap.Insert(reinterpret_cast<usize>(&texture), textureAsset);
                 }
+            }
+
+            for (int m = 0; m < data->materials_count; ++m)
+            {
+                const cgltf_material& material = data->materials[m];
+
+                String materialName = material.name != nullptr ? material.name : String{"Material_"}.Append(ToString(m));
+
+                AssetFile* assetFile = AssetEditor::CreateAsset(parent, GetTypeID<MaterialAsset>(), materialName);
+                MaterialAsset* materialAsset = Assets::Load<MaterialAsset>(assetFile->uuid);
+
+                if (material.has_pbr_metallic_roughness)
+                {
+                    materialAsset->SetBaseColor(Color::FromVec4Gamma(material.pbr_metallic_roughness.base_color_factor));
+                    materialAsset->SetUvScale(Vec2{material.pbr_metallic_roughness.base_color_texture.scale, material.pbr_metallic_roughness.base_color_texture.scale});
+
+                    if (material.pbr_metallic_roughness.base_color_texture.texture)
+                    {
+                        materialAsset->SetBaseColorTexture(FindTexture(path, textureMap, material.pbr_metallic_roughness.base_color_texture.texture));
+                    }
+
+                    if (material.pbr_metallic_roughness.metallic_roughness_texture.texture)
+                    {
+                        materialAsset->SetMetallicRoughnessTexture(FindTexture(path, textureMap, material.pbr_metallic_roughness.metallic_roughness_texture.texture));
+                    }
+                }
+                else if (material.has_pbr_specular_glossiness)
+                {
+                    materialAsset->SetBaseColor(Color::FromVec4(material.pbr_specular_glossiness.diffuse_factor));
+                }
+
+                materialAsset->SetAlphaCutoff(material.alpha_cutoff);
+
+                if (material.normal_texture.texture)
+                {
+                    materialAsset->SetNormalTexture(FindTexture(path, textureMap, material.normal_texture.texture));
+                }
+
+                if (material.occlusion_texture.texture)
+                {
+                    materialAsset->SetAoTexture(FindTexture(path, textureMap, material.occlusion_texture.texture));
+                }
+
+                if (material.emissive_texture.texture)
+                {
+                    materialAsset->SetEmissiveTexture(FindTexture(path, textureMap, material.emissive_texture.texture));
+                }
+
+                materialMap.Insert(reinterpret_cast<usize>(&material), materialAsset);
             }
 
             for (u32 m = 0; m < data->meshes_count; ++m)

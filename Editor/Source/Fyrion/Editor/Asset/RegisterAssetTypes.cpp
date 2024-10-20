@@ -10,6 +10,7 @@ namespace Fyrion
     void RegisterTextureAssetHandler();
     void RegisterShaderAssetHandlers();
     void RegisterGLTFImporter();
+    void RegisterMaterialAssetHandler();
 
     void RegisterAssetTypes()
     {
@@ -22,5 +23,6 @@ namespace Fyrion
         RegisterTextureAssetHandler();
         RegisterShaderAssetHandlers();
         RegisterGLTFImporter();
+        RegisterMaterialAssetHandler();
     }
 }

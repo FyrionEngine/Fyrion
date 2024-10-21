@@ -10,8 +10,9 @@
 
 namespace Fyrion
 {
+    class MaterialAsset;
+    class MeshAsset;
     struct ShaderAsset;
-    //class MeshAsset;
 
     FY_HANDLER(Adapter);
     FY_HANDLER(Swapchain);
@@ -632,13 +633,13 @@ namespace Fyrion
         f32 farClip{};
     };
 
-    // struct MeshRenderData
-    // {
-    //     usize                 address{};
-    //     Mat4                  model;
-    //     MeshAsset*            mesh = nullptr;
-    //     Array<MaterialAsset*> materials{};
-    // };
+    struct MeshRenderData
+    {
+        usize                 address{};
+        Mat4                  model;
+        MeshAsset*            mesh = nullptr;
+        Array<MaterialAsset*> materials{};
+    };
 
     struct TextureArrayElement
     {

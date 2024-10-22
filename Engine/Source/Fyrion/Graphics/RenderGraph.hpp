@@ -10,45 +10,83 @@
 namespace Fyrion
 {
     class RenderGraph;
+    class RenderGraphPass;
 
     struct RenderGraphResource
     {
+        RenderGraphResourceCreation creation;
+        TextureCreation             textureCreation{};
+        ResourceLayout              currentLayout;
 
+        union
+        {
+            Texture texture = {};
+            Buffer  buffer;
+            VoidPtr reference;
+        };
+
+        struct ResourceEdges
+        {
+            RenderGraphPass*        writePass;
+            Array<RenderGraphPass*> readPass;
+        };
+
+        Array<ResourceEdges> edges;
+
+        void WriteIn(RenderGraphPass* pass);
+        void ReadIn(RenderGraphPass* pass);
+
+        ~RenderGraphResource();
     };
 
-    class FY_API RenderGraphNode
+    class FY_API RenderGraphPass
     {
     public:
-        RenderPass GetRenderPass()
-        {
-            return renderPass;
-        }
+        RenderPass GetRenderPass() const;
+        StringView GetName() const;
 
-        BindingSet* GetBindingSet()
-        {
-            return nullptr;
-        }
+        friend class RenderGraph;
+        friend class RenderPassBuilder;
+
+        ~RenderGraphPass();
 
     private:
-        RenderPass renderPass{};
+        struct Resource
+        {
+            RenderGraphResource* resource;
+            String               name;
+        };
+
+        u32                         id{};
+        String                      name{};
+        RenderGraphPassType         type{};
+        RenderPass                  renderPass{};
+        Array<Resource>             inputs;
+        Array<RenderGraphResource*> outputs;
+        Optional<Vec4>              clearValue;
+        bool                        clearDepth{};
+
+        void CreateRenderPass();
     };
 
     class FY_API RenderPassBuilder
     {
     public:
-        RenderPassBuilder(RenderGraph* renderGraph);
+        RenderPassBuilder(RenderGraphPass* pass);
 
         FY_NO_COPY_CONSTRUCTOR(RenderPassBuilder);
 
-        RenderPassBuilder& Read(const RenderGraphResource* resource);
-        RenderPassBuilder& Read(StringView name, const RenderGraphResource* resource);
-        RenderPassBuilder& Write(const RenderGraphResource* resource);
-        RenderPassBuilder& Init(const std::function<void(RenderGraphNode& node)>& func);
-        RenderPassBuilder& Update(const std::function<void(RenderGraphNode& node)>& func);
-        RenderPassBuilder& Render(const std::function<void(RenderGraphNode& node, RenderCommands& cmd)>& func);
+        RenderPassBuilder& Read(RenderGraphResource* resource);
+        RenderPassBuilder& Write(RenderGraphResource* resource);
+        RenderPassBuilder& ClearColor(const Vec4& color);
+        RenderPassBuilder& ClearDepth(bool clear);
+
+        RenderPassBuilder& Init(const std::function<void(RenderGraphPass& pass)>& func);
+        RenderPassBuilder& Update(const std::function<void(RenderGraphPass& pass)>& func);
+        RenderPassBuilder& Render(const std::function<void(RenderGraphPass& pass, RenderCommands& cmd)>& func);
 
     private:
-        RenderGraph* renderGraph;
+        RenderGraphPass* pass;
     };
 
     class FY_API RenderGraph
@@ -57,6 +95,15 @@ namespace Fyrion
         RenderPassBuilder    AddPass(StringView name, RenderGraphPassType type);
         RenderGraphResource* Create(const RenderGraphResourceCreation& creation);
 
+        void Bake(Extent viewportExtent);
+
     private:
+        Extent                                viewportExtent;
+        Array<SharedPtr<RenderGraphResource>> resources;
+        Array<SharedPtr<RenderGraphPass>>     passes;
+
+        void RecordCommands(RenderCommands& cmd, f64 deltaTime);
+
+        void CreateResources();
     };
 }

@@ -1,12 +1,16 @@
 #include "Graphics.hpp"
 #include "Fyrion/Core/Registry.hpp"
 #include "GraphicsTypes.hpp"
+#include "RenderPipeline.hpp"
 #include "Assets/MeshAsset.hpp"
 #include "Assets/TextureAsset.hpp"
 #include "Assets/ShaderAsset.hpp"
 
 namespace Fyrion
 {
+
+    void RegisterDefaultRenderPipeline();
+
     template<>
     struct ReleaseHandler<Buffer>
     {
@@ -36,9 +40,11 @@ namespace Fyrion
         Registry::Type<ShaderInfo>();
         Registry::Type<Buffer>();
         Registry::Type<Texture>();
-        Registry::Type<RenderGraphEdge>();
-        Registry::Type<ShaderAsset>();
 
+        Registry::Type<RenderPipeline>();
+
+
+        Registry::Type<ShaderAsset>();
         Registry::Type<MeshAsset>();
         Registry::Type<MeshPrimitive>();
         Registry::Type<MaterialAsset>();
@@ -134,5 +140,7 @@ namespace Fyrion
         viewType.Value<ViewType::Type2DArray>("Type2DArray");
         viewType.Value<ViewType::TypeCubeArray>("TypeCubeArray");
         viewType.Value<ViewType::Undefined>("Undefined");
+
+        RegisterDefaultRenderPipeline();
     }
 }

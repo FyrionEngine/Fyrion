@@ -8,9 +8,12 @@
 #include "Fyrion/Graphics/GraphicsTypes.hpp"
 #include "Fyrion/Graphics/Graphics.hpp"
 #include "TypeRegister.hpp"
+#include "Core/Registry.hpp"
 #include "Fyrion/Core/StaticContent.hpp"
 #include "Fyrion/ImGui/ImGui.hpp"
 #include "Fyrion/Core/ArgParser.hpp"
+#include "Graphics/RenderGraph.hpp"
+#include "Graphics/RenderPipeline.hpp"
 
 namespace Fyrion
 {
@@ -95,6 +98,18 @@ namespace Fyrion
         onInitHandler.Invoke();
 
         running = true;
+
+        RenderGraph renderGraph;
+
+        TypeHandler* type = Registry::FindTypeByName("Fyrion::DefaultRenderPipeline");
+        RenderPipeline* renderPipeline = type->Cast<RenderPipeline>(type->NewInstance());
+
+        renderPipeline->BuildRenderGraph(renderGraph);
+        renderGraph.Bake({800, 600});
+
+
+        int a= 0;
+
     }
 
     void Engine::Run()
@@ -151,7 +166,7 @@ namespace Fyrion
 
                 onSwapchainRender.Invoke(cmd);
 
-                cmd.BeginLabel("ImGui", {0, 0, 0, 1});
+                cmd.BeginLabel("ImGui", Color::FromRGBA(41, 74, 122, 255));
                 ImGui::Render(cmd);
                 cmd.EndLabel();
 

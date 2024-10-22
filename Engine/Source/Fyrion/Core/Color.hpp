@@ -91,6 +91,16 @@ namespace Fyrion
             };
         }
 
+        static Vec4 FromRGBA(u8 r, u8 g, u8 b, u8 a)
+        {
+            return {
+                static_cast<Float>(r) / 255.f,
+                static_cast<Float>(g) / 255.f,
+                static_cast<Float>(b) / 255.f,
+                static_cast<Float>(a) / 255.f
+            };
+        }
+
         static TColor RED;
         static TColor GREEN;
         static TColor YELLOW;

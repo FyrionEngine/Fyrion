@@ -262,10 +262,11 @@ namespace Fyrion
 
     enum class RenderGraphResourceType
     {
-        Buffer     = 0,
-        Texture    = 1,
-        Attachment = 2,
-        Reference  = 3,
+        None       = 0,
+        Buffer     = 1,
+        Texture    = 2,
+        Attachment = 3,
+        Reference  = 4,
     };
 
     enum class RenderGraphPassType
@@ -669,26 +670,12 @@ namespace Fyrion
         virtual void        Reload() = 0;
     };
 
-    struct RenderGraphEdge
-    {
-        String output{};
-        String nodeOutput{};
-        String input{};
-        String nodeInput{};
-
-        static void RegisterType(NativeTypeHandler<RenderGraphEdge>& type);
-    };
-
-
     struct RenderGraphResourceCreation
     {
         String                  name{};
         RenderGraphResourceType type{};
         Extent3D                size{};
         Vec2                    scale{};
-        LoadOp                  loadOp{LoadOp::Clear};
-        Vec4                    clearValue{};
-        bool                    clearDepth{};
         Format                  format{};
         BufferUsage             bufferUsage{};
         BufferAllocation        bufferAllocation{BufferAllocation::GPUOnly};

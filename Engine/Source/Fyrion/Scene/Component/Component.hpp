@@ -11,8 +11,9 @@ namespace Fyrion
     public:
         friend class GameObject;
 
-        virtual void OnInit() {}
+        virtual void OnStart() {}
         virtual void OnNotify(u64 type) {}
+        virtual void OnDestroy() {}
         virtual void OnChange() {}
 
         GameObject* gameObject = nullptr;

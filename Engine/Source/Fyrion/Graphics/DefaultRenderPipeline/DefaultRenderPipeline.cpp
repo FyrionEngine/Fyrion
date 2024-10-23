@@ -7,13 +7,61 @@
 
 namespace Fyrion
 {
+
+    struct TestHandler : RenderGraphPassHandler
+    {
+        PipelineState pipelineState{};
+        BindingSet*   bindingSet{};
+
+        void Init() override
+        {
+            // GraphicsPipelineCreation graphicsPipelineCreation{
+            //     .shader = Assets::LoadByPath<ShaderAsset>("Fyrion://Shaders/Passes/GBufferRender.raster"),
+            //     .renderPass = pass->GetRenderPass(),
+            //     .depthWrite = true,
+            //     .cullMode = CullMode::Back,
+            //     .compareOperator = CompareOp::Less,
+            // };
+            //
+            // pipelineState = Graphics::CreateGraphicsPipelineState(graphicsPipelineCreation);
+            // bindingSet = Graphics::CreateBindingSet(graphicsPipelineCreation.shader);
+        }
+
+        void Render(RenderCommands& cmd) override
+        {
+            // cmd.BindPipelineState(pipelineState);
+            // cmd.BindBindingSet(pipelineState, bindingSet);
+
+            // for (MeshRenderData& meshRenderData : meshes)
+            // {
+            //     if (MeshAsset* mesh = meshRenderData.mesh)
+            //     {
+            //         Span<MeshPrimitive> primitives = mesh->GetPrimitives();
+            //
+            //         cmd.BindVertexBuffer(mesh->GetVertexBuffer());
+            //         cmd.BindIndexBuffer(mesh->GetIndexBuffeer());
+            //
+            //         cmd.PushConstants(pipelineState, ShaderStage::Vertex, &meshRenderData.model, sizeof(Mat4));
+            //
+            //         for (MeshPrimitive& primitive : primitives)
+            //         {
+            //             if (MaterialAsset* material = meshRenderData.materials[primitive.materialIndex])
+            //             {
+            //                 cmd.BindBindingSet(pipelineState, material->GetBindingSet());
+            //                 cmd.DrawIndexed(primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+            //             }
+            //         }
+            //     }
+            // }
+        }
+    };
+
+
     class DefaultRenderPipeline : public RenderPipeline
     {
     private:
-        PipelineState pipelineState{};
-        BindingSet*   bindingSet{};
+        TestHandler testHandler;
     public:
-
         FY_BASE_TYPES(RenderPipeline);
 
         void BuildRenderGraph(RenderGraph& rg) override
@@ -27,13 +75,6 @@ namespace Fyrion
                 .format = Format::Depth,
             });
 
-            RenderGraphResource* shadow = rg.Create(RenderGraphResourceCreation{
-                .name = "shadow",
-                .type = RenderGraphResourceType::Attachment,
-                .size = {4096, 4096, 1},
-                .format = Format::Depth,
-            });
-
             RenderGraphResource* color = rg.Create(RenderGraphResourceCreation{
                 .name = "color",
                 .type = RenderGraphResourceType::Attachment,
@@ -41,82 +82,15 @@ namespace Fyrion
                 .format = Format::RGBA
             });
 
-            RenderGraphResource* light = rg.Create(RenderGraphResourceCreation{
-                .name = "light",
-                .type = RenderGraphResourceType::Attachment,
-                .scale = {1, 1},
-                .format = Format::RGBA16F
-            });
-
-            RenderGraphResource* final = rg.Create(RenderGraphResourceCreation{
-                .name = "final",
-                .type = RenderGraphResourceType::Attachment,
-                .scale = {1, 1},
-                .format = Format::RGBA16F
-            });
-
             rg.AddPass("GBuffer", RenderGraphPassType::Graphics)
               .Write(color)
               .Write(depth)
-              .ClearColor(Vec4{0, 0, 0, 1})
+              .ClearColor(Color::CORNFLOWER_BLUE.ToVec4())
               .ClearDepth(true)
-              .Init([&](RenderGraphPass& node)
-              {
-                  GraphicsPipelineCreation graphicsPipelineCreation{
-                      .shader = Assets::LoadByPath<ShaderAsset>("Fyrion://Shaders/Passes/GBufferRender.raster"),
-                      .renderPass = node.GetRenderPass(),
-                      .depthWrite = true,
-                      .cullMode = CullMode::Back,
-                      .compareOperator = CompareOp::Less,
-                  };
+              .Handler(&testHandler);
 
-                  pipelineState = Graphics::CreateGraphicsPipelineState(graphicsPipelineCreation);
-                  bindingSet = Graphics::CreateBindingSet(graphicsPipelineCreation.shader);
-              })
-              .Render([&](RenderGraphPass& node, RenderCommands& cmd)
-              {
-                  cmd.BindPipelineState(pipelineState);
-                  cmd.BindBindingSet(pipelineState, bindingSet);
-
-                  // for (MeshRenderData& meshRenderData : meshes)
-                  // {
-                  //     if (MeshAsset* mesh = meshRenderData.mesh)
-                  //     {
-                  //         Span<MeshPrimitive> primitives = mesh->GetPrimitives();
-                  //
-                  //         cmd.BindVertexBuffer(mesh->GetVertexBuffer());
-                  //         cmd.BindIndexBuffer(mesh->GetIndexBuffeer());
-                  //
-                  //         cmd.PushConstants(pipelineState, ShaderStage::Vertex, &meshRenderData.model, sizeof(Mat4));
-                  //
-                  //         for (MeshPrimitive& primitive : primitives)
-                  //         {
-                  //             if (MaterialAsset* material = meshRenderData.materials[primitive.materialIndex])
-                  //             {
-                  //                 cmd.BindBindingSet(pipelineState, material->GetBindingSet());
-                  //                 cmd.DrawIndexed(primitive.indexCount, 1, primitive.firstIndex, 0, 0);
-                  //             }
-                  //         }
-                  //     }
-                  // }
-              });
-
-
-            rg.AddPass("light", RenderGraphPassType::Compute)
-              .Read(color)
-              .Read(depth)
-              .Read(shadow)
-              .Write(light);
-
-            rg.AddPass("shadows", RenderGraphPassType::Graphics)
-              .Write(shadow)
-              .ClearDepth(true);
-
-            rg.AddPass("AO", RenderGraphPassType::Compute)
-              .Write(final)
-              .Read(depth)
-              .Read(light);
-
+            rg.ColorOutput(color);
+            rg.DepthOutput(depth);
         }
     };
 

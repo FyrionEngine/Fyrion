@@ -66,4 +66,16 @@ namespace Fyrion
         FY_API void       SetOptions(AllocatorOptions options);
         FY_API HeapStats  GetHeapStats();
     }
+
+    template <typename Type, typename... Args>
+    Type* Alloc(Args&&... args)
+    {
+        return MemoryGlobals::GetDefaultAllocator().Alloc<Type>(Traits::Forward<Args>(args)...);
+    }
+
+    template <typename Type>
+    void DestroyAndFree(Type* type)
+    {
+        MemoryGlobals::GetDefaultAllocator().DestroyAndFree(type);
+    }
 }

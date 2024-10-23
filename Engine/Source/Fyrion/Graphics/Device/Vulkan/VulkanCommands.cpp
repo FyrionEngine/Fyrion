@@ -184,7 +184,9 @@ namespace Fyrion
     void VulkanCommands::ResourceBarrier(const ResourceBarrierInfo& resourceBarrierInfo)
     {
         VkImageSubresourceRange subresourceRange = {};
-        if (resourceBarrierInfo.isDepth)
+        VulkanTexture* vulkanTexture = static_cast<VulkanTexture*>(resourceBarrierInfo.texture.handler);
+
+        if (vulkanTexture->creation.format == Format::Depth)
         {
             subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
         }
@@ -192,8 +194,6 @@ namespace Fyrion
         {
             subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         }
-
-        auto vulkanTexture = static_cast<VulkanTexture*>(resourceBarrierInfo.texture.handler);
 
         subresourceRange.baseMipLevel = resourceBarrierInfo.mipLevel;
         subresourceRange.levelCount = Math::Max(resourceBarrierInfo.levelCount, 1u);

@@ -98,18 +98,6 @@ namespace Fyrion
         onInitHandler.Invoke();
 
         running = true;
-
-        RenderGraph renderGraph;
-
-        TypeHandler* type = Registry::FindTypeByName("Fyrion::DefaultRenderPipeline");
-        RenderPipeline* renderPipeline = type->Cast<RenderPipeline>(type->NewInstance());
-
-        renderPipeline->BuildRenderGraph(renderGraph);
-        renderGraph.Bake({800, 600});
-
-
-        int a= 0;
-
     }
 
     void Engine::Run()

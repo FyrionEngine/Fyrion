@@ -29,6 +29,13 @@ namespace Fyrion
         void       RemoveComponent(GameObject* gameObject, Component* component);
         void       UpdateComponent(GameObject* gameObject, Component* instance, Component* newValue);
 
+
+        HashSet<GameObject*>& GetSelectedObjects();
+
+        bool IsSimulating() const;
+        void StartSimulation();
+        void StopSimulation();
+
         void DoUpdate();
 
     private:

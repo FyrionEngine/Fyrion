@@ -24,6 +24,11 @@ namespace Fyrion
         }
     }
 
+    void RenderComponent::OnDestroy()
+    {
+
+    }
+
     void RenderComponent::SetMesh(MeshAsset* mesh)
     {
         this->mesh = mesh;

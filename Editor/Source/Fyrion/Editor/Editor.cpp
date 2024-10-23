@@ -16,6 +16,7 @@
 #include "Window/ProjectBrowserWindow.hpp"
 #include "Window/PropertiesWindow.hpp"
 #include "Window/SceneTreeWindow.hpp"
+#include "Window/SceneViewWindow.hpp"
 #include "Window/TextureViewWindow.hpp"
 
 namespace Fyrion
@@ -504,6 +505,7 @@ namespace Fyrion
         Registry::Type<TextureViewWindow>();
         Registry::Type<SceneTreeWindow>();
         Registry::Type<PropertiesWindow>();
+        Registry::Type<SceneViewWindow>();
 
         Event::Bind<OnInit, &InitEditor>();
         Event::Bind<OnUpdate, &EditorUpdate>();

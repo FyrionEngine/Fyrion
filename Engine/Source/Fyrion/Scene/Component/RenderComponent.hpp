@@ -17,7 +17,7 @@ namespace Fyrion
         MeshAsset*           GetMesh() const;
         Span<MaterialAsset*> GetMaterials() const;
         void                 OnChange() override;
-
+        void                 OnDestroy() override;
 
         static void RegisterType(NativeTypeHandler<RenderComponent>& type);
 

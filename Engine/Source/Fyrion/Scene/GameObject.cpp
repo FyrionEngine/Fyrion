@@ -21,6 +21,15 @@ namespace Fyrion
             scene->objectsById.Erase(uuid);
         }
 
+        for(Component* component : components)
+        {
+            if (TypeHandler* typeHandler = Registry::FindTypeById(component->typeId))
+            {
+                component->OnDestroy();
+                typeHandler->Destroy(component);
+            }
+        }
+
         for (GameObject* child : children)
         {
             child->parent = nullptr;
@@ -146,6 +155,7 @@ namespace Fyrion
         {
             if (TypeHandler* typeHandler = Registry::FindTypeById(component->typeId))
             {
+                component->OnDestroy();
                 typeHandler->Destroy(component);
             }
             components.Erase(it);

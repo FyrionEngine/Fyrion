@@ -446,7 +446,6 @@ namespace Fyrion
         u32 levelCount{1};
         u32 baseArrayLayer{0};
         u32 layerCount{0};
-        bool isDepth{false};
     };
 
     struct InterfaceVariable
@@ -630,8 +629,8 @@ namespace Fyrion
         Mat4 projectionInverse{1.0};
         Mat4 lastViewProj{1.0};
         Vec3 viewPos{};
-        f32 nearClip{};
-        f32 farClip{};
+        f32  nearClip{};
+        f32  farClip{};
     };
 
     struct MeshRenderData

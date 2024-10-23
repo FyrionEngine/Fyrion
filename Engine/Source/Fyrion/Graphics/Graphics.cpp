@@ -264,7 +264,7 @@ namespace Fyrion
         DestroyBuffer(buffer);
     }
 
-    void Graphics::UpdateTextureLayout(Texture texture, ResourceLayout oldLayout, ResourceLayout newLayout, bool isDepth)
+    void Graphics::UpdateTextureLayout(Texture texture, ResourceLayout oldLayout, ResourceLayout newLayout)
     {
         RenderCommands& tempCmd = renderDevice->GetTempCmd();
         tempCmd.Begin();
@@ -282,8 +282,7 @@ namespace Fyrion
                     .mipLevel = m,
                     .levelCount = 1,
                     .baseArrayLayer = a,
-                    .layerCount = 1,
-                    .isDepth = isDepth
+                    .layerCount = 1
                 });
             }
         }

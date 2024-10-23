@@ -15,7 +15,7 @@ namespace Fyrion
         };
 
         HashMap<UUID, AssetCache> assetCache = {};
-        HashMap<String, UUID> assetsByPath = {};
+        HashMap<String, UUID>     assetsByPath = {};
     }
 
     UUID Asset::GetUUID() const
@@ -42,7 +42,7 @@ namespace Fyrion
 
     void AssetsShutdown()
     {
-        for(auto it : assetCache)
+        for (auto it : assetCache)
         {
             if (it.second.instance)
             {
@@ -67,7 +67,7 @@ namespace Fyrion
     {
         if (auto it = assetCache.Find(uuid))
         {
-            if(!it->second.instance && it->second.loader)
+            if (!it->second.instance && it->second.loader)
             {
                 it->second.instance = it->second.loader->LoadAsset();
                 FY_ASSERT(it->second.instance, "instance not created");
@@ -77,14 +77,26 @@ namespace Fyrion
             }
             return it->second.instance;
         }
-         return nullptr;
+        return nullptr;
+    }
+
+    void Assets::Unload(UUID uuid)
+    {
+        if (auto it = assetCache.Find(uuid))
+        {
+            if (it->second.instance)
+            {
+                it->second.instance->GetTypeHandler()->Destroy(it->second.instance);
+                it->second.instance = nullptr;
+            }
+        }
     }
 
     Asset* Assets::Reload(UUID uuid)
     {
         if (auto it = assetCache.Find(uuid))
         {
-            if(it->second.instance)
+            if (it->second.instance)
             {
                 it->second.instance->GetTypeHandler()->Destroy(it->second.instance);
             }

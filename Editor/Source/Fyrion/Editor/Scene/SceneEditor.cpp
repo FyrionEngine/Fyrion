@@ -146,6 +146,24 @@ namespace Fyrion
         }
     }
 
+    HashSet<GameObject*>& SceneEditor::GetSelectedObjects()
+    {
+        return selectedObjects;
+    }
+
+    bool SceneEditor::IsSimulating() const
+    {
+        return false;
+    }
+    void SceneEditor::StartSimulation()
+    {
+        //TODO
+    }
+    void SceneEditor::StopSimulation()
+    {
+        //TODO
+    }
+
     void SceneEditor::DoUpdate()
     {
         if (scene)
